@@ -45,11 +45,11 @@ source .venv/bin/activate
 
 # 升级pip
 echo -e "🔝  升级 pip..."
-pip install --upgrade pip
+pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 安装依赖
 echo -e "📦  安装依赖..."
-pip install -r requirements/dev.txt
+pip install -r requirements/dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 检查.env文件是否存在
 if [ ! -f ".env" ]; then
