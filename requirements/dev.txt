@@ -1,0 +1,36 @@
+# Development dependencies for SubSkin project
+# Testing
+pytest>=7.4.0          # Testing framework
+pytest-cov>=4.1.0      # Coverage plugin
+pytest-asyncio>=0.21.0 # Async test support
+pytest-mock>=3.11.0    # Mocking support
+
+# Code quality and formatting
+ruff>=0.1.0            # Fast Python linter (replaces flake8, isort, etc.)
+black>=23.0.0          # Code formatter
+mypy>=1.5.0            # Static type checking
+pre-commit>=3.5.0      # Git hooks for code quality
+
+# Documentation
+mkdocs>=1.5.0          # Documentation site
+mkdocs-material>=9.0   # Material theme
+mkdocstrings[python]>=0.23.0 # Automatic API documentation
+
+# Development tools
+ipython>=8.18.0        # Interactive Python shell
+jupyter>=1.0.0         # Notebook support for data exploration
+pdbpp>=0.10.0          # Enhanced debugger
+
+# Code analysis
+bandit>=1.7.5          # Security linting
+safety>=2.3.0          # Dependency vulnerability scanning
+radon>=6.0.0           # Code metrics and complexity analysis
+
+# Build and packaging
+build>=0.10.0          # PEP 517 build backend
+twine>=4.0.0           # Package uploading
+setuptools>=68.0.0     # Package building
+
+# Database tools for development
+alembic>=1.12.0        # Database migrations
+sqlalchemy-utils>=0.41.0 # Additional SQLAlchemy utilities

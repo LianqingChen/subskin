@@ -1,0 +1,284 @@
+# Web Configuration for SubSkin Community Website
+
+# Site information
+site:
+  name: "SubSkin"
+  description: "白癜风百科全书与社区"
+  url: "${SITE_URL}"
+  language: "zh-CN"
+  timezone: "Asia/Shanghai"
+  
+  # Contact information
+  contact_email: "contact@subskin.example.com"
+  support_email: "support@subskin.example.com"
+  
+  # Social media
+  github_url: "https://github.com/yourusername/subskin"
+  twitter_url: ""
+  wechat_public_account: ""
+  
+  # Legal
+  privacy_policy_url: "/privacy"
+  terms_of_service_url: "/terms"
+  disclaimer: "本平台内容仅供科普参考，不构成医疗建议。具体治疗方案请咨询执业医师。"
+
+# Authentication
+auth:
+  # Authentication methods
+  enabled_methods:
+    - "github"
+    - "email"
+  
+  # GitHub OAuth
+  github:
+    client_id: "${GITHUB_CLIENT_ID}"
+    client_secret: "${GITHUB_CLIENT_SECRET}"
+    callback_url: "${SITE_URL}/auth/github/callback"
+    scopes:
+      - "user:email"
+      - "read:user"
+  
+  # Email authentication
+  email:
+    require_verification: true
+    verification_expiry_hours: 24
+    password_reset_expiry_hours: 2
+  
+  # JWT settings
+  jwt:
+    secret_key: "${JWT_SECRET_KEY}"
+    algorithm: "HS256"
+    access_token_expire_minutes: 30
+    refresh_token_expire_days: 7
+  
+  # Session settings
+  session:
+    secret_key: "${SECRET_KEY}"
+    cookie_name: "subskin_session"
+    cookie_max_age: 604800  # 7 days in seconds
+    secure_cookies: true  # Set to false for local development
+
+# Database
+database:
+  # Primary database
+  url: "${DATABASE_URL}"
+  pool_size: 20
+  max_overflow: 40
+  pool_recycle: 3600  # 1 hour
+  
+  # Redis for caching and sessions
+  redis_url: "${REDIS_URL}"
+  redis_default_ttl: 3600  # 1 hour
+  
+  # Vector database for RAG (optional)
+  vector_db:
+    enabled: false
+    type: "chromadb"  # chromadb, qdrant, weaviate
+    path: "data/vector_db"
+    collection_name: "subskin_knowledge"
+
+# LLM Integration
+llm:
+  # Primary LLM provider
+  provider: "openai"  # openai, anthropic, local
+  
+  # OpenAI configuration
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4-turbo-preview"
+    temperature: 0.7
+    max_tokens: 2000
+  
+  # Anthropic configuration (alternative)
+  anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"
+    model: "claude-3-opus-20240229"
+    temperature: 0.7
+    max_tokens: 2000
+  
+  # Local model configuration
+  local:
+    model_path: "models/llama-2-7b-chat.gguf"
+    context_size: 4096
+    n_gpu_layers: 0  # 0 for CPU only
+  
+  # RAG (Retrieval-Augmented Generation) settings
+  rag:
+    enabled: true
+    chunk_size: 1000
+    chunk_overlap: 200
+    embedding_model: "all-MiniLM-L6-v2"
+    top_k: 5  # Number of chunks to retrieve
+    
+  # Prompt templates
+  prompts:
+    qa_template: |
+      你是一个专业的白癜风知识助手。请基于以下提供的医学文献信息，用中文回答用户的问题。
+      
+      相关文献信息：
+      {context}
+      
+      用户问题：{question}
+      
+      请提供准确、清晰、有医学依据的回答，并在最后注明“本文不构成医疗建议，具体治疗方案请咨询执业医师。”
+    
+    summary_template: |
+      请将以下英文医学论文摘要翻译成中文，并生成适合患者阅读的科普总结：
+      
+      原文：{abstract}
+      
+      要求：
+      1. 准确翻译核心内容
+      2. 用通俗易懂的语言解释专业术语
+      3. 突出研究的创新点和临床意义
+      4. 如果提到治疗方法，说明其原理和效果
+
+# Content Management
+content:
+  # Encyclopedia settings
+  encyclopedia:
+    base_path: "web/vitepress/docs/encyclopedia"
+    categories:
+      - "病因与机制"
+      - "诊断方法"
+      - "治疗方法"
+      - "药物研发"
+      - "临床试验"
+      - "患者故事"
+      - "心理支持"
+    
+    # Auto-generation settings
+    auto_generate: true
+    update_frequency: "weekly"
+    max_articles_per_category: 100
+  
+  # Weekly digest settings
+  weekly_digest:
+    enabled: true
+    schedule: "0 18 * * 5"  # Every Friday at 18:00 (6 PM)
+    output_path: "web/vitepress/docs/weekly"
+    template: "web/templates/weekly-digest.html"
+    
+    # Distribution channels
+    email:
+      enabled: false
+      subject_template: "SubSkin周报：{date}期白癜风研究动态"
+    
+    social_media:
+      enabled: false
+      platforms:
+        - "weibo"
+        - "zhihu"
+        - "xiaohongshu"
+  
+  # Community content
+  community:
+    enable_forums: true
+    enable_comments: true
+    moderation_level: "medium"  # low, medium, high
+    
+    # Quality control
+    min_comment_length: 10
+    max_comment_length: 1000
+    spam_filter: true
+
+# Search
+search:
+  provider: "meilisearch"  # meilisearch, typesense, elasticsearch
+  
+  meilisearch:
+    host: "http://localhost:7700"
+    api_key: "masterKey"
+    index_name: "subskin_content"
+    
+    # Search settings
+    searchable_attributes:
+      - "title"
+      - "content"
+      - "abstract"
+      - "keywords"
+    
+    filterable_attributes:
+      - "category"
+      - "date"
+      - "source"
+      - "language"
+    
+    sortable_attributes:
+      - "date"
+      - "relevance"
+      - "citation_count"
+
+# Email
+email:
+  provider: "smtp"  # smtp, sendgrid, ses
+  
+  smtp:
+    host: "${SMTP_HOST}"
+    port: "${SMTP_PORT}"
+    username: "${SMTP_USER}"
+    password: "${SMTP_PASSWORD}"
+    use_tls: true
+    sender_name: "SubSkin Team"
+    sender_email: "${SMTP_USER}"
+  
+  # Templates directory
+  templates_dir: "email_templates"
+  
+  # Rate limiting
+  max_emails_per_hour: 100
+  max_emails_per_day: 1000
+
+# Monitoring and Analytics
+monitoring:
+  # Error tracking
+  sentry:
+    enabled: false
+    dsn: ""
+  
+  # Analytics
+  analytics:
+    enabled: false
+    provider: "plausible"  # plausible, google-analytics, umami
+    tracking_id: ""
+  
+  # Health checks
+  health_check_endpoint: "/health"
+  health_check_interval: 300  # 5 minutes
+  
+  # Performance monitoring
+  enable_metrics: true
+  metrics_port: 9090
+
+# Security
+security:
+  # Rate limiting
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 60
+    requests_per_hour: 1000
+    
+  # CORS
+  cors:
+    enabled: true
+    origins:
+      - "${SITE_URL}"
+      - "http://localhost:5173"
+      - "http://localhost:3000"
+    
+  # Content Security Policy
+  csp:
+    enabled: true
+    directives:
+      default-src: "'self'"
+      script-src: "'self' 'unsafe-inline'"
+      style-src: "'self' 'unsafe-inline'"
+      img-src: "'self' data: https:"
+      
+  # Security headers
+  headers:
+    hsts_enabled: true
+    hsts_max_age: 31536000  # 1 year
+    xss_protection: true
+    content_type_options: true
+    frame_options: "DENY"

@@ -1,0 +1,9 @@
+[run]
+omit =
+    src/models/data_source.py
+    src/models/paper.py
+    src/models/trial.py
+    src/utils/data_source_manager.py
+
+[report]
+fail_under = 80

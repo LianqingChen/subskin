@@ -1,0 +1,37 @@
+# AI/ML dependencies for SubSkin project
+# LLM API clients
+openai>=1.0.0          # OpenAI API client
+anthropic>=0.25.0      # Anthropic API client
+cohere>=4.0.0          # Cohere API client (optional)
+
+# Local LLM support (optional)
+llama-cpp-python>=0.2.0 # Llama.cpp Python bindings
+transformers>=4.36.0   # Hugging Face transformers
+torch>=2.1.0           # PyTorch for local models
+accelerate>=0.25.0     # Optimized inference
+
+# Vector databases and embeddings
+chromadb>=0.4.0        # Vector database for RAG
+sentence-transformers>=2.2.0 # Embedding models
+langchain>=0.0.340     # LLM application framework (optional)
+llama-index>=0.9.0     # Data framework for LLM apps (optional)
+
+# Text processing and NLP
+nltk>=3.8.0            # Natural Language Toolkit
+spacy>=3.7.0           # Industrial-strength NLP
+scikit-learn>=1.3.0    # Machine learning utilities
+pandas>=2.0.0          # Data manipulation
+
+# PDF and document processing
+pypdf>=3.17.0          # PDF parsing
+pdfplumber>=0.10.0     # Advanced PDF extraction
+markdownify>=0.11.0    # HTML to Markdown conversion
+
+# Audio/video processing (for future content generation)
+openai-whisper>=20231117 # Speech recognition
+pydub>=0.25.0          # Audio manipulation
+moviepy>=1.0.3         # Video editing
+
+# Caching for AI responses
+redis>=5.0.0           # Cache for expensive LLM calls
+diskcache>=5.6.0       # Disk-based caching alternative

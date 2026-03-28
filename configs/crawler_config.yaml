@@ -1,0 +1,143 @@
+# Crawler Configuration for SubSkin
+# 
+# This configuration references data sources defined in data_sources.yaml
+# Each crawler section corresponds to a specific data source ID
+
+# Data source references (maps crawler names to data source IDs)
+data_sources:
+  pubmed: "pubmed"  # References the PubMed data source in data_sources.yaml
+  semantic_scholar: "semantic_scholar"  # Will be added when implemented
+  clinical_trials: "clinicaltrials_gov"  # References ClinicalTrials.gov
+
+# PubMed configuration
+pubmed:
+  search_terms:
+    - "vitiligo[MeSH Terms]"
+    - "leukoderma"
+    - "white spots skin"
+    - "depigmentation disorder"
+  
+  # API settings
+  api_key: ${NCBI_API_KEY}  # Will be loaded from environment
+  rate_limit: 3  # requests per second (free tier)
+  max_requests_per_day: 10000
+  
+  # Search parameters
+  retmax: 100  # Max results per request
+  sort: "relevance"  # relevance, pubdate, author
+  mindate: "2000/01/01"  # Start date for search
+  
+  # Filtering
+  languages:
+    - "eng"  # English only
+    
+  article_types:
+    - "Journal Article"
+    - "Clinical Trial"
+    - "Review"
+    - "Meta-Analysis"
+  
+  # Caching
+  cache_ttl: 86400  # 24 hours in seconds
+  cache_dir: "data/cache/pubmed"
+
+# Semantic Scholar configuration
+semantic_scholar:
+  search_terms:
+    - "vitiligo"
+    - "vitiligo treatment"
+    - "JAK inhibitors vitiligo"
+    - "autoimmune depigmentation"
+  
+  # API settings
+  api_key: ${SEMANTIC_SCHOLAR_API_KEY}  # Optional
+  rate_limit: 1000  # requests per second (free tier)
+  
+  # Search parameters
+  fields:
+    - "paperId"
+    - "title"
+    - "abstract"
+    - "year"
+    - "citationCount"
+    - "influentialCitationCount"
+    - "authors"
+    - "venue"
+    - "url"
+    - "tldr"  # Auto-generated summary
+  
+  limit: 100  # Results per query
+  offset: 0
+  
+  # Filtering
+  year_range:
+    min: 2000
+    max: 2026
+  
+  min_citations: 10  # Minimum citations to include
+
+# ClinicalTrials.gov configuration
+clinical_trials:
+  search_terms:
+    - "vitiligo"
+    - "leukoderma"
+    - "depigmentation"
+    - "JAK inhibitor"
+    - "ruxolitinib"
+    - "tofacitinib"
+  
+  # API settings
+  api_version: "v2"
+  rate_limit: 10  # Conservative limit
+  
+  # Search parameters
+  status: "RECRUITING|ACTIVE_NOT_RECRUITING|COMPLETED"
+  phase:
+    - "PHASE1"
+    - "PHASE2"
+    - "PHASE3"
+    - "PHASE4"
+  
+  study_type: "INTERVENTIONAL"
+  
+  # Results handling
+  page_size: 100
+  max_pages: 10
+  
+  # Filtering
+  interventions:
+    - "Drug"
+    - "Biological"
+    - "Procedure"
+    - "Device"
+  
+  # Locations (optional)
+  # country: ["United States", "China", "Japan", "Germany", "United Kingdom"]
+
+# General crawler settings
+general:
+  # Retry settings
+  max_retries: 3
+  retry_delay: 5  # seconds
+  backoff_factor: 2
+  
+  # Timeout settings
+  request_timeout: 30  # seconds
+  connect_timeout: 10  # seconds
+  
+  # Output settings
+  output_dir: "data/raw"
+  output_format: "json"
+  compress_output: false
+  
+  # Logging
+  log_level: "INFO"
+  log_file: "logs/crawler.log"
+  
+  # Monitoring
+  enable_monitoring: true
+  send_alerts: false
+  
+  # Data retention
+  keep_raw_data_days: 90
+  keep_processed_data_days: 365

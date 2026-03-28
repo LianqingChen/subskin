@@ -1,0 +1,38 @@
+# Web-specific dependencies for SubSkin project
+# Core web framework
+fastapi>=0.104.0       # Modern, fast web framework
+uvicorn[standard]>=0.24.0 # ASGI server
+
+# Authentication and authorization
+python-jose[cryptography]>=3.3.0 # JWT token handling
+passlib[bcrypt]>=1.7.4 # Password hashing
+python-multipart>=0.0.6 # Form parsing for file uploads
+
+# Database and ORM
+sqlalchemy>=2.0.0      # ORM for database
+psycopg2-binary>=2.9.0 # PostgreSQL adapter
+alembic>=1.12.0        # Database migrations
+sqlalchemy-utils>=0.41.0 # Additional utilities
+
+# Caching and sessions
+redis>=5.0.0           # Redis client
+aioredis>=2.0.0        # Async Redis client
+
+# Email and notifications
+emails>=0.6.0          # Email sending
+jinja2>=3.1.0          # Templating for emails
+
+# Search functionality
+meilisearch>=0.30.0    # Search engine client
+whoosh>=2.7.4          # Alternative pure-Python search
+
+# File handling
+python-magic>=0.4.27   # File type detection
+pillow>=10.0.0         # Image processing
+
+# Monitoring and logging
+structlog>=23.1.0      # Structured logging
+sentry-sdk>=1.35.0     # Error tracking
+
+# API documentation
+fastapi-openapi>=0.1.0 # OpenAPI extensions
