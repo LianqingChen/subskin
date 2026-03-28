@@ -6,6 +6,8 @@ extracting key treatment methods, results, and conclusions.
 
 from __future__ import annotations
 
+from typing import Optional
+
 import hashlib
 import logging
 import os
@@ -34,7 +36,9 @@ _SYSTEM_PROMPT = (
     "6. 输出格式：先用一句话总结核心发现，然后分段说明治疗方法、结果和结论。"
 )
 
-_USER_PROMPT_TEMPLATE = "请将以下英文医学论文摘要改写为面向患者的中文科普摘要：\n\n{abstract}"
+_USER_PROMPT_TEMPLATE = (
+    "请将以下英文医学论文摘要改写为面向患者的中文科普摘要：\n\n{abstract}"
+)
 
 _RETRYABLE_ERRORS = (APIConnectionError, APITimeoutError, RateLimitError)
 
@@ -80,9 +84,9 @@ class Summarizer:
     def __init__(
         self,
         model: str = "gpt-3.5-turbo",
-        api_key: str | None = None,
-        cache: Cache | None = None,
-        rate_limiter: RateLimiter | None = None,
+        api_key: Optional[str] = None,
+        cache: Optional[Cache] = None,
+        rate_limiter: Optional[RateLimiter] = None,
         cache_ttl: float = _DEFAULT_CACHE_TTL,
         max_retries: int = _MAX_RETRIES,
         temperature: float = 0.3,

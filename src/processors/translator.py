@@ -18,6 +18,8 @@ import hashlib
 import logging
 import os
 
+from typing import Optional
+
 import openai
 from openai import OpenAI
 from tenacity import (
@@ -94,9 +96,9 @@ class Translator:
     def __init__(
         self,
         model: str = "gpt-3.5-turbo",
-        api_key: str | None = None,
-        cache: Cache | None = None,
-        rate_limiter: RateLimiter | None = None,
+        api_key: Optional[str] = None,
+        cache: Optional[Cache] = None,
+        rate_limiter: Optional[RateLimiter] = None,
         cache_ttl: float = _DEFAULT_CACHE_TTL,
         max_retries: int = 3,
         system_prompt: str = _SYSTEM_PROMPT,
@@ -155,10 +157,7 @@ class Translator:
                     {"role": "system", "content": self._system_prompt},
                     {
                         "role": "user",
-                        "content": (
-                            "请将以下英文医学论文摘要翻译为中文：\n\n"
-                            f"{text}"
-                        ),
+                        "content": (f"请将以下英文医学论文摘要翻译为中文：\n\n{text}"),
                     },
                 ],
                 temperature=0.1,
