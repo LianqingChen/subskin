@@ -81,6 +81,7 @@ dump.rdb
 # Coverage reports
 .coverage
 .coverage.*
+coverage.xml
 htmlcov/
 
 # Jupyter Notebook
