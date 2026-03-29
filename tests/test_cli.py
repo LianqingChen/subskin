@@ -144,6 +144,6 @@ def test_cli_fails_without_env(command):
     result = subprocess.run(full_cmd, capture_output=True, text=True)
     # Should exit with non-zero due to missing config, but shouldn't crash
     assert result.returncode != 0
-    assert (
-        "Configuration error" in result.stderr or "Configuration error" in result.stdout
-    )
+    # Check for "Configuration error" (can be with emoji)
+    combined_output = result.stdout + result.stderr
+    assert "Configuration error" in combined_output
