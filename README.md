@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/subskin2.png" alt="SubSkin Logo" width="250"/>
+  <img src="assets/subskin2.png" alt="SubSkin Logo" width="200"/>
 </div>
 
 # SubSkin 🌿
@@ -11,7 +11,7 @@
 
 ## 📌 项目简介
 
-**SubSkin** 我是一名白癜风患者，我希望结合 AI 技术，从0到1构建一个结构化、可分析、易分享的白癜风百科全书。
+我是一名白癜风患者，我希望从0到1构建白癜风百科全书，并将最新的研究成果分享给各位病友；同时结合AI技术探索隐藏在白斑之下更深层次的发病机理（仅供研究分析，不具备医疗诊断和建议资质）。
 
 我们的核心愿景是利用 AI 赋能，缩短医学前沿与普通患者之间的知识鸿沟。
 
