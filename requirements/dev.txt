@@ -5,7 +5,8 @@ pytest-cov>=3.0.0      # Coverage plugin (lower minimum for older Python)
 pytest-mock>=3.5.0     # Mocking support (lower minimum)
 
 # Code quality and formatting
-ruff>=0.1.0            # Fast Python linter (replaces flake8, isort, etc.)
+# ruff requires Python 3.7+, comment out for Python 3.6
+# ruff>=0.1.0          # Fast Python linter (replaces flake8, isort, etc.)
 black>=22.0.0          # Code formatter (lower minimum)
 mypy>=0.900            # Static type checking (lower minimum for older Python)
 pre-commit>=2.0.0      # Git hooks for code quality (lower minimum)

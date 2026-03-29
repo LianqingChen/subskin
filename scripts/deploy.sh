@@ -47,9 +47,20 @@ source .venv/bin/activate
 echo -e "🔝  升级 pip..."
 pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# 安装依赖
-echo -e "📦  安装依赖..."
-pip install -r requirements/dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+# 安装基础依赖
+echo -e "📦  安装基础依赖..."
+pip install -r requirements/base.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 询问是否安装开发依赖
+read -p "是否安装开发依赖 (pytest, ruff, black 等)? [y/N] " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    echo -e "📦  安装开发依赖..."
+    pip install -r requirements/dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+else
+    echo -e "${YELLOW}⚠️  跳过开发依赖安装，只安装运行所需依赖${NC}"
+fi
 
 # 检查.env文件是否存在
 if [ ! -f ".env" ]; then
