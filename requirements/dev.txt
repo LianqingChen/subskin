@@ -1,22 +1,22 @@
 # Development dependencies for SubSkin project
 # Testing
-pytest>=7.0.0          # Testing framework (lower minimum for older pip)
-pytest-cov>=4.0.0      # Coverage plugin
-pytest-mock>=3.10.0    # Mocking support
+pytest>=7.0.0          # Testing framework (lower minimum for older pip/Python)
+pytest-cov>=3.0.0      # Coverage plugin (lower minimum for older Python)
+pytest-mock>=3.5.0     # Mocking support (lower minimum)
 
 # Code quality and formatting
 ruff>=0.1.0            # Fast Python linter (replaces flake8, isort, etc.)
-black>=23.0.0          # Code formatter
-mypy>=1.0.0            # Static type checking
-pre-commit>=3.0.0      # Git hooks for code quality
+black>=22.0.0          # Code formatter (lower minimum)
+mypy>=0.900            # Static type checking (lower minimum for older Python)
+pre-commit>=2.0.0      # Git hooks for code quality (lower minimum)
 
 # Documentation
-mkdocs>=1.5.0          # Documentation site
-mkdocs-material>=9.0   # Material theme
-mkdocstrings[python]>=0.23.0 # Automatic API documentation
+mkdocs>=1.4.0          # Documentation site (lower minimum)
+mkdocs-material>=8.0   # Material theme (lower minimum)
+mkdocstrings[python]>=0.20.0 # Automatic API documentation (lower minimum)
 
 # Development tools
-ipython>=8.0.0         # Interactive Python shell
+ipython>=7.0.0         # Interactive Python shell (lower minimum)
 jupyter>=1.0.0         # Notebook support for data exploration
 pdbpp>=0.10.0          # Enhanced debugger
 
@@ -28,8 +28,8 @@ radon>=5.0.0           # Code metrics and complexity analysis
 # Build and packaging
 build>=0.10.0          # PEP 517 build backend
 twine>=4.0.0           # Package uploading
-setuptools>=60.0.0     # Package building
+setuptools>=50.0.0     # Package building (lower minimum)
 
 # Database tools for development
-alembic>=1.10.0        # Database migrations
-sqlalchemy-utils>=0.40.0 # Additional SQLAlchemy utilities
+alembic>=1.8.0        # Database migrations (lower minimum)
+sqlalchemy-utils>=0.38.0 # Additional SQLAlchemy utilities (lower minimum)
