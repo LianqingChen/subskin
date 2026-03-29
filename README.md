@@ -1,5 +1,5 @@
-<div align="center">
-  <img src="assets/subskin2.png" alt="SubSkin Logo" width="200"/>
+<div align="left">
+  <img src="assets/subskin2.png" alt="SubSkin Logo" width="100"/>
 </div>
 
 # SubSkin 🌿
