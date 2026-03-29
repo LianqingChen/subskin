@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from typing import Any, get_args, get_type_hints
+from typing import Any, Optional, get_args, get_type_hints
 from urllib.parse import urlparse
 
 _UNSET = object()
@@ -22,18 +22,18 @@ except ImportError:
     @dataclass(frozen=True)
     class _FieldInfo:
         default: Any = _UNSET
-        ge: int | None = None
-        le: int | None = None
-        pattern: str | None = None
-        description: str | None = None
+        ge: Optional[int] = None
+        le: Optional[int] = None
+        pattern: Optional[str] = None
+        description: Optional[str] = None
 
     def Field(
         default: Any = _UNSET,
         *,
-        ge: int | None = None,
-        le: int | None = None,
-        pattern: str | None = None,
-        description: str | None = None,
+        ge: Optional[int] = None,
+        le: Optional[int] = None,
+        pattern: Optional[str] = None,
+        description: Optional[str] = None,
     ) -> _FieldInfo:
         return _FieldInfo(
             default=default,
@@ -174,7 +174,7 @@ except ImportError:
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
-def _resolve_env_file(env_file: str | Path | None = None) -> Path:
+def _resolve_env_file(env_file: str | Optional[Path] = None) -> Path:
     candidate = env_file or os.getenv("ENV_FILE") or ".env"
     path = Path(candidate).expanduser()
     if not path.is_absolute():
@@ -213,27 +213,27 @@ def _read_env_file(env_path: Path) -> dict[str, str]:
 class Settings(BaseModel):
     """Typed SubSkin application settings."""
 
-    NCBI_API_KEY: str | None = Field(
+    NCBI_API_KEY: Optional[str] = Field(
         default=None,
         description="PubMed/NCBI API key.",
     )
-    OPENAI_API_KEY: str | None = Field(
+    OPENAI_API_KEY: Optional[str] = Field(
         default=None,
         description="OpenAI API key for translation and summarization.",
     )
-    SEMANTIC_SCHOLAR_API_KEY: str | None = Field(
+    SEMANTIC_SCHOLAR_API_KEY: Optional[str] = Field(
         default=None,
         description="Semantic Scholar API key.",
     )
-    ANTHROPIC_API_KEY: str | None = Field(
+    ANTHROPIC_API_KEY: Optional[str] = Field(
         default=None,
         description="Anthropic API key for alternative LLM support.",
     )
-    DATABASE_URL: AnyUrl | None = Field(
+    DATABASE_URL: Optional[AnyUrl] = Field(
         default=None,
         description="Database connection URL for future PostgreSQL support.",
     )
-    REDIS_URL: AnyUrl | None = Field(
+    REDIS_URL: Optional[AnyUrl] = Field(
         default=None,
         description="Redis connection URL for caching and sessions.",
     )
@@ -256,27 +256,27 @@ class Settings(BaseModel):
         le=65535,
         description="SMTP server port.",
     )
-    SMTP_USER: str | None = Field(
+    SMTP_USER: Optional[str] = Field(
         default=None,
         description="SMTP username for email delivery.",
     )
-    SMTP_PASSWORD: str | None = Field(
+    SMTP_PASSWORD: Optional[str] = Field(
         default=None,
         description="SMTP password or app password.",
     )
-    GITHUB_CLIENT_ID: str | None = Field(
+    GITHUB_CLIENT_ID: Optional[str] = Field(
         default=None,
         description="GitHub OAuth client ID.",
     )
-    GITHUB_CLIENT_SECRET: str | None = Field(
+    GITHUB_CLIENT_SECRET: Optional[str] = Field(
         default=None,
         description="GitHub OAuth client secret.",
     )
-    SECRET_KEY: str | None = Field(
+    SECRET_KEY: Optional[str] = Field(
         default=None,
         description="Session encryption secret key.",
     )
-    JWT_SECRET_KEY: str | None = Field(
+    JWT_SECRET_KEY: Optional[str] = Field(
         default=None,
         description="JWT signing secret key.",
     )
@@ -318,15 +318,15 @@ class Settings(BaseModel):
         default="http://localhost:8080",
         description="Openclaw API URL for the QQ bot.",
     )
-    QQ_BOT_ACCESS_TOKEN: str | None = Field(
+    QQ_BOT_ACCESS_TOKEN: Optional[str] = Field(
         default=None,
         description="QQ bot access token.",
     )
-    QQ_NOTIFICATION_GROUP: str | None = Field(
+    QQ_NOTIFICATION_GROUP: Optional[str] = Field(
         default=None,
         description="QQ notification group ID.",
     )
-    QQ_NOTIFICATION_ADMIN: str | None = Field(
+    QQ_NOTIFICATION_ADMIN: Optional[str] = Field(
         default=None,
         description="QQ notification admin ID.",
     )
@@ -338,15 +338,15 @@ class Settings(BaseModel):
         default="oss-cn-hangzhou.aliyuncs.com",
         description="Alibaba Cloud OSS endpoint.",
     )
-    ALIYUN_OSS_BUCKET: str | None = Field(
+    ALIYUN_OSS_BUCKET: Optional[str] = Field(
         default=None,
         description="Alibaba Cloud OSS bucket name.",
     )
-    ALIYUN_OSS_ACCESS_KEY_ID: str | None = Field(
+    ALIYUN_OSS_ACCESS_KEY_ID: Optional[str] = Field(
         default=None,
         description="Alibaba Cloud OSS access key ID.",
     )
-    ALIYUN_OSS_ACCESS_KEY_SECRET: str | None = Field(
+    ALIYUN_OSS_ACCESS_KEY_SECRET: Optional[str] = Field(
         default=None,
         description="Alibaba Cloud OSS access key secret.",
     )
@@ -417,7 +417,7 @@ class Settings(BaseModel):
         default=False,
         description="Enable alert emails.",
     )
-    ALERT_EMAIL_RECIPIENT: str | None = Field(
+    ALERT_EMAIL_RECIPIENT: Optional[str] = Field(
         default=None,
         description="Alert email recipient.",
     )
@@ -431,11 +431,11 @@ class Settings(BaseModel):
         le=65535,
         description="SMTP port for alert emails.",
     )
-    ALERT_EMAIL_SMTP_USER: str | None = Field(
+    ALERT_EMAIL_SMTP_USER: Optional[str] = Field(
         default=None,
         description="SMTP username for alert emails.",
     )
-    ALERT_EMAIL_SMTP_PASSWORD: str | None = Field(
+    ALERT_EMAIL_SMTP_PASSWORD: Optional[str] = Field(
         default=None,
         description="SMTP password for alert emails.",
     )
@@ -447,7 +447,7 @@ class Settings(BaseModel):
         validate_default = True
 
     @classmethod
-    def _load_values(cls, env_file: str | Path | None = None) -> dict[str, Any]:
+    def _load_values(cls, env_file: str | Optional[Path] = None) -> dict[str, Any]:
         env_path = _resolve_env_file(env_file)
         file_values = _read_env_file(env_path)
         values: dict[str, Any] = {}
@@ -459,7 +459,7 @@ class Settings(BaseModel):
         return values
 
     @classmethod
-    def from_env_file(cls, env_file: str | Path | None = None) -> Settings:
+    def from_env_file(cls, env_file: str | Optional[Path] = None) -> Settings:
         return cls.model_validate(cls._load_values(env_file=env_file))
 
     def __init__(self, **data: Any) -> None:
