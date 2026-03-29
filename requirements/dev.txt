@@ -2,7 +2,6 @@
 # Testing
 pytest>=7.0.0          # Testing framework (lower minimum for older pip)
 pytest-cov>=4.0.0      # Coverage plugin
-pytest-asyncio>=0.20.0 # Async test support
 pytest-mock>=3.10.0    # Mocking support
 
 # Code quality and formatting
