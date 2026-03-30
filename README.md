@@ -1,6 +1,8 @@
 # SubSkin 🌿
 
-![SubSkin Logo](assets/subskin_logo.png)
+<div align="left">
+  <img src="assets/subskin_logo.png" alt="SubSkin Logo" width="100"/>
+</div>
 
 > **What’s beneath? SubSkin.**
 
