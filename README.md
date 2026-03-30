@@ -1,13 +1,11 @@
-<div align="left">
-  <img src="assets/subskin_logo.png" alt="SubSkin Logo" width="100"/>
-</div>
-
 # SubSkin 🌿
+
+![SubSkin Logo](assets/subskin_logo.png)
 
 > **What’s beneath? SubSkin.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Status: Developing](https://img.shields.io/badge/Status-Developing-green.svg)]()
+[![Status: Developing](https://img.shields.io/badge/Status-Developing-green.svg)](https://github.com/LianqingChen/subskin)
 
 ## 📌 项目简介
 
