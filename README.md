@@ -1,7 +1,7 @@
 # SubSkin 🌿
 
 <div align="left">
-  <img src="assets/subskin_logo.png" alt="SubSkin Logo" width="100"/>
+  <img src="assets/subskin_logo.png" alt="SubSkin Logo" width="150"/>
 </div>
 
 > **What’s beneath? SubSkin.**
@@ -163,41 +163,6 @@ make docs-serve       # 启动文档服务器
 - **集成**: GitHub OAuth认证 + OpenAI RAG问答
 
 详细架构设计请参考 [PROJECT_FRAMEWORK.md](PROJECT_FRAMEWORK.md)。
-
----
-
-## 📅 路线图 (Roadmap)
-
-### Phase 1: 基础数据管道 (4-6周)
-- [ ] 搭建项目基础结构
-- [ ] 实现PubMed爬虫
-- [ ] 实现Semantic Scholar爬虫
-- [ ] 实现ClinicalTrials.gov爬虫
-- [ ] 开发AI翻译与摘要模块
-- [ ] 创建基础数据导出
-
-### Phase 2: 知识库构建与每周内容 (3-4周)
-- [ ] 设计百科全书数据结构
-- [ ] 实现Markdown导出与组织
-- [ ] 开发每周摘要生成器
-- [ ] 创建HTML模板系统
-- [ ] 实现自动化调度
-
-### Phase 3: 社区网站开发 (4-6周)
-- [ ] 设置VitePress静态站点
-- [ ] 集成知识库内容自动发布
-- [ ] 实现用户认证系统
-- [ ] 开发基础社区功能
-- [ ] 集成LLM问答功能
-
-### Phase 4: 优化与扩展 (持续)
-- [ ] 搜索功能优化
-- [ ] 移动端适配
-- [ ] 性能优化
-- [ ] 社区功能扩展
-- [ ] 数据分析与可视化
-
-详细实施计划请参考 `.sisyphus/plans/vitiligo-data-collection.md`。
 
 ---
 
