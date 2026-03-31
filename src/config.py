@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 _UNSET = object()
 
 try:
-    from pydantic import AnyUrl, BaseModel, Field, ValidationError
+    from pydantic import AnyUrl, BaseModel, Field, ValidationError, ConfigDict
 except ImportError:
     from dataclasses import dataclass
 
@@ -18,6 +18,9 @@ except ImportError:
 
     class AnyUrl(str):
         pass
+
+    def ConfigDict(**kwargs):
+        return None
 
     @dataclass(frozen=True)
     class _FieldInfo:
@@ -212,6 +215,13 @@ def _read_env_file(env_path: Path) -> dict[str, str]:
 
 class Settings(BaseModel):
     """Typed SubSkin application settings."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        validate_default=True
+    )
 
     NCBI_API_KEY: Optional[str] = Field(
         default=None,
@@ -440,11 +450,33 @@ class Settings(BaseModel):
         description="SMTP password for alert emails.",
     )
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        extra = "ignore"
-        validate_default = True
+# WeChat Notification (via OpenClaw)
+    WECHAT_NOTIFICATION_ENABLED: bool = Field(
+        default=False,
+        description="Enable WeChat notifications for daily updates.",
+    )
+    WECHAT_OPENCLAW_URL: str = Field(
+        default="http://127.0.0.1:18789",
+        description="OpenClaw gateway URL.",
+    )
+    WECHAT_OPENCLAW_TOKEN: Optional[str] = Field(
+        default=None,
+        description="OpenClaw gateway authentication token.",
+    )
+
+# Volcengine (火山引擎) OpenAI-compatible API
+    VOLCENGINE_API_KEY: Optional[str] = Field(
+        default=None,
+        description="Volcengine API key for translation and summarization.",
+    )
+    VOLCENGINE_BASE_URL: str = Field(
+        default="https://ark.cn-beijing.volces.com/api/v3",
+        description="Volcengine API base URL.",
+    )
+    VOLCENGINE_MODEL: str = Field(
+        default="doubao-4k",
+        description="Volcengine model name.",
+    )
 
     @classmethod
     def _load_values(cls, env_file: str | Optional[Path] = None) -> dict[str, Any]:

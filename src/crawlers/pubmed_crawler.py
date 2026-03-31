@@ -97,9 +97,13 @@ class PubMedCrawler:
 
         papers: list[Paper] = []
         for pmid in pmids:
-            paper = self._fetch_paper_by_pmid(pmid)
-            if paper is not None:
-                papers.append(paper)
+            try:
+                paper = self._fetch_paper_by_pmid(pmid)
+                if paper is not None:
+                    papers.append(paper)
+            except Exception as e:
+                logger.warning("Skipping PMID=%s due to error: %s", pmid, str(e))
+                continue
 
         return papers
 
@@ -211,7 +215,7 @@ class PubMedCrawler:
 
     @staticmethod
     def _paper_to_cache_payload(paper: Paper) -> dict[str, Any]:
-        payload: dict[str, Any] = paper.dict()
+        payload: dict[str, Any] = paper.model_dump()
         payload["crawled_at"] = paper.crawled_at.isoformat()
         return payload
 

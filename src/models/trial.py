@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from enum import Enum
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 class TrialPhase(str, Enum):
@@ -179,7 +179,8 @@ class ClinicalTrial(BaseModel):
         description="Exclusion criteria"
     )
     
-    @validator('url')
+    @field_validator('url')
+    @classmethod
     def validate_url(cls, v):
         """Validate URL points to ClinicalTrials.gov."""
         if not v.startswith('https://clinicaltrials.gov/ct2/show/'):
@@ -189,7 +190,8 @@ class ClinicalTrial(BaseModel):
                 return f'https://clinicaltrials.gov/ct2/show/{nct_match}'
         return v
     
-    @validator('start_date', 'completion_date', 'last_update_date')
+    @field_validator('start_date', 'completion_date', 'last_update_date')
+    @classmethod
     def validate_date_format(cls, v):
         """Validate date formats."""
         if v is None:
@@ -274,7 +276,7 @@ class ClinicalTrial(BaseModel):
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert trial to dictionary."""
-        return self.dict()
+        return self.model_dump()
     
     def get_intervention_types(self) -> List[str]:
         """Get list of intervention types."""
@@ -294,8 +296,7 @@ class TrialUpdate(BaseModel):
     last_verified: Optional[datetime] = None
     publication_urls: Optional[List[str]] = None
     
-    class Config:
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class TrialSearchResult(BaseModel):

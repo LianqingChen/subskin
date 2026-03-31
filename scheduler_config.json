@@ -1,0 +1,9 @@
+{
+  "frequency": "daily",
+  "hour": 7,
+  "minute": 0,
+  "enabled": true,
+  "max_runtime_hours": 2.0,
+  "notify_on_completion": true,
+  "notify_on_failure": true
+}

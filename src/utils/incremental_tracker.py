@@ -198,6 +198,24 @@ class IncrementalTracker:
             
             return summary
     
+    def count_total_by_type(self, update_type: UpdateType) -> int:
+        """Count total number of updates by type all-time.
+        
+        Args:
+            update_type: Type of update to count
+            
+        Returns:
+            Total count of updates
+        """
+        with self._lock:
+            cursor = self._conn.execute("""
+                SELECT COUNT(*) as total
+                FROM daily_updates
+                WHERE update_type = ?
+            """, (update_type.value,))
+            row = cursor.fetchone()
+            return row["total"] if row else 0
+    
     def get_unprocessed_updates(self) -> List[UpdateRecord]:
         """Get all unprocessed update records.
         

@@ -15,9 +15,17 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TypedDict
 
+from src.config import settings
 from src.exceptions import CrawlerError
-from src.utils.incremental_tracker import IncrementalTracker, UpdateType
+from src.utils.incremental_tracker import IncrementalTracker, UpdateType, DailySummary
 from src.utils.logger import get_logger
+
+# Project root for running scrapy
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
+# Notification support
+if settings.WECHAT_NOTIFICATION_ENABLED:
+    from src.notifications.wechat_notifier import WeChatNotifier
 
 
 logger = get_logger(__name__)
@@ -207,10 +215,18 @@ class UpdateScheduler:
         total_updated = 0
         all_errors: List[str] = []
         
+        # Run crawlers by information source category
+        # Category mapping: pubmed -> 📜 官方期刊与学术论文
         crawlers_to_run = [
+            # (source_category, crawler_method)
             ("pubmed", self._run_pubmed_crawler),
             ("semantic_scholar", self._run_semantic_scholar_crawler),
             ("clinical_trials", self._run_clinical_trials_crawler),
+            # Other categories will be added as crawlers implemented:
+            # - clinical: 医院官媒与临床机构
+            # - traditional: 特色诊疗指南
+            # - news: 新闻媒体与官方报道
+            # - community: 患者社区
         ]
         
         for crawler_name, crawler_func in crawlers_to_run:
@@ -272,24 +288,83 @@ class UpdateScheduler:
                    f"collected {total_collected}, updated {total_updated}, "
                    f"duration {duration:.1f}s")
         
+        # Send notification if enabled
+        if settings.WECHAT_NOTIFICATION_ENABLED and self.config.get("notify_on_completion", True):
+            try:
+                # Get daily summary
+                if self.incremental_tracker:
+                    today_iso = datetime.now().date().isoformat()
+                    summary = self.incremental_tracker.get_daily_summary(today_iso)
+                    summary_dict = dict(summary)
+                    
+                    # Add totals from this run
+                    summary_dict["total_papers"] = self.incremental_tracker.count_total_by_type(UpdateType.NEW_PAPER)
+                    summary_dict["total_trials"] = self.incremental_tracker.count_total_by_type(UpdateType.NEW_TRIAL)
+                    summary_dict["new_papers_with_summary"] = 0  # Will be populated by processing step
+                    
+                    # Send via WeChat using openclaw CLI
+                    # Your chat ID from the current conversation: o9cq80xDxxnZ9B-8BCXQkbOXnPag@im.wechat
+                    notifier = WeChatNotifier(
+                        channel="openclaw-weixin",
+                        target="o9cq80xDxxnZ9B-8BCXQkbOXnPag@im.wechat",
+                        openclaw_path="openclaw"
+                    )
+                    success = notifier.send_daily_summary(summary_dict)
+                    
+                    if success:
+                        logger.info("Daily summary sent to WeChat successfully")
+                    else:
+                        logger.warning("Failed to send daily summary to WeChat")
+                else:
+                    logger.debug("Incremental tracking not enabled, skipping WeChat notification")
+            except Exception as e:
+                logger.error(f"Error sending WeChat notification: {str(e)}")
+        
         return result_data
     
     def _run_pubmed_crawler(self) -> CrawlerResult:
         start_time = datetime.now()
         
         try:
-            logger.info("Running PubMed crawler")
+            logger.info("Running PubMed crawler (metapub)")
+            import json
+            from src.crawlers.pubmed_crawler import PubMedCrawler
+            from src.models.paper import Paper
             
-            items_collected = 0
+            # Initialize crawler and search
+            # Full crawl (default 10,000 papers) for initial collection
+            crawler = PubMedCrawler()
+            papers = crawler.search_papers()
+            
+            items_collected = len(papers)
             items_updated = 0
             errors: List[str] = []
+            
+            # Save raw data to json
+            output_dir = PROJECT_ROOT / "data/raw"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_path = output_dir / f"pubmed_incremental_{datetime.now().date().isoformat()}.json"
+            
+            # Save papers to JSON
+            papers_data = [paper.model_dump() for paper in papers]
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(papers_data, f, indent=2, default=str)
+            
+            logger.info(f"Saved {items_collected} papers to {output_path}")
+            
+            # All are new on first run
+            items_updated = items_collected
+            
+            status = CrawlerStatus.COMPLETED
             
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
             
+            logger.info(f"PubMed crawler completed: {items_collected} items collected in {duration:.1f}s")
+            
             result: CrawlerResult = {
                 "crawler_name": "pubmed",
-                "status": CrawlerStatus.COMPLETED,
+                "status": status,
                 "items_collected": items_collected,
                 "items_updated": items_updated,
                 "errors": errors,
@@ -322,7 +397,8 @@ class UpdateScheduler:
         
         try:
             logger.info("Running Semantic Scholar crawler")
-            
+            # Semantic Scholar crawler is implemented but not enabled in incremental updates
+            # For now, skip and return 0 (handled by full crawl)
             items_collected = 0
             items_updated = 0
             errors: List[str] = []
@@ -369,6 +445,11 @@ class UpdateScheduler:
             items_collected = 0
             items_updated = 0
             errors: List[str] = []
+            
+            # For incremental updates, run the clinical trials crawler
+            # This is placeholder - actual implementation calls scrapy
+            # Currently disabled for incremental to avoid rate limits
+            items_collected = 0
             
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
@@ -592,10 +673,10 @@ class UpdateScheduler:
 
 
 def create_daily_scheduler() -> UpdateScheduler:
-    """Create a scheduler configured for daily updates at 9 AM."""
+    """Create a scheduler configured for daily updates at 7 AM (GMT+8)."""
     config: ScheduleConfig = {
         "frequency": ScheduleFrequency.DAILY,
-        "hour": 9,
+        "hour": 7,
         "minute": 0,
         "enabled": True,
         "max_runtime_hours": 2.0,
@@ -629,18 +710,19 @@ if __name__ == "__main__":
         print("\nRunning test update (will skip if not scheduled)...")
         result = scheduler.run_scheduled_update()
         
-        print(f"\nUpdate result: {result['status']}")
-        print(f"Items collected: {result['items_collected']}")
-        print(f"Items updated: {result['items_updated']}")
+        print(f"\nUpdate result: {result.get('status', 'unknown')}")
+        if 'items_collected' in result:
+            print(f"Items collected: {result['items_collected']}")
+            print(f"Items updated: {result['items_updated']}")
         
-        if result["errors"]:
+        if result.get("errors"):
             print(f"Errors: {result['errors']}")
         
         print("\nExecution history:")
         history = scheduler.get_execution_history(limit=3)
         for entry in history:
             print(f"  {entry['start_time']}: {entry['status']} "
-                  f"(collected: {entry['items_collected']})")
+                  f"(collected: {entry.get('items_collected', 'N/A')})")
         
         print("\n✅ Scheduler test completed")
         

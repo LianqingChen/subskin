@@ -1,0 +1,15 @@
+[Unit]
+Description=SubSkin Daily Update Scheduler
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/subskin
+ExecStart=/root/subskin/.venv/bin/python -m src.scheduler.update_scheduler
+Restart=always
+RestartSec=60
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

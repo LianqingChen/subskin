@@ -269,7 +269,7 @@ def test_create_daily_scheduler() -> None:
 
     try:
         assert scheduler.config["frequency"] == ScheduleFrequency.DAILY
-        assert scheduler.config["hour"] == 9
+        assert scheduler.config["hour"] == 7
         assert scheduler.config["minute"] == 0
         assert scheduler.config["enabled"] is True
 

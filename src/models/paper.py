@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from enum import Enum
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 class PaperSource(str, Enum):
@@ -108,7 +108,8 @@ class Paper(BaseModel):
         description="Whether paper has been summarized"
     )
     
-    @validator('pub_date')
+    @field_validator('pub_date')
+    @classmethod
     def validate_pub_date(cls, v):
         """Validate publication date format."""
         if v is None:
@@ -137,7 +138,8 @@ class Paper(BaseModel):
         # If can't parse, return as-is with warning
         return v
     
-    @validator('doi')
+    @field_validator('doi')
+    @classmethod
     def validate_doi(cls, v):
         """Validate DOI format."""
         if v is None:
@@ -153,7 +155,8 @@ class Paper(BaseModel):
         
         return v
     
-    @validator('url')
+    @field_validator('url')
+    @classmethod
     def validate_url(cls, v):
         """Validate URL format."""
         if v is None:
@@ -184,7 +187,7 @@ class Paper(BaseModel):
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert paper to dictionary."""
-        return self.dict()
+        return self.model_dump()
     
     def get_identifiers(self) -> Dict[str, str]:
         """Get all identifiers for the paper."""
@@ -219,8 +222,7 @@ class PaperUpdate(BaseModel):
     translated: Optional[bool] = None
     summarized: Optional[bool] = None
     
-    class Config:
-        extra = "forbid"  # Don't allow extra fields
+    model_config = ConfigDict(extra="forbid")  # Don't allow extra fields
 
 
 class PaperSearchResult(BaseModel):

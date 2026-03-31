@@ -2,6 +2,8 @@
 
 Generates patient-friendly Chinese summaries of vitiligo research papers,
 extracting key treatment methods, results, and conclusions.
+
+Supports both OpenAI and Volcengine (火山引擎) OpenAI-compatible API.
 """
 
 from __future__ import annotations
@@ -15,6 +17,7 @@ import time
 
 from openai import APIConnectionError, APITimeoutError, OpenAI, RateLimitError
 
+from src.config import settings
 from src.utils.cache import Cache
 from src.utils.rate_limiter import RateLimiter
 
@@ -54,6 +57,9 @@ class SummarizerError(Exception):
 class Summarizer:
     """Generate patient-friendly Chinese summaries of medical paper abstracts.
 
+    Supports both OpenAI and Volcengine (火山引擎) OpenAI-compatible API.
+    When Volcengine API key is configured, it will be used automatically.
+
     The summarizer wraps the OpenAI ChatCompletion API and integrates
     rate-limiting and caching to operate within API quotas and avoid
     redundant work.
@@ -83,23 +89,35 @@ class Summarizer:
 
     def __init__(
         self,
-        model: str = "gpt-3.5-turbo",
+        model: Optional[str] = None,
         api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
         cache: Optional[Cache] = None,
         rate_limiter: Optional[RateLimiter] = None,
         cache_ttl: float = _DEFAULT_CACHE_TTL,
         max_retries: int = _MAX_RETRIES,
         temperature: float = 0.3,
     ) -> None:
-        resolved_key = api_key or os.getenv("OPENAI_API_KEY")
+        # Auto-detect API configuration from settings
+        if settings.VOLCENGINE_API_KEY:
+            # Use Volcengine (火山引擎) API
+            resolved_key = api_key or settings.VOLCENGINE_API_KEY
+            resolved_base_url = base_url or settings.VOLCENGINE_BASE_URL
+            resolved_model = model or settings.VOLCENGINE_MODEL
+        else:
+            # Fallback to OpenAI API
+            resolved_key = api_key or os.getenv("OPENAI_API_KEY")
+            resolved_base_url = base_url or "https://api.openai.com/v1"
+            resolved_model = model or "gpt-3.5-turbo"
+
         if not resolved_key:
             raise ValueError(
-                "An OpenAI API key is required. Provide it via the 'api_key' "
-                "parameter or the OPENAI_API_KEY environment variable."
+                "An API key is required. Provide it via the 'api_key' "
+                "parameter or set VOLCENGINE_API_KEY in your environment."
             )
 
-        self._client = OpenAI(api_key=resolved_key)
-        self._model = model
+        self._client = OpenAI(api_key=resolved_key, base_url=resolved_base_url)
+        self._model = resolved_model
         self._cache = cache
         self._rate_limiter = rate_limiter or RateLimiter(_DEFAULT_RATE_LIMIT)
         self._cache_ttl = cache_ttl

@@ -29,6 +29,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from src.config import settings
 from src.exceptions import APIError
 from src.utils.cache import Cache
 from src.utils.rate_limiter import RateLimiter
@@ -62,7 +63,10 @@ _DEFAULT_RATE_LIMIT: float = 10.0 / 60.0
 
 
 class Translator:
-    """Translate medical paper abstracts from English to Chinese via OpenAI.
+    """Translate medical paper abstracts from English to Chinese via OpenAI-compatible API.
+
+    Supports both OpenAI and Volcengine (火山引擎) API. When Volcengine API
+    key is configured, it will be used automatically.
 
     Integrates :class:`~src.utils.rate_limiter.RateLimiter` to throttle API
     calls and :class:`~src.utils.cache.Cache` to avoid redundant requests for
@@ -70,9 +74,9 @@ class Translator:
     server errors) are retried with exponential backoff.
 
     Args:
-        model: OpenAI chat model identifier.
-        api_key: OpenAI API key.  Falls back to the ``OPENAI_API_KEY``
-            environment variable when omitted.
+        model: Model identifier.
+        api_key: API key.  Auto-discovers from environment settings.
+        base_url: Base URL for the API.  Auto-discovers from environment settings.
         cache: :class:`Cache` instance for storing translations.  An in-memory
             cache is created when ``None``.
         rate_limiter: :class:`RateLimiter` instance.  Defaults to
@@ -87,7 +91,7 @@ class Translator:
 
     Example::
 
-        translator = Translator(api_key="sk-...", model="gpt-4")
+        translator = Translator()
         translation = translator.translate(
             "Vitiligo is a chronic skin disorder..."
         )
@@ -95,20 +99,32 @@ class Translator:
 
     def __init__(
         self,
-        model: str = "gpt-3.5-turbo",
+        model: Optional[str] = None,
         api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
         cache: Optional[Cache] = None,
         rate_limiter: Optional[RateLimiter] = None,
         cache_ttl: float = _DEFAULT_CACHE_TTL,
         max_retries: int = 3,
         system_prompt: str = _SYSTEM_PROMPT,
     ) -> None:
-        resolved_key = api_key or os.getenv("OPENAI_API_KEY")
-        if not resolved_key:
-            raise APIError("OPENAI_API_KEY is not set")
+        # Auto-detect API configuration from settings
+        if settings.VOLCENGINE_API_KEY:
+            # Use Volcengine (火山引擎) API
+            resolved_key = api_key or settings.VOLCENGINE_API_KEY
+            resolved_base_url = base_url or settings.VOLCENGINE_BASE_URL
+            resolved_model = model or settings.VOLCENGINE_MODEL
+        else:
+            # Fallback to OpenAI API
+            resolved_key = api_key or os.getenv("OPENAI_API_KEY")
+            resolved_base_url = base_url or "https://api.openai.com/v1"
+            resolved_model = model or "gpt-3.5-turbo"
 
-        self._client = OpenAI(api_key=resolved_key)
-        self._model = model
+        if not resolved_key:
+            raise APIError("No API key configured. Please set either OPENAI_API_KEY or VOLCENGINE_API_KEY")
+
+        self._client = OpenAI(api_key=resolved_key, base_url=resolved_base_url)
+        self._model = resolved_model
         self._cache = cache or Cache()
         self._rate_limiter = rate_limiter or RateLimiter(_DEFAULT_RATE_LIMIT)
         self._cache_ttl = cache_ttl
