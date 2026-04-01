@@ -1,0 +1,15 @@
+[Unit]
+Description=SubSkin Backend API Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/subskin/web/backend
+ExecStart=/root/subskin/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=10
+Environment="PATH=/root/subskin/.venv/bin:$PATH"
+
+[Install]
+WantedBy=multi-user.target

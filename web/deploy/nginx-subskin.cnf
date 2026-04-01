@@ -1,0 +1,32 @@
+# SubSkin Nginx 配置 for subskin.cn
+# 放在 /etc/nginx/sites-available/subskin
+# 启用: ln -s /etc/nginx/sites-available/subskin /etc/nginx/sites-enabled/subskin
+
+server {
+    listen 80;
+    server_name subskin.cn www.subskin.cn;
+
+    # 前端静态文件
+    location / {
+        root /root/subskin/web/vitepress/docs/.vitepress/dist;
+        try_files $uri $uri/ /index.html;
+        expires 7d;
+    }
+
+    # API 后端代理
+    location /api {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_read_timeout 300s;  # RAG 回答可能比较慢
+    }
+
+    # 静态资源缓存
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control public;
+    }
+}
