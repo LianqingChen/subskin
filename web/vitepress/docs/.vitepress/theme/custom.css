@@ -1,0 +1,170 @@
+/**
+ * SubSkin Custom Theme Overrides - Medical-tech Aesthetic
+ *
+ * Overrides default VitePress styles with our medical design system tokens.
+ * Focus on:
+ * - Patient-friendly readability (larger font, increased line-height)
+ * - Calm, professional blue/teal palette
+ * - Clean spacing and soft shadows
+ * - Accessible contrast ratios
+ */
+
+@import "./vars.css";
+
+/* Base typography - improve readability for patients */
+:root {
+  --vp-c-brand: var(--subskin-color-primary);
+  --vp-c-brand-light: var(--subskin-color-primary-light);
+  --vp-c-brand-dark: var(--subskin-color-primary-dark);
+  --vp-home-hero-name-background: -webkit-linear-gradient(
+    120deg,
+    var(--subskin-color-primary),
+    var(--subskin-color-secondary)
+  );
+
+  /* Increase base font size for patients */
+  --vp-font-size-base: var(--subskin-font-size-base);
+}
+
+/* Increase line height for better readability */
+.VPSite {
+  line-height: var(--subskin-line-height-base);
+}
+
+/* Improve content container spacing */
+.VPDoc {
+  padding-top: var(--subskin-space-8);
+  padding-bottom: var(--subskin-space-16);
+}
+
+.VPDoc .content {
+  max-width: 900px;
+}
+
+/* Improve heading scale - more prominent for patient scanning */
+.content h1 {
+  font-size: var(--subskin-font-size-h1);
+  color: var(--subskin-color-text);
+  margin-bottom: var(--subskin-space-6);
+}
+
+.content h2 {
+  font-size: var(--subskin-font-size-h2);
+  color: var(--subskin-color-text);
+  margin-top: var(--subskin-space-8);
+  margin-bottom: var(--subskin-space-4);
+  padding-bottom: var(--subskin-space-2);
+  border-bottom: 1px solid var(--subskin-color-border);
+}
+
+.content h3 {
+  font-size: var(--subskin-font-size-h3);
+  color: var(--subskin-color-text);
+  margin-top: var(--subskin-space-6);
+  margin-bottom: var(--subskin-space-3);
+}
+
+.content h4 {
+  font-size: var(--subskin-font-size-h4);
+  color: var(--subskin-color-text);
+  margin-top: var(--subskin-space-4);
+  margin-bottom: var(--subskin-space-2);
+}
+
+/* Improve paragraph spacing */
+.content p {
+  margin-bottom: var(--subskin-space-4);
+  line-height: var(--subskin-line-height-base);
+}
+
+/* Improve list spacing */
+.content ul, .content ol {
+  margin-bottom: var(--subskin-space-4);
+}
+
+.content li {
+  margin-bottom: var(--subskin-space-2);
+  line-height: var(--subskin-line-height-base);
+}
+
+/* Custom callout for medical disclaimer - more prominent */
+.custom-disclaimer {
+  background-color: var(--subskin-color-bg-soft);
+  border-left: 4px solid var(--subskin-color-warning);
+  border-radius: var(--subskin-radius-md);
+  padding: var(--subskin-space-4);
+  margin: var(--subskin-space-6) 0;
+}
+
+.custom-disclaimer-title {
+  font-weight: 600;
+  color: var(--subskin-color-warning);
+  margin-bottom: var(--subskin-space-2);
+}
+
+/* Custom card for content sections - cleaner look */
+.content-card {
+  background-color: var(--subskin-color-bg);
+  border: 1px solid var(--subskin-color-border);
+  border-radius: var(--subskin-radius-lg);
+  padding: var(--subskin-space-6);
+  margin-bottom: var(--subskin-space-6);
+  box-shadow: var(--subskin-shadow-sm);
+}
+
+/* Improve sidebar */
+.VPSidebar {
+  padding-top: var(--subskin-space-8);
+}
+
+.sidebar {
+  padding-bottom: var(--subskin-space-16);
+}
+
+/* Improve navbar */
+.VPNavBar {
+  background-color: rgba(var(--subskin-color-bg), 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--subskin-color-border);
+}
+
+/* Hero section on homepage */
+.VPHero {
+  padding-top: var(--subskin-space-12);
+  padding-bottom: var(--subskin-space-12);
+}
+
+.vp-doc a {
+  color: var(--subskin-color-primary);
+  text-decoration: none;
+}
+
+.vp-doc a:hover {
+  color: var(--subskin-color-primary-light);
+  text-decoration: underline;
+}
+
+/* Better code block styling */
+.vp-doc div[class*='language-'] {
+  border-radius: var(--subskin-radius-md);
+  box-shadow: var(--subskin-shadow-sm);
+  margin: var(--subskin-space-6) 0;
+}
+
+/* Accessibility: improve focus visible */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--subskin-color-primary);
+  outline-offset: 2px;
+  border-radius: var(--subskin-radius-sm);
+}
+
+/* Dark mode support (optional) - keep same blue palette */
+html.dark {
+  --subskin-color-text: #e2e8f0;
+  --subskin-color-text-light: #cbd5e0;
+  --subskin-color-text-muted: #a0aec0;
+  --subskin-color-border: #2d3748;
+  --subskin-color-bg: #1a202c;
+  --subskin-color-bg-soft: #2d3748;
+}
