@@ -82,6 +82,7 @@ export default defineConfig({
       { icon: 'github', link: 'https://github.com/yourusername/subskin' }
     ],
     logo: '/subskin_logo.png',
+    logoLink: '/',
     search: {
       provider: 'local'
     },
