@@ -1,3 +1,9 @@
+"""Configured logging utilities for SubSkin project.
+
+This module provides a helper function to create consistently configured
+loggers that output to both console and optional file with proper formatting.
+"""
+
 from __future__ import annotations
 
 import logging

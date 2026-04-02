@@ -5,7 +5,7 @@ export default defineConfig({
   description: "白癜风百科全书 - 利用 AI 赋能，缩短医学前沿与普通患者之间的知识鸿沟",
   head: [
     ['link', { rel: 'icon', href: '/subskin_logo.png' }],
-    ['meta', { name: 'theme-color', content: '#3eaf7c' }]
+    ['meta', { name: 'theme-color', content: '#2b6cb0' }]
   ],
   themeConfig: {
     nav: [

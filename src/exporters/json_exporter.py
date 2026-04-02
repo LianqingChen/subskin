@@ -1,3 +1,10 @@
+"""JSON exporter for SubSkin project.
+
+This module provides a JSONExporter that exports crawled paper and trial
+data to JSON files with proper date-based directory structure and
+serialization of datetime objects.
+"""
+
 import json
 import logging
 from datetime import datetime

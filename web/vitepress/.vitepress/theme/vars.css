@@ -1,0 +1,62 @@
+/**
+ * SubSkin Medical-tech Design System - Color Palette
+ *
+ * Calm, professional palette for medical/healthcare application:
+ * - Primary: Soft blue - represents trust, medical science, calmness
+ * - Secondary: Teal - represents healing, cleanliness
+ * - Neutral: Clean grays for readability
+ * - Background: Pure white with subtle spacing for patient readability
+ */
+
+:root {
+  /* Brand Colors - Medical Blue Palette */
+  --subskin-color-primary: #2b6cb0;
+  --subskin-color-primary-light: #4a8bdf;
+  --subskin-color-primary-dark: #1a4980;
+  --subskin-color-secondary: #319795;
+  --subskin-color-secondary-light: #4fd1c5;
+  --subskin-color-secondary-dark: #236763;
+
+  /* Semantic Colors */
+  --subskin-color-success: #2f855a;
+  --subskin-color-warning: #d69e2e;
+  --subskin-color-danger: #e53e3e;
+  --subskin-color-info: #3182ce;
+
+  /* Neutral Colors */
+  --subskin-color-text: #2d3748;
+  --subskin-color-text-light: #4a5568;
+  --subskin-color-text-muted: #718096;
+  --subskin-color-border: #e2e8f0;
+  --subskin-color-bg: #ffffff;
+  --subskin-color-bg-soft: #f7fafc;
+
+  /* Spacing Scale */
+  --subskin-space-1: 0.25rem;
+  --subskin-space-2: 0.5rem;
+  --subskin-space-3: 0.75rem;
+  --subskin-space-4: 1rem;
+  --subskin-space-6: 1.5rem;
+  --subskin-space-8: 2rem;
+  --subskin-space-12: 3rem;
+  --subskin-space-16: 4rem;
+
+  /* Typography Scale - Patient Friendly Readability */
+  --subskin-font-size-base: 18px;
+  --subskin-line-height-base: 1.7;
+  --subskin-font-size-h1: 2rem;
+  --subskin-font-size-h2: 1.5rem;
+  --subskin-font-size-h3: 1.25rem;
+  --subskin-font-size-h4: 1.125rem;
+  --subskin-font-size-small: 0.875rem;
+
+  /* Border Radius */
+  --subskin-radius-sm: 0.25rem;
+  --subskin-radius-md: 0.5rem;
+  --subskin-radius-lg: 0.75rem;
+
+  /* Shadows - Soft for medical aesthetic */
+  --subskin-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --subskin-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --subskin-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}

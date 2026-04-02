@@ -1,3 +1,10 @@
+"""Markdown exporter for SubSkin project.
+
+This module provides a MarkdownExporter that converts processed paper and trial
+data into patient-friendly Markdown files suitable for VitePress documentation
+with proper YAML frontmatter and disclaimers.
+"""
+
 import logging
 from datetime import datetime
 from pathlib import Path

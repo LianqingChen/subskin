@@ -1,3 +1,10 @@
+"""PubMed crawler for the SubSkin project.
+
+This module provides a crawler for fetching vitiligo-related papers from PubMed
+using the metapub library with proper rate limiting, caching, and exponential
+backoff retry for transient errors.
+"""
+
 from __future__ import annotations
 
 import logging

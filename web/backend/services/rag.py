@@ -14,13 +14,25 @@ import openai
 
 
 def get_embedding(text: str) -> List[float]:
-    """获取文本嵌入向量"""
+    """Get embedding vector for text using OpenAI compatible API
+
+    Args:
+        text: Input text to embed
+
+    Returns:
+        Embedding vector as list of floats
+
+    Raises:
+        openai.APIError: If API call fails
+        IndexError: If response doesn't contain embedding data
+    """
+    model = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
     client = openai.OpenAI(
         api_key=os.getenv("OPENAI_API_KEY"),
         base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
     )
     response = client.embeddings.create(
-        model=os.getenv("EMBEDDING_MODEL", "text-embedding-3-small"),
+        model=model,
         input=text
     )
     return response.data[0].embedding
@@ -35,7 +47,16 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
 
 
 def search_documents(db: Session, query: str, top_k: int = 5) -> List[Tuple[Document, float]]:
-    """基于向量搜索查找相关文档"""
+    """基于向量搜索查找相关文档
+
+    Args:
+        db: Database session
+        query: User query text
+        top_k: Maximum number of results to return
+
+    Returns:
+        List of (document, similarity) tuples sorted by similarity descending
+    """
     # 获取查询向量
     query_embedding = get_embedding(query)
 
@@ -46,9 +67,17 @@ def search_documents(db: Session, query: str, top_k: int = 5) -> List[Tuple[Docu
     results = []
     for doc in docs:
         if doc.embedding:
-            doc_embedding = json.loads(doc.embedding)
-            similarity = cosine_similarity(query_embedding, doc_embedding)
-            results.append((doc, similarity))
+            try:
+                doc_embedding = json.loads(doc.embedding)
+                if isinstance(doc_embedding, list) and all(isinstance(x, float) for x in doc_embedding):
+                    similarity = cosine_similarity(query_embedding, doc_embedding)
+                    results.append((doc, similarity))
+                else:
+                    # Invalid embedding format - skip this document
+                    continue
+            except json.JSONDecodeError:
+                # Invalid JSON embedding - skip this document
+                continue
 
     # 按相似度排序返回top_k
     results.sort(key=lambda x: x[1], reverse=True)
@@ -176,15 +205,35 @@ def answer_question(
 
 
 def add_document(db: Session, title: str, content: str, source: str = None, source_url: str = None, category: str = None) -> Document:
-    """添加文档到知识库并计算嵌入"""
-    embedding = get_embedding(content[:8000])  # 限制长度
+    """添加文档到知识库并计算 embedding
+
+    Args:
+        db: Database session
+        title: Document title
+        content: Document content text
+        source: Source name (e.g. "PubMed", "ClinicalTrials")
+        source_url: Original source URL
+        category: Content category (e.g. "treatment", "causes")
+
+    Returns:
+        Created Document object
+
+    Raises:
+        openai.APIError: If embedding generation fails
+    """
+    # Limit content length to stay within API token limits
+    content_truncated = content[:8000]
+    embedding = get_embedding(content_truncated)
+    # Serialize embedding as JSON string
+    embedding_json = json.dumps(embedding)
+
     doc = Document(
         title=title,
         content=content,
         source=source,
         source_url=source_url,
         category=category,
-        embedding=json.dumps(embedding)
+        embedding=embedding_json
     )
     db.add(doc)
     db.commit()
