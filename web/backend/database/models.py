@@ -10,8 +10,8 @@ from .database import Base
 
 
 class SMSCode(Base):
-    """短信验证码
-    """
+    """短信验证码"""
+
     __tablename__ = "sms_codes"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -20,17 +20,23 @@ class SMSCode(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     expired_at = Column(DateTime, nullable=False)
     used = Column(Boolean, default=False)
+    attempt_count = Column(Integer, default=0)  # 验证尝试次数
+    locked = Column(Boolean, default=False)  # 是否已锁定（暴力破解）
 
 
 class User(Base):
-    """用户模型
-    """
+    """用户模型"""
+
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=True)
     phone = Column(String, unique=True, index=True, nullable=True)
+    wechat_id = Column(String, unique=True, index=True, nullable=True)  # 微信开放平台ID
+    alipay_id = Column(
+        String, unique=True, index=True, nullable=True
+    )  # 支付宝开放平台ID
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
@@ -41,8 +47,8 @@ class User(Base):
 
 
 class Comment(Base):
-    """评论模型
-    """
+    """评论模型"""
+
     __tablename__ = "comments"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -57,8 +63,8 @@ class Comment(Base):
 
 
 class Document(Base):
-    """知识库文档（用于RAG）
-    """
+    """知识库文档（用于RAG）"""
+
     __tablename__ = "documents"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -73,8 +79,8 @@ class Document(Base):
 
 
 class Conversation(Base):
-    """对话历史（用于RAG多轮对话）
-    """
+    """对话历史（用于RAG多轮对话）"""
+
     __tablename__ = "conversations"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -85,8 +91,8 @@ class Conversation(Base):
 
 
 class Message(Base):
-    """单条消息
-    """
+    """单条消息"""
+
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)

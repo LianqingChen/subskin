@@ -549,6 +549,35 @@
       cursor: pointer;
       font-size: 15px;
     }
+
+    /* 登录方式切换标签 */
+    .login-tab {
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .login-tab:hover {
+      color: #111827;
+      background: #f3f4f6;
+    }
+
+    .login-tab.active {
+      color: #10b981;
+      border-bottom-color: #10b981;
+      font-weight: 500;
+    }
+
+    .login-method {
+      padding: 12px 0;
+    }
+
+    .login-method.hidden {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -647,24 +676,79 @@
   <div class="modal" id="login-modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>手机号登录</h2>
+        <h2>登录</h2>
         <button class="close-btn" id="close-login">&times;</button>
       </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>手机号码</label>
-          <input type="tel" id="login-phone" placeholder="请输入手机号">
+      
+      <!-- 登录方式切换标签 -->
+      <div style="padding: 0 24px; border-bottom: 1px solid #e5e7eb;">
+        <div style="display: flex; gap: 8px;">
+          <div class="login-tab active" data-method="phone">手机号</div>
+          <div class="login-tab" data-method="wechat">微信</div>
+          <div class="login-tab" data-method="email">邮箱</div>
         </div>
-        <div class="form-group">
-          <label>验证码</label>
-          <div style="display: flex; gap: 12px;">
-            <input type="text" id="login-code" placeholder="请输入验证码">
-            <button class="btn btn-primary" id="send-code" style="flex-shrink: 0; width: 120px;">发送验证码</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- 手机号方式 -->
+        <div id="phone-method" class="login-method">
+          <div class="form-group">
+            <label>手机号码</label>
+            <input type="tel" id="login-phone" placeholder="请输入手机号">
+          </div>
+          <div class="form-group">
+            <label>验证码</label>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+              <input type="text" class="code-input" maxlength="1" inputmode="numeric" style="width: 40px; height: 48px; text-align: center; font-size: 18px;">
+              <input type="text" class="code-input" maxlength="1" inputmode="numeric" style="width: 40px; height: 48px; text-align: center; font-size: 18px;">
+              <input type="text" class="code-input" maxlength="1" inputmode="numeric" style="width: 40px; height: 48px; text-align: center; font-size: 18px;">
+              <input type="text" class="code-input" maxlength="1" inputmode="numeric" style="width: 40px; height: 48px; text-align: center; font-size: 18px;">
+              <input type="text" class="code-input" maxlength="1" inputmode="numeric" style="width: 40px; height: 48px; text-align: center; font-size: 18px;">
+              <input type="text" class="code-input" maxlength="1" inputmode="numeric" style="width: 40px; height: 48px; text-align: center; font-size: 18px;">
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <button class="btn btn-primary" id="send-code" style="flex-shrink: 0; width: 120px;">发送验证码</button>
+              <div id="code-hint" style="font-size: 12px; color: #666;">6位数字验证码</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 微信方式 -->
+        <div id="wechat-method" class="login-method" style="display: none;">
+          <div style="text-align: center; padding: 20px;">
+            <div id="wechat-qr-container" style="display: flex; justify-content: center; margin-bottom: 16px;">
+              <img id="wechat-qr-code" src="" alt="微信扫码登录" style="width: 300px; height: 300px; display: none;">
+            </div>
+            <p id="wechat-status" style="color: #6b7280; font-size: 14px;">正在生成二维码...</p>
+            <button class="btn btn-primary" id="refresh-qr" style="display: none; margin-top: 12px;">刷新二维码</button>
+          </div>
+        </div>
+        
+        <!-- 邮箱方式 -->
+        <div id="email-method" class="login-method" style="display: none;">
+          <div class="form-group">
+            <label>邮箱</label>
+            <input type="email" id="login-email" placeholder="请输入邮箱">
+          </div>
+          <div class="form-group">
+            <label>密码</label>
+            <div style="position: relative;">
+              <input type="password" id="login-password" placeholder="请输入密码" style="padding-right: 40px;">
+              <button id="toggle-password" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11-8-11-8z"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div style="text-align: right; margin-top: 12px;">
+            <a href="#" style="color: #3b82f6; font-size: 14px; text-decoration: none;" id="forgot-password">忘记密码?</a>
           </div>
         </div>
       </div>
+      
       <div class="modal-footer">
-        <button class="btn btn-primary" id="do-login">登录</button>
+        <button class="btn btn-primary" id="do-login" style="display: none;">登录</button>
       </div>
     </div>
   </div>
@@ -754,11 +838,147 @@ function closeProfileModal() {
 
 function openLoginModal() {
   loginModal.classList.add('show');
+  // 默认显示手机号方式
+  switchLoginMethod('phone');
 }
 
 function closeLoginModal() {
   loginModal.classList.remove('show');
+  // 停止微信扫码轮询
+  if (window.wechatPollInterval) {
+    clearInterval(window.wechatPollInterval);
+    window.wechatPollInterval = null;
+  }
 }
+
+// 切换登录方式
+function switchLoginMethod(method) {
+  // 更新标签样式
+  document.querySelectorAll('.login-tab').forEach(tab => {
+    tab.classList.remove('active');
+    if (tab.dataset.method === method) {
+      tab.classList.add('active');
+    }
+  });
+
+  // 隐藏所有登录方式
+  document.querySelectorAll('.login-method').forEach(el => {
+    el.style.display = 'none';
+  });
+
+  // 显示选中的登录方式
+  const methodEl = document.getElementById(`${method}-method`);
+  if (methodEl) {
+    methodEl.style.display = 'block';
+  }
+
+  // 处理登录按钮显示
+  const loginBtn = document.getElementById('do-login');
+  if (method === 'wechat') {
+    loginBtn.style.display = 'none';
+    // 加载微信二维码
+    loadWechatQRCode();
+  } else {
+    loginBtn.style.display = 'block';
+  }
+}
+
+// 登录方式切换事件
+document.querySelectorAll('.login-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const method = tab.dataset.method;
+    switchLoginMethod(method);
+  });
+});
+
+// 微信二维码相关
+let wechatState = null;
+let wechatQRTimeout = null;
+
+async function loadWechatQRCode() {
+  const qrContainer = document.getElementById('wechat-qr-code');
+  const statusEl = document.getElementById('wechat-status');
+  const refreshBtn = document.getElementById('refresh-qr');
+
+  try {
+    // 获取二维码URL
+    const res = await fetch(API_BASE + '/oauth/wechat/auth-url');
+    const data = await res.json();
+
+    if (data.auth_url) {
+      // 生成二维码（使用公共QR API）
+      qrContainer.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data.auth_url)}`;
+      qrContainer.style.display = 'block';
+      statusEl.textContent = '请使用微信扫描二维码登录';
+
+      // 开始轮询扫码状态
+      startWechatPolling();
+    }
+  } catch (e) {
+    statusEl.textContent = '二维码加载失败，请刷新重试';
+    refreshBtn.style.display = 'block';
+  }
+}
+
+function startWechatPolling() {
+  // 清除之前的轮询
+  if (window.wechatPollInterval) {
+    clearInterval(window.wechatPollInterval);
+  }
+
+  const statusEl = document.getElementById('wechat-status');
+
+  // 每2秒轮询一次
+  window.wechatPollInterval = setInterval(async () => {
+    try {
+      // 这里应该有一个查询扫码状态的API
+      // 暂时使用定时器模拟30秒超时
+    } catch (e) {
+      console.error('轮询失败:', e);
+    }
+  }, 2000);
+
+  // 30秒后超时
+  wechatQRTimeout = setTimeout(() => {
+    clearInterval(window.wechatPollInterval);
+    statusEl.textContent = '二维码已过期，请刷新';
+    document.getElementById('refresh-qr').style.display = 'block';
+  }, 30000);
+}
+
+// 刷新二维码
+document.getElementById('refresh-qr').addEventListener('click', () => {
+  loadWechatQRCode();
+});
+
+// 切换密码显示
+document.getElementById('toggle-password').addEventListener('click', () => {
+  const passwordInput = document.getElementById('login-password');
+  const toggleBtn = document.getElementById('toggle-password');
+
+  if (passwordInput.type === 'password') {
+    passwordInput.type = 'text';
+    toggleBtn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20.07H5a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3h1a1 1 0 0 0 0-2v-4a1 1 0 0 0 0-2V9a3 3 0 0 1 3-3h9.09a10 10 0 0 1 2.91 2.91z"></path>
+      <path d="M12 12v3a3 3 0 0 0 3-3h-3a3 3 0 0 0-3 3V12z"></path>
+      </svg>
+    `;
+  } else {
+    passwordInput.type = 'password';
+    toggleBtn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11-8-11-8z"></path>
+      </svg>
+    `;
+  }
+});
+
+// 邮箱登录
+document.getElementById('forgot-password').addEventListener('click', (e) => {
+  e.preventDefault();
+  alert('忘记密码功能暂未实现，请联系管理员重置密码');
+});
 
 document.getElementById('close-profile').addEventListener('click', closeProfileModal);
 document.getElementById('close-login').addEventListener('click', closeLoginModal);
@@ -785,52 +1005,249 @@ document.getElementById('send-code').addEventListener('click', async () => {
     alert('请输入手机号');
     return;
   }
+  
+  const sendBtn = document.getElementById('send-code');
+  sendBtn.disabled = true;
+  
   try {
     const res = await fetch(API_BASE + '/user/send-sms', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({phone})
     });
+    
+    if (res.status === 429) {
+      // 频率限制错误
+      const errorData = await res.json();
+      alert(errorData.detail || '请求过于频繁，请稍后再试');
+      startCountdown(60); // 仍然启动60秒倒计时
+      return;
+    }
+    
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+    
     const data = await res.json();
     if (data.code) {
       alert('验证码已发送');
+      startCountdown(60); // 启动60秒倒计时
     } else {
       alert(data.message || '发送失败');
+      sendBtn.disabled = false;
     }
   } catch (e) {
     alert('网络错误');
+    sendBtn.disabled = false;
   }
+});
+
+// 倒计时函数
+function startCountdown(seconds) {
+  const sendBtn = document.getElementById('send-code');
+  let remaining = seconds;
+  
+  // 更新按钮文本
+  sendBtn.textContent = `${remaining}秒后重发`;
+  
+  const countdownInterval = setInterval(() => {
+    remaining--;
+    
+    if (remaining <= 0) {
+      clearInterval(countdownInterval);
+      sendBtn.textContent = '发送验证码';
+      sendBtn.disabled = false;
+    } else {
+      sendBtn.textContent = `${remaining}秒后重发`;
+    }
+  }, 1000);
+}
+
+// 获取验证码值（从6个输入框）
+function getVerificationCode() {
+  const inputs = document.querySelectorAll('.code-input');
+  let code = '';
+  for (const input of inputs) {
+    code += input.value.trim();
+  }
+  return code;
+}
+
+// 初始化验证码输入框事件
+function initCodeInputs() {
+  const inputs = document.querySelectorAll('.code-input');
+  
+  // 聚焦第一个输入框
+  if (inputs[0]) {
+    inputs[0].focus();
+  }
+  
+  // 为每个输入框添加事件监听器
+  inputs.forEach((input, index) => {
+    // 输入事件
+    input.addEventListener('input', (e) => {
+      const value = e.target.value;
+      
+      // 只允许数字
+      if (!/^\d*$/.test(value)) {
+        e.target.value = '';
+        return;
+      }
+      
+      // 如果输入了数字，跳转到下一个输入框
+      if (value.length === 1 && index < inputs.length - 1) {
+        inputs[index + 1].focus();
+      }
+      
+      // 更新提示
+      updateCodeHint();
+    });
+    
+    // 按键事件（处理退格键）
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !e.target.value && index > 0) {
+        inputs[index - 1].focus();
+      }
+    });
+    
+    // 粘贴事件
+    input.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const pastedData = e.clipboardData.getData('text');
+      
+      // 只处理数字
+      if (/^\d+$/.test(pastedData)) {
+        const digits = pastedData.split('');
+        
+        // 填充所有输入框
+        inputs.forEach((inputEl, idx) => {
+          if (idx < digits.length) {
+            inputEl.value = digits[idx];
+          } else {
+            inputEl.value = '';
+          }
+        });
+        
+        // 聚焦到最后一个输入框或下一个可用的输入框
+        const focusIndex = Math.min(digits.length, inputs.length - 1);
+        inputs[focusIndex].focus();
+        
+        // 更新提示
+        updateCodeHint();
+      }
+    });
+  });
+}
+
+// 更新验证码提示
+function updateCodeHint() {
+  const code = getVerificationCode();
+  const hintEl = document.getElementById('code-hint');
+  
+  if (code.length === 6) {
+    hintEl.textContent = '验证码已完整';
+    hintEl.style.color = '#52c41a';
+  } else {
+    hintEl.textContent = `6位数字验证码（已输入${code.length}/6）`;
+    hintEl.style.color = '#666';
+  }
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', () => {
+  initCodeInputs();
 });
 
 // 登录
 document.getElementById('do-login').addEventListener('click', async () => {
-  const phone = document.getElementById('login-phone').value.trim();
-  const code = document.getElementById('login-code').value.trim();
-  try {
-    const res = await fetch(API_BASE + '/user/login-by-phone', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({phone, code})
-    });
-    const data = await res.json();
-    if (data.access_token) {
-      localStorage.setItem('subskin_token', data.access_token);
-      currentToken = data.access_token;
-      // 获取用户信息
-      const meRes = await fetch(API_BASE + '/user/me', {
-        headers: {'Authorization': 'Bearer ' + currentToken}
-      });
-      const meData = await meRes.json();
-      localStorage.setItem('subskin_user', JSON.stringify(meData));
-      currentUser = meData;
-      closeLoginModal();
-      updateAvatar();
-      location.reload();
-    } else {
-      alert(data.detail || '登录失败');
+  const activeMethod = document.querySelector('.login-tab.active').dataset.method;
+
+  if (activeMethod === 'phone') {
+    // 手机号验证码登录
+    const phone = document.getElementById('login-phone').value.trim();
+    const code = getVerificationCode();
+
+    if (!phone) {
+      alert('请输入手机号');
+      return;
     }
-  } catch (e) {
-    alert('网络错误');
+
+    if (!code || code.length < 6) {
+      alert('请输入完整的6位验证码');
+      return;
+    }
+
+    try {
+      const res = await fetch(API_BASE + '/user/login-by-phone', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({phone, code})
+      });
+      const data = await res.json();
+      if (data.access_token) {
+        localStorage.setItem('subskin_token', data.access_token);
+        currentToken = data.access_token;
+        // 获取用户信息
+        const meRes = await fetch(API_BASE + '/user/me', {
+          headers: {'Authorization': 'Bearer ' + currentToken}
+        });
+        const meData = await meRes.json();
+        localStorage.setItem('subskin_user', JSON.stringify(meData));
+        currentUser = meData;
+        closeLoginModal();
+        updateAvatar();
+        location.reload();
+      } else {
+        alert(data.detail || '登录失败');
+      }
+    } catch (e) {
+      alert('网络错误');
+    }
+  } else if (activeMethod === 'email') {
+    // 邮箱密码登录
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    if (!email) {
+      alert('请输入邮箱');
+      return;
+    }
+
+    if (!password) {
+      alert('请输入密码');
+      return;
+    }
+
+    // 使用FormData发送表单数据
+    const formData = new FormData();
+    formData.append('username', email);
+    formData.append('password', password);
+
+    try {
+      const res = await fetch(API_BASE + '/user/login', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.access_token) {
+        localStorage.setItem('subskin_token', data.access_token);
+        currentToken = data.access_token;
+        // 获取用户信息
+        const meRes = await fetch(API_BASE + '/user/me', {
+          headers: {'Authorization': 'Bearer ' + currentToken}
+        });
+        const meData = await meRes.json();
+        localStorage.setItem('subskin_user', JSON.stringify(meData));
+        currentUser = meData;
+        closeLoginModal();
+        updateAvatar();
+        location.reload();
+      } else {
+        alert(data.detail || '登录失败');
+      }
+    } catch (e) {
+      alert('网络错误');
+    }
   }
 });
 
