@@ -7,8 +7,8 @@ import os
 import json
 from typing import List, Tuple
 from sqlalchemy.orm import Session
-from database.models import Document, Conversation, Message
-from models.rag import QuestionResponse, Source
+from web.backend.database.models import Document, Conversation, Message
+from web.backend.models.rag import QuestionResponse, Source
 
 import openai
 
@@ -26,27 +26,26 @@ def get_embedding(text: str) -> List[float]:
         openai.APIError: If API call fails
         IndexError: If response doesn't contain embedding data
     """
-    model = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+    model = os.getenv("VOLCENGINE_EMBEDDING_ENDPOINT", "text-embedding-3-small")
     client = openai.OpenAI(
-        api_key=os.getenv("OPENAI_API_KEY"),
-        base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        api_key=os.getenv("VOLCENGINE_API_KEY", os.getenv("OPENAI_API_KEY", "")),
+        base_url=os.getenv("VOLCENGINE_BASE_URL", "https://api.openai.com/v1"),
     )
-    response = client.embeddings.create(
-        model=model,
-        input=text
-    )
+    response = client.embeddings.create(model=model, input=text)
     return response.data[0].embedding
 
 
 def cosine_similarity(a: List[float], b: List[float]) -> float:
     """计算余弦相似度"""
     dot_product = sum(x * y for x, y in zip(a, b))
-    norm_a = sum(x ** 2 for x in a) ** 0.5
-    norm_b = sum(x ** 2 for x in b) ** 0.5
+    norm_a = sum(x**2 for x in a) ** 0.5
+    norm_b = sum(x**2 for x in b) ** 0.5
     return dot_product / (norm_a * norm_b) if norm_a > 0 and norm_b > 0 else 0
 
 
-def search_documents(db: Session, query: str, top_k: int = 5) -> List[Tuple[Document, float]]:
+def search_documents(
+    db: Session, query: str, top_k: int = 5
+) -> List[Tuple[Document, float]]:
     """基于向量搜索查找相关文档
 
     Args:
@@ -69,7 +68,9 @@ def search_documents(db: Session, query: str, top_k: int = 5) -> List[Tuple[Docu
         if doc.embedding:
             try:
                 doc_embedding = json.loads(doc.embedding)
-                if isinstance(doc_embedding, list) and all(isinstance(x, float) for x in doc_embedding):
+                if isinstance(doc_embedding, list) and all(
+                    isinstance(x, float) for x in doc_embedding
+                ):
                     similarity = cosine_similarity(query_embedding, doc_embedding)
                     results.append((doc, similarity))
                 else:
@@ -84,35 +85,42 @@ def search_documents(db: Session, query: str, top_k: int = 5) -> List[Tuple[Docu
     return results[:top_k]
 
 
-def generate_answer(query: str, docs: List[Document], conversation_history: List[dict] = None) -> str:
-    """根据检索到的文档生成回答"""
+def generate_answer(
+    query: str, docs: List[Document], conversation_history: List[dict] = None
+) -> str:
     client = openai.OpenAI(
-        api_key=os.getenv("OPENAI_API_KEY"),
-        base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        api_key=os.getenv("VOLCENGINE_API_KEY", os.getenv("OPENAI_API_KEY", "")),
+        base_url=os.getenv("VOLCENGINE_BASE_URL", "https://api.openai.com/v1"),
     )
 
-    # 构建上下文
-    context = "\n\n".join([
-        f"文档: {doc.title}\n内容: {doc.content[:1000]}"
-        for doc in docs
-    ])
+    context = "\n\n".join(
+        [f"文档: {doc.title}\n内容: {doc.content[:1000]}" for doc in docs]
+    )
+    system_prompt = """你是 SubSkin 白癜风知识库的 AI 助手。SubSkin 采用 AI 优先的设计理念，你是用户进入网站后第一个接触的助手，需要帮助用户找到他们需要的信息。
 
-    # 系统提示
-    system_prompt = """你是 SubSkin 白癜风知识库的 AI 助手。
 你需要基于提供的参考资料，回答用户关于白癜风的问题。
 回答要:
 1. 准确，只基于参考资料回答
 2. 通俗易懂，适合普通患者阅读，避免过于专业的术语
 3. 如果资料里没有答案，直说"这个问题在当前知识库中没有找到相关信息，建议咨询专业医生"
 4. 不胡说八道，不编造信息
-5. 最后提醒用户，本回答仅供参考，具体诊疗请遵医嘱
+5. 根据用户的问题，**最后主动推荐相关的社区板块**供用户进一步交流：
+   - 如果用户问的是刚确诊/是不是白癜风/新人问题 → 推荐去社区「新人入门」和「心情驿站」
+   - 如果用户问的是治疗经验/具体治疗方法 → 推荐去社区「治疗经验汇总」对应板块
+   - 如果用户问的是心情/心理压力 → 推荐去「心情驿站」和「心理调节」
+   - 如果用户问的是医院医生 → 推荐去「医院点评」
+   - 如果用户问的是饮食 → 推荐去「生活饮食」
+   - 推荐时给出链接指引，格式："👉 你可以去社区 [板块名称](链接) 看看更多病友的经验分享"
+6. 最后提醒用户，本回答仅供参考，具体诊疗请遵医嘱
 
-记住：你是帮助患者了解知识，给他们有用信息，缓解信息不对称。
-"""
+用户如果描述了个人情况，可以在回答后建议："如果你愿意，AI 可以帮你整理一份个性化的知识笔记，记录你的问题和答案，方便你后续查看。"
+
+记住：你是帮助患者了解知识，给他们有用信息，缓解信息不对称。用户很多是刚确诊，心理压力大，回答要多给鼓励。
+ """
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"参考资料:\n\n{context}\n\n我的问题: {query}"}
+        {"role": "user", "content": f"参考资料:\n\n{context}\n\n我的问题: {query}"},
     ]
 
     # 如果有对话历史，加上
@@ -121,7 +129,7 @@ def generate_answer(query: str, docs: List[Document], conversation_history: List
         messages = [messages[0]] + conversation_history + [messages[-1]]
 
     response = client.chat.completions.create(
-        model=os.getenv("LLM_MODEL", "gpt-3.5-turbo"),
+        model=os.getenv("VOLCENGINE_CHAT_ENDPOINT", "gpt-3.5-turbo"),
         messages=messages,
         temperature=0.3,
     )
@@ -130,10 +138,7 @@ def generate_answer(query: str, docs: List[Document], conversation_history: List
 
 
 def answer_question(
-    db: Session,
-    question: str,
-    conversation_id: str = None,
-    user_id: int = None
+    db: Session, question: str, conversation_id: str = None, user_id: int = None
 ) -> QuestionResponse:
     """完整的RAG问答流程"""
     # 检索相关文档
@@ -149,7 +154,9 @@ def answer_question(
         Source(
             title=doc.title,
             url=doc.source_url if doc.source_url else "",
-            snippet=doc.content[:200] + "..." if len(doc.content) > 200 else doc.content
+            snippet=doc.content[:200] + "..."
+            if len(doc.content) > 200
+            else doc.content,
         )
         for doc in docs
     ]
@@ -157,23 +164,24 @@ def answer_question(
     # 获取对话历史（如果有）
     conversation_history = None
     if conversation_id:
-        history = db.query(Message)\
-            .filter(Message.conversation_id == conversation_id)\
-            .order_by(Message.created_at)\
+        history = (
+            db.query(Message)
+            .filter(Message.conversation_id == conversation_id)
+            .order_by(Message.created_at)
             .all()
+        )
         conversation_history = [
             {"role": msg.role, "content": msg.content} for msg in history
         ]
 
         # 确保对话存在
-        conv = db.query(Conversation)\
-            .filter(Conversation.conversation_id == conversation_id)\
+        conv = (
+            db.query(Conversation)
+            .filter(Conversation.conversation_id == conversation_id)
             .first()
+        )
         if not conv:
-            conv = Conversation(
-                conversation_id=conversation_id,
-                user_id=user_id
-            )
+            conv = Conversation(conversation_id=conversation_id, user_id=user_id)
             db.add(conv)
             db.commit()
 
@@ -184,27 +192,27 @@ def answer_question(
     if conversation_id:
         # 保存用户问题
         user_msg = Message(
-            conversation_id=conversation_id,
-            role="user",
-            content=question
+            conversation_id=conversation_id, role="user", content=question
         )
         db.add(user_msg)
         # 保存助手回答
         assistant_msg = Message(
-            conversation_id=conversation_id,
-            role="assistant",
-            content=answer
+            conversation_id=conversation_id, role="assistant", content=answer
         )
         db.add(assistant_msg)
         db.commit()
 
-    return QuestionResponse(
-        answer=answer,
-        sources=sources
-    )
+    return QuestionResponse(answer=answer, sources=sources)
 
 
-def add_document(db: Session, title: str, content: str, source: str = None, source_url: str = None, category: str = None) -> Document:
+def add_document(
+    db: Session,
+    title: str,
+    content: str,
+    source: str = None,
+    source_url: str = None,
+    category: str = None,
+) -> Document:
     """添加文档到知识库并计算 embedding
 
     Args:
@@ -233,7 +241,7 @@ def add_document(db: Session, title: str, content: str, source: str = None, sour
         source=source,
         source_url=source_url,
         category=category,
-        embedding=embedding_json
+        embedding=embedding_json,
     )
     db.add(doc)
     db.commit()

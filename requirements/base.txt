@@ -32,3 +32,6 @@ tenacity>=8.0.0        # Retry library for API calls
 # Documentation generation
 mkdocs>=1.5.0          # Documentation site generator
 mkdocs-material>=9.0   # Material theme for documentation
+
+# Alibaba Cloud VISION AI SDK (for VASI assessment)
+alibabacloud-python-sdk-core>=1.0.0

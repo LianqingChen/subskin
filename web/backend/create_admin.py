@@ -6,9 +6,9 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from database.database import engine, Base, SessionLocal
-from database.models import User
-from services.auth import get_password_hash
+from web.backend.database.database import engine, Base, SessionLocal
+from web.backend.database.models import User
+from web.backend.services.auth import get_password_hash
 
 # 创建表
 Base.metadata.create_all(bind=engine)
@@ -31,7 +31,7 @@ else:
         username=username,
         hashed_password=get_password_hash(password),
         is_active=True,
-        is_admin=True
+        is_admin=True,
     )
     db.add(user)
     db.commit()

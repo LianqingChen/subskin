@@ -5,10 +5,10 @@ This module contains notification senders for various channels:
 - wechat_notifier: WeChat notifications via OpenClaw
 """
 
-from .qq_notifier import QQNotifier
+from .qq_notifier import QQBotNotifier
 from .wechat_notifier import WeChatNotifier
 
 __all__ = [
-    "QQNotifier",
+    "QQBotNotifier",
     "WeChatNotifier",
 ]

@@ -1,0 +1,334 @@
+/**
+ * VASI Module Styles
+ * 
+ * Shared styles for VASI assessment pages and components.
+ */
+
+.vasi-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--subskin-color-bg-soft) 0%, var(--subskin-color-bg) 100%);
+}
+
+.vasi-header {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.vasi-title {
+  font-size: 2.5rem;
+  color: var(--subskin-color-primary);
+  margin-bottom: 1rem;
+}
+
+.vasi-subtitle {
+  font-size: 1.125rem;
+  color: var(--subskin-color-text-light);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.vasi-nav {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0;
+  flex-wrap: wrap;
+}
+
+.vasi-nav-link {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--subskin-color-bg);
+  color: var(--subskin-color-text);
+  border: 2px solid var(--subskin-color-border);
+  border-radius: var(--subskin-radius-md);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.vasi-nav-link:hover,
+.vasi-nav-link.is-active {
+  border-color: var(--subskin-color-primary);
+  color: var(--subskin-color-primary);
+  background-color: rgba(43, 108, 176, 0.05);
+}
+
+.vasi-card {
+  background-color: var(--subskin-color-bg);
+  border: 1px solid var(--subskin-color-border);
+  border-radius: var(--subskin-radius-lg);
+  padding: 2rem;
+  box-shadow: var(--subskin-shadow-md);
+  margin-bottom: 1.5rem;
+}
+
+.vasi-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--subskin-color-border);
+}
+
+.vasi-card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--subskin-color-text);
+}
+
+.vasi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.vasi-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--subskin-radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.vasi-badge.stage-improving {
+  background-color: rgba(47, 133, 90, 0.1);
+  color: var(--subskin-color-success);
+}
+
+.vasi-badge.stage-stable {
+  background-color: rgba(214, 158, 46, 0.1);
+  color: var(--subskin-color-warning);
+}
+
+.vasi-badge.stage-spreading {
+  background-color: rgba(229, 62, 62, 0.1);
+  color: var(--subskin-color-danger);
+}
+
+.vasi-score-display {
+  text-align: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, var(--subskin-color-primary-light) 0%, var(--subskin-color-primary) 100%);
+  border-radius: var(--subskin-radius-lg);
+  color: white;
+  margin-bottom: 1.5rem;
+}
+
+.vasi-score-label {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+}
+
+.vasi-score-value {
+  font-size: 4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.vasi-score-unit {
+  font-size: 1.125rem;
+  margin-top: 0.5rem;
+  opacity: 0.9;
+}
+
+.vasi-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.vasi-info-item {
+  padding: 1rem;
+  background-color: var(--subskin-color-bg-soft);
+  border-radius: var(--subskin-radius-md);
+}
+
+.vasi-info-label {
+  font-size: 0.875rem;
+  color: var(--subskin-color-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.vasi-info-value {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--subskin-color-text);
+}
+
+.vasi-thumbnail {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: var(--subskin-radius-md);
+  border: 2px solid var(--subskin-color-border);
+}
+
+.vasi-list {
+  list-style: none;
+  padding: 0;
+}
+
+.vasi-list-item {
+  padding: 1rem;
+  border-bottom: 1px solid var(--subskin-color-border);
+  transition: background-color 0.2s ease;
+}
+
+.vasi-list-item:hover {
+  background-color: var(--subskin-color-bg-soft);
+}
+
+.vasi-list-item:last-child {
+  border-bottom: none;
+}
+
+.vasi-chart-container {
+  height: 400px;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.vasi-summary-card {
+  background: linear-gradient(135deg, var(--subskin-color-primary-light) 0%, var(--subskin-color-secondary) 100%);
+  border-radius: var(--subskin-radius-lg);
+  padding: 2rem;
+  color: white;
+  margin-bottom: 1.5rem;
+}
+
+.vasi-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.vasi-summary-item {
+  text-align: center;
+}
+
+.vasi-summary-label {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  margin-bottom: 0.25rem;
+}
+
+.vasi-summary-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.vasi-summary-value.positive {
+  color: #4fd1c5;
+}
+
+.vasi-summary-value.negative {
+  color: #feb2b2;
+}
+
+.vasi-trend-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+}
+
+.vasi-trend-indicator.up {
+  color: var(--subskin-color-danger);
+}
+
+.vasi-trend-indicator.down {
+  color: var(--subskin-color-success);
+}
+
+.vasi-trend-indicator.neutral {
+  color: var(--subskin-color-warning);
+}
+
+.vasi-empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--subskin-color-text-muted);
+}
+
+.vasi-empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.vasi-empty-text {
+  font-size: 1.125rem;
+  margin-bottom: 0.5rem;
+}
+
+.vasi-empty-subtext {
+  font-size: 0.875rem;
+}
+
+.vasi-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  gap: 1rem;
+}
+
+.vasi-spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 3px solid var(--subskin-color-border);
+  border-top-color: var(--subskin-color-primary);
+  border-radius: 50%;
+  animation: vasi-spin 1s linear infinite;
+}
+
+@keyframes vasi-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .vasi-title {
+    font-size: 1.75rem;
+  }
+  
+  .vasi-subtitle {
+    font-size: 1rem;
+  }
+  
+  .vasi-score-value {
+    font-size: 3rem;
+  }
+  
+  .vasi-chart-container {
+    height: 300px;
+  }
+  
+  .vasi-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .vasi-nav {
+    flex-direction: column;
+  }
+  
+  .vasi-nav-link {
+    width: 100%;
+  }
+  
+  .vasi-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .vasi-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

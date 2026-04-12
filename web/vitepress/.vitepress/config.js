@@ -11,9 +11,9 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: '首页', link: '/' },
-      { text: '百科', link: '/encyclopedia/' },
-      { text: '动态', link: '/news/' },
-      { text: '社区', link: '/community/about' },
+      { text: 'AI问答', link: '/subskin/chat.html' },
+      { text: 'AI病情量化', link: '/vasi/' },
+      { text: '病友社区', link: '/community/' },
     ],
     sidebar: {
       '/community/': [
@@ -21,6 +21,22 @@ export default defineConfig({
           text: '关于项目',
           items: [
             { text: '关于 SubSkin', link: '/community/about' }
+          ]
+        },
+        {
+          text: '病友分享',
+          items: [
+            { text: '经验分享', link: '/community/chat/experience' },
+            { text: '治疗经验', link: '/community/treatment/overview' },
+            { text: '医院点评区', link: '/community/hospitals' },
+            { text: '心情驿站', link: '/community/chat/mood' }
+          ]
+        },
+        {
+          text: '知识库',
+          items: [
+            { text: '百科知识', link: '/encyclopedia/' },
+            { text: '最新动态', link: '/news/' }
           ]
         }
       ],

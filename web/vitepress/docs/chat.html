@@ -164,12 +164,34 @@
       max-height: calc(100vh - 240px);
     }
 
-    .message {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 24px;
-      animation: fadeIn 0.3s ease;
-    }
+     .message {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+        animation: fadeIn 0.3s ease;
+     }
+
+     .message.user {
+        flex-direction: row-reverse;
+     }
+
+     .message-bubble {
+       border-radius: 16px;
+       padding: 12px 16px;
+       max-width: 80%;
+     }
+
+     .message.user .message-bubble {
+       background: #3b82f6;
+       color: white;
+       border-bottom-right-radius: 4px;
+     }
+
+     .message.assistant .message-bubble {
+       background: #f3f4f6;
+       color: #111827;
+       border-bottom-left-radius: 4px;
+     }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
@@ -559,19 +581,26 @@
   <div class="main-content">
     <div class="chat-container">
       <div class="chat-messages" id="chat-messages">
-        <div class="welcome-box">
-          <h1>SubSkin AI 问答</h1>
-          <p>基于 2000+ 篇白癜风医学研究文献，为你提供专业的 AI 解答</p>
-          <div class="suggestions">
-            <div class="suggestion-chip" data-text="白癜风会传染吗？">白癜风会传染吗？</div>
-            <div class="suggestion-chip" data-text="白癜风怎么治疗？">白癜风怎么治疗？</div>
-            <div class="suggestion-chip" data-text="白癜风可以根治吗？">白癜风可以根治吗？</div>
-            <div class="suggestion-chip" data-text="白癜风会遗传给孩子吗？">白癜风会遗传给孩子吗？</div>
-            <div class="suggestion-chip" data-text="饮食上需要注意什么？">饮食上需要注意什么？</div>
-            <div class="suggestion-chip" data-text="最新有什么新药吗？">最新有什么新药吗？</div>
-          </div>
-          <p style="margin-top: 24px; color: #9ca3af; font-size: 14px;">*回答仅供参考，具体诊疗请遵医嘱</p>
-        </div>
+         <div class="welcome-box">
+           <h1>SubSkin AI 问答</h1>
+           <p>基于 2000+ 篇白癜风医学研究文献，为你提供专业的 AI 解答<br>
+           <strong>AI 优先设计</strong>：直接提问，AI 会自动为你推荐相关内容</p>
+           <div style="margin-bottom: 16px; color: #6b7280; font-size: 14px; line-height: 1.6;">
+             💡 <strong>使用提示：</strong>你可以问任何问题，AI 会根据你的情况<br>
+             - 直接解答疑问<br>
+             - 推荐社区里病友的经验分享<br>
+             - 帮你整理个性化的知识笔记
+           </div>
+           <div class="suggestions">
+             <div class="suggestion-chip" data-text="白癜风会传染吗？">白癜风会传染吗？</div>
+             <div class="suggestion-chip" data-text="白癜风能根治吗？">白癜风能根治吗？</div>
+             <div class="suggestion-chip" data-text="我刚确诊，该怎么办？">我刚确诊，该怎么办？</div>
+             <div class="suggestion-chip" data-text="白癜风会遗传给孩子吗？">白癜风会遗传给孩子吗？</div>
+             <div class="suggestion-chip" data-text="日常饮食需要注意什么？">日常饮食需要注意什么？</div>
+             <div class="suggestion-chip" data-text="308激光治疗效果怎么样？">308激光治疗效果怎么样？</div>
+           </div>
+           <p style="margin-top: 24px; color: #9ca3af; font-size: 14px;">*回答仅供参考，具体诊疗请遵医嘱</p>
+         </div>
       </div>
       <div class="input-container">
         <div class="input-wrapper">
@@ -852,14 +881,17 @@ document.querySelectorAll('.suggestion-chip').forEach(chip => {
   });
 });
 
-// 添加消息到界面
+ // 添加消息到界面
 function addMessage(role, content, sources = []) {
   const messageDiv = document.createElement('div');
-  messageDiv.className = 'message';
+  messageDiv.className = 'message ' + role;
 
   const avatarDiv = document.createElement('div');
-  avatarDiv.className = 'message-avatar' + (role === 'user' ? ' user' : '');
+  avatarDiv.className = 'message-avatar';
   avatarDiv.textContent = role === 'user' ? '你' : 'AI';
+
+  const bubbleDiv = document.createElement('div');
+  bubbleDiv.className = 'message-bubble';
 
   const contentDiv = document.createElement('div');
   contentDiv.className = 'message-content';
@@ -898,8 +930,9 @@ function addMessage(role, content, sources = []) {
     contentDiv.appendChild(disclaimer);
   }
 
+  bubbleDiv.appendChild(contentDiv);
   messageDiv.appendChild(avatarDiv);
-  messageDiv.appendChild(contentDiv);
+  messageDiv.appendChild(bubbleDiv);
   chatMessages.appendChild(messageDiv);
 
   // 滚动到底部

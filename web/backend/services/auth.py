@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
-from database.database import get_db
-from database.models import User
+from web.backend.database.database import get_db
+from web.backend.database.models import User
 
 # 配置（从环境变量读取）
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
@@ -54,7 +54,7 @@ async def authenticate_user(username: str, password: str, db: Session):
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
-    db: Annotated[Session, Depends(get_db)]
+    db: Annotated[Session, Depends(get_db)],
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

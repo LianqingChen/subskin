@@ -7,21 +7,23 @@ import os
 import random
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from database.models import SMSCode
+from web.backend.database.models import SMSCode
 
 
 def generate_code() -> str:
     """生成6位数字验证码"""
-    return ''.join(random.choices('0123456789', k=6))
+    return "".join(random.choices("0123456789", k=6))
 
 
 def create_sms_code(db: Session, phone: str, expire_minutes: int = 5) -> str:
     """创建验证码并保存到数据库"""
     # 使之前的验证码失效
-    old_codes = db.query(SMSCode)\
-        .filter(SMSCode.phone == phone)\
-        .filter(SMSCode.used == False)\
+    old_codes = (
+        db.query(SMSCode)
+        .filter(SMSCode.phone == phone)
+        .filter(SMSCode.used == False)
         .all()
+    )
     for code in old_codes:
         code.used = True
     db.commit()
@@ -29,12 +31,7 @@ def create_sms_code(db: Session, phone: str, expire_minutes: int = 5) -> str:
     # 生成新验证码
     code = generate_code()
     expired_at = datetime.utcnow() + timedelta(minutes=expire_minutes)
-    sms_code = SMSCode(
-        phone=phone,
-        code=code,
-        expired_at=expired_at,
-        used=False
-    )
+    sms_code = SMSCode(phone=phone, code=code, expired_at=expired_at, used=False)
     db.add(sms_code)
     db.commit()
     return code
@@ -42,12 +39,14 @@ def create_sms_code(db: Session, phone: str, expire_minutes: int = 5) -> str:
 
 def verify_sms_code(db: Session, phone: str, code: str) -> bool:
     """验证验证码是否正确"""
-    sms_code = db.query(SMSCode)\
-        .filter(SMSCode.phone == phone)\
-        .filter(SMSCode.code == code)\
-        .filter(SMSCode.used == False)\
-        .filter(SMSCode.expired_at > datetime.utcnow())\
+    sms_code = (
+        db.query(SMSCode)
+        .filter(SMSCode.phone == phone)
+        .filter(SMSCode.code == code)
+        .filter(SMSCode.used == False)
+        .filter(SMSCode.expired_at > datetime.utcnow())
         .first()
+    )
     if not sms_code:
         return False
     # 标记为已使用

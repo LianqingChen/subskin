@@ -5,12 +5,13 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 
-from database.database import get_db
+from web.backend.database.database import get_db
 from sqlalchemy.orm import Session
-from models.comment import Comment, CommentCreate
-from services.comment import get_comments_by_page, create_comment
-from services.auth import auth
-from database.models import User
+
+from web.backend.models.comment import Comment, CommentCreate
+from web.backend.services.comment import get_comments_by_page, create_comment
+from web.backend.services.auth import auth
+from web.backend.database.models import User
 
 router = APIRouter()
 
@@ -25,7 +26,7 @@ def list_comments(page_path: str, db: Session = Depends(get_db)):
 def add_comment(
     comment: CommentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(auth)
+    current_user: User = Depends(auth),
 ):
     """添加新评论，需要登录，新评论需要审核"""
     return create_comment(db, comment, current_user)

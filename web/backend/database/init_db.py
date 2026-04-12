@@ -9,22 +9,21 @@ import os
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + "/..")
 
-from database.database import engine, Base
-from database.models import User
-from services.auth import get_password_hash
+from web.backend.database.database import engine, Base
+from web.backend.database.models import User
+from web.backend.services.auth import get_password_hash
 
 
 def init_db():
-    """创建所有表
-    """
+    """创建所有表"""
     Base.metadata.create_all(bind=engine)
     print("✅ 数据库表创建完成")
 
 
 def create_admin(username: str, password: str, email: str = None):
-    """创建管理员账户
-    """
-    from database.database import SessionLocal
+    """创建管理员账户"""
+    from web.backend.database.database import SessionLocal
+
     db = SessionLocal()
 
     # 检查是否已存在
@@ -38,7 +37,7 @@ def create_admin(username: str, password: str, email: str = None):
         email=email,
         hashed_password=get_password_hash(password),
         is_active=True,
-        is_admin=True
+        is_admin=True,
     )
     db.add(user)
     db.commit()

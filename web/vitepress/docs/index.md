@@ -10,59 +10,52 @@ title: 首页
 
 > **What's beneath? SubSkin.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Status: Developing](https://img.shields.io/badge/Status-Developing-green.svg)]()
+## 🌟 三大核心功能
 
-## 🎨 Logo 设计寓意
+<div class="feature-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin: 40px 0;">
 
-我们的 Logo 由三片交织的叶子组成，每一片都承载着项目的初心：
+<!-- AI科普问答 -->
+<div class="feature-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 32px; border-radius: 16px; color: white; transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);" onmouseover="this.style.transform='translateY(-8px)'; this.style.boxShadow='0 12px 24px rgba(102, 126, 234, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.3)'" onclick="window.location.href='/subskin/chat.html'">
+  <div class="feature-icon" style="font-size: 48px; margin-bottom: 16px;">🤖</div>
+  <h3 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 600;">AI科普问答</h3>
+  <p style="margin: 0 0 24px 0; opacity: 0.9; line-height: 1.6;">智能解答白癜风相关问题，提供专业、易懂的医疗知识</p>
+  <a href="/subskin/chat.html" style="display: inline-block; background: white; color: #667eea; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: background 0.3s ease;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'">开始问答 →</a>
+</div>
 
-| 位置 | 象征 | 寓意 | 英文阐释 |
-|------|------|------|-----------|
-| **左侧叶片** | 💻 芯片纹路 | **科学的广度** | *Breadth of Science* |
-| **右侧叶片** | 🧬 DNA双螺旋 | **医学的深度** | *Depth of Medicine* |
-| **中间叶片** | ❤️ 心形镂空 | **人文的温度** | *Warmth of Humanity* |
+<!-- AI病情量化追踪 -->
+<div class="feature-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 32px; border-radius: 16px; color: white; transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer; box-shadow: 0 4px 12px rgba(240, 147, 251, 0.3);" onmouseover="this.style.transform='translateY(-8px)'; this.style.boxShadow='0 12px 24px rgba(240, 147, 251, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(240, 147, 251, 0.3)'" onclick="window.location.href='/vasi/'">
+  <div class="feature-icon" style="font-size: 48px; margin-bottom: 16px;">📊</div>
+  <h3 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 600;">AI病情量化追踪</h3>
+  <p style="margin: 0 0 24px 0; opacity: 0.9; line-height: 1.6;">上传白斑照片，AI自动评估VASI评分，追踪病情变化</p>
+  <div style="background: rgba(255, 255, 255, 0.2); padding: 8px 16px; border-radius: 6px; display: inline-block; margin-bottom: 16px; font-size: 14px; font-weight: 600;">✨ 永久免费 · 无使用次数限制</div>
+  <br/>
+  <a href="/vasi/" style="display: inline-block; background: white; color: #f5576c; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: background 0.3s ease;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'">立即评估 →</a>
+</div>
 
-> 三叶草交织的造型，象征着**科技 × 医学 × 人文**三者的融合：  
-> **科技和医学共同托举，最终落点在人文关怀**。
+<!-- 病友经验分享社区 -->
+<div class="feature-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 32px; border-radius: 16px; color: white; transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer; box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);" onmouseover="this.style.transform='translateY(-8px)'; this.style.boxShadow='0 12px 24px rgba(79, 172, 254, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(79, 172, 254, 0.3)'" onclick="window.location.href='/community/'">
+  <div class="feature-icon" style="font-size: 48px; margin-bottom: 16px;">💬</div>
+  <h3 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 600;">病友经验分享社区</h3>
+  <p style="margin: 0 0 24px 0; opacity: 0.9; line-height: 1.6;">与病友交流治疗经验、分享心路历程、互相支持鼓励</p>
+  <a href="/community/" style="display: inline-block; background: white; color: #4facfe; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: background 0.3s ease;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'">加入社区 →</a>
+</div>
 
-- 🌐 **广度**：用 AI 拓宽知识边界，让前沿医学研究不再遥不可及
-- 🔬 **深度**：深耕专业领域，探寻"皮层之下"疾病的根源  
-- ❤️ **温度**：以人为本，一切科技探索的终点，都是为了给病友带来希望与温暖
+</div>
 
 ---
 
-## 🌟 项目愿景
+## 🎯 为什么选择 SubSkin？
 
-作为一名白癜风患者发起的开放项目，我们真诚希望：**用 AI 赋能，缩短医学前沿与普通患者之间的知识鸿沟**。
-
-让最新的研究能够更快、更易懂地到达每一位需要它的病友。
-
----
-
-## 🚀 核心功能
-
-我们正在构建完整的数据 pipeline，从信息收集到内容输出：
-
-1.  **📚 知识收集** · *Collection*  
-    自动化追踪 PubMed、Semantic Scholar、ClinicalTrials.gov 等平台的白癜风最新研究
-
-2.  **🤖 AI 智能摘要** · *AI Insights*  
-    借助大语言模型，将专业英文医学论文转化为患者友好的中文科普
-
-3.  **💊 药政追踪** · *Drug Tracker*  
-    实时同步全球 JAK 抑制剂等创新药物的临床试验进展
-
-4.  **🗄️ 结构化知识库** · *Dataset*  
-    系统性整理多维度数据，从病因、治疗到心理支持，为未来研究铺路
+- 🌐 **科学广度**：用AI技术拓宽知识边界，让前沿医学研究不再遥不可及
+- 🔬 **医学深度**：深耕专业领域，探寻"皮层之下"疾病的根源
+- ❤️ **人文温度**：以人为本，一切科技探索的终点，都是为了给病友带来希望与温暖
 
 ---
 
 ## 🤝 开放参与
 
-项目正在积极开发中，我们真诚欢迎每一位朋友的参与！  
+项目正在积极开发中，我们真诚欢迎每一位朋友的参与！
 
 无论你是开发者、医生、翻译志愿者，还是病友，都欢迎贡献你的力量。
 
-**让我们一起，为白癜风领域带来一点点光亮。
-
+**让我们一起，为白癜风领域带来一点点光亮。**

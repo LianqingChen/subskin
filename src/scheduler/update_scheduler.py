@@ -28,7 +28,12 @@ if settings.WECHAT_NOTIFICATION_ENABLED:
     from src.notifications.wechat_notifier import WeChatNotifier
 
 
-logger = get_logger(__name__)
+# Use dedicated scheduler log file with 7-day rotation
+logger = get_logger(
+    __name__,
+    log_file="logs/scheduler.log",
+    rotate_days=7
+)
 
 
 class ScheduleFrequency(str, Enum):
@@ -182,7 +187,9 @@ class UpdateScheduler:
         return next_run
     
     def should_run_now(self) -> bool:
+        """Check if scheduler should run now based on configured schedule."""
         if not self.config["enabled"]:
+            logger.debug(f"Schedule is disabled, skipping check")
             return False
         
         schedule_id = "main"
@@ -194,20 +201,30 @@ class UpdateScheduler:
             row = cursor.fetchone()
             
             if row and not row["enabled"]:
+                logger.debug(f"Schedule {schedule_id} is disabled in database")
                 return False
             
             if row and row["next_run"]:
                 next_run = datetime.fromisoformat(row["next_run"])
-                return datetime.now() >= next_run
+                now = datetime.now()
+                should_run = now >= next_run
+                logger.info(f"Time check: now={now}, next_run={next_run}, should_run={should_run}")
+                return should_run
             else:
+                logger.debug(f"No next_run found, scheduler should run")
                 return True
     
     def run_scheduled_update(self) -> Dict[str, Any]:
+        """Execute scheduled data collection update."""
         if not self.should_run_now():
+            logger.info("Skipping scheduled update - not scheduled to run now")
             return {"status": "skipped", "reason": "Not scheduled to run now"}
         
         schedule_id = "main"
         start_time = datetime.now()
+        
+        # Visual separator for better log readability
+        logger.info("=" * 60)
         logger.info(f"Starting scheduled update at {start_time}")
         
         crawler_results: List[CrawlerResult] = []
@@ -215,11 +232,21 @@ class UpdateScheduler:
         total_updated = 0
         all_errors: List[str] = []
         
+        logger.debug(f"Initialized: crawler_results empty, total_collected=0, total_updated=0")
+        
+        # Visual separator for better log readability
+        # Visual separator for better log readability
+        logger.info("".join(["="] * 60))        
         # Run crawlers by information source category
-        # Category mapping: pubmed -> 📜 官方期刊与学术论文
+        # Category mapping: 
+        # - pubmed -> 📜 官方期刊与学术论文
+        # - cma (Chinese Medical Association) -> 📜 官方期刊与学术论文 (中华医学会)
+        # - semantic_scholar -> 📜 官方期刊与学术论文
+        # - clinical_trials -> 💊 新药研发与临床试验
         crawlers_to_run = [
             # (source_category, crawler_method)
             ("pubmed", self._run_pubmed_crawler),
+            ("cma", self._run_cma_crawler),
             ("semantic_scholar", self._run_semantic_scholar_crawler),
             ("clinical_trials", self._run_clinical_trials_crawler),
             # Other categories will be added as crawlers implemented:
@@ -258,11 +285,19 @@ class UpdateScheduler:
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
         
+        logger.info(f"Update execution completed in {duration:.1f}s")
+        
+        # Determine overall status
+        completed_count = sum(1 for r in crawler_results if r["status"] == CrawlerStatus.COMPLETED)
+        failed_count = sum(1 for r in crawler_results if r["status"] == CrawlerStatus.FAILED)
+        
         overall_status = (
             CrawlerStatus.COMPLETED 
             if not any(r["status"] == CrawlerStatus.FAILED for r in crawler_results)
             else CrawlerStatus.FAILED
         )
+        
+        logger.info(f"Overall status: {overall_status.value} (completed: {completed_count}, failed: {failed_count})")
         
         result_data = {
             "schedule_id": schedule_id,
@@ -279,6 +314,8 @@ class UpdateScheduler:
         self._save_execution_result(schedule_id, start_time, end_time, overall_status, crawler_results, total_collected, total_updated, all_errors)
         
         next_run = self.calculate_next_run(start_time)
+        logger.info(f"Calculated next run time: {next_run}")
+        
         self._update_schedule_state(schedule_id, start_time, next_run, overall_status == CrawlerStatus.FAILED)
         
         if self.incremental_tracker and total_collected > 0:
@@ -323,9 +360,11 @@ class UpdateScheduler:
         return result_data
     
     def _run_pubmed_crawler(self) -> CrawlerResult:
+        """Execute PubMed crawler with detailed logging."""
         start_time = datetime.now()
         
         try:
+            logger.info(f"{'='*60}")
             logger.info("Running PubMed crawler (metapub)")
             import json
             from src.crawlers.pubmed_crawler import PubMedCrawler
@@ -381,6 +420,75 @@ class UpdateScheduler:
             
             result: CrawlerResult = {
                 "crawler_name": "pubmed",
+                "status": CrawlerStatus.FAILED,
+                "items_collected": 0,
+                "items_updated": 0,
+                "errors": [str(e)],
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "duration_seconds": duration
+            }
+            
+            return result
+    
+    def _run_cma_crawler(self) -> CrawlerResult:
+        start_time = datetime.now()
+        
+        try:
+            logger.info("Running Chinese Medical Association (中华医学会) crawler")
+            import json
+            from src.crawlers.cma_crawler import CMACrawler
+            from src.models.paper import Paper
+            
+            # Initialize crawler and search for vitiligo
+            crawler = CMACrawler()
+            papers = crawler.search_vitiligo()
+            
+            items_collected = len(papers)
+            items_updated = 0
+            errors: List[str] = []
+            
+            # Save raw data to json
+            output_dir = PROJECT_ROOT / "data/raw"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_path = output_dir / f"cma_incremental_{datetime.now().date().isoformat()}.json"
+            
+            # Save papers to JSON
+            papers_data = [paper.model_dump() for paper in papers]
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(papers_data, f, indent=2, default=str)
+            
+            logger.info(f"Saved {items_collected} articles to {output_path}")
+            
+            # All are new on first run
+            items_updated = items_collected
+            
+            status = CrawlerStatus.COMPLETED
+            
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            
+            logger.info(f"CMA crawler completed: {items_collected} items collected in {duration:.1f}s")
+            
+            result: CrawlerResult = {
+                "crawler_name": "cma",
+                "status": status,
+                "items_collected": items_collected,
+                "items_updated": items_updated,
+                "errors": errors,
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "duration_seconds": duration
+            }
+            
+            return result
+            
+        except Exception as e:
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            
+            result: CrawlerResult = {
+                "crawler_name": "cma",
                 "status": CrawlerStatus.FAILED,
                 "items_collected": 0,
                 "items_updated": 0,
@@ -523,6 +631,7 @@ class UpdateScheduler:
         next_run: datetime,
         failed: bool = False
     ) -> None:
+        """Update schedule state in database with detailed logging."""
         with self._lock:
             with self._conn:
                 cursor = self._conn.execute(
@@ -543,6 +652,9 @@ class UpdateScheduler:
                     consecutive_failures = 0
                     enabled = True
                 
+                logger.info(f"Updating schedule state: last_run={last_run}, next_run={next_run}, "
+                           f"consecutive_failures={consecutive_failures}, enabled={enabled}")
+                
                 self._conn.execute(
                     """
                     INSERT INTO schedule_state (schedule_id, last_run, next_run, consecutive_failures, enabled)
@@ -561,6 +673,8 @@ class UpdateScheduler:
                         enabled
                     )
                 )
+                
+                logger.debug(f"Schedule state updated successfully for {schedule_id}")
     
     def _record_incremental_updates(self, crawler_results: List[CrawlerResult]) -> None:
         for result in crawler_results:
@@ -690,47 +804,76 @@ def create_daily_scheduler() -> UpdateScheduler:
     return scheduler
 
 
-if __name__ == "__main__":
-    """Test script for scheduler."""
-    import sys
-    
-    logger.info("Testing scheduler...")
+def run_forever() -> None:
+    """Run scheduler forever, checking periodically if it's time to run."""
+    import time
     
     scheduler = create_daily_scheduler()
+    logger.info("Starting continuous scheduler run...")
     
     try:
-        print("Current schedule state:")
-        state = scheduler.get_schedule_state()
-        if state:
-            for key, value in state.items():
-                print(f"  {key}: {value}")
-        
-        print(f"\nShould run now: {scheduler.should_run_now()}")
-        
-        print("\nRunning test update (will skip if not scheduled)...")
-        result = scheduler.run_scheduled_update()
-        
-        print(f"\nUpdate result: {result.get('status', 'unknown')}")
-        if 'items_collected' in result:
-            print(f"Items collected: {result['items_collected']}")
-            print(f"Items updated: {result['items_updated']}")
-        
-        if result.get("errors"):
-            print(f"Errors: {result['errors']}")
-        
-        print("\nExecution history:")
-        history = scheduler.get_execution_history(limit=3)
-        for entry in history:
-            print(f"  {entry['start_time']}: {entry['status']} "
-                  f"(collected: {entry.get('items_collected', 'N/A')})")
-        
-        print("\n✅ Scheduler test completed")
-        
-    except Exception as e:
-        print(f"❌ Scheduler test failed: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
-    
+        while True:
+            # Check every 60 seconds if it's time to run
+            if scheduler.should_run_now():
+                logger.info("It's time to run scheduled update...")
+                scheduler.run_scheduled_update()
+            
+            # Sleep for 1 minute before checking again
+            time.sleep(60)
+            
+    except KeyboardInterrupt:
+        logger.info("Received keyboard interrupt, shutting down...")
     finally:
         scheduler.close()
+
+
+if __name__ == "__main__":
+    """Main entry point - run continuously for systemd."""
+    import sys
+    
+    # Check if we're running as a service or just testing
+    if len(sys.argv) > 1 and sys.argv[1] == "test":
+        # Test mode - run once and exit
+        logger.info("Testing scheduler...")
+        
+        scheduler = create_daily_scheduler()
+        
+        try:
+            print("Current schedule state:")
+            state = scheduler.get_schedule_state()
+            if state:
+                for key, value in state.items():
+                    print(f"  {key}: {value}")
+            
+            print(f"\nShould run now: {scheduler.should_run_now()}")
+            
+            print("\nRunning test update (will skip if not scheduled)...")
+            result = scheduler.run_scheduled_update()
+            
+            print(f"\nUpdate result: {result.get('status', 'unknown')}")
+            if 'items_collected' in result:
+                print(f"Items collected: {result['items_collected']}")
+                print(f"Items updated: {result['items_updated']}")
+            
+            if result.get("errors"):
+                print(f"Errors: {result['errors']}")
+            
+            print("\nExecution history:")
+            history = scheduler.get_execution_history(limit=3)
+            for entry in history:
+                print(f"  {entry['start_time']}: {entry['status']} "
+                      f"(collected: {entry.get('items_collected', 'N/A')})")
+            
+            print("\n✅ Scheduler test completed")
+            
+        except Exception as e:
+            print(f"❌ Scheduler test failed: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
+        
+        finally:
+            scheduler.close()
+    else:
+        # Service mode - run forever
+        run_forever()
