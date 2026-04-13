@@ -1249,20 +1249,27 @@ async function loadWechatQRCode() {
   const statusEl = document.getElementById('wechat-status');
   const refreshBtn = document.getElementById('refresh-qr');
 
+  qrContainer.style.display = 'none';
+  statusEl.innerHTML = '<span class="spinner"></span>正在生成二维码...';
+  refreshBtn.style.display = 'none';
+
   try {
-    // 获取二维码URL
     const res = await fetch(API_BASE + '/oauth/wechat/auth-url');
     const data = await res.json();
 
     if (data.auth_url) {
-      // 生成二维码（使用公共QR API）
       qrContainer.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data.auth_url)}`;
       qrContainer.style.display = 'block';
       statusEl.textContent = '请使用微信扫描二维码登录';
 
-      // 开始轮询扫码状态
       startWechatPolling();
     }
+  } catch (e) {
+    Toast.error('二维码加载失败');
+    statusEl.textContent = '二维码加载失败，请刷新重试';
+    refreshBtn.style.display = 'block';
+  }
+}
   } catch (e) {
     statusEl.textContent = '二维码加载失败，请刷新重试';
     refreshBtn.style.display = 'block';
@@ -1500,12 +1507,12 @@ function initCodeInputs() {
 function updateCodeHint() {
   const code = getVerificationCode();
   const hintEl = document.getElementById('code-hint');
-  
+
   if (code.length === 6) {
-    hintEl.textContent = '验证码已完整';
-    hintEl.style.color = '#52c41a';
+    hintEl.innerHTML = `<span class="code-complete"><svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>验证码已完整</span>`;
+    hintEl.style.color = '#10b981';
   } else {
-    hintEl.textContent = `6位数字验证码（已输入${code.length}/6）`;
+    hintEl.textContent = `已输入${code.length}/6位`;
     hintEl.style.color = '#666';
   }
 }
@@ -1513,7 +1520,59 @@ function updateCodeHint() {
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
   initCodeInputs();
+  initInputValidation();
 });
+
+// 初始化输入验证
+function initInputValidation() {
+  const phoneInput = document.getElementById('login-phone');
+  const emailInput = document.getElementById('login-email');
+
+  if (phoneInput) {
+    phoneInput.addEventListener('input', () => {
+      const value = phoneInput.value.trim();
+      Validator.clearValidation(phoneInput);
+
+      if (value.length > 0) {
+        if (value.length === 11 && Validator.phone(value)) {
+          Validator.showInputSuccess(phoneInput, '手机号格式正确');
+        } else if (value.length >= 11) {
+          Validator.showInputError(phoneInput, '手机号格式不正确');
+        }
+      }
+    });
+
+    phoneInput.addEventListener('blur', () => {
+      const value = phoneInput.value.trim();
+      if (value.length > 0 && !Validator.phone(value)) {
+        Validator.showInputError(phoneInput, '请输入有效的11位手机号');
+      }
+    });
+  }
+
+  if (emailInput) {
+    emailInput.addEventListener('input', () => {
+      const value = emailInput.value.trim();
+      Validator.clearValidation(emailInput);
+
+      if (value.length > 0 && value.includes('@')) {
+        if (Validator.email(value)) {
+          Validator.showInputSuccess(emailInput, '邮箱格式正确');
+        } else {
+          Validator.showInputError(emailInput, '邮箱格式不正确');
+        }
+      }
+      }
+    });
+
+    emailInput.addEventListener('blur', () => {
+      const value = emailInput.value.trim();
+      if (value.length > 0 && !Validator.email(value)) {
+        Validator.showInputError(emailInput, '请输入有效的邮箱地址');
+      }
+    });
+  }
+}
 
 // 登录
 document.getElementById('do-login').addEventListener('click', async () => {
