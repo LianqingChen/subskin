@@ -11,3 +11,4 @@ from web.backend.database.database import engine, Base
 Base.metadata.create_all(bind=engine)
 print("✅ 所有表创建/更新完成")
 print(f"已添加表: documents, conversations, messages")
+print("✅ 用户表已更新 (新增 wechat_id, alipay_id 字段)")

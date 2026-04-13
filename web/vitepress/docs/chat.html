@@ -578,9 +578,249 @@
     .login-method.hidden {
       display: none !important;
     }
+
+    /* Toast 通知组件 */
+    .toast-container {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      min-width: 320px;
+      max-width: 400px;
+      animation: slideIn 0.3s ease-out;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .toast.success {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+    }
+
+    .toast.warning {
+      background: #fefce8;
+      border: 1px solid #fde047;
+      color: #854d0e;
+    }
+
+    .toast.error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+
+    .toast-content {
+      flex: 1;
+    }
+
+    .toast-close {
+      margin-left: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      font-size: 16px;
+      line-height: 1;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+      color: inherit;
+    }
+
+    .toast-close:hover {
+      opacity: 1;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+
+    /* 输入验证样式 */
+    .input-error {
+      border-color: #ef4444 !important;
+    }
+
+    .input-error:focus {
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+    }
+
+    .input-success {
+      border-color: #10b981 !important;
+    }
+
+    .input-success:focus {
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+    }
+
+    .validation-hint {
+      font-size: 12px;
+      margin-top: 6px;
+      display: block;
+    }
+
+    .validation-hint.error {
+      color: #ef4444;
+    }
+
+    .validation-hint.success {
+      color: #10b981;
+    }
+
+    /* 验证码完成检查标记 */
+    .code-complete {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .code-complete .check-icon {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* 加载状态 */
+    .btn-loading {
+      opacity: 0.6;
+      cursor: not-allowed !important;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* 骨架屏 */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton-text {
+      height: 14px;
+      margin-bottom: 8px;
+    }
+
+    .skeleton-text.short {
+      width: 60%;
+    }
+
+    .skeleton-text.medium {
+      width: 80%;
+    }
+
+    .skeleton-text.long {
+      width: 100%;
+    }
+
+    /* 响应式设计 - 移动端 */
+    @media (max-width: 768px) {
+      .toast-container {
+        top: 12px;
+        right: 12px;
+        left: 12px;
+      }
+
+      .toast {
+        min-width: auto;
+        max-width: 100%;
+      }
+
+      .modal {
+        align-items: flex-end;
+      }
+
+      .modal-content {
+        width: 100%;
+        max-width: none;
+        border-radius: 16px 16px 0 0;
+        max-height: 90vh;
+      }
+
+      .form-group input,
+      .code-input {
+        height: 44px;
+        font-size: 16px;
+      }
+
+      .code-input {
+        width: 36px;
+        height: 44px;
+        font-size: 20px;
+      }
+
+      .btn {
+        height: 44px;
+        font-size: 16px;
+      }
+
+      .suggestions {
+        flex-direction: column;
+      }
+
+      .suggestion-chip {
+        width: 100%;
+        text-align: center;
+      }
+    }
+
+    /* 响应式设计 - 平板 */
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .modal-content {
+        width: 80%;
+      }
+    }
   </style>
 </head>
 <body>
+  <div class="toast-container" id="toast-container"></div>
+
   <div class="top-nav">
     <div class="nav-container">
       <a href="/" class="logo">
@@ -754,6 +994,115 @@
   </div>
 
 <script>
+// Toast 通知组件
+const Toast = {
+  show(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+      <div class="toast-content">${message}</div>
+      <button class="toast-close">&times;</button>
+    `;
+
+    container.appendChild(toast);
+
+    const closeBtn = toast.querySelector('.toast-close');
+    const closeToast = () => {
+      toast.style.animation = 'slideOut 0.3s ease-out forwards';
+      setTimeout(() => toast.remove(), 300);
+    };
+
+    closeBtn.addEventListener('click', closeToast);
+
+    setTimeout(closeToast => {
+      toast.style.animation = 'slideOut 0.3s ease-out forwards';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+
+    return toast;
+  },
+
+  success(message) {
+    return this.show(message, 'success');
+  },
+
+  warning(message) {
+    return this.show(message, 'warning');
+  },
+
+  error(message) {
+    return this.show(message, 'error');
+  }
+};
+
+// 输入验证工具
+const Validator = {
+  phone(value) {
+    return /^1[3-9]\d{9}$/.test(value);
+  },
+
+  email(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  },
+
+  showInputError(input, message) {
+    input.classList.add('input-error');
+    input.classList.remove('input-success');
+
+    let hint = input.nextElementSibling;
+    if (!hint || !hint.classList.contains('validation-hint')) {
+      hint = document.createElement('span');
+      hint.className = 'validation-hint error';
+      input.parentElement.appendChild(hint);
+    }
+    hint.textContent = message;
+    hint.className = 'validation-hint error';
+  },
+
+  showInputSuccess(input, message) {
+    input.classList.add('input-success');
+    input.classList.remove('input-error');
+
+    let hint = input.nextElementSibling;
+    if (!hint || !hint.classList.contains('validation-hint')) {
+      hint = document.createElement('span');
+      hint.className = 'validation-hint success';
+      input.parentElement.appendChild(hint);
+    }
+    hint.textContent = message;
+    hint.className = 'validation-hint success';
+  },
+
+  clearValidation(input) {
+    input.classList.remove('input-error', 'input-success');
+    const hint = input.nextElementSibling;
+    if (hint && hint.classList.contains('validation-hint')) {
+      hint.remove();
+    }
+  }
+};
+
+// 按钮加载状态工具
+const LoadingButton = {
+  show(button, text) {
+    button.disabled = true;
+    button.classList.add('btn-loading');
+    const originalContent = button.innerHTML;
+    button.innerHTML = `<span class="spinner"></span>${text}`;
+    button.dataset.originalContent = originalContent;
+  },
+
+  hide(button) {
+    button.disabled = false;
+    button.classList.remove('btn-loading');
+    if (button.dataset.originalContent) {
+      button.innerHTML = button.dataset.originalContent;
+      delete button.dataset.originalContent;
+    }
+  }
+};
+
 // 全局状态
 let currentToken = localStorage.getItem('subskin_token');
 let currentUser = null;
@@ -977,7 +1326,7 @@ document.getElementById('toggle-password').addEventListener('click', () => {
 // 邮箱登录
 document.getElementById('forgot-password').addEventListener('click', (e) => {
   e.preventDefault();
-  alert('忘记密码功能暂未实现，请联系管理员重置密码');
+  Toast.warning('忘记密码功能暂未实现，请联系管理员重置密码');
 });
 
 document.getElementById('close-profile').addEventListener('click', closeProfileModal);
@@ -995,50 +1344,58 @@ loginModal.addEventListener('click', (e) => {
 document.getElementById('save-profile').addEventListener('click', async () => {
   // TODO: 调用API保存
   closeProfileModal();
-  alert('保存成功');
+  Toast.success('保存成功');
 });
 
 // 发送验证码
 document.getElementById('send-code').addEventListener('click', async () => {
   const phone = document.getElementById('login-phone').value.trim();
+  const phoneInput = document.getElementById('login-phone');
+
   if (!phone) {
-    alert('请输入手机号');
+    Toast.error('请输入手机号');
+    Validator.showInputError(phoneInput, '请输入手机号');
     return;
   }
-  
+
+  if (!Validator.phone(phone)) {
+    Toast.error('手机号格式不正确');
+    Validator.showInputError(phoneInput, '请输入有效的11位手机号');
+    return;
+  }
+
   const sendBtn = document.getElementById('send-code');
-  sendBtn.disabled = true;
-  
+  LoadingButton.show(sendBtn, '发送中...');
+
   try {
     const res = await fetch(API_BASE + '/user/send-sms', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({phone})
     });
-    
+
     if (res.status === 429) {
-      // 频率限制错误
       const errorData = await res.json();
-      alert(errorData.detail || '请求过于频繁，请稍后再试');
-      startCountdown(60); // 仍然启动60秒倒计时
+      Toast.warning(errorData.detail || '请求过于频繁，请稍后再试');
+      startCountdown(60);
       return;
     }
-    
+
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
-    
+
     const data = await res.json();
     if (data.code) {
-      alert('验证码已发送');
-      startCountdown(60); // 启动60秒倒计时
+      Toast.success('验证码已发送');
+      startCountdown(60);
     } else {
-      alert(data.message || '发送失败');
-      sendBtn.disabled = false;
+      Toast.error(data.message || '发送失败');
+      LoadingButton.hide(sendBtn);
     }
   } catch (e) {
-    alert('网络错误');
-    sendBtn.disabled = false;
+    Toast.error('网络连接失败，请检查网络');
+    LoadingButton.hide(sendBtn);
   }
 });
 
@@ -1163,19 +1520,29 @@ document.getElementById('do-login').addEventListener('click', async () => {
   const activeMethod = document.querySelector('.login-tab.active').dataset.method;
 
   if (activeMethod === 'phone') {
-    // 手机号验证码登录
     const phone = document.getElementById('login-phone').value.trim();
     const code = getVerificationCode();
+    const phoneInput = document.getElementById('login-phone');
 
     if (!phone) {
-      alert('请输入手机号');
+      Toast.error('请输入手机号');
+      Validator.showInputError(phoneInput, '请输入手机号');
+      return;
+    }
+
+    if (!Validator.phone(phone)) {
+      Toast.error('手机号格式不正确');
+      Validator.showInputError(phoneInput, '请输入有效的11位手机号');
       return;
     }
 
     if (!code || code.length < 6) {
-      alert('请输入完整的6位验证码');
+      Toast.error('请输入完整的6位验证码');
       return;
     }
+
+    const loginBtn = document.getElementById('do-login');
+    LoadingButton.show(loginBtn, '验证中...');
 
     try {
       const res = await fetch(API_BASE + '/user/login-by-phone', {
@@ -1187,7 +1554,6 @@ document.getElementById('do-login').addEventListener('click', async () => {
       if (data.access_token) {
         localStorage.setItem('subskin_token', data.access_token);
         currentToken = data.access_token;
-        // 获取用户信息
         const meRes = await fetch(API_BASE + '/user/me', {
           headers: {'Authorization': 'Bearer ' + currentToken}
         });
@@ -1198,27 +1564,38 @@ document.getElementById('do-login').addEventListener('click', async () => {
         updateAvatar();
         location.reload();
       } else {
-        alert(data.detail || '登录失败');
+        Toast.error(data.detail || '登录失败');
+        LoadingButton.hide(loginBtn);
       }
     } catch (e) {
-      alert('网络错误');
+      Toast.error('网络连接失败，请检查网络');
+      LoadingButton.hide(loginBtn);
     }
   } else if (activeMethod === 'email') {
-    // 邮箱密码登录
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
+    const emailInput = document.getElementById('login-email');
 
     if (!email) {
-      alert('请输入邮箱');
+      Toast.error('请输入邮箱');
+      Validator.showInputError(emailInput, '请输入邮箱');
+      return;
+    }
+
+    if (!Validator.email(email)) {
+      Toast.error('邮箱格式不正确');
+      Validator.showInputError(emailInput, '请输入有效的邮箱地址');
       return;
     }
 
     if (!password) {
-      alert('请输入密码');
+      Toast.error('请输入密码');
       return;
     }
 
-    // 使用FormData发送表单数据
+    const loginBtn = document.getElementById('do-login');
+    LoadingButton.show(loginBtn, '登录中...');
+
     const formData = new FormData();
     formData.append('username', email);
     formData.append('password', password);
@@ -1232,7 +1609,6 @@ document.getElementById('do-login').addEventListener('click', async () => {
       if (data.access_token) {
         localStorage.setItem('subskin_token', data.access_token);
         currentToken = data.access_token;
-        // 获取用户信息
         const meRes = await fetch(API_BASE + '/user/me', {
           headers: {'Authorization': 'Bearer ' + currentToken}
         });
@@ -1243,10 +1619,12 @@ document.getElementById('do-login').addEventListener('click', async () => {
         updateAvatar();
         location.reload();
       } else {
-        alert(data.detail || '登录失败');
+        Toast.error(data.detail || '登录失败');
+        LoadingButton.hide(loginBtn);
       }
     } catch (e) {
-      alert('网络错误');
+      Toast.error('网络连接失败，请检查网络');
+      LoadingButton.hide(loginBtn);
     }
   }
 });
@@ -1424,7 +1802,7 @@ async function sendMessage(text) {
 
     if (!response.ok) {
       if (response.status === 401) {
-        alert('登录已过期，请重新登录');
+        Toast.warning('登录已过期，请重新登录');
         localStorage.removeItem('subskin_token');
         currentToken = null;
         openLoginModal();

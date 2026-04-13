@@ -8,3 +8,11 @@ passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.6
 alembic>=1.12.1
 openai>=1.3.0
+
+# 短信服务SDK
+alibabacloud-dysmsapi20170525>=3.0.0  # 阿里云短信
+tencentcloud-sdk-python>=3.0.0  # 腾讯云短信（包含短信服务）
+
+# 请求库
+（requests已经通过fastapi间接安装）
+# requests>=2.31.0

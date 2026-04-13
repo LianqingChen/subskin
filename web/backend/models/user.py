@@ -11,6 +11,8 @@ class UserBase(BaseModel):
     username: str
     email: Optional[str] = None
     phone: Optional[str] = Field(None, description="手机号码")
+    wechat_id: Optional[str] = Field(None, description="微信开放平台ID")
+    alipay_id: Optional[str] = Field(None, description="支付宝开放平台ID")
 
 
 class UserCreateByPhone(BaseModel):

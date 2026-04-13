@@ -16,6 +16,7 @@ from web.backend.api import (
     rag,
     vasi,
     vasi_router,
+    oauth,
 )
 from web.backend.database.database import engine
 from web.backend.database import models
@@ -46,6 +47,7 @@ app.include_router(
 )
 app.include_router(rag.router, prefix="/api/rag", tags=["AI问答"])
 app.include_router(vasi_router, prefix="/api/vasi", tags=["VASI评估"])
+app.include_router(oauth.router, prefix="/api/oauth", tags=["第三方登录"])
 
 
 @app.get("/api/health")
