@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { communityApi } from '@/api/community'
 import { useAuthStore } from '@/stores/auth'
 import { useGeolocation } from '@/composables/useGeolocation'
@@ -29,6 +29,8 @@ const showSuggestions = ref(false)
 const tagSearchMode = ref(false)
 const showCityPicker = ref(false)
 const manualCity = ref('')
+const showSearch = ref(false)
+const searchInputRef = ref<HTMLInputElement | null>(null)
 let suggestTimer: ReturnType<typeof setTimeout> | null = null
 
 const geo = useGeolocation()
@@ -289,6 +291,15 @@ function onSearchBlur() {
   setTimeout(() => { showSuggestions.value = false }, 200)
 }
 
+function toggleSearch() {
+  showSearch.value = !showSearch.value
+  if (showSearch.value) {
+    nextTick(() => {
+      searchInputRef.value?.focus()
+    })
+  }
+}
+
 
 
 function getFallbackPosts(): Post[] {
@@ -305,13 +316,50 @@ function getFallbackPosts(): Post[] {
 
 <template>
   <div class="max-w-6xl mx-auto px-3 py-3 space-y-3">
-    <!-- Search Bar -->
-    <div class="relative">
+    <!-- Feed type tabs + search icon row -->
+    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+      <button
+        v-for="ft in [{ key: 'follow', label: '关注' }, { key: 'recommend', label: '推荐' }, { key: 'local', label: '同城' }]"
+        :key="ft.key"
+        class="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap"
+        :class="activeFeedType === ft.key && !activeTag
+          ? 'bg-primary-500 text-white shadow-sm'
+          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
+        @click="activeTag = null; activeFeedType = ft.key as any"
+      >
+        {{ ft.label }}
+      </button>
+      <!-- Loading indicator for geolocation -->
+      <span v-if="activeFeedType === 'local' && geo.loading.value" class="text-xs text-gray-400 dark:text-gray-500 self-center ml-2">正在获取位置...</span>
+      <!-- Active tag filter chip -->
+      <button
+        v-if="activeTag"
+        class="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-700"
+        @click="activeTag = null"
+      >
+        #{{ activeTag }} ✕
+      </button>
+      <!-- Spacer to push search icon to right -->
+      <div class="flex-1 min-w-0"></div>
+      <!-- Search magnifier icon -->
+      <button
+        class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        @click="toggleSearch"
+      >
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Search overlay (animated expand/collapse) -->
+    <div v-if="showSearch" class="relative transition-all duration-200">
       <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 gap-2">
         <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
         <input
+          ref="searchInputRef"
           v-model="searchQuery"
           type="text"
           placeholder="搜索病友分享或标签..."
@@ -348,31 +396,6 @@ function getFallbackPosts(): Post[] {
           <span class="ml-auto text-[11px] text-gray-400 dark:text-gray-500">{{ tag.usage_count }} 篇</span>
         </button>
       </div>
-    </div>
-
-    <!-- Feed type tabs: 关注/推荐/同城 -->
-    <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
-      <button
-        v-for="ft in [{ key: 'follow', label: '关注' }, { key: 'recommend', label: '推荐' }, { key: 'local', label: '同城' }]"
-        :key="ft.key"
-        class="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap"
-        :class="activeFeedType === ft.key && !activeTag
-          ? 'bg-primary-500 text-white shadow-sm'
-          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
-        @click="activeTag = null; activeFeedType = ft.key as any"
-      >
-        {{ ft.label }}
-      </button>
-      <!-- Loading indicator for geolocation -->
-      <span v-if="activeFeedType === 'local' && geo.loading.value" class="text-xs text-gray-400 dark:text-gray-500 self-center ml-2">正在获取位置...</span>
-      <!-- Active tag filter chip -->
-      <button
-        v-if="activeTag"
-        class="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-700"
-        @click="activeTag = null"
-      >
-        #{{ activeTag }} ✕
-      </button>
     </div>
 
     <!-- Waterfall Feed -->
