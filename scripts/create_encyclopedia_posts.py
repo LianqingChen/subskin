@@ -22,7 +22,7 @@ from web.backend.database.models import (
 )
 from web.backend.services.community import CommunityService
 
-USER_PHONE = "15810004327"
+USER_PHONE = os.environ.get("ENC_USER_PHONE", "请设置ENC_USER_PHONE环境变量")
 CATEGORY_ID = 1  # 治疗分享分类
 TAG_NAME = "小白科普"
 
