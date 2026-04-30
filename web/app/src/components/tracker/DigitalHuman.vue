@@ -91,12 +91,14 @@ function skinMat(color?: THREE.Color): THREE.MeshStandardMaterial {
   })
 }
 
-function mesh(geo: THREE.BufferGeometry, pos: [number, number, number], key: string, opts?: { rotZ?: number; scale?: [number, number, number] }): THREE.Mesh {
-  const m = new THREE.Mesh(geo, skinMat())
+function mesh(geo: THREE.BufferGeometry, pos: [number, number, number], key: string, opts?: { rotZ?: number; scale?: [number, number, number]; mat?: THREE.Material }): THREE.Mesh {
+  const m = new THREE.Mesh(geo, opts?.mat || skinMat())
   m.position.set(...pos)
   if (opts?.rotZ) m.rotation.z = opts.rotZ
   if (opts?.scale) m.scale.set(...opts.scale)
   m.userData.partKey = key
+  m.castShadow = true
+  m.receiveShadow = true
   return m
 }
 
@@ -262,24 +264,48 @@ function buildHumanoid() {
   // ── NECK ──
   const neckGroup = new THREE.Group()
   neckGroup.name = 'neck'
-  const neckM = mesh(new THREE.CylinderGeometry(0.046, 0.058, 0.10, S), [0, 0.76, 0], 'neck')
+  const neckM = mesh(new THREE.CylinderGeometry(0.042, 0.050, 0.09, S), [0, 0.76, 0], 'neck')
   neckGroup.add(neckM)
   registerPart('neck', neckGroup, [neckM])
 
-  // ── TORSO ──
+  // ── TORSO + DOCTOR COAT ──
+  const coatMat = new THREE.MeshStandardMaterial({ color: '#fafafa', roughness: 0.4, metalness: 0.02 })
   const torsoGroup = new THREE.Group()
   torsoGroup.name = 'trunk'
+  // Torso profile — slightly broader shoulders, natural waist
   const profile = [
-    new THREE.Vector2(0.00, 0.70), new THREE.Vector2(0.08, 0.70),
-    new THREE.Vector2(0.19, 0.67), new THREE.Vector2(0.21, 0.62),
-    new THREE.Vector2(0.19, 0.55), new THREE.Vector2(0.16, 0.48),
-    new THREE.Vector2(0.13, 0.38), new THREE.Vector2(0.14, 0.33),
-    new THREE.Vector2(0.17, 0.28), new THREE.Vector2(0.16, 0.23),
-    new THREE.Vector2(0.00, 0.23),
+    new THREE.Vector2(0.00, 0.72), new THREE.Vector2(0.10, 0.72),   // top center → shoulder
+    new THREE.Vector2(0.22, 0.68), new THREE.Vector2(0.24, 0.62),   // shoulders
+    new THREE.Vector2(0.21, 0.54), new THREE.Vector2(0.18, 0.48),   // chest
+    new THREE.Vector2(0.15, 0.38), new THREE.Vector2(0.16, 0.33),   // waist
+    new THREE.Vector2(0.19, 0.28), new THREE.Vector2(0.18, 0.21),   // hips
+    new THREE.Vector2(0.00, 0.21),                                    // bottom center
   ]
   torsoMesh = mesh(new THREE.LatheGeometry(profile, 32), [0, 0, 0], 'trunk', { scale: [1, 1, 0.72] })
   torsoBaseScale = torsoMesh.scale.clone()
   torsoGroup.add(torsoMesh)
+
+  // Doctor white coat (slightly larger, white toon material)
+  const coatGeo = new THREE.LatheGeometry(profile.map(p => p.clone().multiplyScalar(1.08)), 32)
+  const coatMesh = new THREE.Mesh(coatGeo, coatMat)
+  coatMesh.position.set(0, -0.01, 0)
+  coatMesh.scale.set(1, 1, 0.75) // Slightly open in front (z-scale)
+  coatMesh.userData.partKey = 'trunk'
+  coatMesh.castShadow = true
+  coatMesh.receiveShadow = true
+  torsoGroup.add(coatMesh)
+
+  // Coat collar / lapels (two small wedges near neck)
+  const lapelMat = new THREE.MeshStandardMaterial({ color: '#f5f5f5', roughness: 0.4, metalness: 0.05 })
+  for (const sx of [-1, 1]) {
+    const lapel = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.015), lapelMat)
+    lapel.position.set(sx * 0.06, 0.68, 0.08)
+    lapel.rotation.z = sx * 0.25
+    lapel.userData.partKey = 'trunk'
+    lapel.castShadow = true
+    torsoGroup.add(lapel)
+  }
+
   registerPart('trunk', torsoGroup, [torsoMesh])
 
   // ── ARMS ──
@@ -287,9 +313,9 @@ function buildHumanoid() {
   armsGroup.name = 'arms'
   const armMs: THREE.Mesh[] = []
   for (const s of [-1, 1]) {
-    armMs.push(mesh(new THREE.SphereGeometry(0.055, S, S / 2), [s * 0.20, 0.66, 0], 'arms'))
-    armMs.push(mesh(new THREE.CapsuleGeometry(0.044, 0.20, 8, S), [s * 0.24, 0.55, 0], 'arms', { rotZ: s * 0.10 }))
-    armMs.push(mesh(new THREE.CapsuleGeometry(0.037, 0.20, 8, S), [s * 0.27, 0.32, 0], 'arms', { rotZ: s * 0.05 }))
+    armMs.push(mesh(new THREE.SphereGeometry(0.050, S, S / 2), [s * 0.22, 0.67, 0], 'arms'))
+    armMs.push(mesh(new THREE.CapsuleGeometry(0.042, 0.22, 8, S), [s * 0.26, 0.55, 0], 'arms', { rotZ: s * 0.10 }))
+    armMs.push(mesh(new THREE.CapsuleGeometry(0.035, 0.22, 8, S), [s * 0.29, 0.30, 0], 'arms', { rotZ: s * 0.05 }))
   }
   armMs.forEach(m => armsGroup.add(m))
   registerPart('arms', armsGroup, armMs)
@@ -299,39 +325,44 @@ function buildHumanoid() {
   handsGroup.name = 'hands'
   const handMs: THREE.Mesh[] = []
   for (const s of [-1, 1]) {
-    handMs.push(mesh(new THREE.SphereGeometry(0.038, 12, 10), [s * 0.30, 0.10, 0], 'hands', { scale: [0.85, 1.15, 0.50] }))
-    for (const fz of [0.022, 0, -0.022]) handMs.push(mesh(new THREE.CapsuleGeometry(0.009, 0.042, 4, 8), [s * 0.30, 0.04, fz], 'hands'))
-    handMs.push(mesh(new THREE.CapsuleGeometry(0.011, 0.028, 4, 8), [s * 0.275, 0.09, 0.018], 'hands', { rotZ: s * -0.3 }))
+    handMs.push(mesh(new THREE.SphereGeometry(0.036, 12, 10), [s * 0.32, 0.07, 0], 'hands', { scale: [0.85, 1.15, 0.50] }))
+    for (const fz of [0.020, 0, -0.020]) handMs.push(mesh(new THREE.CapsuleGeometry(0.008, 0.038, 4, 8), [s * 0.32, 0.01, fz], 'hands'))
+    handMs.push(mesh(new THREE.CapsuleGeometry(0.010, 0.025, 4, 8), [s * 0.295, 0.06, 0.016], 'hands', { rotZ: s * -0.3 }))
   }
   handMs.forEach(m => handsGroup.add(m))
   registerPart('hands', handsGroup, handMs)
 
-  // ── LEGS ──
+  // ── LEGS (dark pants) ──
+  const pantsMat = new THREE.MeshStandardMaterial({ color: '#3d4a5c', roughness: 0.5, metalness: 0.05 })
   const legsGroup = new THREE.Group()
   legsGroup.name = 'legs'
   const legMs: THREE.Mesh[] = []
   for (const s of [-1, 1]) {
-    legMs.push(mesh(new THREE.CapsuleGeometry(0.063, 0.24, 8, S), [s * 0.09, 0.06, 0], 'legs'))
-    legMs.push(mesh(new THREE.SphereGeometry(0.052, S, S / 2), [s * 0.085, -0.08, 0], 'legs'))
-    legMs.push(mesh(new THREE.CapsuleGeometry(0.046, 0.26, 8, S), [s * 0.085, -0.32, 0], 'legs'))
+    legMs.push(mesh(new THREE.CapsuleGeometry(0.060, 0.22, 8, S), [s * 0.09, 0.06, 0], 'legs', { mat: pantsMat }))
+    legMs.push(mesh(new THREE.SphereGeometry(0.050, S, S / 2), [s * 0.085, -0.06, 0], 'legs', { mat: pantsMat }))
+    legMs.push(mesh(new THREE.CapsuleGeometry(0.044, 0.28, 8, S), [s * 0.085, -0.34, 0], 'legs', { mat: pantsMat }))
   }
   legMs.forEach(m => legsGroup.add(m))
   registerPart('legs', legsGroup, legMs)
 
-  // ── FEET ──
+  // ── FEET (dark shoes) ──
+  const shoeMat = new THREE.MeshStandardMaterial({ color: '#2d3035', roughness: 0.35, metalness: 0.1 })
   const feetGroup = new THREE.Group()
   feetGroup.name = 'feet'
   const footMs: THREE.Mesh[] = []
-  for (const s of [-1, 1]) footMs.push(mesh(new THREE.SphereGeometry(0.055, 16, 12), [s * 0.09, -0.49, 0.04], 'feet', { scale: [0.72, 0.32, 1.35] }))
+  for (const s of [-1, 1]) {
+    const foot = mesh(new THREE.SphereGeometry(0.052, 16, 12), [s * 0.09, -0.52, 0.04], 'feet', { scale: [0.72, 0.32, 1.35], mat: shoeMat })
+    footMs.push(foot)
+  }
   footMs.forEach(m => feetGroup.add(m))
   registerPart('feet', feetGroup, footMs)
 
   // ── PLATFORM ──
-  const platGeo = new THREE.CylinderGeometry(0.32, 0.35, 0.015, 32)
-  const isDark = isDarkMode.value
-  const platMat = new THREE.MeshStandardMaterial({ color: isDark ? '#2a2a3e' : '#e8e2dc', roughness: 0.85, metalness: 0.05 })
+  const isDark = themeStore.mode === 'dark'
+  const platGeo = new THREE.CylinderGeometry(0.34, 0.37, 0.018, 32)
+  const platMat = new THREE.MeshStandardMaterial({ color: isDark ? '#2a2a3e' : '#e8e0d8', roughness: 0.85, metalness: 0.05 })
   const plat = new THREE.Mesh(platGeo, platMat)
-  plat.position.y = -0.555
+  plat.position.y = -0.57
   plat.receiveShadow = true
   scene.add(plat)
 
@@ -571,22 +602,21 @@ function refreshAllColors() {
 watch(isDarkMode, (isDark) => {
   if (isDark) {
     scene.background = new THREE.Color('#1a1a2e')
-    // 调整环境光色温
     const ambient = scene.children.find(c => c instanceof THREE.AmbientLight) as THREE.AmbientLight
-    if (ambient) ambient.color.set('#2a2a3e')
+    if (ambient) ambient.color.set('#2a3050')
   } else {
-    scene.background = new THREE.Color('#f5f0eb')
+    scene.background = new THREE.Color('#ede8e2')
     const ambient = scene.children.find(c => c instanceof THREE.AmbientLight) as THREE.AmbientLight
-    if (ambient) ambient.color.set('#fef9f0')
+    if (ambient) ambient.color.set('#fef5ee')
   }
 }, { immediate: false })
 
 function setupLighting() {
-  // Ambient — 基础暖光
-  scene.add(new THREE.AmbientLight('#fef9f0', 1.0))
+  // Ambient — soft warm fill for PBR base illumination
+  scene.add(new THREE.AmbientLight('#fef5ee', 1.4))
 
-  // Key Light（主光）— 右上方45°，暖白
-  const key = new THREE.DirectionalLight('#fff8f0', 3.0)
+  // Key Light（主光）— 右上方45°，warm white, strong for PBR definition
+  const key = new THREE.DirectionalLight('#fff5eb', 3.0)
   key.position.set(3, 4, 5)
   key.castShadow = true
   key.shadow.mapSize.set(1024, 1024)
@@ -599,18 +629,18 @@ function setupLighting() {
   key.shadow.bias = -0.0001
   scene.add(key)
 
-  // Fill Light（补光）— 左下方，冷白
+  // Fill Light（补光）— gentle left fill, moderate
   const fill = new THREE.DirectionalLight('#e8f0ff', 0.7)
   fill.position.set(-2.5, 1.5, -1.5)
   scene.add(fill)
 
-  // Rim Light（轮廓光）— 后方上方，蓝紫调，让角色从背景弹出来
+  // Rim Light（轮廓光）— back/top light for silhouette separation
   const rim = new THREE.DirectionalLight('#c8d6ff', 1.4)
   rim.position.set(0, 2.5, -3.5)
   scene.add(rim)
 
-  // Bottom bounce — 底部反光，减少过暗阴影
-  const bounce = new THREE.DirectionalLight('#ffe8d0', 0.3)
+  // Bottom bounce — slight upward fill
+  const bounce = new THREE.DirectionalLight('#ffe4cc', 0.2)
   bounce.position.set(0, -0.5, 1.5)
   scene.add(bounce)
 }
@@ -800,7 +830,7 @@ onMounted(() => {
   if (!containerRef.value) return
   const { width, height } = containerRef.value.getBoundingClientRect()
   scene = new THREE.Scene()
-  scene.background = new THREE.Color('#f5f0eb')
+  scene.background = new THREE.Color('#ede8e2')
 
   // 检查当前暗色模式
   if (isDarkMode.value) {
@@ -841,9 +871,9 @@ onMounted(() => {
   envCanvas.height = 128
   const ctx = envCanvas.getContext('2d')!
   const gradient = ctx.createLinearGradient(0, 0, 0, 128)
-  gradient.addColorStop(0, '#f5f0eb')    // 顶部暖米色
-  gradient.addColorStop(0.5, '#e8e0d8')  // 中部
-  gradient.addColorStop(1, '#d5cdc5')    // 底部
+  gradient.addColorStop(0, '#ede8e2')    // 顶部暖米色
+  gradient.addColorStop(0.5, '#ddd5cc')  // 中部
+  gradient.addColorStop(1, '#c8c0b8')    // 底部
   ctx.fillStyle = gradient
   ctx.fillRect(0, 0, 256, 128)
   const envTexture = new THREE.CanvasTexture(envCanvas)
@@ -851,7 +881,7 @@ onMounted(() => {
 
   const envMap = pmremGenerator.fromEquirectangular(envTexture).texture
   scene.environment = envMap
-  scene.background = new THREE.Color('#f5f0eb')
+  scene.background = new THREE.Color('#ede8e2')
 
   envTexture.dispose()
   pmremGenerator.dispose()
