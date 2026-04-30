@@ -11,7 +11,6 @@ import VitiligoContour from '@/components/tracker/VitiligoContour.vue'
 import BodyPartCamera from '@/components/tracker/BodyPartCamera.vue'
 import ReportUploader from '@/components/tracker/ReportUploader.vue'
 import DigitalHuman from '@/components/tracker/DigitalHuman.vue'
-import type { AssessmentSnapshot } from '@/components/tracker/DigitalHuman.vue'
 import BodyPartPanel from '@/components/tracker/BodyPartPanel.vue'
 import ChatOverlay from '@/components/chat/ChatOverlay.vue'
 import type { VasiHistoryItem, ContourRegion, QualityCheckResult } from '@/api/vasi'
@@ -70,18 +69,8 @@ function goHome() {
 // ── Digital Human Event Handlers ──
 const digitalHumanRef = ref<InstanceType<typeof DigitalHuman> | null>(null)
 
-function onSelectPart(part: string) {
-  selectedPart.value = part
-  selectedBodySite.value = part
-  playMetaphor('body-scan', 'assessment')
-}
-
 function onOpenChat() {
   playMetaphor('bubble-expand', 'chat')
-}
-
-function onOpenReport() {
-  playMetaphor('stethoscope-glow', 'report')
 }
 
 // ── Tracker State ──
@@ -93,18 +82,8 @@ const uploadStage = ref<'uploading' | 'segmenting' | 'analyzing' | ''>('')
 const showCamera = ref(false)
 const selectedPart = ref<string | null>(null)
 
-// ── Digital Human: assessments map from latest results ──
+// ── Digital Human: latest results (for potential future use) ──
 const latestPerPart = ref<Record<string, { vasiScore: number; areaPercentage: number; stage: string; classification?: string }>>({})
-
-const assessmentsMap = computed<Record<string, AssessmentSnapshot | null>>(() => {
-  const map: Record<string, AssessmentSnapshot | null> = {
-    face: null, neck: null, hands: null, trunk: null, arms: null, legs: null, feet: null,
-  }
-  for (const [key, val] of Object.entries(latestPerPart.value)) {
-    if (key in map) map[key] = val
-  }
-  return map
-})
 
 const activePartAssessment = computed(() => {
   if (!selectedPart.value) return null
@@ -670,10 +649,7 @@ onUnmounted(() => {
     <div class="w-full max-w-lg h-[65vh] min-h-[400px] rounded-2xl overflow-hidden relative" data-swipe-ignore @touchstart.stop @touchmove.stop @touchend.stop>
       <DigitalHuman
         ref="digitalHumanRef"
-        :assessments="assessmentsMap"
-        @select-part="onSelectPart"
         @open-chat="onOpenChat"
-        @open-report="onOpenReport"
       />
 
       <!-- Visual metaphor overlay (body-scan only) -->

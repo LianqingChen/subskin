@@ -11,14 +11,8 @@ export interface AssessmentSnapshot {
   classification?: string
 }
 
-const props = defineProps<{
-  assessments: Record<string, AssessmentSnapshot | null>
-}>()
-
 const emit = defineEmits<{
-  'select-part': [part: string]
   'open-chat': []
-  'open-report': []
 }>()
 
 const containerRef = ref<HTMLDivElement>()
@@ -28,25 +22,21 @@ let renderer: THREE.WebGLRenderer
 let controls: OrbitControls
 let raycaster: THREE.Raycaster
 let animationId = 0
-let torsoMesh: THREE.Mesh | null = null
-let torsoBaseScale = new THREE.Vector3(1, 1, 0.72)
 
 // Interactive objects
 let bubbleGroup: THREE.Group | null = null
-let stethoscopeGroup: THREE.Group | null = null
 
 // Highlight flash state
-let highlightTarget: 'bubble' | 'stethoscope' | null = null
+let highlightTarget: 'bubble' | null = null
 let highlightStart = 0
 const HIGHLIGHT_DURATION = 500 // ms
 
 // Idle greeting state
 const IDLE_MESSAGES = [
-  '点击我身上的部位，可以评估白斑情况哦~',
-  '想问问关于白癜风的问题？点击旁边的对话气泡~',
-  '上传体检报告，我帮你解读关键指标~',
+  '你好呀~ 有什么需要帮助的吗？',
+  '点击我头顶的气泡，和我聊天吧~',
   '左右滑动可以旋转查看我哦~',
-  '有白斑问题随时问我，我一直在~',
+  '我是你的AI销售助手，随时为你服务~',
 ]
 let hasGreeted = false
 let lastInteractionTime = Date.now()
@@ -57,10 +47,6 @@ let greetingIndex = 0
 const greetingText = ref('')
 const greetingPos = ref({ x: 0, y: 0 })
 let greetingTimeout: ReturnType<typeof setTimeout> | null = null
-
-const partGroups = new Map<string, THREE.Group>()
-const partMaterials = new Map<string, THREE.MeshStandardMaterial[]>()
-const outlineMeshes = new Map<string, THREE.Mesh[]>()
 
 // 暗色模式适配
 const themeStore = useThemeStore()
@@ -77,29 +63,6 @@ function scheduleBlink() {
     blinkCooldown = null
     scheduleBlink()
   }, 2000 + Math.random() * 4000) // 2-6秒随机间隔
-}
-
-const baseSkin = new THREE.Color('#E8C9A0')
-const whiteColor = new THREE.Color('#FAF5F0')
-const unassessedColor = new THREE.Color('#C8BFB8')
-
-function skinMat(color?: THREE.Color): THREE.MeshStandardMaterial {
-  return new THREE.MeshStandardMaterial({
-    color: color || baseSkin,
-    roughness: 0.55,
-    metalness: 0.0,
-  })
-}
-
-function mesh(geo: THREE.BufferGeometry, pos: [number, number, number], key: string, opts?: { rotZ?: number; scale?: [number, number, number]; mat?: THREE.Material }): THREE.Mesh {
-  const m = new THREE.Mesh(geo, opts?.mat || skinMat())
-  m.position.set(...pos)
-  if (opts?.rotZ) m.rotation.z = opts.rotZ
-  if (opts?.scale) m.scale.set(...opts.scale)
-  m.userData.partKey = key
-  m.castShadow = true
-  m.receiveShadow = true
-  return m
 }
 
 // ── Idle Greeting System ──
@@ -137,246 +100,178 @@ function markInteraction() {
   lastInteractionTime = Date.now()
 }
 
-function buildHumanoid() {
-  const S = 24
+function buildPanda() {
+  const blackMat = new THREE.MeshStandardMaterial({ color: '#1a1a1a', roughness: 0.45, metalness: 0.0 })
+  const whiteMat = new THREE.MeshStandardMaterial({ color: '#fafaf8', roughness: 0.5, metalness: 0.0 })
+  const noseMat = new THREE.MeshStandardMaterial({ color: '#111111', roughness: 0.3 })
+  const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.15, emissive: '#ffffff', emissiveIntensity: 0.2 })
+  const pupilMat = new THREE.MeshStandardMaterial({ color: '#0a0a0a', roughness: 0.05 })
+  const highlightMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.05, emissive: '#ffffff', emissiveIntensity: 0.6 })
 
-  // ── HEAD ──
+  const pandaGroup = new THREE.Group()
+  pandaGroup.name = 'panda'
+
+  // ── BODY (white ellipsoid, slightly squat) ──
+  const bodyGeo = new THREE.SphereGeometry(0.22, 32, 24)
+  bodyGeo.scale(1, 0.7, 0.65)
+  const bodyMesh = new THREE.Mesh(bodyGeo, whiteMat)
+  bodyMesh.position.set(0, 0.02, 0)
+  bodyMesh.castShadow = true
+  bodyMesh.receiveShadow = true
+  pandaGroup.add(bodyMesh)
+
+  // ── HEAD (large white sphere) ──
   const headGroup = new THREE.Group()
-  headGroup.name = 'face'
-  const headGeo = new THREE.SphereGeometry(0.105, 32, 24)
-  const hp = headGeo.attributes.position
-  for (let i = 0; i < hp.count; i++) {
-    let x = hp.getX(i), y = hp.getY(i), z = hp.getZ(i)
-    // Chin: taper gently
-    if (y < -0.03) {
-      const t = Math.min(1, (-y - 0.03) / 0.075)
-      x *= 1 - t * 0.25
-      z *= 1 - t * 0.12
-      if (z > 0) z += t * 0.010
-    }
-    // Nose bump: subtler
-    if (z > 0.08 && y > -0.01 && y < 0.04) z += 0.012
-    // Cheeks: slight fullness
-    if (Math.abs(x) > 0.06 && y > -0.02 && y < 0.04 && z > 0.02) z += 0.005
-    hp.setX(i, x); hp.setY(i, y); hp.setZ(i, z)
-  }
-  hp.needsUpdate = true
-  headGeo.computeVertexNormals()
+  headGroup.position.set(0, 0.48, 0)
+  const headGeo = new THREE.SphereGeometry(0.20, 32, 24)
+  headGeo.scale(1, 0.88, 0.82)
+  const headMesh = new THREE.Mesh(headGeo, whiteMat)
+  headMesh.castShadow = true
+  headMesh.receiveShadow = true
+  headGroup.add(headMesh)
 
-  const headMs: THREE.Mesh[] = []
-  const headMain = mesh(headGeo, [0, 0.88, 0], 'face')
-  headGroup.add(headMain)
-  headMs.push(headMain)
-
-  // Ears — slightly larger, rounder, more visible
+  // ── EARS (black spheres on top) ──
   for (const sx of [-1, 1]) {
-    const ear = mesh(new THREE.SphereGeometry(0.024, 10, 10), [sx * 0.10, 0.87, -0.01], 'face', { scale: [0.55, 1.0, 0.75] })
+    const earGeo = new THREE.SphereGeometry(0.07, 16, 12)
+    const ear = new THREE.Mesh(earGeo, blackMat)
+    ear.position.set(sx * 0.14, 0.18, -0.03)
+    ear.castShadow = true
     headGroup.add(ear)
-    headMs.push(ear)
   }
 
-  // Eyes — bigger, cuter, with iris highlights
-  const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.3 })
-  const irisMat = new THREE.MeshStandardMaterial({ color: '#3d2b1f', roughness: 0.2, metalness: 0.15 })
-  const pupilMat = new THREE.MeshStandardMaterial({ color: '#1a1a1a', roughness: 0.1 })
-  const highlightMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.1, emissive: '#ffffff', emissiveIntensity: 0.5 })
+  // ── EYE PATCHES (black ellipses, angled) ──
   for (const sx of [-1, 1]) {
-    // White
-    const ewMesh = new THREE.Mesh(new THREE.SphereGeometry(0.018, 14, 10), eyeWhiteMat)
-    ewMesh.scale.set(1.2, 0.85, 0.5)
-    ewMesh.position.set(sx * 0.036, 0.895, 0.093)
-    ewMesh.userData.partKey = 'face'
-    headGroup.add(ewMesh)
-    headMs.push(ewMesh)
-    // Iris (colored, bigger)
-    const iris = new THREE.Mesh(new THREE.SphereGeometry(0.010, 10, 8), irisMat)
-    iris.position.set(sx * 0.036, 0.895, 0.105)
-    iris.userData.partKey = 'face'
-    headGroup.add(iris)
-    headMs.push(iris)
+    const patchShape = new THREE.Shape()
+    const rx = 0.06, ry = 0.045
+    // Draw an ellipse using a circle scaled
+    const segs = 24
+    for (let i = 0; i <= segs; i++) {
+      const angle = (i / segs) * Math.PI * 2
+      const x = Math.cos(angle) * rx
+      const y = Math.sin(angle) * ry
+      if (i === 0) patchShape.moveTo(x, y)
+      else patchShape.lineTo(x, y)
+    }
+    const patchGeo = new THREE.ShapeGeometry(patchShape)
+    const patch = new THREE.Mesh(patchGeo, blackMat)
+    patch.position.set(sx * 0.08, 0.05, 0.14)
+    patch.rotation.z = sx * -0.2
+    patch.rotation.y = sx * 0.15
+    headGroup.add(patch)
+  }
+
+  // ── EYES (white + pupil + highlight) ──
+  const eyeMeshes: THREE.Mesh[] = []
+  for (const sx of [-1, 1]) {
+    // White of eye
+    const ewGeo = new THREE.SphereGeometry(0.035, 14, 10)
+    ewGeo.scale(1.15, 1.0, 0.5)
+    const ew = new THREE.Mesh(ewGeo, eyeWhiteMat)
+    ew.position.set(sx * 0.075, 0.05, 0.155)
+    ew.userData.isPandaEye = true
+    headGroup.add(ew)
+    eyeMeshes.push(ew)
+
     // Pupil
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.005, 8, 6), pupilMat)
-    pupil.position.set(sx * 0.036, 0.895, 0.110)
-    pupil.userData.partKey = 'face'
+    const pupilGeo = new THREE.SphereGeometry(0.016, 10, 8)
+    const pupil = new THREE.Mesh(pupilGeo, pupilMat)
+    pupil.position.set(sx * 0.075, 0.05, 0.170)
     headGroup.add(pupil)
-    headMs.push(pupil)
-    // Highlight dot (cute sparkle)
-    const hl = new THREE.Mesh(new THREE.SphereGeometry(0.003, 6, 4), highlightMat)
-    hl.position.set(sx * 0.033, 0.898, 0.112)
-    hl.userData.partKey = 'face'
+
+    // Highlight sparkle
+    const hlGeo = new THREE.SphereGeometry(0.006, 6, 4)
+    const hl = new THREE.Mesh(hlGeo, highlightMat)
+    hl.position.set(sx * 0.068, 0.058, 0.172)
     headGroup.add(hl)
-    headMs.push(hl)
   }
 
-  // Eyebrows — softer, thinner, more natural arc
-  const browMat = new THREE.MeshStandardMaterial({ color: '#5c4033', roughness: 0.6 })
-  for (const sx of [-1, 1]) {
-    const browCurve = new THREE.QuadraticBezierCurve3(
-      new THREE.Vector3(sx * -0.02, 0, 0),
-      new THREE.Vector3(0, 0.004, 0.001),
-      new THREE.Vector3(sx * 0.02, -0.001, 0),
-    )
-    const browGeo = new THREE.TubeGeometry(browCurve, 10, 0.003, 6, false)
-    const browMesh = new THREE.Mesh(browGeo, browMat)
-    browMesh.position.set(sx * 0.036, 0.918, 0.096)
-    browMesh.rotation.z = sx * -0.05
-    browMesh.userData.partKey = 'face'
-    headGroup.add(browMesh)
-    headMs.push(browMesh)
-  }
+  // ── NOSE (small black oval) ──
+  const noseGeo = new THREE.SphereGeometry(0.025, 12, 8)
+  noseGeo.scale(1.3, 0.7, 0.6)
+  const nose = new THREE.Mesh(noseGeo, noseMat)
+  nose.position.set(0, -0.03, 0.18)
+  headGroup.add(nose)
 
-  // Nose — softer, smaller bump
-  const noseMat = new THREE.MeshStandardMaterial({ color: '#ddb896', roughness: 0.55 })
-  const noseMesh = new THREE.Mesh(new THREE.SphereGeometry(0.010, 10, 8), noseMat)
-  noseMesh.scale.set(0.9, 1.0, 0.7)
-  noseMesh.position.set(0, 0.872, 0.102)
-  noseMesh.userData.partKey = 'face'
-  headGroup.add(noseMesh)
-  headMs.push(noseMesh)
-
-  // Mouth — gentle smile curve, softer color
+  // ── MOUTH (gentle curve) ──
   const mouthCurve = new THREE.QuadraticBezierCurve3(
-    new THREE.Vector3(-0.018, 0, 0),
-    new THREE.Vector3(0, 0.005, 0.003),
-    new THREE.Vector3(0.018, 0, 0),
+    new THREE.Vector3(-0.025, 0, 0),
+    new THREE.Vector3(0, -0.01, 0.003),
+    new THREE.Vector3(0.025, 0, 0),
   )
-  const mouthGeo = new THREE.TubeGeometry(mouthCurve, 12, 0.003, 6, false)
-  const mouthMat = new THREE.MeshStandardMaterial({ color: '#c47a6c', roughness: 0.45 })
-  const mouthMesh = new THREE.Mesh(mouthGeo, mouthMat)
-  mouthMesh.position.set(0, 0.848, 0.094)
-  mouthMesh.userData.partKey = 'face'
+  const mouthGeo = new THREE.TubeGeometry(mouthCurve, 12, 0.004, 6, false)
+  const mouthMesh = new THREE.Mesh(mouthGeo, blackMat)
+  mouthMesh.position.set(0, -0.07, 0.17)
   headGroup.add(mouthMesh)
-  headMs.push(mouthMesh)
 
-  // Blush cheeks — subtle warm spheres
-  const blushMat = new THREE.MeshStandardMaterial({ color: '#f0b8a8', roughness: 0.7, transparent: true, opacity: 0.35 })
+  pandaGroup.add(headGroup)
+
+  // ── ARMS (black capsules, hanging at sides) ──
   for (const sx of [-1, 1]) {
-    const blush = new THREE.Mesh(new THREE.SphereGeometry(0.018, 10, 8), blushMat)
-    blush.position.set(sx * 0.055, 0.870, 0.08)
-    blush.scale.set(1.2, 0.7, 0.3)
-    blush.userData.partKey = 'face'
-    headGroup.add(blush)
-    headMs.push(blush)
+    const upperGeo = new THREE.CapsuleGeometry(0.055, 0.18, 8, 16)
+    const upper = new THREE.Mesh(upperGeo, blackMat)
+    upper.position.set(sx * 0.22, 0.10, 0)
+    upper.rotation.z = sx * 0.15
+    upper.castShadow = true
+    pandaGroup.add(upper)
+
+    const lowerGeo = new THREE.CapsuleGeometry(0.045, 0.14, 8, 16)
+    const lower = new THREE.Mesh(lowerGeo, blackMat)
+    lower.position.set(sx * 0.27, -0.06, 0)
+    lower.rotation.z = sx * 0.1
+    lower.castShadow = true
+    pandaGroup.add(lower)
   }
 
-  registerPart('face', headGroup, headMs)
-
-  // ── NECK ──
-  const neckGroup = new THREE.Group()
-  neckGroup.name = 'neck'
-  const neckM = mesh(new THREE.CylinderGeometry(0.042, 0.050, 0.09, S), [0, 0.76, 0], 'neck')
-  neckGroup.add(neckM)
-  registerPart('neck', neckGroup, [neckM])
-
-  // ── TORSO + DOCTOR COAT ──
-  const coatMat = new THREE.MeshStandardMaterial({ color: '#fafafa', roughness: 0.4, metalness: 0.02 })
-  const torsoGroup = new THREE.Group()
-  torsoGroup.name = 'trunk'
-  // Torso profile — slightly broader shoulders, natural waist
-  const profile = [
-    new THREE.Vector2(0.00, 0.72), new THREE.Vector2(0.10, 0.72),   // top center → shoulder
-    new THREE.Vector2(0.22, 0.68), new THREE.Vector2(0.24, 0.62),   // shoulders
-    new THREE.Vector2(0.21, 0.54), new THREE.Vector2(0.18, 0.48),   // chest
-    new THREE.Vector2(0.15, 0.38), new THREE.Vector2(0.16, 0.33),   // waist
-    new THREE.Vector2(0.19, 0.28), new THREE.Vector2(0.18, 0.21),   // hips
-    new THREE.Vector2(0.00, 0.21),                                    // bottom center
-  ]
-  torsoMesh = mesh(new THREE.LatheGeometry(profile, 32), [0, 0, 0], 'trunk', { scale: [1, 1, 0.72] })
-  torsoBaseScale = torsoMesh.scale.clone()
-  torsoGroup.add(torsoMesh)
-
-  // Doctor white coat (slightly larger, white toon material)
-  const coatGeo = new THREE.LatheGeometry(profile.map(p => p.clone().multiplyScalar(1.08)), 32)
-  const coatMesh = new THREE.Mesh(coatGeo, coatMat)
-  coatMesh.position.set(0, -0.01, 0)
-  coatMesh.scale.set(1, 1, 0.75) // Slightly open in front (z-scale)
-  coatMesh.userData.partKey = 'trunk'
-  coatMesh.castShadow = true
-  coatMesh.receiveShadow = true
-  torsoGroup.add(coatMesh)
-
-  // Coat collar / lapels (two small wedges near neck)
-  const lapelMat = new THREE.MeshStandardMaterial({ color: '#f5f5f5', roughness: 0.4, metalness: 0.05 })
+  // ── LEGS (black short cylinders) ──
   for (const sx of [-1, 1]) {
-    const lapel = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.015), lapelMat)
-    lapel.position.set(sx * 0.06, 0.68, 0.08)
-    lapel.rotation.z = sx * 0.25
-    lapel.userData.partKey = 'trunk'
-    lapel.castShadow = true
-    torsoGroup.add(lapel)
+    const legGeo = new THREE.CapsuleGeometry(0.07, 0.12, 8, 16)
+    const leg = new THREE.Mesh(legGeo, blackMat)
+    leg.position.set(sx * 0.09, -0.16, 0.02)
+    leg.castShadow = true
+    leg.receiveShadow = true
+    pandaGroup.add(leg)
   }
 
-  registerPart('trunk', torsoGroup, [torsoMesh])
-
-  // ── ARMS ──
-  const armsGroup = new THREE.Group()
-  armsGroup.name = 'arms'
-  const armMs: THREE.Mesh[] = []
-  for (const s of [-1, 1]) {
-    armMs.push(mesh(new THREE.SphereGeometry(0.050, S, S / 2), [s * 0.22, 0.67, 0], 'arms'))
-    armMs.push(mesh(new THREE.CapsuleGeometry(0.042, 0.22, 8, S), [s * 0.26, 0.55, 0], 'arms', { rotZ: s * 0.10 }))
-    armMs.push(mesh(new THREE.CapsuleGeometry(0.035, 0.22, 8, S), [s * 0.29, 0.30, 0], 'arms', { rotZ: s * 0.05 }))
+  // ── FEET (black ellipsoids) ──
+  for (const sx of [-1, 1]) {
+    const footGeo = new THREE.SphereGeometry(0.06, 16, 12)
+    footGeo.scale(1.15, 0.3, 1.3)
+    const foot = new THREE.Mesh(footGeo, blackMat)
+    foot.position.set(sx * 0.09, -0.24, 0.05)
+    foot.castShadow = true
+    foot.receiveShadow = true
+    pandaGroup.add(foot)
   }
-  armMs.forEach(m => armsGroup.add(m))
-  registerPart('arms', armsGroup, armMs)
 
-  // ── HANDS ──
-  const handsGroup = new THREE.Group()
-  handsGroup.name = 'hands'
-  const handMs: THREE.Mesh[] = []
-  for (const s of [-1, 1]) {
-    handMs.push(mesh(new THREE.SphereGeometry(0.036, 12, 10), [s * 0.32, 0.07, 0], 'hands', { scale: [0.85, 1.15, 0.50] }))
-    for (const fz of [0.020, 0, -0.020]) handMs.push(mesh(new THREE.CapsuleGeometry(0.008, 0.038, 4, 8), [s * 0.32, 0.01, fz], 'hands'))
-    handMs.push(mesh(new THREE.CapsuleGeometry(0.010, 0.025, 4, 8), [s * 0.295, 0.06, 0.016], 'hands', { rotZ: s * -0.3 }))
-  }
-  handMs.forEach(m => handsGroup.add(m))
-  registerPart('hands', handsGroup, handMs)
+  // ── TAIL (small white sphere at back) ──
+  const tailGeo = new THREE.SphereGeometry(0.05, 12, 10)
+  const tail = new THREE.Mesh(tailGeo, whiteMat)
+  tail.position.set(0, -0.10, -0.16)
+  pandaGroup.add(tail)
 
-  // ── LEGS (dark pants) ──
-  const pantsMat = new THREE.MeshStandardMaterial({ color: '#3d4a5c', roughness: 0.5, metalness: 0.05 })
-  const legsGroup = new THREE.Group()
-  legsGroup.name = 'legs'
-  const legMs: THREE.Mesh[] = []
-  for (const s of [-1, 1]) {
-    legMs.push(mesh(new THREE.CapsuleGeometry(0.060, 0.22, 8, S), [s * 0.09, 0.06, 0], 'legs', { mat: pantsMat }))
-    legMs.push(mesh(new THREE.SphereGeometry(0.050, S, S / 2), [s * 0.085, -0.06, 0], 'legs', { mat: pantsMat }))
-    legMs.push(mesh(new THREE.CapsuleGeometry(0.044, 0.28, 8, S), [s * 0.085, -0.34, 0], 'legs', { mat: pantsMat }))
-  }
-  legMs.forEach(m => legsGroup.add(m))
-  registerPart('legs', legsGroup, legMs)
+  scene.add(pandaGroup)
 
-  // ── FEET (dark shoes) ──
-  const shoeMat = new THREE.MeshStandardMaterial({ color: '#2d3035', roughness: 0.35, metalness: 0.1 })
-  const feetGroup = new THREE.Group()
-  feetGroup.name = 'feet'
-  const footMs: THREE.Mesh[] = []
-  for (const s of [-1, 1]) {
-    const foot = mesh(new THREE.SphereGeometry(0.052, 16, 12), [s * 0.09, -0.52, 0.04], 'feet', { scale: [0.72, 0.32, 1.35], mat: shoeMat })
-    footMs.push(foot)
-  }
-  footMs.forEach(m => feetGroup.add(m))
-  registerPart('feet', feetGroup, footMs)
+  // Store reference to panda group for animation
+  ;(scene as any).__pandaGroup = pandaGroup
+  ;(scene as any).__pandaEyeMeshes = eyeMeshes
 
   // ── PLATFORM ──
   const isDark = themeStore.mode === 'dark'
   const platGeo = new THREE.CylinderGeometry(0.34, 0.37, 0.018, 32)
   const platMat = new THREE.MeshStandardMaterial({ color: isDark ? '#2a2a3e' : '#e8e0d8', roughness: 0.85, metalness: 0.05 })
   const plat = new THREE.Mesh(platGeo, platMat)
-  plat.position.y = -0.57
+  plat.position.y = -0.32
   plat.receiveShadow = true
   scene.add(plat)
 
-  // ── AI SPEECH BUBBLE (3D cloud, right side of head) ──
+  // ── AI SPEECH BUBBLE ──
   buildSpeechBubble()
-
-  // ── STETHOSCOPE (around neck) ──
-  buildStethoscope()
 }
 
 function buildSpeechBubble() {
   bubbleGroup = new THREE.Group()
-  // Position: right side of head, near mouth level
-  bubbleGroup.position.set(0.22, 0.94, 0.08)
+  // Position: right side of panda head
+  bubbleGroup.position.set(0.28, 0.60, 0.10)
 
   const cloudMat = new THREE.MeshStandardMaterial({
     color: '#ffffff',
@@ -449,155 +344,6 @@ function buildSpeechBubble() {
   scene.add(bubbleGroup)
 }
 
-function buildStethoscope() {
-  stethoscopeGroup = new THREE.Group()
-  stethoscopeGroup.position.set(0, 0.72, 0)
-
-  const tubeMat = new THREE.MeshStandardMaterial({ color: '#4b5563', roughness: 0.3, metalness: 0.4 })
-  const metalMat = new THREE.MeshStandardMaterial({ color: '#c0c0c0', roughness: 0.15, metalness: 0.85 })
-  const chestPieceMat = new THREE.MeshStandardMaterial({ color: '#d4d4d8', roughness: 0.1, metalness: 0.9, emissive: '#d4d4d8', emissiveIntensity: 0.05 })
-
-  // ── Main tube: loops around back of neck, both sides come down to chest piece ──
-  // Continuous curve: left ear → over back of neck → right ear → Y-merge → down to chest piece
-  const mainTubePath = new THREE.CatmullRomCurve3([
-    // Left ear tip (up and to the left)
-    new THREE.Vector3(-0.06, 0.10, 0.03),
-    // Left side of neck
-    new THREE.Vector3(-0.08, 0.06, 0.0),
-    // Behind neck (left)
-    new THREE.Vector3(-0.06, 0.08, -0.07),
-    // Behind neck (center)
-    new THREE.Vector3(0, 0.09, -0.08),
-    // Behind neck (right)
-    new THREE.Vector3(0.06, 0.08, -0.07),
-    // Right side of neck
-    new THREE.Vector3(0.08, 0.06, 0.0),
-    // Right ear tip
-    new THREE.Vector3(0.06, 0.10, 0.03),
-  ])
-  const mainTube = new THREE.Mesh(new THREE.TubeGeometry(mainTubePath, 40, 0.005, 8, false), tubeMat)
-  mainTube.userData.isStethoscope = true
-  stethoscopeGroup.add(mainTube)
-
-  // ── Stem tube: from center of neck loop down to chest piece ──
-  const stemPath = new THREE.CatmullRomCurve3([
-    // Start at front of neck
-    new THREE.Vector3(0, 0.02, 0.06),
-    // Curve down and slightly forward
-    new THREE.Vector3(0, -0.04, 0.07),
-    new THREE.Vector3(0, -0.10, 0.08),
-    // End at chest piece
-    new THREE.Vector3(0, -0.14, 0.09),
-  ])
-  const stemTube = new THREE.Mesh(new THREE.TubeGeometry(stemPath, 20, 0.005, 8, false), tubeMat)
-  stemTube.userData.isStethoscope = true
-  stethoscopeGroup.add(stemTube)
-
-  // ── Ear tips (dark rubber) ──
-  const earTipMat = new THREE.MeshStandardMaterial({ color: '#1f2937', roughness: 0.6, metalness: 0.05 })
-  for (const sx of [-1, 1]) {
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.009, 10, 8), earTipMat)
-    tip.position.set(sx * 0.06, 0.10, 0.03)
-    tip.userData.isStethoscope = true
-    stethoscopeGroup.add(tip)
-  }
-
-  // ── Spring connector (metal ring between ear tube and ear tip) ──
-  for (const sx of [-1, 1]) {
-    const spring = new THREE.Mesh(new THREE.TorusGeometry(0.007, 0.002, 6, 12), metalMat)
-    spring.position.set(sx * 0.06, 0.095, 0.03)
-    spring.userData.isStethoscope = true
-    stethoscopeGroup.add(spring)
-  }
-
-  // ── Chest piece (the round disc) ──
-  // Outer bell ring
-  const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.026, 0.006, 24), chestPieceMat)
-  bell.position.set(0, -0.15, 0.095)
-  bell.rotation.x = 0.1
-  bell.userData.isStethoscope = true
-  stethoscopeGroup.add(bell)
-
-  // Diaphragm face (flat disc, slightly different metal)
-  const diaphragmMat = new THREE.MeshStandardMaterial({ color: '#e4e4e7', roughness: 0.05, metalness: 0.95 })
-  const diaphragm = new THREE.Mesh(new THREE.CylinderGeometry(0.020, 0.020, 0.002, 24), diaphragmMat)
-  diaphragm.position.set(0, -0.153, 0.097)
-  diaphragm.rotation.x = 0.1
-  diaphragm.userData.isStethoscope = true
-  stethoscopeGroup.add(diaphragm)
-
-  // Stem connector (metal piece between tube and bell)
-  const stemConn = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.004, 0.020, 10), metalMat)
-  stemConn.position.set(0, -0.13, 0.09)
-  stemConn.rotation.x = 0.15
-  stemConn.userData.isStethoscope = true
-  stethoscopeGroup.add(stemConn)
-
-  // ── Red cross on diaphragm ──
-  const crossMat = new THREE.MeshStandardMaterial({ color: '#ef4444', roughness: 0.4, emissive: '#ef4444', emissiveIntensity: 0.2 })
-  const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.014, 0.004, 0.002), crossMat)
-  crossH.position.set(0, -0.155, 0.10)
-  crossH.rotation.x = 0.1
-  crossH.userData.isStethoscope = true
-  stethoscopeGroup.add(crossH)
-  const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.014, 0.002), crossMat)
-  crossV.position.set(0, -0.155, 0.10)
-  crossV.rotation.x = 0.1
-  crossV.userData.isStethoscope = true
-  stethoscopeGroup.add(crossV)
-
-  scene.add(stethoscopeGroup)
-}
-
-function registerPart(key: string, group: THREE.Group, meshes: THREE.Mesh[]) {
-  scene.add(group)
-  partGroups.set(key, group)
-  const mats = new Set<THREE.MeshStandardMaterial>()
-  meshes.forEach(m => { if (m.material instanceof THREE.MeshStandardMaterial) mats.add(m.material) })
-  partMaterials.set(key, [...mats])
-}
-
-function getPartColor(part: string): THREE.Color {
-  const a = props.assessments[part]
-  if (!a) return unassessedColor.clone()
-  return baseSkin.clone().lerp(whiteColor, Math.min(1, a.areaPercentage / 100))
-}
-
-const STAGE_COLORS: Record<string, string> = {
-  '好转': '#22c55e', '稳定': '#eab308', '扩散': '#ef4444',
-  '好转期': '#22c55e', '稳定期': '#eab308', '进展期': '#ef4444',
-}
-
-function updateOutlines() {
-  for (const ms of outlineMeshes.values()) ms.forEach(m => { m.parent?.remove(m); m.geometry.dispose(); (m.material as THREE.Material).dispose() })
-  outlineMeshes.clear()
-  for (const [key, group] of partGroups) {
-    const a = props.assessments[key]
-    if (!a) continue
-    const color = new THREE.Color(STAGE_COLORS[a.stage] || '#94a3b8')
-    const outlines: THREE.Mesh[] = []
-    group.children.forEach(child => {
-      if (!(child instanceof THREE.Mesh) || child.userData.isOutline) return
-      const oGeo = child.geometry.clone()
-      const oMat = new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.6 })
-      const oMesh = new THREE.Mesh(oGeo, oMat)
-      oMesh.position.copy(child.position)
-      oMesh.rotation.copy(child.rotation)
-      oMesh.scale.copy(child.scale).multiplyScalar(1.06)
-      oMesh.userData.isOutline = true
-      oMesh.userData.baseScale = oMesh.scale.clone()
-      group.add(oMesh)
-      outlines.push(oMesh)
-    })
-    outlineMeshes.set(key, outlines)
-  }
-}
-
-function refreshAllColors() {
-  for (const [key, mats] of partMaterials) mats.forEach(m => m.color.copy(getPartColor(key)))
-  updateOutlines()
-}
-
 // 暗色模式监听
 watch(isDarkMode, (isDark) => {
   if (isDark) {
@@ -612,11 +358,11 @@ watch(isDarkMode, (isDark) => {
 }, { immediate: false })
 
 function setupLighting() {
-  // Ambient — soft warm fill for PBR base illumination
-  scene.add(new THREE.AmbientLight('#fef5ee', 1.4))
+  // Ambient — generous warm fill, keeps character clearly visible
+  scene.add(new THREE.AmbientLight('#fef5ee', 2.2))
 
-  // Key Light（主光）— 右上方45°，warm white, strong for PBR definition
-  const key = new THREE.DirectionalLight('#fff5eb', 3.0)
+  // Key Light（主光）— 右上方45°，bright warm white
+  const key = new THREE.DirectionalLight('#fff5eb', 3.8)
   key.position.set(3, 4, 5)
   key.castShadow = true
   key.shadow.mapSize.set(1024, 1024)
@@ -629,13 +375,13 @@ function setupLighting() {
   key.shadow.bias = -0.0001
   scene.add(key)
 
-  // Fill Light（补光）— gentle left fill, moderate
-  const fill = new THREE.DirectionalLight('#e8f0ff', 0.7)
+  // Fill Light（补光）— left fill for shadow softness
+  const fill = new THREE.DirectionalLight('#e8f0ff', 0.9)
   fill.position.set(-2.5, 1.5, -1.5)
   scene.add(fill)
 
-  // Rim Light（轮廓光）— back/top light for silhouette separation
-  const rim = new THREE.DirectionalLight('#c8d6ff', 1.4)
+  // Rim Light（轮廓光）— strong back light for clear silhouette
+  const rim = new THREE.DirectionalLight('#c8d6ff', 2.0)
   rim.position.set(0, 2.5, -3.5)
   scene.add(rim)
 
@@ -647,7 +393,7 @@ function setupLighting() {
 
 const pointer = new THREE.Vector2()
 
-function flashHighlight(target: 'bubble' | 'stethoscope') {
+function flashHighlight(target: 'bubble') {
   highlightTarget = target
   highlightStart = Date.now()
 }
@@ -660,7 +406,7 @@ function onPointerDown(event: PointerEvent) {
   pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
   raycaster.setFromCamera(pointer, camera)
 
-  // Check bubble first (highest priority)
+  // Check bubble first
   if (bubbleGroup) {
     const bubbleHits = raycaster.intersectObjects(bubbleGroup.children, true)
     if (bubbleHits.length > 0) {
@@ -670,25 +416,8 @@ function onPointerDown(event: PointerEvent) {
     }
   }
 
-  // Check stethoscope next
-  if (stethoscopeGroup) {
-    const stethHits = raycaster.intersectObjects(stethoscopeGroup.children, true)
-    if (stethHits.length > 0) {
-      flashHighlight('stethoscope')
-      setTimeout(() => emit('open-report'), HIGHLIGHT_DURATION)
-      return
-    }
-  }
-
-  // Check body parts last
-  const targets: THREE.Object3D[] = []
-  partGroups.forEach(g => targets.push(...g.children))
-  const hits = raycaster.intersectObjects(targets, true)
-  if (hits.length > 0) {
-    let obj: THREE.Object3D | null = hits[0].object
-    while (obj && !obj.userData.partKey && obj.parent) obj = obj.parent
-    if (obj?.userData?.partKey) emit('select-part', obj.userData.partKey)
-  }
+  // Click on panda anywhere → open chat
+  emit('open-chat')
 }
 
 function onPointerMove(event: PointerEvent) {
@@ -699,20 +428,12 @@ function onPointerMove(event: PointerEvent) {
   pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
   raycaster.setFromCamera(pointer, camera)
 
-  // Check bubble & stethoscope for pointer cursor
+  // Check bubble for pointer cursor
   if (bubbleGroup) {
     const bubbleHits = raycaster.intersectObjects(bubbleGroup.children, true)
     if (bubbleHits.length > 0) { containerRef.value.style.cursor = 'pointer'; return }
   }
-  if (stethoscopeGroup) {
-    const stethHits = raycaster.intersectObjects(stethoscopeGroup.children, true)
-    if (stethHits.length > 0) { containerRef.value.style.cursor = 'pointer'; return }
-  }
-
-  // Check body parts
-  const targets: THREE.Object3D[] = []
-  partGroups.forEach(g => targets.push(...g.children.filter(c => !(c as any).userData?.isOutline)))
-  containerRef.value.style.cursor = raycaster.intersectObjects(targets, true).length > 0 ? 'pointer' : 'grab'
+  containerRef.value.style.cursor = 'grab'
 }
 
 function updateGreetingBubblePos() {
@@ -732,18 +453,17 @@ function updateGreetingBubblePos() {
 function animate() {
   animationId = requestAnimationFrame(animate)
   const time = Date.now() * 0.001
-  if (torsoMesh) {
-    const breath = 1 + Math.sin(time * 1.5) * 0.005
-    torsoMesh.scale.set(torsoBaseScale.x * breath, torsoBaseScale.y, torsoBaseScale.z * breath)
+
+  // Panda gentle idle breathing — scale body slightly
+  const pandaGroup = (scene as any).__pandaGroup as THREE.Group | undefined
+  if (pandaGroup) {
+    const breath = 1 + Math.sin(time * 1.5) * 0.008
+    pandaGroup.scale.setScalar(breath)
   }
+
   // Bubble gentle bob
   if (bubbleGroup) {
-    bubbleGroup.position.y = 0.96 + Math.sin(time * 1.2) * 0.008
-  }
-  // Stethoscope subtle sway on chest piece
-  if (stethoscopeGroup) {
-    // Tiny oscillation on the chest piece area
-    stethoscopeGroup.rotation.z = Math.sin(time * 0.6) * 0.01
+    bubbleGroup.position.y = 0.60 + Math.sin(time * 1.2) * 0.008
   }
 
   // Highlight flash animation
@@ -751,66 +471,32 @@ function animate() {
     const elapsed = Date.now() - highlightStart
     if (elapsed < HIGHLIGHT_DURATION) {
       const t = elapsed / HIGHLIGHT_DURATION
-      // Ease out: strong flash then fade
       const intensity = Math.max(0, 1 - t) * 1.5
-      const group = highlightTarget === 'bubble' ? bubbleGroup : stethoscopeGroup
-      const emissiveColor = highlightTarget === 'bubble' ? '#10b981' : '#3b82f6'
-      group?.traverse(child => {
+      bubbleGroup?.traverse(child => {
         if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
-          child.material.emissive.set(emissiveColor)
+          child.material.emissive.set('#10b981')
           child.material.emissiveIntensity = intensity
         }
       })
     } else {
       // Reset emissive
-      const group = highlightTarget === 'bubble' ? bubbleGroup : stethoscopeGroup
-      group?.traverse(child => {
+      bubbleGroup?.traverse(child => {
         if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
-          if (highlightTarget === 'bubble') {
-            const isBadge = child.material.color.getHex() === 0x10b981
-            child.material.emissive.set(isBadge ? '#10b981' : '#ffffff')
-            child.material.emissiveIntensity = isBadge ? 0.4 : 0.15
-          } else {
-            // Stethoscope: restore per-part emissive
-            const hex = child.material.color.getHex()
-            if (hex === 0xef4444) {
-              // Red cross
-              child.material.emissive.set('#ef4444')
-              child.material.emissiveIntensity = 0.2
-            } else if (hex === 0xd1d5db) {
-              // Chest piece metal
-              child.material.emissive.set('#d1d5db')
-              child.material.emissiveIntensity = 0.05
-            } else {
-              child.material.emissive.set('#000000')
-              child.material.emissiveIntensity = 0.0
-            }
-          }
+          const isBadge = child.material.color.getHex() === 0x10b981
+          child.material.emissive.set(isBadge ? '#10b981' : '#ffffff')
+          child.material.emissiveIntensity = isBadge ? 0.4 : 0.15
         }
       })
       highlightTarget = null
     }
   }
 
-  for (const [partKey, outlines] of outlineMeshes) {
-    const a = props.assessments[partKey]
-    if (!a) continue
-    const pulse = (a.stage === '扩散' || a.stage === '进展期') ? 1 + Math.sin(time * 3) * 0.04 : 1
-    outlines.forEach(m => {
-      const base = m.userData.baseScale as THREE.Vector3 | undefined
-      if (base) m.scale.copy(base).multiplyScalar(pulse)
-    })
-  }
-  // 眨眼效果 — 缩放眼睛Y轴
+  // 眨眼效果 — 使用 isPandaEye 标记
   const blinkScale = blinkState.value === 1 ? 0.05 : 1
-  scene.traverse(child => {
-    if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
-      // 找到眼球白色部分（通过颜色判断）
-      if (child.material.color.getHex() === 0xffffff && child.geometry.type === 'SphereGeometry' && child.position.z > 0.09) {
-        child.scale.y = blinkScale
-      }
-    }
-  })
+  const eyeMeshes = (scene as any).__pandaEyeMeshes as THREE.Mesh[] | undefined
+  if (eyeMeshes) {
+    eyeMeshes.forEach(m => { m.scale.y = blinkScale })
+  }
 
   controls.update()
   updateGreetingBubblePos()
@@ -846,7 +532,7 @@ onMounted(() => {
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.2
+  renderer.toneMappingExposure = 1.8
   containerRef.value.appendChild(renderer.domElement)
 
   controls = new OrbitControls(camera, renderer.domElement)
@@ -888,8 +574,7 @@ onMounted(() => {
 
   raycaster = new THREE.Raycaster()
   setupLighting()
-  buildHumanoid()
-  refreshAllColors()
+  buildPanda()
 
   containerRef.value.addEventListener('pointerdown', onPointerDown)
   containerRef.value.addEventListener('pointermove', onPointerMove)
@@ -908,39 +593,12 @@ onUnmounted(() => {
   window.removeEventListener('resize', onResize)
   controls?.dispose()
   renderer?.dispose()
-  partMaterials.forEach(mats => mats.forEach(m => m.dispose()))
-  partGroups.forEach(g => g.traverse(c => {
-    if (c instanceof THREE.Mesh) {
-      c.geometry.dispose()
-      ;(Array.isArray(c.material) ? c.material : [c.material]).forEach((m: THREE.Material) => m.dispose())
-    }
-  }))
-  outlineMeshes.forEach(ms => ms.forEach(m => { m.geometry.dispose(); (m.material as THREE.Material).dispose() }))
-  // Clean up interactive groups
-  for (const group of [bubbleGroup, stethoscopeGroup]) {
-    if (group) group.traverse(c => {
-      if (c instanceof THREE.Mesh) { c.geometry.dispose(); (c.material as THREE.Material).dispose() }
-    })
-  }
+  // Clean up bubble
+  if (bubbleGroup) bubbleGroup.traverse(c => {
+    if (c instanceof THREE.Mesh) { c.geometry.dispose(); (c.material as THREE.Material).dispose() }
+  })
 })
 
-watch(() => props.assessments, () => refreshAllColors(), { deep: true })
-
-function highlightPart(part: string | null) {
-  partMaterials.forEach(mats => mats.forEach(m => m.emissive.set('#000000')))
-  if (part) partMaterials.get(part)?.forEach(m => m.emissive.set('#332211'))
-}
-
-function lookAtPart(part: string) {
-  const group = partGroups.get(part)
-  if (!group) return
-  const pos = new THREE.Vector3()
-  group.getWorldPosition(pos)
-  controls.target.copy(pos)
-  controls.update()
-}
-
-defineExpose({ highlightPart, lookAtPart })
 </script>
 
 <template>
