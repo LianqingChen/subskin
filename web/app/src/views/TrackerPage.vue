@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePrivacyStore } from '@/stores/privacy'
 import { useThemeStore } from '@/stores/theme'
 import { useToast } from '@/composables/useToast'
-import { useSwipe } from '@/composables/useSwipe'
 import { vasiApi } from '@/api/vasi'
 
 import VitiligoContour from '@/components/tracker/VitiligoContour.vue'
@@ -14,31 +13,78 @@ import ReportUploader from '@/components/tracker/ReportUploader.vue'
 import DigitalHuman from '@/components/tracker/DigitalHuman.vue'
 import type { AssessmentSnapshot } from '@/components/tracker/DigitalHuman.vue'
 import BodyPartPanel from '@/components/tracker/BodyPartPanel.vue'
+import ChatOverlay from '@/components/chat/ChatOverlay.vue'
 import type { VasiHistoryItem, ContourRegion, QualityCheckResult } from '@/api/vasi'
 
-const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const privacyStore = usePrivacyStore()
 const themeStore = useThemeStore()
 const toast = useToast()
 
-const activeTab = ref<'tracker' | 'reports'>('tracker')
+// ── View State ──
+type ViewType = 'home' | 'assessment' | 'chat' | 'report'
+const activeView = ref<ViewType>('home')
+
+const chatContextHint = computed(() => {
+  if (!selectedPart.value) return ''
+  const label = PART_LABELS[selectedPart.value] || selectedPart.value
+  const a = activePartAssessment.value
+  if (a) return `你正在查看${label}的情况（VASI ${a.vasiScore}，${a.stage}），有什么想问的吗？`
+  return `你正在查看${label}，有什么想问的吗？`
+})
 
 const PART_LABELS: Record<string, string> = {
   face: '面部', neck: '颈部', hands: '手部',
   trunk: '躯干', arms: '上肢', legs: '下肢', feet: '足部',
 }
 
-// Sync tab from URL query param
-watch(() => route.query.tab, (tab) => {
-  if (tab === 'reports') activeTab.value = 'reports'
-  else activeTab.value = 'tracker'
-}, { immediate: true })
+// ── Visual Metaphor Transition ──
+const metaphorType = ref<'none' | 'body-scan'>('none')
+let metaphorTimeout: ReturnType<typeof setTimeout> | null = null
+
+function playMetaphor(type: 'body-scan' | 'bubble-expand' | 'stethoscope-glow', targetView: ViewType) {
+  if (type === 'body-scan') {
+    // Body scan: show CSS ring overlay then transition
+    metaphorType.value = type
+    if (metaphorTimeout) clearTimeout(metaphorTimeout)
+    metaphorTimeout = setTimeout(() => {
+      metaphorType.value = 'none'
+      activeView.value = targetView
+    }, 600)
+  } else {
+    // Bubble/stethoscope: 3D object itself flashes (handled by DigitalHuman), just delay the view switch
+    if (metaphorTimeout) clearTimeout(metaphorTimeout)
+    metaphorTimeout = setTimeout(() => {
+      activeView.value = targetView
+    }, 500)
+  }
+}
+
+function goHome() {
+  activeView.value = 'home'
+}
 
 
 
-// ── Tracker Tab State ──
+// ── Digital Human Event Handlers ──
+const digitalHumanRef = ref<InstanceType<typeof DigitalHuman> | null>(null)
+
+function onSelectPart(part: string) {
+  selectedPart.value = part
+  selectedBodySite.value = part
+  playMetaphor('body-scan', 'assessment')
+}
+
+function onOpenChat() {
+  playMetaphor('bubble-expand', 'chat')
+}
+
+function onOpenReport() {
+  playMetaphor('stethoscope-glow', 'report')
+}
+
+// ── Tracker State ──
 const selectedBodySite = ref('')
 const uploadedImage = ref<File | null>(null)
 const imagePreview = ref<string | null>(null)
@@ -143,6 +189,7 @@ const stats = computed(() => {
     improvement: Math.abs(parseFloat(improvement)),
     trend: parseFloat(improvement) > 0 ? '改善中 ↑' : (parseFloat(improvement) < 0 ? '需关注 ↓' : '首次评估'),
     totalAssessments: recentAssessments.value.length,
+    sparkline: recentAssessments.value.slice(0, 7).reverse().map(r => r.vasiScore),
   }
 })
 
@@ -441,11 +488,6 @@ function openCamera() {
   showCamera.value = true
 }
 
-function onSelectPart(part: string) {
-  selectedPart.value = part
-  selectedBodySite.value = part
-}
-
 function triggerUpload() {
   const input = document.querySelector<HTMLInputElement>('#tracker-file-input')
   input?.click()
@@ -614,386 +656,345 @@ onMounted(async () => {
   await loadAssessmentHistory()
 })
 
-const { direction: swipeDirection } = useSwipe({ minDistance: 60, directionRatio: 2 })
-const trackerTabs = ['tracker', 'reports'] as const
-
-watch(swipeDirection, (dir) => {
-  if (!dir) return
-  if (window.innerWidth >= 768) return // Only swipe on mobile
-  const currentIndex = trackerTabs.indexOf(activeTab.value)
-  const nextIndex = dir === 'left' ? currentIndex + 1 : currentIndex - 1
-  if (nextIndex >= 0 && nextIndex < trackerTabs.length) {
-    activeTab.value = trackerTabs[nextIndex]
-  }
+onUnmounted(() => {
+  if (metaphorTimeout) clearTimeout(metaphorTimeout)
 })
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto px-4 pt-2 pb-6 space-y-6">
-    <!-- Tabs (unified for all screen sizes) -->
-    <div class="flex flex-col gap-4">
-      <p class="text-sm text-gray-500 dark:text-gray-400">
-        {{ activeTab === 'tracker' ? '记录白斑面积变化，追踪治疗效果' : '上传体检报告，AI解读关键指标' }}
-      </p>
+  <!-- ━━━ HOME VIEW: 3D Human Hub ━━━ -->
+  <div v-if="activeView === 'home'" class="flex flex-col items-center px-4 pt-2 pb-6 min-h-[80vh]">
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">点击部位评估 · 点击气泡问AI · 点击听诊器解读体检</p>
 
-      <div class="flex border-b border-gray-200 dark:border-gray-700">
-        <button
-          v-for="tab in [
-            { key: 'tracker', icon: 'ri-bar-chart-2-line', label: '小白手账' },
-            { key: 'reports', icon: 'ri-microscope-line', label: '体检解读' },
-          ]"
-          :key="tab.key"
-          class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
-          :class="activeTab === tab.key
-            ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-          @click="activeTab = tab.key as any"
-        >
-          <i :class="tab.icon"></i> {{ tab.label }}
-        </button>
-      </div>
+    <!-- 3D Digital Human (full width, tall) -->
+    <div class="w-full max-w-lg h-[65vh] min-h-[400px] rounded-2xl overflow-hidden relative" data-swipe-ignore @touchstart.stop @touchmove.stop @touchend.stop>
+      <DigitalHuman
+        ref="digitalHumanRef"
+        :assessments="assessmentsMap"
+        @select-part="onSelectPart"
+        @open-chat="onOpenChat"
+        @open-report="onOpenReport"
+      />
 
-      <!-- Main content -->
-      <div class="min-w-0">
-
-        <!-- ━━━ Tracker Tab ━━━ -->
-    <div v-if="activeTab === 'tracker'" class="space-y-6">
-      <div v-if="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="card p-4 text-center">
-          <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ privacyStore.privacyMode ? stats.latestScore : '****' }}</div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">最新VASI评分</div>
+      <!-- Visual metaphor overlay (body-scan only) -->
+      <Transition name="metaphor-fade">
+        <div v-if="metaphorType === 'body-scan'" class="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+          <div class="w-48 h-48 rounded-full border-4 border-primary-400 animate-ping opacity-60"></div>
         </div>
-        <div class="card p-4 text-center">
-          <div class="text-2xl font-bold text-success-500 dark:text-green-400">{{ privacyStore.privacyMode ? stats.improvement + '%' : '****' }}</div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">累计改善率</div>
-        </div>
-        <div class="card p-4 text-center">
-          <div class="text-2xl font-bold text-gray-700 dark:text-gray-300">{{ stats.totalAssessments }}</div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">评估次数</div>
-        </div>
-        <div class="card p-4 text-center">
-          <div class="text-lg font-semibold" :class="stats.trend.includes('改善') ? 'text-success-500 dark:text-green-400' : 'text-amber-500'">{{ stats.trend }}</div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">变化趋势</div>
-        </div>
-      </div>
-
-      <div v-if="lastAssessment" class="card p-6 border-l-4" :class="{
-        'border-green-500': lastAssessment.vasiScore < 10,
-        'border-amber-500': lastAssessment.vasiScore >= 10 && lastAssessment.vasiScore < 25,
-        'border-orange-500': lastAssessment.vasiScore >= 25 && lastAssessment.vasiScore < 50,
-        'border-red-500': lastAssessment.vasiScore >= 50,
-      }">
-        <div class="flex items-start justify-between mb-4">
-          <div>
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100"><i class="ri-clipboard-line"></i> 评估结果解读</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">最新评估于刚刚完成</p>
-          </div>
-          <button @click="lastAssessment = null" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl">&times;</button>
-        </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
-            <div class="text-xl font-bold" :class="getScoreInterpretation(lastAssessment.vasiScore).color">
-              {{ lastAssessment.vasiScore }}
-            </div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">VASI评分</div>
-          </div>
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
-            <div class="text-xl font-bold" :class="getScoreInterpretation(lastAssessment.vasiScore).color">
-              {{ getScoreInterpretation(lastAssessment.vasiScore).level }}
-            </div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">严重程度</div>
-          </div>
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
-            <div class="text-xl font-bold text-gray-700 dark:text-gray-300">{{ lastAssessment.areaPercentage }}%</div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">白斑面积占比</div>
-          </div>
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
-            <div class="text-xl font-bold" :class="lastAssessment.stage === '好转' ? 'text-green-600' : lastAssessment.stage === '扩散' || lastAssessment.stage === '进展期' ? 'text-red-600' : 'text-amber-600'">
-              {{ lastAssessment.stage }}
-            </div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">病情阶段</div>
-          </div>
-        </div>
-
-        <div v-if="lastAssessment.confidence !== undefined" class="flex items-center gap-2 mt-3">
-          <span class="text-sm text-gray-500">AI信心度:</span>
-          <span v-if="lastAssessment.confidence >= 0.7" class="text-green-500">● 高 ({{ Math.round(lastAssessment.confidence * 100) }}%)</span>
-          <span v-else-if="lastAssessment.confidence >= 0.4" class="text-amber-500">● 中 ({{ Math.round(lastAssessment.confidence * 100) }}%)</span>
-          <span v-else class="text-red-500">● 低 ({{ Math.round(lastAssessment.confidence * 100) }}%)</span>
-        </div>
-        <div v-if="lastAssessment.confidence !== undefined && lastAssessment.confidence < 0.5" class="text-xs text-amber-600 dark:text-amber-400 mt-1">
-          ⚠️ 本次评估信心度较低，建议在更好的光照条件下重新拍照
-        </div>
-
-        <div class="space-y-3">
-          <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-            <h3 class="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1"><i class="ri-microscope-line"></i> 评分含义</h3>
-            <p class="text-sm text-blue-600 dark:text-blue-400">{{ getScoreInterpretation(lastAssessment.vasiScore).description }}</p>
-          </div>
-          <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-            <h3 class="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1"><i class="ri-bar-chart-2-line"></i> 阶段说明</h3>
-            <p class="text-sm text-purple-600 dark:text-purple-400">{{ getStageDescription(lastAssessment.stage) }}</p>
-          </div>
-          <div v-if="lastAssessment.classification" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><i class="ri-price-tag-3-line"></i> 分型</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400">{{ lastAssessment.classification }}型白癜风</p>
-          </div>
-        </div>
-
-        <button
-          @click="writeDiaryFromAssessment"
-          class="btn-primary mt-4 flex w-full items-center justify-center gap-2 py-2.5"
-        >
-          <i class="ri-book-3-line mr-1"></i>写日记记录今天
-        </button>
-
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-4"><i class="ri-error-warning-line"></i> 以上解读仅供参考，不构成医疗诊断建议。请咨询专业皮肤科医生获取准确诊断。</p>
-      </div>
-
-      <!-- ━━ 3D Digital Human + Assessment Section ━━ -->
-      <div class="flex flex-col lg:flex-row gap-4">
-        <!-- Left: 3D Digital Human -->
-        <div class="lg:w-1/2 h-[50vh] lg:h-[520px] min-h-[340px] rounded-2xl overflow-hidden">
-          <DigitalHuman
-            :assessments="assessmentsMap"
-            @select-part="onSelectPart"
-          />
-        </div>
-
-        <!-- Right: Panel / Contour Editor / Upload -->
-        <div class="lg:w-1/2">
-          <!-- ── Contour Editor (post-assessment) ── -->
-          <template v-if="showContourEditor && imagePreview && assessmentResult">
-            <div class="mb-4 p-3 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
-              <div class="flex items-center gap-2 mb-2">
-                <i class="ri-information-line text-primary-500"></i>
-                <span class="text-sm font-medium text-primary-700 dark:text-primary-300">VASI评分: {{ assessmentResult.vasiScore }} · 请调整白斑轮廓</span>
-              </div>
-              <p class="text-xs text-primary-600 dark:text-primary-400">AI已识别白斑区域（虚线圈定），您可以拖拽控制点、手绘新区域或整体移动来修正。</p>
-            </div>
-            <VitiligoContour
-              :image-url="imagePreview"
-              :contours="aiContours"
-              :editable="true"
-              @update="handleContourUpdate"
-              @confirm="handleContourConfirm"
-            />
-            <div class="mt-4 flex items-center justify-between">
-              <div v-if="isSubmittingContour" class="flex items-center gap-2 text-sm text-primary-500">
-                <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> 提交中...
-              </div>
-              <button class="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" :disabled="isSubmittingContour" @click="skipContourEdit">跳过，直接查看结果 →</button>
-            </div>
-            <div v-if="contourDiffResult" class="mt-4 p-3 rounded-xl border"
-              :class="contourDiffResult.modified ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'">
-              <div class="flex items-center gap-2">
-                <i :class="contourDiffResult.modified ? 'ri-error-warning-line text-amber-500' : 'ri-check-double-line text-green-500'"></i>
-                <span class="text-xs font-medium" :class="contourDiffResult.modified ? 'text-amber-700 dark:text-amber-300' : 'text-green-700 dark:text-green-300'">
-                  {{ contourDiffResult.modified ? `AI与手动标注存在差异（平均偏差: ${(contourDiffResult.avg_point_distance ?? 0).toFixed(3)}），已记录用于模型优化` : 'AI识别结果与您的标注一致！' }}
-                </span>
-              </div>
-            </div>
-            <!-- Precise Assessment -->
-            <div v-if="preciseAvailable && !isPreciseAssessing && !preciseAssessmentDone && assessmentResult?.precisionLevel !== 'precise'" class="mt-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-              <div class="flex items-center gap-2 mb-1"><i class="ri-focus-3-line text-blue-500"></i><span class="text-sm font-medium text-blue-700 dark:text-blue-300">需要更精确的评估？</span></div>
-              <p class="text-xs text-blue-600 dark:text-blue-400 mb-2">精确分析使用更高精度的AI模型，需要约1-2分钟</p>
-              <button class="btn-ghost text-xs px-3 py-1.5" @click="startPreciseAssessment">开始精确分析</button>
-            </div>
-            <div v-if="isPreciseAssessing" class="mt-4 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex flex-col items-center">
-              <svg class="animate-spin w-6 h-6 text-blue-500 mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-              <span class="text-sm text-blue-600 dark:text-blue-400">精确分析中，请稍候...</span>
-              <span class="text-xs text-gray-400 mt-1">预计需要1-2分钟</span>
-            </div>
-            <div v-if="preciseAssessmentDone" class="mt-4 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-              <div class="flex items-center gap-2"><i class="ri-check-double-line text-green-500"></i><span class="text-xs font-medium text-green-700 dark:text-green-300">精确分析已完成，轮廓已更新为高精度结果</span></div>
-            </div>
-          </template>
-
-          <!-- ── Body Part Panel (when part selected) ── -->
-          <BodyPartPanel
-            v-else-if="selectedPart"
-            :part="selectedPart"
-            :assessment="activePartAssessment"
-            :history="partHistory"
-            @take-photo="openCamera"
-            @upload-photo="triggerUpload"
-            @close="selectedPart = null; selectedBodySite = ''"
-          />
-
-          <!-- ── Quick Photo Upload (no part selected yet) ── -->
-          <div v-else class="card p-5 h-full flex flex-col min-h-[340px]">
-            <div class="flex-1 flex flex-col items-center justify-center">
-              <div
-                class="relative border-2 border-dashed rounded-2xl p-6 w-full text-center cursor-pointer transition-all duration-200"
-                :class="imagePreview ? 'border-primary-400 bg-primary-50/50 dark:bg-primary-900/10' : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600 hover:bg-gray-50/80 dark:hover:bg-gray-800/50'"
-                @dragover.prevent @drop="handleDrop"
-              >
-                <input id="tracker-file-input" ref="fileInput" type="file" accept="image/*" class="hidden" @change="handleFileSelect" />
-                <div v-if="imagePreview" class="relative inline-block">
-                  <img :src="imagePreview" alt="预览" class="max-h-48 rounded-xl mx-auto shadow-sm" :class="{ 'blur-lg': !privacyStore.privacyMode }" />
-                  <button class="absolute top-2 right-2 w-8 h-8 bg-black/40 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-red-500 transition-colors z-10" @click.stop="removeImage"><i class="ri-close-line"></i></button>
-                </div>
-                <div v-else class="flex flex-col items-center">
-                  <div class="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center mb-3">
-                    <i class="ri-image-add-line text-2xl text-primary-500 dark:text-primary-400"></i>
-                  </div>
-                  <p class="text-sm font-medium text-gray-600 dark:text-gray-300">点击或拖拽上传白斑照片</p>
-                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">支持 JPG / PNG，最大 10MB</p>
-                </div>
-              </div>
-
-              <div class="relative mt-3 w-full">
-                <button class="btn-primary w-full py-3 text-base flex items-center justify-center gap-2 min-h-[48px]" @click="showStandaloneChooser = !showStandaloneChooser">
-                  <i class="ri-camera-line text-lg"></i> 拍照评估
-                </button>
-                <div
-                  v-if="showStandaloneChooser"
-                  class="absolute left-0 right-0 top-full mt-2 p-3 rounded-xl bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 z-20 flex gap-2"
-                >
-                  <button class="flex-1 flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors border border-transparent hover:border-primary-200 dark:hover:border-primary-800" @click="showStandaloneChooser = false; openCamera()">
-                    <div class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-                      <i class="ri-camera-line text-2xl text-primary-600 dark:text-primary-400"></i>
-                    </div>
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">拍照</span>
-                  </button>
-                  <button class="flex-1 flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors border border-transparent hover:border-primary-200 dark:hover:border-primary-800" @click="showStandaloneChooser = false; triggerUpload()">
-                    <div class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-                      <i class="ri-image-line text-2xl text-primary-600 dark:text-primary-400"></i>
-                    </div>
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">相册选择</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Quality check -->
-              <div v-if="qualityChecking" class="mt-3 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> 正在检查照片质量...
-              </div>
-              <div v-else-if="qualityResult && uploadedImage" class="mt-3 p-3 rounded-xl border w-full"
-                :class="{
-                  'border-green-300 bg-green-50 dark:bg-green-900/20 dark:border-green-800': qualityResult.overall === 'good',
-                  'border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800': qualityResult.overall === 'acceptable',
-                  'border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800': qualityResult.overall === 'poor',
-                }"
-              >
-                <div class="flex items-center justify-between">
-                  <span class="text-sm font-medium" :class="{'text-green-700 dark:text-green-300': qualityResult.overall === 'good', 'text-amber-700 dark:text-amber-300': qualityResult.overall === 'acceptable', 'text-red-700 dark:text-red-300': qualityResult.overall === 'poor'}">
-                    <template v-if="qualityResult.overall === 'good'">✅ 照片质量良好</template>
-                    <template v-else-if="qualityResult.overall === 'acceptable'">⚠️ {{ qualityResult.suggestions[0] || '照片质量一般' }}</template>
-                    <template v-else>❌ 建议重新拍摄</template>
-                  </span>
-                </div>
-                <div v-if="qualityResult.overall !== 'good'" class="mt-2 flex items-center gap-2">
-                  <button class="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" @click="qualityIgnored = true">仍要评估</button>
-                  <button class="text-xs px-3 py-1.5 rounded-lg border border-primary-300 dark:border-primary-600 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors" @click="removeImage">重新选择</button>
-                </div>
-              </div>
-              <button class="btn-primary w-full mt-4 py-3 text-base" :disabled="!uploadedImage || !selectedBodySite || isUploading || (qualityResult?.overall === 'poor' && !qualityIgnored)" @click="submitAssessment">
-                <span v-if="isUploading">
-                  <span class="inline-flex items-center gap-2"><svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> {{ uploadStage === 'uploading' ? '上传中...' : uploadStage === 'segmenting' ? 'AI识别中...' : '分析中...' }}</span>
-                </span>
-                <span v-else>开始评估</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card p-4 md:p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            <i class="ri-line-chart-line"></i>
-            <template v-if="selectedPart">{{ PART_LABELS[selectedPart] || selectedPart }} · </template>评估历史
-          </h2>
-          <div class="flex items-center gap-2">
-            <template v-if="selectMode">
-              <button class="text-sm text-red-500 hover:text-red-600 dark:text-red-400" @click="deleteSelected" :disabled="selectedIds.size === 0">
-                删除({{ selectedIds.size }})
-              </button>
-              <button class="text-sm text-gray-500 dark:text-gray-400" @click="toggleSelectMode">取消</button>
-            </template>
-            <button v-else-if="displayHistory.length" class="text-sm text-primary-600 dark:text-primary-400 hover:underline" @click="toggleSelectMode">多选</button>
-          </div>
-        </div>
-
-        <div v-if="loadingHistory" class="text-center py-8 text-gray-400 dark:text-gray-500">
-          <div class="text-4xl mb-3 animate-pulse"><i class="ri-bar-chart-2-line"></i></div>
-          <p>加载评估记录中...</p>
-        </div>
-
-        <div v-else-if="displayHistory.length" class="space-y-2 overflow-hidden">
-          <div
-            v-for="record in displayHistory"
-            :key="record.id"
-            class="relative"
-          >
-            <!-- Swipe wrapper -->
-            <div
-              class="flex items-center transition-transform duration-200"
-              :class="selectMode ? '' : (isSwiped(record.id) ? '-translate-x-16' : 'translate-x-0')"
-              @touchstart="onTouchStart($event)"
-              @touchend="onTouchEnd($event, record.id)"
-            >
-              <!-- Checkbox in select mode -->
-              <div v-if="selectMode" class="pr-3 shrink-0">
-                <input type="checkbox" :checked="selectedIds.has(record.id)" @change="toggleSelect(record.id)"
-                  class="w-5 h-5 rounded border-gray-300 text-primary-500 focus:ring-primary-400" />
-              </div>
-              <div class="flex-1 min-w-0 flex items-center gap-3 py-3 px-3 rounded-xl bg-gray-50 dark:bg-gray-800">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0"
-                  :class="record.stage === '稳定期' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-amber-100 dark:bg-amber-900/30'">
-                  {{ record.stage === '稳定期' ? '✓' : '!' }}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 text-sm">
-                    <span class="font-medium text-gray-900 dark:text-gray-100">{{ record.bodySite }}</span>
-                    <span class="text-gray-400 dark:text-gray-500">{{ record.date }}</span>
-                  </div>
-                  <div class="flex items-center gap-3 mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    <span>VASI <strong class="text-gray-700 dark:text-gray-300">{{ privacyStore.privacyMode ? record.vasiScore : '****' }}</strong></span>
-                    <span>面积 <strong class="text-gray-700 dark:text-gray-300">{{ privacyStore.privacyMode ? record.areaPercentage + '%' : '****' }}</strong></span>
-                    <span class="badge text-[10px] px-1.5 py-0.5" :class="record.stage === '稳定期' ? 'badge-success' : 'badge bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'">{{ record.stage }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- Delete button (behind swipe) -->
-            <button
-              v-if="!selectMode && isSwiped(record.id)"
-              class="absolute right-0 top-0 bottom-0 w-16 flex items-center justify-center bg-red-500 text-white rounded-r-xl"
-              @click="deleteSingle(record.id)"
-              :disabled="deletingIds.has(record.id)"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <div v-else class="text-center py-8 text-gray-400 dark:text-gray-500">
-          <div class="text-4xl mb-3"><i class="ri-bar-chart-2-line"></i></div><p>暂无评估记录</p><p class="text-xs">上传照片开始你的第一次评估</p>
-        </div>
-      </div>
-
-      <section class="text-center text-xs text-gray-400 dark:text-gray-500 py-4 border-t border-gray-100 dark:border-gray-800">
-        <i class="ri-error-warning-line"></i> VASI评估结果仅供参考，不构成医疗诊断建议
-      </section>
-      </div>
-
-    <!-- ━━━ Medical Reports Tab ━━━ -->
-    <ReportUploader v-if="activeTab === 'reports'" />
+      </Transition>
     </div>
 
+    <!-- Stats cards below model -->
+    <div v-if="stats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 w-full max-w-lg">
+      <div class="glass-card p-4 text-center rounded-2xl">
+        <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ privacyStore.privacyMode ? stats.latestScore : '****' }}</div>
+        <div class="text-xs text-gray-400 dark:text-gray-500 mt-1 font-medium">VASI 评分</div>
+      </div>
+      <div class="glass-card p-4 text-center rounded-2xl">
+        <div class="text-2xl font-bold text-success-500 dark:text-green-400">{{ privacyStore.privacyMode ? stats.improvement + '%' : '****' }}</div>
+        <div class="text-xs text-gray-400 dark:text-gray-500 mt-1 font-medium">累计改善</div>
+      </div>
+      <div class="glass-card p-4 text-center rounded-2xl">
+        <div class="text-2xl font-bold text-gray-700 dark:text-gray-300">{{ stats.totalAssessments }}</div>
+        <div class="text-xs text-gray-400 dark:text-gray-500 mt-1 font-medium">评估次数</div>
+      </div>
+      <div class="glass-card p-4 text-center rounded-2xl">
+        <svg class="w-full h-10" viewBox="0 0 100 40" preserveAspectRatio="none">
+          <polyline
+            v-if="stats && stats.sparkline.length > 1"
+            :points="stats?.sparkline.map((v, i) => `${(i / (stats!.sparkline.length - 1)) * 100},${40 - (v / Math.max(...stats!.sparkline)) * 35}`).join(' ')"
+            fill="none"
+            stroke="currentColor"
+            :class="stats?.trend.includes('改善') ? 'text-green-500' : 'text-amber-500'"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <div class="text-xs text-gray-400 dark:text-gray-500 mt-1 font-medium">趋势</div>
+      </div>
     </div>
   </div>
 
+  <!-- ━━━ ASSESSMENT VIEW (full-screen, back button) ━━━ -->
+  <div v-else-if="activeView === 'assessment'" class="max-w-6xl mx-auto px-4 pt-2 pb-6 space-y-6">
+    <!-- Back button -->
+    <button class="flex items-center gap-1 text-gray-600 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400 transition-colors mb-2" @click="goHome">
+      <i class="ri-arrow-left-s-line text-xl"></i>
+      <span class="text-sm">返回</span>
+    </button>
+
+    <!-- Last Assessment Result -->
+    <div v-if="lastAssessment" class="card p-6 border-l-4" :class="{
+      'border-green-500': lastAssessment.vasiScore < 10,
+      'border-amber-500': lastAssessment.vasiScore >= 10 && lastAssessment.vasiScore < 25,
+      'border-orange-500': lastAssessment.vasiScore >= 25 && lastAssessment.vasiScore < 50,
+      'border-red-500': lastAssessment.vasiScore >= 50,
+    }">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100"><i class="ri-clipboard-line"></i> 评估结果解读</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">最新评估于刚刚完成</p>
+        </div>
+        <button @click="lastAssessment = null" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl">&times;</button>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
+          <div class="text-xl font-bold" :class="getScoreInterpretation(lastAssessment.vasiScore).color">{{ lastAssessment.vasiScore }}</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">VASI评分</div>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
+          <div class="text-xl font-bold" :class="getScoreInterpretation(lastAssessment.vasiScore).color">{{ getScoreInterpretation(lastAssessment.vasiScore).level }}</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">严重程度</div>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
+          <div class="text-xl font-bold text-gray-700 dark:text-gray-300">{{ lastAssessment.areaPercentage }}%</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">白斑面积占比</div>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
+          <div class="text-xl font-bold" :class="lastAssessment.stage === '好转' ? 'text-green-600' : lastAssessment.stage === '扩散' || lastAssessment.stage === '进展期' ? 'text-red-600' : 'text-amber-600'">{{ lastAssessment.stage }}</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">病情阶段</div>
+        </div>
+      </div>
+      <div v-if="lastAssessment.confidence !== undefined" class="flex items-center gap-2 mt-3">
+        <span class="text-sm text-gray-500">AI信心度:</span>
+        <span v-if="lastAssessment.confidence >= 0.7" class="text-green-500">● 高 ({{ Math.round(lastAssessment.confidence * 100) }}%)</span>
+        <span v-else-if="lastAssessment.confidence >= 0.4" class="text-amber-500">● 中 ({{ Math.round(lastAssessment.confidence * 100) }}%)</span>
+        <span v-else class="text-red-500">● 低 ({{ Math.round(lastAssessment.confidence * 100) }}%)</span>
+      </div>
+      <div v-if="lastAssessment.confidence !== undefined && lastAssessment.confidence < 0.5" class="text-xs text-amber-600 dark:text-amber-400 mt-1">
+        ⚠️ 本次评估信心度较低，建议在更好的光照条件下重新拍照
+      </div>
+      <div class="space-y-3">
+        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+          <h3 class="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1"><i class="ri-microscope-line"></i> 评分含义</h3>
+          <p class="text-sm text-blue-600 dark:text-blue-400">{{ getScoreInterpretation(lastAssessment.vasiScore).description }}</p>
+        </div>
+        <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+          <h3 class="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1"><i class="ri-bar-chart-2-line"></i> 阶段说明</h3>
+          <p class="text-sm text-purple-600 dark:text-purple-400">{{ getStageDescription(lastAssessment.stage) }}</p>
+        </div>
+        <div v-if="lastAssessment.classification" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><i class="ri-price-tag-3-line"></i> 分型</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400">{{ lastAssessment.classification }}型白癜风</p>
+        </div>
+      </div>
+      <button @click="writeDiaryFromAssessment" class="btn-primary mt-4 flex w-full items-center justify-center gap-2 py-2.5">
+        <i class="ri-book-3-line mr-1"></i>写日记记录今天
+      </button>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-4"><i class="ri-error-warning-line"></i> 以上解读仅供参考，不构成医疗诊断建议。</p>
+    </div>
+
+    <!-- Assessment Section -->
+    <div class="flex flex-col lg:flex-row gap-4">
+      <div class="lg:w-1/2">
+        <!-- Contour Editor -->
+        <template v-if="showContourEditor && imagePreview && assessmentResult">
+          <div class="mb-4 p-3 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
+            <div class="flex items-center gap-2 mb-2">
+              <i class="ri-information-line text-primary-500"></i>
+              <span class="text-sm font-medium text-primary-700 dark:text-primary-300">VASI评分: {{ assessmentResult.vasiScore }} · 请调整白斑轮廓</span>
+            </div>
+            <p class="text-xs text-primary-600 dark:text-primary-400">AI已识别白斑区域（虚线圈定），您可以拖拽控制点、手绘新区域或整体移动来修正。</p>
+          </div>
+          <VitiligoContour :image-url="imagePreview" :contours="aiContours" :editable="true" @update="handleContourUpdate" @confirm="handleContourConfirm" />
+          <div class="mt-4 flex items-center justify-between">
+            <div v-if="isSubmittingContour" class="flex items-center gap-2 text-sm text-primary-500">
+              <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> 提交中...
+            </div>
+            <button class="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" :disabled="isSubmittingContour" @click="skipContourEdit">跳过，直接查看结果 →</button>
+          </div>
+          <div v-if="contourDiffResult" class="mt-4 p-3 rounded-xl border" :class="contourDiffResult.modified ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'">
+            <div class="flex items-center gap-2">
+              <i :class="contourDiffResult.modified ? 'ri-error-warning-line text-amber-500' : 'ri-check-double-line text-green-500'"></i>
+              <span class="text-xs font-medium" :class="contourDiffResult.modified ? 'text-amber-700 dark:text-amber-300' : 'text-green-700 dark:text-green-300'">
+                {{ contourDiffResult.modified ? `AI与手动标注存在差异（平均偏差: ${(contourDiffResult.avg_point_distance ?? 0).toFixed(3)}），已记录用于模型优化` : 'AI识别结果与您的标注一致！' }}
+              </span>
+            </div>
+          </div>
+          <div v-if="preciseAvailable && !isPreciseAssessing && !preciseAssessmentDone && assessmentResult?.precisionLevel !== 'precise'" class="mt-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+            <div class="flex items-center gap-2 mb-1"><i class="ri-focus-3-line text-blue-500"></i><span class="text-sm font-medium text-blue-700 dark:text-blue-300">需要更精确的评估？</span></div>
+            <p class="text-xs text-blue-600 dark:text-blue-400 mb-2">精确分析使用更高精度的AI模型，需要约1-2分钟</p>
+            <button class="btn-ghost text-xs px-3 py-1.5" @click="startPreciseAssessment">开始精确分析</button>
+          </div>
+          <div v-if="isPreciseAssessing" class="mt-4 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex flex-col items-center">
+            <svg class="animate-spin w-6 h-6 text-blue-500 mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            <span class="text-sm text-blue-600 dark:text-blue-400">精确分析中，请稍候...</span>
+            <span class="text-xs text-gray-400 mt-1">预计需要1-2分钟</span>
+          </div>
+          <div v-if="preciseAssessmentDone" class="mt-4 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+            <div class="flex items-center gap-2"><i class="ri-check-double-line text-green-500"></i><span class="text-xs font-medium text-green-700 dark:text-green-300">精确分析已完成，轮廓已更新为高精度结果</span></div>
+          </div>
+        </template>
+
+        <!-- Body Part Panel -->
+        <BodyPartPanel
+          v-else-if="selectedPart"
+          :part="selectedPart"
+          :assessment="activePartAssessment"
+          :history="partHistory"
+          @take-photo="openCamera"
+          @upload-photo="triggerUpload"
+          @close="selectedPart = null; selectedBodySite = ''"
+        />
+      </div>
+
+      <!-- Upload Section -->
+      <div class="lg:w-1/2">
+        <div v-if="!showContourEditor && !selectedPart" class="card p-5 h-full flex flex-col min-h-[340px]">
+          <div class="flex-1 flex flex-col items-center justify-center">
+            <div class="relative border-2 border-dashed rounded-2xl p-6 w-full text-center cursor-pointer transition-all duration-200"
+              :class="imagePreview ? 'border-primary-400 bg-primary-50/50 dark:bg-primary-900/10' : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600 hover:bg-gray-50/80 dark:hover:bg-gray-800/50'"
+              @dragover.prevent @drop="handleDrop">
+              <input id="tracker-file-input" ref="fileInput" type="file" accept="image/*" class="hidden" @change="handleFileSelect" />
+              <div v-if="imagePreview" class="relative inline-block">
+                <img :src="imagePreview" alt="预览" class="max-h-48 rounded-xl mx-auto shadow-sm" :class="{ 'blur-lg': !privacyStore.privacyMode }" />
+                <button class="absolute top-2 right-2 w-8 h-8 bg-black/40 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-red-500 transition-colors z-10" @click.stop="removeImage"><i class="ri-close-line"></i></button>
+              </div>
+              <div v-else class="flex flex-col items-center">
+                <div class="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center mb-3">
+                  <i class="ri-image-add-line text-2xl text-primary-500 dark:text-primary-400"></i>
+                </div>
+                <p class="text-sm font-medium text-gray-600 dark:text-gray-300">点击或拖拽上传白斑照片</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">支持 JPG / PNG，最大 10MB</p>
+              </div>
+            </div>
+            <div class="relative mt-3 w-full">
+              <button class="btn-primary w-full py-3 text-base flex items-center justify-center gap-2 min-h-[48px]" @click="showStandaloneChooser = !showStandaloneChooser">
+                <i class="ri-camera-line text-lg"></i> 拍照评估
+              </button>
+              <div v-if="showStandaloneChooser" class="absolute left-0 right-0 top-full mt-2 p-3 rounded-xl bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 z-20 flex gap-2">
+                <button class="flex-1 flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors border border-transparent hover:border-primary-200 dark:hover:border-primary-800" @click="showStandaloneChooser = false; openCamera()">
+                  <div class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center"><i class="ri-camera-line text-2xl text-primary-600 dark:text-primary-400"></i></div>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">拍照</span>
+                </button>
+                <button class="flex-1 flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors border border-transparent hover:border-primary-200 dark:hover:border-primary-800" @click="showStandaloneChooser = false; triggerUpload()">
+                  <div class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center"><i class="ri-image-line text-2xl text-primary-600 dark:text-primary-400"></i></div>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">相册选择</span>
+                </button>
+              </div>
+            </div>
+            <div v-if="qualityChecking" class="mt-3 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+              <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> 正在检查照片质量...
+            </div>
+            <div v-else-if="qualityResult && uploadedImage" class="mt-3 p-3 rounded-xl border w-full"
+              :class="{ 'border-green-300 bg-green-50 dark:bg-green-900/20 dark:border-green-800': qualityResult.overall === 'good', 'border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800': qualityResult.overall === 'acceptable', 'border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800': qualityResult.overall === 'poor' }">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium" :class="{'text-green-700 dark:text-green-300': qualityResult.overall === 'good', 'text-amber-700 dark:text-amber-300': qualityResult.overall === 'acceptable', 'text-red-700 dark:text-red-300': qualityResult.overall === 'poor'}">
+                  <template v-if="qualityResult.overall === 'good'">✅ 照片质量良好</template>
+                  <template v-else-if="qualityResult.overall === 'acceptable'">⚠️ {{ qualityResult.suggestions[0] || '照片质量一般' }}</template>
+                  <template v-else>❌ 建议重新拍摄</template>
+                </span>
+              </div>
+              <div v-if="qualityResult.overall !== 'good'" class="mt-2 flex items-center gap-2">
+                <button class="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" @click="qualityIgnored = true">仍要评估</button>
+                <button class="text-xs px-3 py-1.5 rounded-lg border border-primary-300 dark:border-primary-600 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors" @click="removeImage">重新选择</button>
+              </div>
+            </div>
+            <button class="btn-primary w-full mt-4 py-3 text-base" :disabled="!uploadedImage || !selectedBodySite || isUploading || (qualityResult?.overall === 'poor' && !qualityIgnored)" @click="submitAssessment">
+              <span v-if="isUploading">
+                <span class="inline-flex items-center gap-2"><svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> {{ uploadStage === 'uploading' ? '上传中...' : uploadStage === 'segmenting' ? 'AI识别中...' : '分析中...' }}</span>
+              </span>
+              <span v-else>开始评估</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assessment History -->
+    <div class="glass-card p-4 md:p-6 rounded-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <i class="ri-line-chart-line"></i>
+          <template v-if="selectedPart">{{ PART_LABELS[selectedPart] || selectedPart }} · </template>评估历史
+        </h2>
+        <div class="flex items-center gap-2">
+          <template v-if="selectMode">
+            <button class="text-sm text-red-500 hover:text-red-600 dark:text-red-400" @click="deleteSelected" :disabled="selectedIds.size === 0">删除({{ selectedIds.size }})</button>
+            <button class="text-sm text-gray-500 dark:text-gray-400" @click="toggleSelectMode">取消</button>
+          </template>
+          <button v-else-if="displayHistory.length" class="text-sm text-primary-600 dark:text-primary-400 hover:underline" @click="toggleSelectMode">多选</button>
+        </div>
+      </div>
+      <div v-if="loadingHistory" class="text-center py-8 text-gray-400 dark:text-gray-500">
+        <div class="text-4xl mb-3 animate-pulse"><i class="ri-bar-chart-2-line"></i></div>
+        <p>加载评估记录中...</p>
+      </div>
+      <div v-else-if="displayHistory.length" class="space-y-2 overflow-hidden">
+        <div v-for="record in displayHistory" :key="record.id" class="relative">
+          <div class="flex items-center transition-transform duration-200" :class="selectMode ? '' : (isSwiped(record.id) ? '-translate-x-16' : 'translate-x-0')" @touchstart="onTouchStart($event)" @touchend="onTouchEnd($event, record.id)">
+            <div v-if="selectMode" class="pr-3 shrink-0">
+              <input type="checkbox" :checked="selectedIds.has(record.id)" @change="toggleSelect(record.id)" class="w-5 h-5 rounded border-gray-300 text-primary-500 focus:ring-primary-400" />
+            </div>
+            <div class="flex-1 min-w-0 flex items-center gap-3 py-3 px-3 rounded-xl bg-gray-50 dark:bg-gray-800">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0" :class="record.stage === '稳定期' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-amber-100 dark:bg-amber-900/30'">
+                {{ record.stage === '稳定期' ? '✓' : '!' }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 text-sm">
+                  <span class="font-medium text-gray-900 dark:text-gray-100">{{ record.bodySite }}</span>
+                  <span class="text-gray-400 dark:text-gray-500">{{ record.date }}</span>
+                </div>
+                <div class="flex items-center gap-3 mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <span>VASI <strong class="text-gray-700 dark:text-gray-300">{{ privacyStore.privacyMode ? record.vasiScore : '****' }}</strong></span>
+                  <span>面积 <strong class="text-gray-700 dark:text-gray-300">{{ privacyStore.privacyMode ? record.areaPercentage + '%' : '****' }}</strong></span>
+                  <span class="badge text-[10px] px-1.5 py-0.5" :class="record.stage === '稳定期' ? 'badge-success' : 'badge bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'">{{ record.stage }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button v-if="!selectMode && isSwiped(record.id)" class="absolute right-0 top-0 bottom-0 w-16 flex items-center justify-center bg-red-500 text-white rounded-r-xl" @click="deleteSingle(record.id)" :disabled="deletingIds.has(record.id)">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </div>
+      <div v-else class="text-center py-8 text-gray-400 dark:text-gray-500">
+        <div class="text-4xl mb-3"><i class="ri-bar-chart-2-line"></i></div><p>暂无评估记录</p><p class="text-xs">上传照片开始你的第一次评估</p>
+      </div>
+    </div>
+
+    <section class="text-center text-xs text-gray-400 dark:text-gray-500 py-4 border-t border-gray-100 dark:border-gray-800">
+      <i class="ri-error-warning-line"></i> VASI评估结果仅供参考，不构成医疗诊断建议
+    </section>
+  </div>
+
+  <!-- ━━━ CHAT VIEW (full-screen) ━━━ -->
+  <ChatOverlay v-else-if="activeView === 'chat'" :show="true" :context-hint="chatContextHint" @close="goHome" />
+
+  <!-- ━━━ REPORT VIEW (full-screen, back button) ━━━ -->
+  <div v-else-if="activeView === 'report'" class="max-w-6xl mx-auto px-4 pt-2 pb-6">
+    <button class="flex items-center gap-1 text-gray-600 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400 transition-colors mb-4" @click="goHome">
+      <i class="ri-arrow-left-s-line text-xl"></i>
+      <span class="text-sm">返回</span>
+    </button>
+    <ReportUploader />
+  </div>
+
+  <!-- Camera Modal (global) -->
   <BodyPartCamera
     v-model="showCamera"
     :body-part="selectedBodySite"
     @captured="handleCameraCapture"
   />
+</template>
 
-  </template>
+<!-- 全局样式：磨砂玻璃卡片 -->
+<style>
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 20px rgba(100, 80, 60, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+:root.dark .glass-card,
+.dark .glass-card {
+  background: rgba(30, 30, 46, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+</style>
 
 <style scoped>
 .line-clamp-2 {
@@ -1002,4 +1003,8 @@ watch(swipeDirection, (dir) => {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.metaphor-fade-enter-active { transition: opacity 0.3s ease; }
+.metaphor-fade-leave-active { transition: opacity 0.2s ease; }
+.metaphor-fade-enter-from,
+.metaphor-fade-leave-to { opacity: 0; }
 </style>
