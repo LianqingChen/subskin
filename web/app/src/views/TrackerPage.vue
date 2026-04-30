@@ -9,7 +9,6 @@ import { useSwipe } from '@/composables/useSwipe'
 import { vasiApi } from '@/api/vasi'
 
 import VitiligoContour from '@/components/tracker/VitiligoContour.vue'
-import PhotoGuideCard from '@/components/tracker/PhotoGuideCard.vue'
 import BodyPartCamera from '@/components/tracker/BodyPartCamera.vue'
 import ReportUploader from '@/components/tracker/ReportUploader.vue'
 import DigitalHuman from '@/components/tracker/DigitalHuman.vue'
@@ -25,6 +24,11 @@ const themeStore = useThemeStore()
 const toast = useToast()
 
 const activeTab = ref<'tracker' | 'reports'>('tracker')
+
+const PART_LABELS: Record<string, string> = {
+  face: '面部', neck: '颈部', hands: '手部',
+  trunk: '躯干', arms: '上肢', legs: '下肢', feet: '足部',
+}
 
 // Sync tab from URL query param
 watch(() => route.query.tab, (tab) => {
@@ -66,6 +70,13 @@ const partHistory = computed(() => {
   return recentAssessments.value.filter(r => r.bodySite === selectedPart.value)
 })
 
+const displayHistory = computed(() => {
+  if (selectedPart.value) {
+    return recentAssessments.value.filter(r => r.bodySite === selectedPart.value)
+  }
+  return recentAssessments.value
+})
+
 const assessmentResult = ref<{
   id: number
   vasiScore: number
@@ -89,6 +100,7 @@ const preciseAssessmentDone = ref(false)
 const qualityResult = ref<QualityCheckResult | null>(null)
 const qualityChecking = ref(false)
 const qualityIgnored = ref(false)
+const showStandaloneChooser = ref(false)
 
 
 const recentAssessments = ref<Array<{
@@ -811,7 +823,6 @@ watch(swipeDirection, (dir) => {
 
           <!-- ── Quick Photo Upload (no part selected yet) ── -->
           <div v-else class="card p-5 h-full flex flex-col min-h-[340px]">
-            <PhotoGuideCard />
             <div class="flex-1 flex flex-col items-center justify-center">
               <div
                 class="relative border-2 border-dashed rounded-2xl p-6 w-full text-center cursor-pointer transition-all duration-200"
@@ -832,13 +843,27 @@ watch(swipeDirection, (dir) => {
                 </div>
               </div>
 
-              <div class="flex gap-2 mt-3 w-full">
-                <button class="flex-1 btn-primary py-2.5 text-sm flex items-center justify-center gap-1.5 min-h-[44px]" @click="openCamera">
-                  <i class="ri-camera-line"></i> 拍照
+              <div class="relative mt-3 w-full">
+                <button class="btn-primary w-full py-3 text-base flex items-center justify-center gap-2 min-h-[48px]" @click="showStandaloneChooser = !showStandaloneChooser">
+                  <i class="ri-camera-line text-lg"></i> 拍照评估
                 </button>
-                <button class="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-1.5 min-h-[44px]" @click="triggerUpload">
-                  <i class="ri-image-line"></i> 从相册选择
-                </button>
+                <div
+                  v-if="showStandaloneChooser"
+                  class="absolute left-0 right-0 top-full mt-2 p-3 rounded-xl bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 z-20 flex gap-2"
+                >
+                  <button class="flex-1 flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors border border-transparent hover:border-primary-200 dark:hover:border-primary-800" @click="showStandaloneChooser = false; openCamera()">
+                    <div class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                      <i class="ri-camera-line text-2xl text-primary-600 dark:text-primary-400"></i>
+                    </div>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">拍照</span>
+                  </button>
+                  <button class="flex-1 flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors border border-transparent hover:border-primary-200 dark:hover:border-primary-800" @click="showStandaloneChooser = false; triggerUpload()">
+                    <div class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                      <i class="ri-image-line text-2xl text-primary-600 dark:text-primary-400"></i>
+                    </div>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">相册选择</span>
+                  </button>
+                </div>
               </div>
 
               <!-- Quality check -->
@@ -877,7 +902,10 @@ watch(swipeDirection, (dir) => {
 
       <div class="card p-4 md:p-6">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100"><i class="ri-line-chart-line"></i> 评估历史</h2>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <i class="ri-line-chart-line"></i>
+            <template v-if="selectedPart">{{ PART_LABELS[selectedPart] || selectedPart }} · </template>评估历史
+          </h2>
           <div class="flex items-center gap-2">
             <template v-if="selectMode">
               <button class="text-sm text-red-500 hover:text-red-600 dark:text-red-400" @click="deleteSelected" :disabled="selectedIds.size === 0">
@@ -885,7 +913,7 @@ watch(swipeDirection, (dir) => {
               </button>
               <button class="text-sm text-gray-500 dark:text-gray-400" @click="toggleSelectMode">取消</button>
             </template>
-            <button v-else-if="recentAssessments.length" class="text-sm text-primary-600 dark:text-primary-400 hover:underline" @click="toggleSelectMode">多选</button>
+            <button v-else-if="displayHistory.length" class="text-sm text-primary-600 dark:text-primary-400 hover:underline" @click="toggleSelectMode">多选</button>
           </div>
         </div>
 
@@ -894,9 +922,9 @@ watch(swipeDirection, (dir) => {
           <p>加载评估记录中...</p>
         </div>
 
-        <div v-else-if="recentAssessments.length" class="space-y-2 overflow-hidden">
+        <div v-else-if="displayHistory.length" class="space-y-2 overflow-hidden">
           <div
-            v-for="record in recentAssessments"
+            v-for="record in displayHistory"
             :key="record.id"
             class="relative"
           >
