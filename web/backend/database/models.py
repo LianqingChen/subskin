@@ -8,6 +8,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     Date,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -107,6 +108,9 @@ class User(Base):
     privacy_mode = Column(
         Boolean, default=True, nullable=False
     )  # True = eye open = info visible
+    phone_discoverable = Column(
+        Boolean, default=True, nullable=False
+    )  # True = 允许他人通过手机号匹配到我
     patient_relation = Column(
         String, nullable=True
     )  # 白友=本人, 白友父母, 白友伴侣, 白友朋友, 医护人员, 其他
@@ -121,6 +125,14 @@ class User(Base):
     )
     created_at = Column(DateTime, default=_utcnow)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    user_status = Column(String(20), default="normal", nullable=False, index=True)  # normal/muted/banned
+    muted_until = Column(DateTime, nullable=True)
+    banned_at = Column(DateTime, nullable=True)
+    ban_reason = Column(String(500), nullable=True)
+    violation_count = Column(Integer, default=0)
+    critical_count = Column(Integer, default=0)
+    warning_count = Column(Integer, default=0)
 
     comments = relationship("Comment", back_populates="author")
     patient_profiles = relationship(
@@ -247,10 +259,13 @@ class Document(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     content = Column(Text, nullable=False)
-    source = Column(String, nullable=True)  # 来源（PubMed/ClinicalTrial/指南等）
+    source = Column(String, nullable=True)
     source_url = Column(String, nullable=True)
-    category = Column(String, nullable=True)  # 分类
-    embedding = Column(Text, nullable=True)  # 向量（JSON格式）
+    category = Column(String, nullable=True)
+    source_tier = Column(String, default="C", nullable=True)
+    authority_weight = Column(Float, default=1.0, nullable=True)
+    pub_date = Column(String, nullable=True)
+    embedding = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -314,10 +329,14 @@ class Post(Base):
         Integer, ForeignKey("community_categories.id"), nullable=False, index=True
     )
     is_private = Column(Boolean, default=False, index=True)
+    draft_expires_at = Column(DateTime, nullable=True, index=True)
     diary_date = Column(Date, nullable=True, index=True)
     mood = Column(String, nullable=True)  # 心情标签: 💪坚持中 / 😔低落 / 🎉好转 / 🤔疑问
     is_anonymous = Column(Boolean, default=False)  # 匿名发布
-    city = Column(String(100), nullable=True, index=True)  # 发布时所在城市
+    moderation_status = Column(String(20), default="normal", nullable=False, index=True)  # normal/blocked/approved
+    city = Column(String(100), nullable=True, index=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -555,13 +574,19 @@ class MedicalReport(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    patient_profile_id = Column(
+        Integer, ForeignKey("patient_profiles.id"), nullable=True
+    )
     title = Column(String, nullable=False)
     tags = Column(String, nullable=True)
     interpretation_json = Column(JSON, nullable=True)  # AI解读结果
+    parsed_sections = Column(JSON, nullable=True)  # 结构化分区[{section_name,risk,indicators,abnormal_items}]
+    extracted_patient_info_json = Column(Text, nullable=True)
     created_at = Column(DateTime, default=_utcnow)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
     user = relationship("User", backref="medical_reports")
+    patient_profile = relationship("PatientProfile", foreign_keys=[patient_profile_id])
     files = relationship(
         "MedicalReportFile", backref="report", cascade="all, delete-orphan"
     )
@@ -807,3 +832,191 @@ class UserReport(Base):
 
     reporter = relationship("User", foreign_keys=[reporter_id])
     target_user = relationship("User", foreign_keys=[target_user_id])
+
+
+class ContentModeration(Base):
+    """内容风控记录"""
+
+    __tablename__ = "content_moderations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("posts.id"), nullable=True, index=True)
+    comment_id = Column(Integer, nullable=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    content_type = Column(String(20), nullable=False)  # post/comment/profile
+    content_snapshot = Column(Text, nullable=True)
+    risk_level = Column(String(20), nullable=False, index=True)  # critical/high/medium/low
+    risk_categories = Column(JSON, nullable=True)  # ["涉政","色情"]
+    auto_action = Column(String(20), nullable=False)  # blocked/flagged/none
+    ai_reason = Column(Text, nullable=True)
+    ai_confidence = Column(Float, nullable=True)
+    status = Column(String(20), default="pending", nullable=False, index=True)  # pending/approved/rejected/escalated
+    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    review_note = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=_utcnow, index=True)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    post = relationship("Post", foreign_keys=[post_id])
+    user = relationship("User", foreign_keys=[user_id])
+    reviewer = relationship("User", foreign_keys=[reviewed_by])
+
+
+class UserViolation(Base):
+    """用户违规档案"""
+
+    __tablename__ = "user_violations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    violation_count = Column(Integer, default=0)
+    critical_count = Column(Integer, default=0)
+    high_count = Column(Integer, default=0)
+    medium_count = Column(Integer, default=0)
+    low_count = Column(Integer, default=0)
+    status = Column(String(20), default="normal", nullable=False, index=True)  # normal/muted/banned
+    muted_until = Column(DateTime, nullable=True)
+    banned_at = Column(DateTime, nullable=True)
+    ban_reason = Column(String(500), nullable=True)
+    warning_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class UserViolationLog(Base):
+    """违规操作明细"""
+
+    __tablename__ = "user_violation_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    moderation_id = Column(Integer, ForeignKey("content_moderations.id"), nullable=True)
+    action = Column(String(20), nullable=False)  # warn/mute/ban/unmute/unban
+    duration_hours = Column(Integer, nullable=True)
+    reason = Column(String(500), nullable=True)
+    operated_by = Column(Integer, nullable=True)  # null=system, else admin user_id
+    created_at = Column(DateTime, default=_utcnow, index=True)
+
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class UserNotification(Base):
+    """站内通知"""
+
+    __tablename__ = "user_notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    type = Column(String(30), nullable=False, index=True)  # moderation_warning/mute/ban/post_approved/post_rejected
+    title = Column(String(200), nullable=False)
+    content = Column(Text, nullable=True)
+    is_read = Column(Boolean, default=False, index=True)
+    related_id = Column(Integer, nullable=True)  # 关联的moderation_id等
+    created_at = Column(DateTime, default=_utcnow, index=True)
+
+    user = relationship("User", foreign_keys=[user_id])
+
+
+# ── IM 即时通讯 ──
+
+
+class ImFriendRequest(Base):
+    """好友请求"""
+
+    __tablename__ = "im_friend_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    from_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    to_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    message = Column(String(200), nullable=True)  # 验证消息
+    status = Column(String(20), default="pending", index=True)  # pending/accepted/declined
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    __table_args__ = (UniqueConstraint("from_user_id", "to_user_id"),)
+
+
+class ImConversation(Base):
+    """IM会话（私聊/群聊）"""
+
+    __tablename__ = "im_conversations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(String(10), default="private", index=True)  # private/group
+    name = Column(String(100), nullable=True)  # 群名称
+    avatar = Column(String(500), nullable=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # 群主
+    announcement = Column(Text, nullable=True)
+    last_message_at = Column(DateTime, nullable=True, index=True)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+
+class ImConversationMember(Base):
+    """会话成员"""
+
+    __tablename__ = "im_conversation_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    conversation_id = Column(Integer, ForeignKey("im_conversations.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    role = Column(String(20), default="member")  # owner/admin/member
+    mute_until = Column(DateTime, nullable=True)
+    nickname_in_group = Column(String(50), nullable=True)
+    is_pinned = Column(Boolean, default=False)
+    last_read_at = Column(DateTime, nullable=True)
+    joined_at = Column(DateTime, default=_utcnow)
+
+    __table_args__ = (UniqueConstraint("conversation_id", "user_id"),)
+
+
+class ImMessage(Base):
+    """IM消息"""
+
+    __tablename__ = "im_messages"
+    __table_args__ = (Index("idx_im_msg_conv_created", "conversation_id", "created_at"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    conversation_id = Column(Integer, ForeignKey("im_conversations.id"), nullable=False, index=True)
+    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    msg_type = Column(String(20), default="text", index=True)  # text/image/video/file/voice/system/share_post
+    content = Column(Text, nullable=True)  # 文本内容
+    metadata_json = Column(JSON, nullable=True)  # 媒体元数据
+    reply_to_id = Column(Integer, ForeignKey("im_messages.id"), nullable=True)
+    status = Column(String(20), default="sent")  # sent/delivered/read
+    is_recalled = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=_utcnow, index=True)
+
+
+class ImMessageRead(Base):
+    """消息已读追踪"""
+
+    __tablename__ = "im_message_reads"
+
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, ForeignKey("im_messages.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    read_at = Column(DateTime, default=_utcnow)
+
+    __table_args__ = (UniqueConstraint("message_id", "user_id"),)
+
+
+class ImMessageModeration(Base):
+    """IM消息风控"""
+
+    __tablename__ = "im_message_moderations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, ForeignKey("im_messages.id"), nullable=False, index=True)
+    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    content_snapshot = Column(Text, nullable=True)
+    risk_level = Column(String(20), nullable=False, index=True)
+    risk_categories = Column(JSON, nullable=True)
+    auto_action = Column(String(20), default="flagged")
+    ai_reason = Column(Text, nullable=True)
+    ai_confidence = Column(Float, nullable=True)
+    status = Column(String(20), default="pending", index=True)
+    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=_utcnow, index=True)

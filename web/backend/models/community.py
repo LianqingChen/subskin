@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -104,6 +104,7 @@ class PostUpdate(BaseModel):
     mood: Optional[str] = Field(None, description="心情标签")
     is_anonymous: Optional[bool] = Field(None, description="是否匿名")
     city: Optional[str] = Field(None, description="发布时所在城市")
+    images: Optional[List[str]] = Field(None, description="图片URL列表")
 
 
 class PostAuthor(BaseModel):
@@ -127,13 +128,18 @@ class Post(PostBase):
     content_preview: Optional[str] = None
     read_count: int = 0
     is_private: bool = False
+    draft_expires_at: Optional[datetime] = None
     diary_date: Optional[str] = None
     mood: Optional[str] = None
     is_anonymous: bool = False
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    distance: Optional[float] = Field(None, description="距用户距离(km)")
     like_count: int = Field(..., description="点赞数")
     comment_count: int = Field(..., description="评论数")
     is_liked: bool = Field(..., description="当前用户是否点赞")
     is_bookmarked: bool = Field(False, description="当前用户是否收藏")
+    moderation_status: str = Field("normal", description="审核状态: normal/blocked/approved")
     created_at: datetime
     updated_at: datetime
 
@@ -297,12 +303,76 @@ class MedicalReportFileResponse(BaseModel):
         from_attributes = True
 
 
+class SourceIndicator(BaseModel):
+    indicator_name: str
+    value: Optional[str] = None
+    ref_range: Optional[str] = None
+
+
+class ParsedIndicator(BaseModel):
+    indicator_name: str
+    value: Optional[str] = None
+    status: str = "unknown"
+    ref_range: Optional[str] = None
+    canonical_name: Optional[str] = None
+    unit_family: Optional[str] = None
+    unit: Optional[str] = None
+
+    class Config:
+        extra = "allow"
+
+
+class AbnormalItem(BaseModel):
+    indicator_name: str
+    value: Optional[str] = None
+    status: str = "unknown"
+    interpretation: Optional[str] = None
+    possible_causes: List[str] = Field(default_factory=list)
+    suggestions: List[str] = Field(default_factory=list)
+    source_indicators: List[SourceIndicator] = Field(default_factory=list)
+    source_text_excerpt: Optional[str] = None
+    confidence: Optional[float] = None
+    ref_range: Optional[str] = None
+    canonical_name: Optional[str] = None
+
+    class Config:
+        extra = "allow"
+
+
+class ExtractedPatientInfo(BaseModel):
+    name: Optional[str] = None
+    gender: Optional[str] = None
+    age: Optional[int] = None
+    confidence: Optional[float] = None
+
+
+class InterpretationResult(BaseModel):
+    risk_level: str = "medium"
+    summary: str = ""
+    parsed_indicators: List[ParsedIndicator] = Field(default_factory=list)
+    abnormal_items: List[AbnormalItem] = Field(default_factory=list)
+    sections: List[Dict[str, Any]] = Field(default_factory=list)
+    recommendations: List[Dict[str, Any]] = Field(default_factory=list)
+    disclaimer: Optional[str] = None
+    schema_version: Optional[str] = None
+    parser_version: Optional[str] = None
+    llm_model: Optional[str] = None
+    generated_at: Optional[str] = None
+    extracted_patient_info: Optional[ExtractedPatientInfo] = None
+
+    class Config:
+        extra = "allow"
+
+
 class MedicalReportResponse(BaseModel):
     id: int
     title: str
     tags: Optional[str] = None
-    files: List[MedicalReportFileResponse] = []
-    interpretation_json: Optional[dict] = None
+    files: List[MedicalReportFileResponse] = Field(default_factory=list)
+    interpretation_json: Optional[InterpretationResult] = None
+    parsed_sections: Optional[List[Dict[str, Any]]] = None
+    patient_profile_id: Optional[int] = None
+    extracted_patient_info_json: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -318,6 +388,14 @@ class MedicalReportListResponse(BaseModel):
 class MedicalReportCreate(BaseModel):
     title: str
     tags: Optional[str] = None
+
+
+class MedicalReportLinkProfileRequest(BaseModel):
+    patient_profile_id: int
+
+
+class MedicalReportCompareRequest(BaseModel):
+    report_ids: List[int] = Field(default_factory=list)
 
 
 class MedicalReportUpdate(BaseModel):

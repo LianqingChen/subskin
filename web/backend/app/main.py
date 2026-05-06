@@ -14,9 +14,9 @@ from dotenv import load_dotenv
 
 env_path = Path(__file__).resolve().parent.parent / ".env"
 if env_path.exists():
-    _ = load_dotenv(env_path)
+    _ = load_dotenv(env_path, override=True)
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
 
@@ -37,10 +37,19 @@ from web.backend.api import (
     audit,
     patient_profile,
     wechat,
+    moderation,
+    im_conversations,
+    im_messages,
+    im_friends,
+    im_share,
+    im_groups,
+    im_admin,
+    im_contacts,
 )
 from web.backend.api.files import router as files_router
 from web.backend.database.database import Base, engine
 from web.backend.database import models
+from web.backend.ws.chat import chat_websocket_endpoint
 from web.backend.services.temp_cleanup import (
     cleanup_temp_uploads,
     run_temp_cleanup_loop,
@@ -85,6 +94,51 @@ def ensure_medical_report_interpretation_column() -> None:
 
 
 ensure_medical_report_interpretation_column()
+
+
+def ensure_medical_report_parsed_sections_column() -> None:
+    inspector = inspect(engine)
+    try:
+        columns = {column["name"] for column in inspector.get_columns("medical_reports")}
+    except Exception:
+        return
+
+    if "parsed_sections" in columns:
+        return
+
+    with engine.begin() as connection:
+        _ = connection.execute(
+            text("ALTER TABLE medical_reports ADD COLUMN parsed_sections JSON")
+        )
+
+
+ensure_medical_report_parsed_sections_column()
+
+
+def ensure_medical_report_patient_profile_columns() -> None:
+    """Add patient_profile_id and extracted_patient_info_json to medical_reports table."""
+    inspector = inspect(engine)
+    try:
+        columns = {column["name"] for column in inspector.get_columns("medical_reports")}
+    except Exception:
+        return
+
+    if "patient_profile_id" not in columns:
+        with engine.begin() as connection:
+            _ = connection.execute(
+                text(
+                    "ALTER TABLE medical_reports ADD COLUMN patient_profile_id INTEGER REFERENCES patient_profiles(id)"
+                )
+            )
+
+    if "extracted_patient_info_json" not in columns:
+        with engine.begin() as connection:
+            _ = connection.execute(
+                text("ALTER TABLE medical_reports ADD COLUMN extracted_patient_info_json TEXT")
+            )
+
+
+ensure_medical_report_patient_profile_columns()
 uploads_dir = Path("data/uploads")
 uploads_dir.mkdir(parents=True, exist_ok=True)
 
@@ -166,6 +220,19 @@ app.include_router(audit.router, prefix="/api/audit", tags=["审计日志"])
 app.include_router(patient_profile.router, prefix="/api", tags=["白友档案"])
 app.include_router(wechat.router, prefix="/api/wechat", tags=["微信"])
 app.include_router(encyclopedia.router, tags=["白白百科"])
+app.include_router(moderation.router, tags=["内容审核"])
+app.include_router(im_conversations.router)
+app.include_router(im_messages.router)
+app.include_router(im_friends.router)
+app.include_router(im_share.router)
+app.include_router(im_groups.router)
+app.include_router(im_admin.router)
+app.include_router(im_contacts.router)
+
+
+@app.websocket("/ws/chat")
+async def ws_chat(websocket, token: str):
+    await chat_websocket_endpoint(websocket, token)
 
 
 @app.get("/api/health")
