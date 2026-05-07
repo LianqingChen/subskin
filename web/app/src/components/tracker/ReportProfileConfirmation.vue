@@ -82,7 +82,7 @@ onMounted(loadProfiles)
         <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">识别到患者信息</h3>
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">报告中包含以下患者信息，是否关联到健康档案？</p>
         
-        <div class="grid grid-cols-3 gap-3 mb-4">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           <div class="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
             <div class="text-xs text-gray-400 mb-1">姓名 <span class="text-[10px] bg-gray-100 dark:bg-gray-700 px-1 rounded ml-1">来自报告</span></div>
             <div class="font-medium text-gray-900 dark:text-gray-100">{{ extractedInfo.name || '-' }}</div>
@@ -94,6 +94,10 @@ onMounted(loadProfiles)
           <div class="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
             <div class="text-xs text-gray-400 mb-1">年龄 <span class="text-[10px] bg-gray-100 dark:bg-gray-700 px-1 rounded ml-1">来自报告</span></div>
             <div class="font-medium text-gray-900 dark:text-gray-100">{{ extractedInfo.age ? `${extractedInfo.age}岁` : '-' }}</div>
+          </div>
+          <div class="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
+            <div class="text-xs text-gray-400 mb-1">体检日期 <span class="text-[10px] bg-gray-100 dark:bg-gray-700 px-1 rounded ml-1">来自报告</span></div>
+            <div class="font-medium text-gray-900 dark:text-gray-100">{{ extractedInfo.exam_date || '-' }}</div>
           </div>
         </div>
 

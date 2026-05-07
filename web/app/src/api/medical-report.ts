@@ -28,6 +28,7 @@ export interface ExtractedPatientInfo {
   name: string | null
   gender: string | null
   age: number | null
+  exam_date: string | null
   confidence: number
 }
 

@@ -73,6 +73,29 @@ function toggleSource(item: any) {
         </div>
       </div>
       
+      <!-- Extracted patient info -->
+      <div v-if="interpretation.extracted_patient_info" class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/30 rounded-lg px-3 py-2">
+        <template v-if="interpretation.extracted_patient_info.name">
+          <span class="flex items-center gap-1">
+            <i class="ri-user-line"></i> {{ interpretation.extracted_patient_info.name }}
+          </span>
+        </template>
+        <template v-if="interpretation.extracted_patient_info.gender || interpretation.extracted_patient_info.age != null">
+          <span>
+            {{ interpretation.extracted_patient_info.gender ? (interpretation.extracted_patient_info.gender === '男' ? '男' : '女') : '' }}
+            {{ interpretation.extracted_patient_info.age != null ? interpretation.extracted_patient_info.age + '岁' : '' }}
+          </span>
+        </template>
+        <template v-if="interpretation.extracted_patient_info.exam_date">
+          <span class="flex items-center gap-1">
+            <i class="ri-calendar-line"></i> 体检日期: {{ interpretation.extracted_patient_info.exam_date }}
+          </span>
+        </template>
+        <span v-if="interpretation.extracted_patient_info.confidence >= 0.8" class="px-1.5 py-0.5 rounded text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+          <i class="ri-check-line mr-0.5"></i>AI提取
+        </span>
+      </div>
+
       <p class="text-gray-700 dark:text-gray-300 leading-relaxed text-sm bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
         {{ interpretation.summary }}
       </p>

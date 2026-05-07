@@ -27,7 +27,7 @@ class ReportInterpreter:
             return self._empty_result(raw_text)
 
         if len(clean_text) >= 500:
-            return self.interpret_full_text(clean_text[:30000], user_context)
+            return self.interpret_full_text(clean_text[:30000], user_context, indicators)
 
         flagged = [i for i in indicators if i.get("status") not in ("normal", "unknown")]
         if not flagged and not indicators:
@@ -45,13 +45,14 @@ class ReportInterpreter:
         self,
         full_text: str,
         user_context: Optional[Dict[str, Any]] = None,
+        indicators: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         if not full_text or not full_text.strip():
             return self._empty_result(full_text)
 
         user_info = self._build_user_info(user_context)
-        prompt = self._build_section_prompt(full_text[:30000], user_info)
-        result, model_name = self._call_llm_with_metadata(prompt, max_tokens=8192)
+        prompt = self._build_section_prompt(full_text[:30000], user_info, indicators)
+        result, model_name = self._call_llm_with_metadata(prompt, max_tokens=16384)
 
         if result is None:
             return self._fallback_section_result(full_text, model_name=model_name)
@@ -163,14 +164,22 @@ class ReportInterpreter:
             '  "recommendations": [\n'
             '    {"content": "具体可执行建议"}\n'
             "  ],\n"
+            '  "extracted_patient_info": {\n'
+            '    "name": "姓名",\n'
+            '    "gender": "男/女",\n'
+            '    "age": 35,\n'
+            '    "exam_date": "2025-01-15",\n'
+            '    "confidence": 0.9\n'
+            '  } | null,\n'
             '  "disclaimer": "%s"\n'
             "}\n\n"
             "注意事项：\n"
             "1. 请尽可能提取图片中所有可见的检验指标，包括指标名称、检测值、单位、参考范围\n"
             "2. status判断：检测值在参考范围内为normal，偏高为high，偏低为low，严重偏离为critical\n"
             "3. 特别关注与白癜风相关的指标（甲状腺功能、免疫指标、肝功能、微量元素等）\n"
-            "4. 如果图片不是体检报告或无法识别，返回包含空指标和上传建议的JSON\n"
-            "5. 严格输出JSON，不要输出Markdown代码块或JSON以外的文字"
+            "4. 从报告头部提取姓名、性别、年龄、体检日期等基本信息\n"
+            "5. 如果图片不是体检报告或无法识别，返回包含空指标和上传建议的JSON\n"
+            "6. 严格输出JSON，不要输出Markdown代码块或JSON以外的文字"
         ) % (user_info, DISCLAIMER)
         content.append({"type": "text", "text": prompt})
 
@@ -184,7 +193,7 @@ class ReportInterpreter:
                 model=vision_model,
                 messages=cast(Any, [{"role": "user", "content": content}]),
                 temperature=0.1,
-                max_tokens=4096,
+                max_tokens=8192,
             )
             resp_text = (response.choices[0].message.content or "").strip()
             if resp_text.startswith("```"):
@@ -258,6 +267,13 @@ class ReportInterpreter:
             '  "recommendations": [\n'
             '    {"content": "具体可执行建议"}\n'
             "  ],\n"
+            '  "extracted_patient_info": {\n'
+            '    "name": "张三",\n'
+            '    "gender": "男",\n'
+            '    "age": 35,\n'
+            '    "exam_date": "2025-01-15",\n'
+            '    "confidence": 0.9\n'
+            '  } | null,\n'
             '  "disclaimer": "%s"\n'
             "}"
         ) % (
@@ -268,19 +284,44 @@ class ReportInterpreter:
             DISCLAIMER,
         )
 
-    def _build_section_prompt(self, full_text: str, user_info: str) -> str:
+    def _build_section_prompt(
+        self, full_text: str, user_info: str, indicators: Optional[List[Dict[str, Any]]] = None
+    ) -> str:
+        indicator_ref = ""
+        if indicators:
+            indicator_lines = []
+            for i in indicators[:100]:
+                line = "- %s: %s %s" % (
+                    i.get("name", ""), i.get("value", ""), i.get("unit", "")
+                )
+                ref_min = i.get("ref_min")
+                ref_max = i.get("ref_max")
+                if ref_min is not None or ref_max is not None:
+                    line += " [参考: %s-%s, 状态: %s]" % (
+                        ref_min if ref_min is not None else "?",
+                        ref_max if ref_max is not None else "?",
+                        i.get("status", "unknown"),
+                    )
+                indicator_lines.append(line)
+            indicator_ref = (
+                "预解析发现的指标参考（共%d个，请核对并用LLM自己的判断交叉验证）：\n%s\n\n"
+                % (len(indicators), "\n".join(indicator_lines))
+            )
+
         return (
             "你是一位专业的体检报告解读助手。请仔细阅读以下体检报告的完整内容，按检查项目分类进行解读。\n\n"
             "用户信息: %s\n\n"
+            "%s"
             "报告完整内容:\n---\n%s\n---\n\n"
             "请按以下格式输出JSON（严格JSON，不要Markdown代码块）：\n\n"
             "{\n"
             '  "risk_level": "low|medium|high|critical",\n'
-            '  "summary": "200字以内的总体总结",\n'
+            '  "summary": "300字以内的总体总结，必须覆盖报告中所有检查项目的关键发现",\n'
             '  "extracted_patient_info": {\n'
             '    "name": "张三",\n'
             '    "gender": "男",\n'
             '    "age": 35,\n'
+            '    "exam_date": "2025-01-15",\n'
             '    "confidence": 0.9\n'
             '  } | null,\n'
             '  "sections": [\n'
@@ -326,11 +367,11 @@ class ReportInterpreter:
             "2. 风险判定：red=危急值或多项严重异常；yellow=轻度异常或临界值；green=全部正常。\n"
             "3. 每个section的indicators必须包含该检查项目的所有指标（包括正常的）。\n"
             "4. 异常指标需要深度解读。对每个异常指标的解读，必须标注：(1) 支撑该结论的具体源指标 (2) 引用原文中的相关片段 (3) 置信度评分 (0-1)。\n"
-            "5. extracted_patient_info 需要尽量从原始报告中提取姓名、性别、年龄，并给出置信度；若未发现则返回 null。\n"
+            "5. extracted_patient_info 需从报告中提取：姓名、性别、年龄、体检日期(exam_date)，未发现返回null。\n"
             "6. 特别关注与白癜风相关的指标：甲状腺功能、免疫指标、肝功能、微量元素（铜、锌）、维生素D等。\n"
             "7. 如果某指标在参考范围边界附近，也应在section_summary中标记提醒。\n"
             "8. 严格输出JSON，不要输出任何Markdown标记或JSON之外的文字。"
-        ) % (user_info, full_text[:30000], DISCLAIMER)
+        ) % (user_info, indicator_ref, full_text[:30000], DISCLAIMER)
 
     def _build_comparison_prompt(
         self,
@@ -375,7 +416,7 @@ class ReportInterpreter:
         return result
 
     def _call_llm_with_metadata(
-        self, prompt: str, max_tokens: int = 8192
+        self, prompt: str, max_tokens: int = 16384
     ) -> Tuple[Optional[Dict[str, Any]], str]:
         config = get_llm_config()
         model_name = config.get("chat_model", "unknown")
@@ -410,13 +451,79 @@ class ReportInterpreter:
                 content = content.strip("`")
                 if content.startswith("json"):
                     content = content[4:].strip()
-            result = json.loads(content)
+            try:
+                result = json.loads(content)
+            except json.JSONDecodeError:
+                # Attempt recovery: find the last complete JSON structure
+                result = self._recover_truncated_json(content)
+                if result is None:
+                    logger.warning("LLM returned unparseable JSON (len=%d)", len(content))
+                    return None, model_name
+                logger.info("Recovered truncated JSON, lost approximately %d chars", len(content) - 100)
             if not isinstance(result, dict):
                 return None, model_name
             return result, model_name
         except Exception as exc:
             logger.error("LLM call failed in ReportInterpreter: %s", str(exc), exc_info=True)
             return None, model_name
+
+    def _recover_truncated_json(self, content: str) -> Optional[Dict[str, Any]]:
+        """Attempt to recover a truncated JSON response by finding the last
+        complete structure boundary and completing stray string/array/objects."""
+        if not content:
+            return None
+
+        # Strategy 1: find last complete '}' by tracking brace depth
+        last_valid_pos = -1
+        depth = 0
+        in_string = False
+        escape = False
+        for i, ch in enumerate(content):
+            if escape:
+                escape = False
+                continue
+            if ch == '\\' and in_string:
+                escape = True
+                continue
+            if ch == '"' and not escape:
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0:
+                    last_valid_pos = i
+        if last_valid_pos > 0:
+            candidate = content[:last_valid_pos + 1].strip()
+            try:
+                result = json.loads(candidate)
+                if isinstance(result, dict):
+                    return result
+            except json.JSONDecodeError:
+                pass
+
+        # Strategy 2: close all open braces/brackets
+        if depth > 0:
+            suffix = '}' * depth
+            # Also close any open array brackets we can detect
+            open_brackets = content.count('[') - content.count(']')
+            if open_brackets > 0:
+                suffix = ']' * open_brackets + suffix
+            # Close last string if mid-value
+            if content.rstrip().endswith('"') or content.rstrip().endswith(','):
+                suffix = '"' + suffix
+            candidate = content.strip().rstrip(',') + suffix
+            try:
+                result = json.loads(candidate)
+                if isinstance(result, dict):
+                    return result
+            except json.JSONDecodeError:
+                pass
+
+        return None
 
     def _post_process(
         self,
@@ -755,15 +862,19 @@ class ReportInterpreter:
         except (TypeError, ValueError):
             age = None
 
+        exam_date = str(extracted_patient_info.get("exam_date") or "").strip() or None
+
         confidence = self._normalize_confidence(extracted_patient_info.get("confidence"))
-        if not name and not gender and age is None:
+        if not name and not gender and age is None and not exam_date:
             return None
-        return {
+        result: Dict[str, Any] = {
             "name": name or None,
             "gender": gender or None,
             "age": age,
+            "exam_date": exam_date,
             "confidence": confidence,
         }
+        return result
 
     def _normalize_confidence(self, confidence: Any) -> float:
         try:
@@ -887,6 +998,67 @@ class ReportInterpreter:
         payload.update(self._build_output_metadata(model_name))
         return payload
 
+    def _extract_patient_info_from_text(self, text: str) -> Optional[Dict[str, Any]]:
+        """Regex-based fallback extraction of patient info from report headers."""
+        if not text:
+            return None
+
+        import re
+
+        name: Optional[str] = None
+        gender: Optional[str] = None
+        age: Optional[int] = None
+        exam_date: Optional[str] = None
+
+        # Extract name: "姓名：xxx" or "姓名: xxx"
+        name_match = re.search(r"姓名\s*[:：]\s*([^\s\n]{2,6})", text)
+        if name_match:
+            name = name_match.group(1).strip()
+            # Filter out obvious non-names
+            if re.search(r"[0-9年月日/]", name):
+                name = None
+
+        # Extract gender
+        gender_match = re.search(r"性别\s*[:：]\s*(男|女)", text)
+        if gender_match:
+            gender = gender_match.group(1)
+
+        # Extract age: "年龄：35" or "年龄: 35岁"
+        age_match = re.search(r"年龄\s*[:：]\s*(\d+)\s*岁?", text)
+        if age_match:
+            try:
+                age = int(age_match.group(1))
+            except ValueError:
+                pass
+
+        # Extract exam date: "体检日期：2025-01-15" or "检查日期：2025年01月15日"
+        date_patterns = [
+            r"(?:体检|检查|报告)日期\s*[:：]\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})",
+            r"(?:体检|检查|报告)日期\s*[:：]\s*(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日",
+            r"日期\s*[:：]\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})",
+            r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日",
+        ]
+        for pattern in date_patterns:
+            match = re.search(pattern, text)
+            if match:
+                groups = match.groups()
+                if len(groups) == 3:
+                    exam_date = "%04d-%02d-%02d" % (int(groups[0]), int(groups[1]), int(groups[2]))
+                elif len(groups) == 1:
+                    exam_date = groups[0].replace("/", "-")
+                break
+
+        if not name and not gender and age is None and not exam_date:
+            return None
+
+        return {
+            "name": name,
+            "gender": gender,
+            "age": age,
+            "exam_date": exam_date,
+            "confidence": 0.6,  # Lower confidence for regex extraction
+        }
+
     def _fallback_section_result(
         self, full_text: str, model_name: Optional[str] = None
     ) -> Dict[str, Any]:
@@ -949,7 +1121,7 @@ class ReportInterpreter:
                 "sections": [section],
                 "all_indicators": section["indicators"],
                 "recommendations": [{"content": "AI深度解读暂时不可用，以上为基础数据解析。请稍后重试或联系支持。"}],
-                "extracted_patient_info": None,
+                "extracted_patient_info": self._extract_patient_info_from_text(full_text),
             },
             model_name=model_name,
         )

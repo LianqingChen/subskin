@@ -116,7 +116,9 @@ def _serve_authorized_report_file(
     file_url = cast(str, cast(object, db_file.file_url))
 
     if page is not None:
-        page_path = Path("data/uploads/pages") / str(file_id) / "page-{0}.png".format(page)
+        page_path = Path("data/uploads/pages") / str(file_id) / f"page-{page:03d}.png"
+        if not page_path.exists():
+            page_path = Path("data/uploads/pages") / str(file_id) / f"page-{page}.png"
         if not page_path.exists() or not page_path.is_file():
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="文件不存在")
         return FileResponse(page_path, media_type="image/png")
@@ -193,6 +195,15 @@ async def serve_page(
         raise HTTPException(status_code=404, detail="文件不存在")
 
     page_path = Path("data/uploads/pages") / str(file_id) / page_name
+    if not page_path.exists():
+        # Try zero-padded variant (e.g. page-001.png for page-1.png)
+        import re
+        alt_match = re.match(r"page-(\d+)\.(\w+)", page_name)
+        if alt_match:
+            alt_name = "page-%s.%s" % (alt_match.group(1).zfill(3), alt_match.group(2))
+            alt_path = Path("data/uploads/pages") / str(file_id) / alt_name
+            if alt_path.exists():
+                page_path = alt_path
     if not page_path.exists() or not page_path.is_file():
         raise HTTPException(status_code=404, detail="文件不存在")
 
