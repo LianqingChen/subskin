@@ -557,13 +557,11 @@ class VASIService:
                     raw_lesion_count - len(lesions), raw_lesion_count, CONFIDENCE_THRESHOLD,
                 )
 
-            # ── Bbox size sanity check: reject giant bboxes (>60% of image) ──
-            # VLM sometimes labels the entire skin region as a single "lesion".
-            # These giant bboxes produce meaningless SAM results and inflate area.
-            # 60% threshold: a real lesion can cover up to 60% of a body part photo
-            # (e.g., large vitiligo patches on face/chest). Above 60% it's likely
-            # the entire skin region, not a specific lesion.
-            MAX_BBOX_PCT = 60.0
+            # ── Bbox size sanity check: reject overly broad bboxes (>25% of image) ──
+            # VLM sometimes produces region-level (not lesion-level) bboxes.
+            # A bbox >25% of the image area is almost certainly too broad —
+            # even a large vitiligo patch on a face photo rarely exceeds 25%.
+            MAX_BBOX_PCT = 25.0
             raw_lesions = lesions
             lesions = []
             for l in raw_lesions:
@@ -727,11 +725,32 @@ class VASIService:
 
                 for i, c in enumerate(seg_contours):
                     area_i = float(c.get("area_percent", 0))
+                    area_img = float(c.get("area_percent_in_image", 0))
                     # Match VLM lesion by index (1:1 via per-lesion bbox)
                     vlm_lesion = lesions[i] if i < len(lesions) else {}
                     depig_raw = vlm_lesion.get("depigmentation_level")
                     contrast = float(vlm_lesion.get("contrast_to_skin", 0.5))
                     confidence = float(vlm_lesion.get("confidence", 0.5))
+
+                    # ── Post-SAM contour sanity check ──
+                    # If SAM segmented >60% of the VLM bbox area, the bbox was
+                    # likely too broad (covering mostly normal skin that SAM
+                    # incorrectly segmented as vitiligo). Down-weight aggressively.
+                    vlm_bbox = vlm_lesion.get("bbox")
+                    if vlm_bbox and len(vlm_bbox) == 4:
+                        bbox_area_pct = (float(vlm_bbox[2]) - float(vlm_bbox[0])) * \
+                                       (float(vlm_bbox[3]) - float(vlm_bbox[1])) * 100
+                        if bbox_area_pct > 0 and area_img > 0:
+                            fill_ratio = area_img / bbox_area_pct
+                            if fill_ratio > 0.6:
+                                logger.warning(
+                                    "Contour %s overfills bbox (%.1f%% fill), bbox=%.1f%% image, contour=%.1f%%",
+                                    c.get("label"), fill_ratio * 100, bbox_area_pct, area_img,
+                                )
+                                # Aggressive down-weight: treat as barely-confident
+                                confidence = confidence * 0.3
+                                area_i = area_i * 0.4
+                                area_img = area_img * 0.4
 
                     # Per-lesion depig: 1-3 → normalized 0-1
                     depig_i = float(depig_raw) / 3.0 if depig_raw else 0.67
@@ -968,160 +987,137 @@ class VASIService:
             elif image_file[:4] == b"RIFF" and image_file[8:12] == b"WEBP":
                 mime_type = "image/webp"
 
-            prompt = """你是一位皮肤科AI助手。请采用"两遍扫描法"仔细分析这张皮肤照片：
-第一遍：识别皮肤区域范围，排除背景/衣物
-第二遍：在皮肤区域内逐一检测所有白斑，给出每个白斑的精确定位
+            prompt = """你是一位皮肤科AI助手。请采用"逐斑精确定位法"仔细分析这张皮肤照片：
 
 重要声明：你不是医生，不能进行医疗诊断。你的分析仅基于照片中肉眼可见的视觉特征，供用户参考。请在所有描述中使用"观察到"、"可见"等客观措辞。
 
 ================================================================
-【关键要求 — 白斑检测精度】v4.0
+【核心原则 — bbox 必须紧贴白斑边界！】v5.0
 ================================================================
-1. **全量检测**: 必须仔细扫描整张照片中的所有可见皮肤区域，找出所有疑似白斑，
-   包括边界处的小斑点（直径≥皮肤区域3%）。不要遗漏任何一处！
-2. **两遍扫描法**:
-   - 第一遍：先大致扫描，识别明显的中大型白斑（≥10%皮肤区域）
-   - 第二遍：按区域（上/下/左/右/中央）逐一细致扫描，发现所有小白斑（≥3%）
-   - 智能扫描：如果第二遍没有发现小白斑，确认"未发现更多小斑点"
-3. **bbox精确定位**: 每个白斑必须提供bbox边界框 [x1,y1,x2,y2]，
-   框住白斑的完整可见范围（包含最外围的色素减退区域）。
-   bbox应贴合白斑的实际轮廓，不要过于宽松（不超过实际面积的2倍）。
-4. **边缘点标注**: 对每个白斑，标注3-5个边界关键点（不规则形状的关键转角处），
+
+这是本次更新的最核心要求：每个 bbox 必须精确包围**一个独立的白斑斑块**的可见边界，
+不能覆盖大面积正常皮肤。bbox 的质量直接决定后续 AI 分割的准确性。
+
+⚠️ 常见错误（请务必避免）：
+❌ 错误做法：用一个大 bbox 覆盖整个额头区域（包含了眉毛、额头正常皮肤和白斑）
+✅ 正确做法：额头上的白斑如果分为上方的发际线斑块和下方的眉间斑块，
+   应该分别标注两个 bbox，每个 bbox 紧贴各自斑块的边缘
+
+❌ 错误做法：用一个 bbox 框住整个脸颊 + 下颚
+✅ 正确做法：白斑在哪里，bbox 就画在哪里。不要因为"这个区域有白斑"
+   就把整个解剖区域都框进去
+
+❌ 错误做法：在一个 bbox 中包含多个互相分离的白斑碎片
+✅ 正确做法：分离的白斑碎片各自独立标注 bbox
+
+**【bbox 紧贴度标准】**:
+- bbox 的四条边应该在白斑可见边界向外扩展不超过白斑宽度的 15%
+- 即：如果白斑最宽处占画面 10%，bbox 宽度应该 ≤ 11.5%（10% × 1.15）
+- bbox 内白斑面积应占框面积的 50% 以上
+- 以"肉眼可见的明显颜色分界线"为 bbox 参考，沿着色差最大的位置画框
+
+**【边界过渡区域的处理】**:
+- 如果白斑边界是逐渐过渡的（diffuse），以可见颜色开始明显变浅的位置作为边界
+- 不要为了"保险"而把 bbox 画得很大——后续 SAM 算法会在 bbox 内精细分割
+- bbox 的作用是告诉 SAM "在这里找白斑"，不是用 bbox 本身来衡量面积
+
+================================================================
+【检测流程】
+================================================================
+1. **全量检测**: 仔细扫描整张照片中的所有可见皮肤区域，找出所有疑似白斑，
+   包括边界处的小斑点（直径≥皮肤区域3%）。不要遗漏任何一处。
+2. **逐斑标注**: 每发现一个独立的白斑斑块，立即标注 bbox + center + edge_points。
+   分散的白斑碎片必须拆分标注，不要合并。
+3. **边缘点标注**: 对每个白斑，标注3-5个边界关键点（不规则形状的转角处），
    帮助后续算法精确描边。
-5. **色差识别优先级**: 
+4. **色差识别优先级**: 
    - 最明显的白色/乳白色斑块 → 高置信度 (0.85+)
    - 较淡的色素减退区域 → 中置信度 (0.6-0.85)  
    - 边界模糊的浅色区域 → 低置信度 (0.3-0.6)，仍需标注
-6. **脱色程度4级评估**: 对每个白斑区域评估色素脱失程度:
+5. **脱色程度4级评估**: 对每个白斑区域评估色素脱失程度:
    - 0级(无): 正常肤色，无色素脱失
-   - 1级(轻度): 轻度色素减退，隐约可见淡白色，与周围肤色对比度<0.15
+   - 1级(轻度): 轻度色素减退，隐约可见淡白色，对比度<0.15
    - 2级(中度): 明显色素减退，呈乳白色，对比度0.15-0.40
    - 3级(重度): 几乎完全色素脱失，呈瓷白色或纯白色，对比度>0.40
-   输出该照片的整体脱色等级（取多数白斑的等级）
-7. **每斑皮肤对比度**: 对每个白斑评估 "contrast_to_skin" (0-1)，
-   即白斑中心区域颜色与周围正常皮肤颜色的差异程度。
+6. **每斑皮肤对比度**: 对每个白斑评估 "contrast_to_skin" (0-1)
 
 ================================================================
 【自适应肤色分析】
 ================================================================
-1. 先判断照片中正常皮肤的基础肤色类型(Fitzpatrick I-VI)
-2. 基于肤色类型调整白斑检测灵敏度:
-   - 浅色皮肤(I-III): 注意区分正常肤色和轻度白斑，降低误判。
-     如果对比度<0.1，大概率不是白斑。
-   - 深色皮肤(IV-VI): 提高检测灵敏度，白斑在深色皮肤上更明显。
-     对比度>0.12即可判定为可疑。
-3. 在 visual_features.color 中注明肤色类型和相对对比度
-4. **光照评估**: 判断照片是否存在明显的光照不均匀（阴影、反光等），
-   如有，在 limitations 中说明并相应降低置信度。
+1. 判断照片中正常皮肤的基础肤色类型(Fitzpatrick I-VI)
+2. 浅色皮肤(I-III): 注意区分正常肤色和轻度白斑。对比度<0.1 大概率不是白斑。
+3. 深色皮肤(IV-VI): 提高检测灵敏度。对比度>0.12 即可判定为可疑。
+4. **光照评估**: 判断是否存在明显光照不均匀，如有则在 limitations 中说明。
 
 ================================================================
 【参考物检测（如有）】
 ================================================================
-如果照片中包含以下参考物体，请标注:
-- 一元硬币(直径25mm): 标注为 reference_coin
-- 标准参考色卡: 标注为 reference_card
-- 标尺/直尺: 标注为 reference_ruler
-- 手指(食指宽度约15mm): 标注为 reference_finger
-格式: reference_objects: [{"type":"coin","bbox":[x1,y1,x2,y2],"known_size_mm":25}]
-如有参考物，在 details 中增加 estimated_total_area_cm2 估算值。
+如果照片中包含参考物体（硬币/尺子/手指），标注在 reference_objects 中。
 
 ================================================================
 返回 JSON（只返回 JSON，不要任何其他文字）:
 ================================================================
 {
   "visual_features": {
-    "visibility": {
-      "level": "visible|faint|subtle",
-      "description": "白斑肉眼可见程度（一句话）",
-      "contrast_ratio": 0.0-1.0
-    },
-    "color": {
-      "level": "pale_white|milky_white|porcelain_white|pure_white",
-      "skin_fitzpatrick": "I|II|III|IV|V|VI",
-      "description": "白斑颜色表现和色素脱失程度描述"
-    },
-    "border": {
-      "level": "clear|partial|unclear",
-      "sharpness_ratio": 0.0-1.0,
-      "description": "白斑与正常皮肤交界特征"
-    },
-    "shape": {
-      "description": "白斑形状、数量和大体分布"
-    },
-    "surface": {
-      "texture": "smooth|scaly|atrophic|other",
-      "description": "白斑表面纹理特征"
-    },
-    "distribution": {
-      "pattern": "localized|segmental|bilateral|generalized|scattered",
-      "patch_count": "数量",
-      "description": "白斑分布模式描述"
-    },
-    "similarity_note": "列举至少2种鉴别诊断（其他皮肤状况）",
-    "recommendation": "就医建议（10字以内）"
+    "visibility": {"level": "visible|faint|subtle", "description": "...", "contrast_ratio": 0.0},
+    "color": {"level": "pale_white|milky_white|porcelain_white|pure_white", "skin_fitzpatrick": "III", "description": "..."},
+    "border": {"level": "clear|partial|unclear", "sharpness_ratio": 0.0, "description": "..."},
+    "shape": {"description": "..."},
+    "surface": {"texture": "smooth|scaly|atrophic|other", "description": "..."},
+    "distribution": {"pattern": "localized|segmental|bilateral|generalized|scattered", "patch_count": "数量", "description": "..."},
+    "similarity_note": "...",
+    "recommendation": "..."
   },
   "skin_region": {
-    "bbox": [x1, y1, x2, y2],
-    "confidence": 0.0-1.0,
-    "fitzpatrick_type": "I|II|III|IV|V|VI",
-    "skin_tone_notes": "肤色描述（如：中等偏白肤色，亚洲人常见肤质）",
-    "lighting_condition": "均匀|轻微不均匀|明显不均匀",
-    "notes": "皮肤区域描述（如：右手背掌侧，含全部手指）"
+    "bbox": [x1,y1,x2,y2], "confidence": 0.9,
+    "fitzpatrick_type": "III", "skin_tone_notes": "...",
+    "lighting_condition": "均匀|轻微不均匀|明显不均匀", "notes": "..."
   },
-  "suspected_lesions": [
-    {
-      "label": "白斑1",
-      "center": [x, y],
-      "bbox": [x1, y1, x2, y2],
-      "edge_points": [[x1,y1],[x2,y2],[x3,y3]],
-      "estimated_size_percent": "数值",
-      "depigmentation_level": "0-3",
-      "contrast_to_skin": 0.0-1.0,
-      "boundary_type": "clear|diffuse|mixed",
-      "color_description": "乳白色|瓷白色|淡白色",
-      "confidence": 0.0-1.0,
-      "notes": "简短备注（如：位于关节处，边界清晰）"
-    }
-  ],
+  "suspected_lesions": [{
+    "label": "白斑1",
+    "center": [x,y],
+    "bbox": [x1,y1,x2,y2],
+    "edge_points": [[x1,y1],[x2,y2],[x3,y3]],
+    "estimated_size_percent": 5.0,
+    "depigmentation_level": 2,
+    "contrast_to_skin": 0.35,
+    "boundary_type": "clear|diffuse|mixed",
+    "color_description": "乳白色|瓷白色|淡白色",
+    "confidence": 0.9,
+    "notes": "..."
+  }],
   "reference_objects": [],
-  "overall_depigmentation": "0-3",
-  "vasi_score": "0-100",
-  "area_percentage_estimate": "0-100",
-  "estimated_total_area_cm2": "数值(如有参考物)",
+  "overall_depigmentation": 2,
+  "vasi_score": 0,
+  "area_percentage_estimate": 0,
+  "estimated_total_area_cm2": null,
   "classification": "节段型|非节段型|混合型|未确定",
   "stage": "进展期|稳定期|好转期",
   "body_site_confirmed": "面部|颈部|手部|腹部|背部|上肢|下肢|足部|其他",
-  "confidence": 0.0-1.0,
-  "limitations": ["本次分析的局限性说明"],
+  "confidence": 0.8,
+  "limitations": ["..."],
   "details": {
-    "scan_pass1_patches": "第一遍发现的白斑数量",
-    "scan_pass2_patches": "第二遍发现的小白斑数量",
     "patch_count_estimate": "总数量",
     "color_type": "纯白|乳白|灰白|淡白",
     "border_clarity": "清晰|模糊|部分清晰",
-    "dominant_depigmentation": "0-3",
-    "total_vitiligo_area_estimate": "文字描述",
+    "dominant_depigmentation": 2,
     "description": "80字以内的白斑特征描述"
   }
 }
 
 坐标说明:
 - 所有坐标归一化到0-1范围，以照片左上角为(0,0)，右下角为(1,1)
-- skin_region.bbox: [左,上,右,下]
-- suspected_lesions[].center: 白斑正中心点 [x,y]
-- suspected_lesions[].bbox: 白斑的完整边界框 [左,上,右,下]，覆盖白斑全部可见范围
-- suspected_lesions[].edge_points: 3-5个关键边界点，描述白斑不规则轮廓的主要转折处
-- reference_objects[].bbox: 参考物的边界框 [左,上,右,下]
-- 坐标值必须严格在 0-1 范围内，不得出现负值或>1的值
+- bbox: [左,上,右,下]，必须紧贴白斑可见边界！（不超过实际范围的1.15倍）
+- center: 白斑几何中心点 [x,y]
+- edge_points: 3-5个边界关键点
+- 坐标值必须严格在 0-1 范围内
 
 注意:
-1. 必须找出所有可见白斑区域，包括小的斑点（≥皮肤区域3%）
-2. VASI评分保守估计，宁低勿高
-3. area_percentage_estimate 是占该部位皮肤面积的%，不是占整张照片的%
-4. depigmentation_level 和 overall_depigmentation 必须基于可见色素脱失程度估计
-5. 只返回JSON，不要任何其他文字。所有数字字段必须是纯数字（如25.0），不要带%号或单位。
-6. 如果完全没有白斑特征，vasi_score=0，suspected_lesions=[]
-7. JSON中不要出现尾随逗号（trailing commas）"""
+1. **最重要的：bbox 必须紧贴每个白斑的可见边界，不能覆盖大面积正常皮肤**
+2. 分散的白斑碎片必须独立标注，不要合并
+3. 只返回JSON，不要任何其他文字。所有数字字段必须是纯数字，不要带%号或单位
+4. 如果完全没有白斑特征，vasi_score=0，suspected_lesions=[]
+5. JSON中不要出现尾随逗号（trailing commas）"""
 
             logger.info(
                 "Calling vision model: provider=%s, model=%s, image_size=%d bytes",
