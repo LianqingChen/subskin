@@ -14,8 +14,14 @@ from sqlalchemy.orm import Session
 from web.backend.models.vasi import VASIAssessment
 from web.backend.database.database import get_db
 from web.backend.services.vasi_segmentation import segment_vitiligo, segment_vitiligo_guided, _segment_with_tiling
+from web.backend.services.vasi_formula import compute_vasi_v2
 
 logger = logging.getLogger(__name__)
+
+# ── Feature toggle: VLM ensemble (two independent calls + lesion intersection) ──
+# Doubles API cost. Enables stability when VLM stochasticity is problematic.
+# Set to True in _call_vasi_api for production-critical assessments.
+ENABLE_VLM_ENSEMBLE = False
 
 
 class VASIAssessmentError(Exception):
@@ -519,19 +525,66 @@ class VASIService:
             processed_image = self.preprocessor.preprocess(image_file)
 
         # Step 3: VLM first — get classification + localization guidance
-        vlm_result = await self._call_vision_model(processed_image)
+        if ENABLE_VLM_ENSEMBLE:
+            vlm_result = await self._call_vision_model_ensemble(processed_image)
+        else:
+            vlm_result = await self._call_vision_model(processed_image)
 
         # Extract VLM localization for SAM
         skin_bbox: Optional[List[float]] = None
         lesion_centers: Optional[List[List[float]]] = None
         lesion_sizes: Optional[List[float]] = None
+        lesion_bboxes: Optional[List[List[float]]] = None
+        depigmentation_level = None
         if vlm_result:
+            depigmentation_level = vlm_result.get("depigmentation_level")
             skin_region = vlm_result.get("skin_region", {})
             if skin_region and skin_region.get("bbox"):
                 bbox = skin_region["bbox"]
                 if len(bbox) == 4 and all(0 <= v <= 1.5 for v in bbox):
                     skin_bbox = [float(v) for v in bbox]
             lesions = vlm_result.get("suspected_lesions", [])
+            raw_lesion_count = len(lesions)
+            
+            # ── Confidence filtering: drop low-confidence lesions ──
+            # VLM stochasticity causes lesion count to vary wildly between runs.
+            # Filtering by confidence threshold stabilizes output and reduces false positives.
+            CONFIDENCE_THRESHOLD = 0.85
+            lesions = [l for l in lesions if float(l.get("confidence", 0.5)) >= CONFIDENCE_THRESHOLD]
+            if len(lesions) < raw_lesion_count:
+                logger.info(
+                    "Confidence filter: dropped %d/%d lesions below threshold %.2f",
+                    raw_lesion_count - len(lesions), raw_lesion_count, CONFIDENCE_THRESHOLD,
+                )
+
+            # ── Bbox size sanity check: reject giant bboxes (>60% of image) ──
+            # VLM sometimes labels the entire skin region as a single "lesion".
+            # These giant bboxes produce meaningless SAM results and inflate area.
+            # 60% threshold: a real lesion can cover up to 60% of a body part photo
+            # (e.g., large vitiligo patches on face/chest). Above 60% it's likely
+            # the entire skin region, not a specific lesion.
+            MAX_BBOX_PCT = 60.0
+            raw_lesions = lesions
+            lesions = []
+            for l in raw_lesions:
+                bbox = l.get("bbox")
+                if bbox and len(bbox) == 4:
+                    bbox_w = float(bbox[2]) - float(bbox[0])
+                    bbox_h = float(bbox[3]) - float(bbox[1])
+                    bbox_pct = bbox_w * bbox_h * 100
+                    if bbox_pct > MAX_BBOX_PCT:
+                        logger.warning(
+                            "Bbox sanity: dropped lesion (%.1f%% bbox > %.1f%% max), conf=%.2f",
+                            bbox_pct, MAX_BBOX_PCT, float(l.get("confidence", 0.5)),
+                        )
+                        continue
+                lesions.append(l)
+            if len(lesions) < len(raw_lesions):
+                logger.info(
+                    "Bbox sanity: dropped %d/%d oversized lesions",
+                    len(raw_lesions) - len(lesions), len(raw_lesions),
+                )
+
             if lesions:
                 lesion_centers = [
                     [float(l["center"][0]), float(l["center"][1])]
@@ -544,17 +597,44 @@ class VASIService:
                     for l in lesions
                     if l.get("center") and len(l["center"]) == 2
                 ]
+                # Rebuild lesion_bboxes from filtered lesions (sync with confidence/bbox filtering)
+                lesion_bboxes = []
+                for l in lesions:
+                    bbox = l.get("bbox")
+                    if bbox and len(bbox) == 4:
+                        valid = all(isinstance(v, (int, float)) and 0 <= v <= 1.5 for v in bbox)
+                        if valid and bbox[2] > bbox[0] and bbox[3] > bbox[1]:
+                            lesion_bboxes.append([float(v) for v in bbox])
+
+            # Per-lesion metadata for adaptive SAM (contrast, confidence, depig)
+            lesion_metas: Optional[List[Dict[str, Any]]] = None
+            if lesions:
+                lesion_metas = [
+                    {
+                        "contrast": float(l.get("contrast_to_skin", 0.5)),
+                        "confidence": float(l.get("confidence", 0.5)),
+                        "depigmentation": l.get("depigmentation_level"),
+                    }
+                    for l in lesions
+                    if l.get("center") and len(l["center"]) == 2
+                ]
 
         # Step 4: SAM with VLM guidance (or auto if no guidance)
         has_guidance = bool(skin_bbox or lesion_centers)
         if has_guidance:
+            bbox_count = len(lesion_bboxes) if lesion_bboxes else 0
+            is_vlm_ensemble = bool(vlm_result.get("_ensemble")) if vlm_result else False
             logger.info(
-                "Using VLM-guided SAM: skin_bbox=%s, lesion_centers=%d",
-                skin_bbox, len(lesion_centers) if lesion_centers else 0,
+                "Using VLM-guided SAM: skin_bbox=%s, lesion_centers=%d, lesion_bboxes=%d, ensemble=%s",
+                skin_bbox, len(lesion_centers) if lesion_centers else 0, bbox_count, is_vlm_ensemble,
             )
             seg_result = await asyncio.to_thread(
-                segment_vitiligo_guided, processed_image, skin_bbox, lesion_centers, precision,
+                segment_vitiligo_guided,
+                processed_image, skin_bbox, lesion_centers, precision,
                 lesion_sizes if lesion_sizes else None,
+                lesion_bboxes if lesion_bboxes else None,
+                lesion_metas if lesion_metas else None,
+                is_vlm_ensemble,
             )
         else:
             logger.info("No VLM guidance available, using auto SAM")
@@ -636,8 +716,81 @@ class VASIService:
 
         if vlm_result is not None:
             if seg_area is not None:
-                vlm_result["area_percentage"] = seg_area
-                vlm_result["contours"] = seg_contours
+                # ── Per-lesion metadata enrichment ──
+                # Enrich each SAM contour with VLM per-lesion metadata
+                # (depigmentation, contrast, confidence) for clinical accuracy.
+                lesions = vlm_result.get("suspected_lesions", [])
+                enriched_contours: List[Dict[str, Any]] = []
+                weighted_depig_sum = 0.0
+                weighted_area_sum = 0.0
+                contrast_adjusted_area = 0.0
+
+                for i, c in enumerate(seg_contours):
+                    area_i = float(c.get("area_percent", 0))
+                    # Match VLM lesion by index (1:1 via per-lesion bbox)
+                    vlm_lesion = lesions[i] if i < len(lesions) else {}
+                    depig_raw = vlm_lesion.get("depigmentation_level")
+                    contrast = float(vlm_lesion.get("contrast_to_skin", 0.5))
+                    confidence = float(vlm_lesion.get("confidence", 0.5))
+
+                    # Per-lesion depig: 1-3 → normalized 0-1
+                    depig_i = float(depig_raw) / 3.0 if depig_raw else 0.67
+                    weighted_depig_sum += area_i * depig_i
+                    weighted_area_sum += area_i
+
+                    # Contrast-adjusted area: low contrast (< 0.5) → down-weight
+                    # Reduces noise amplification from hard-to-see lesions
+                    contrast_factor = min(1.0, contrast / 0.5) if contrast > 0 else 0.2
+                    contrast_adjusted_area += area_i * contrast_factor
+
+                    # Enrich contour
+                    enriched_c = dict(c)
+                    enriched_c["depigmentation_level"] = depig_raw
+                    enriched_c["depigmentation_norm"] = round(depig_i, 2)
+                    enriched_c["contrast_to_skin"] = contrast
+                    enriched_c["contrast_factor"] = round(contrast_factor, 2)
+                    enriched_c["confidence"] = confidence
+                    enriched_contours.append(enriched_c)
+
+                # Area-weighted depigmentation
+                area_weighted_depig = weighted_depig_sum / max(weighted_area_sum, 1e-6)
+
+                # Replace VLM's rough area estimate with SAM-measured area
+                raw_area = seg_area
+                # Scale contrast_adjusted_area to avoid double-counting from
+                # overlapping contours (sum of individual areas can exceed 100%).
+                scale_factor = raw_area / max(weighted_area_sum, 1e-6)
+                contrast_adjusted_area = contrast_adjusted_area * scale_factor
+                contrast_adjusted_area = min(contrast_adjusted_area, 100.0)
+
+                vlm_result["area_percentage"] = raw_area
+                vlm_result["area_percentage_contrast_adjusted"] = round(contrast_adjusted_area, 1)
+
+                # Recompute VASI score from SAM-measured area + area-weighted depigmentation
+                try:
+                    body_site = vlm_result.get("body_site", "hands")
+                    formula_score = compute_vasi_v2(
+                        body_site=body_site,
+                        area_pct_in_region=raw_area,
+                        depigmentation_level=area_weighted_depig,
+                    )
+                    vlm_result["vasi_score"] = formula_score
+                    vlm_result["details"]["vasi_score_source"] = "sam-area + weighted-depig formula"
+                    vlm_result["details"]["vasi_score_depig"] = round(area_weighted_depig, 2)
+                    vlm_result["details"]["vasi_score_depig_method"] = "area-weighted per-lesion"
+                    vlm_result["weighted_depigmentation"] = round(area_weighted_depig, 2)
+                    vlm_result["details"]["contrast_adjusted_area"] = round(contrast_adjusted_area, 1)
+                    vlm_result["details"]["num_lesions_evaluated"] = len(enriched_contours)
+                    logger.info(
+                        "VASI formula: %.1f (body=%s, area=%.1f%%, depig=%.2f weighted, contrast_adj_area=%.1f%%, %d lesions)",
+                        formula_score, body_site, raw_area, area_weighted_depig,
+                        contrast_adjusted_area, len(enriched_contours),
+                    )
+                except Exception as e:
+                    logger.warning("VASI formula computation failed: %s", e)
+                if depigmentation_level is not None:
+                    vlm_result["depigmentation_level"] = depigmentation_level
+                vlm_result["contours"] = enriched_contours
                 vlm_result["details"]["segmentation_source"] = seg_source
                 vlm_result["details"]["skin_region_ratio"] = skin_region_ratio
                 vlm_result["details"]["denominator"] = denominator
@@ -652,9 +805,18 @@ class VASIService:
 
         # Step 5: VLM failed but SAM succeeded → construct result from SAM
         if seg_contours:
-            estimated_vasi = min(seg_area * 2.5, 100) if seg_area else 0
+            # Use VASI formula with conservative defaults
+            try:
+                depig = float(depigmentation_level) / 3.0 if depigmentation_level else 0.67
+                formula_score = compute_vasi_v2(
+                    body_site="hands",
+                    area_pct_in_region=seg_area if seg_area else 0,
+                    depigmentation_level=depig,
+                )
+            except Exception:
+                formula_score = min((seg_area or 0) * 2.5, 100)
             return {
-                "vasi_score": round(estimated_vasi, 1),
+                "vasi_score": round(formula_score, 1),
                 "area_percentage": round(seg_area, 1) if seg_area else 0,
                 "classification": "未确定",
                 "stage": "稳定",
@@ -677,12 +839,14 @@ class VASIService:
                     "confidence": 0.6,
                     "detected_areas": len(seg_contours),
                     "segmentation_source": seg_source,
-                    "skin_region_ratio": skin_region_ratio,
+                                    "depigmentation_level": depigmentation_level,
+                "skin_region_ratio": skin_region_ratio,
                     "denominator": denominator,
                     "skin_layer_data_url": skin_layer_data_url,
                     "lesion_layer_data_url": lesion_layer_data_url,
                 },
                 "raw_response": {"sam_result": seg_result},
+                                "depigmentation_level": 1.0,
                 "source": f"sam-only-{seg_source}",
             }
 
@@ -740,6 +904,7 @@ class VASIService:
 
         return {
             "vasi_score": mock_vasi_score,
+            "depigmentation_level": 0.8,
             "area_percentage": mock_area_percentage,
             "classification": "非节段型",
             "stage": mock_stage,
@@ -789,7 +954,7 @@ class VASIService:
                 logger.warning("No LLM provider configured, cannot call vision model")
                 return None
 
-            vision_model = config.get("vision_model", "qwen3-vl-plus")
+            vision_model = config.get("vision_model", "qwen-vl-max")
             client = openai.OpenAI(
                 api_key=config["api_key"],
                 base_url=config["base_url"],
@@ -803,80 +968,160 @@ class VASIService:
             elif image_file[:4] == b"RIFF" and image_file[8:12] == b"WEBP":
                 mime_type = "image/webp"
 
-            prompt = """你是一位皮肤科AI助手。请仔细分析这张皮肤照片。
+            prompt = """你是一位皮肤科AI助手。请采用"两遍扫描法"仔细分析这张皮肤照片：
+第一遍：识别皮肤区域范围，排除背景/衣物
+第二遍：在皮肤区域内逐一检测所有白斑，给出每个白斑的精确定位
 
-重要声明：你不是医生，不能进行医疗诊断。你的分析仅基于照片中肉眼可见的视觉特征，供用户参考。请在所有描述中使用"观察到"、"可见"等客观措辞，避免使用"诊断为"、"确诊"等医疗术语。
+重要声明：你不是医生，不能进行医疗诊断。你的分析仅基于照片中肉眼可见的视觉特征，供用户参考。请在所有描述中使用"观察到"、"可见"等客观措辞。
 
-返回 JSON（只返回 JSON，不要其他文字）：
+================================================================
+【关键要求 — 白斑检测精度】v4.0
+================================================================
+1. **全量检测**: 必须仔细扫描整张照片中的所有可见皮肤区域，找出所有疑似白斑，
+   包括边界处的小斑点（直径≥皮肤区域3%）。不要遗漏任何一处！
+2. **两遍扫描法**:
+   - 第一遍：先大致扫描，识别明显的中大型白斑（≥10%皮肤区域）
+   - 第二遍：按区域（上/下/左/右/中央）逐一细致扫描，发现所有小白斑（≥3%）
+   - 智能扫描：如果第二遍没有发现小白斑，确认"未发现更多小斑点"
+3. **bbox精确定位**: 每个白斑必须提供bbox边界框 [x1,y1,x2,y2]，
+   框住白斑的完整可见范围（包含最外围的色素减退区域）。
+   bbox应贴合白斑的实际轮廓，不要过于宽松（不超过实际面积的2倍）。
+4. **边缘点标注**: 对每个白斑，标注3-5个边界关键点（不规则形状的关键转角处），
+   帮助后续算法精确描边。
+5. **色差识别优先级**: 
+   - 最明显的白色/乳白色斑块 → 高置信度 (0.85+)
+   - 较淡的色素减退区域 → 中置信度 (0.6-0.85)  
+   - 边界模糊的浅色区域 → 低置信度 (0.3-0.6)，仍需标注
+6. **脱色程度4级评估**: 对每个白斑区域评估色素脱失程度:
+   - 0级(无): 正常肤色，无色素脱失
+   - 1级(轻度): 轻度色素减退，隐约可见淡白色，与周围肤色对比度<0.15
+   - 2级(中度): 明显色素减退，呈乳白色，对比度0.15-0.40
+   - 3级(重度): 几乎完全色素脱失，呈瓷白色或纯白色，对比度>0.40
+   输出该照片的整体脱色等级（取多数白斑的等级）
+7. **每斑皮肤对比度**: 对每个白斑评估 "contrast_to_skin" (0-1)，
+   即白斑中心区域颜色与周围正常皮肤颜色的差异程度。
 
+================================================================
+【自适应肤色分析】
+================================================================
+1. 先判断照片中正常皮肤的基础肤色类型(Fitzpatrick I-VI)
+2. 基于肤色类型调整白斑检测灵敏度:
+   - 浅色皮肤(I-III): 注意区分正常肤色和轻度白斑，降低误判。
+     如果对比度<0.1，大概率不是白斑。
+   - 深色皮肤(IV-VI): 提高检测灵敏度，白斑在深色皮肤上更明显。
+     对比度>0.12即可判定为可疑。
+3. 在 visual_features.color 中注明肤色类型和相对对比度
+4. **光照评估**: 判断照片是否存在明显的光照不均匀（阴影、反光等），
+   如有，在 limitations 中说明并相应降低置信度。
+
+================================================================
+【参考物检测（如有）】
+================================================================
+如果照片中包含以下参考物体，请标注:
+- 一元硬币(直径25mm): 标注为 reference_coin
+- 标准参考色卡: 标注为 reference_card
+- 标尺/直尺: 标注为 reference_ruler
+- 手指(食指宽度约15mm): 标注为 reference_finger
+格式: reference_objects: [{"type":"coin","bbox":[x1,y1,x2,y2],"known_size_mm":25}]
+如有参考物，在 details 中增加 estimated_total_area_cm2 估算值。
+
+================================================================
+返回 JSON（只返回 JSON，不要任何其他文字）:
+================================================================
 {
   "visual_features": {
     "visibility": {
       "level": "visible|faint|subtle",
-      "description": "用一句话描述白斑的肉眼可见程度"
+      "description": "白斑肉眼可见程度（一句话）",
+      "contrast_ratio": 0.0-1.0
     },
     "color": {
       "level": "pale_white|milky_white|porcelain_white|pure_white",
-      "description": "描述白斑的颜色表现和色素脱失程度"
+      "skin_fitzpatrick": "I|II|III|IV|V|VI",
+      "description": "白斑颜色表现和色素脱失程度描述"
     },
     "border": {
       "level": "clear|partial|unclear",
-      "description": "描述白斑与正常皮肤交界处的特征"
+      "sharpness_ratio": 0.0-1.0,
+      "description": "白斑与正常皮肤交界特征"
     },
     "shape": {
-      "description": "描述白斑的形状、数量和大体分布"
+      "description": "白斑形状、数量和大体分布"
     },
     "surface": {
       "texture": "smooth|scaly|atrophic|other",
-      "description": "描述白斑表面的纹理特征"
+      "description": "白斑表面纹理特征"
     },
     "distribution": {
-      "pattern": "localized|segmental|bilateral|generalized",
-      "description": "描述白斑的分布模式"
+      "pattern": "localized|segmental|bilateral|generalized|scattered",
+      "patch_count": "数量",
+      "description": "白斑分布模式描述"
     },
-    "similarity_note": "列举至少2种其他可能出现类似特征的皮肤状况（用于鉴别诊断，无需重复上述特征）",
-    "recommendation": "一句话就医建议（10字以内）"
+    "similarity_note": "列举至少2种鉴别诊断（其他皮肤状况）",
+    "recommendation": "就医建议（10字以内）"
   },
   "skin_region": {
     "bbox": [x1, y1, x2, y2],
     "confidence": 0.0-1.0,
-    "notes": "皮肤区域描述（如：右手背掌侧）"
+    "fitzpatrick_type": "I|II|III|IV|V|VI",
+    "skin_tone_notes": "肤色描述（如：中等偏白肤色，亚洲人常见肤质）",
+    "lighting_condition": "均匀|轻微不均匀|明显不均匀",
+    "notes": "皮肤区域描述（如：右手背掌侧，含全部手指）"
   },
   "suspected_lesions": [
     {
       "label": "白斑1",
       "center": [x, y],
-      "estimated_size_percent": 数值,
-      "confidence": 0.0-1.0
+      "bbox": [x1, y1, x2, y2],
+      "edge_points": [[x1,y1],[x2,y2],[x3,y3]],
+      "estimated_size_percent": "数值",
+      "depigmentation_level": "0-3",
+      "contrast_to_skin": 0.0-1.0,
+      "boundary_type": "clear|diffuse|mixed",
+      "color_description": "乳白色|瓷白色|淡白色",
+      "confidence": 0.0-1.0,
+      "notes": "简短备注（如：位于关节处，边界清晰）"
     }
   ],
-  "vasi_score": 0-100,
-  "area_percentage_estimate": 0-100,
-  "classification": "节段型|非节段型|未确定",
+  "reference_objects": [],
+  "overall_depigmentation": "0-3",
+  "vasi_score": "0-100",
+  "area_percentage_estimate": "0-100",
+  "estimated_total_area_cm2": "数值(如有参考物)",
+  "classification": "节段型|非节段型|混合型|未确定",
   "stage": "进展期|稳定期|好转期",
   "body_site_confirmed": "面部|颈部|手部|腹部|背部|上肢|下肢|足部|其他",
   "confidence": 0.0-1.0,
+  "limitations": ["本次分析的局限性说明"],
   "details": {
-    "patch_count_estimate": 数量,
+    "scan_pass1_patches": "第一遍发现的白斑数量",
+    "scan_pass2_patches": "第二遍发现的小白斑数量",
+    "patch_count_estimate": "总数量",
     "color_type": "纯白|乳白|灰白|淡白",
     "border_clarity": "清晰|模糊|部分清晰",
+    "dominant_depigmentation": "0-3",
+    "total_vitiligo_area_estimate": "文字描述",
     "description": "80字以内的白斑特征描述"
   }
 }
 
 坐标说明:
-- skin_region.bbox 是皮肤区域边界框，归一化坐标 (0-1)，[左, 上, 右, 下]
-- suspected_lesions[].center 是白斑中心点，归一化坐标 (0-1)
-- 确保 bbox 坐标在 0-1 范围内
+- 所有坐标归一化到0-1范围，以照片左上角为(0,0)，右下角为(1,1)
+- skin_region.bbox: [左,上,右,下]
+- suspected_lesions[].center: 白斑正中心点 [x,y]
+- suspected_lesions[].bbox: 白斑的完整边界框 [左,上,右,下]，覆盖白斑全部可见范围
+- suspected_lesions[].edge_points: 3-5个关键边界点，描述白斑不规则轮廓的主要转折处
+- reference_objects[].bbox: 参考物的边界框 [左,上,右,下]
+- 坐标值必须严格在 0-1 范围内，不得出现负值或>1的值
 
 注意:
-1. 基于照片中的可见内容给出你的最佳分析判断，不要返回 error
+1. 必须找出所有可见白斑区域，包括小的斑点（≥皮肤区域3%）
 2. VASI评分保守估计，宁低勿高
-3. area_percentage_estimate 是粗略估计（精确面积由分割算法计算）
-4. 尽可能找到所有白斑区域，包括小的斑点
-5. visual_features 中 similarity_note 仅列举鉴别诊断（其他皮肤状况），不重复特征描述
-6. recommendation 需简短（10字以内）
-7. 只返回JSON"""
+3. area_percentage_estimate 是占该部位皮肤面积的%，不是占整张照片的%
+4. depigmentation_level 和 overall_depigmentation 必须基于可见色素脱失程度估计
+5. 只返回JSON，不要任何其他文字。所有数字字段必须是纯数字（如25.0），不要带%号或单位。
+6. 如果完全没有白斑特征，vasi_score=0，suspected_lesions=[]
+7. JSON中不要出现尾随逗号（trailing commas）"""
 
             logger.info(
                 "Calling vision model: provider=%s, model=%s, image_size=%d bytes",
@@ -902,7 +1147,7 @@ class VASIService:
                     }
                 ],
                 temperature=0.1,
-                max_tokens=2000,
+                max_tokens=4096,
                 timeout=90,
             )
 
@@ -921,23 +1166,51 @@ class VASIService:
             try:
                 parsed = json.loads(content)
             except json.JSONDecodeError:
+                # Remove markdown code fences more thoroughly
+                cleaned = content
+                for fence in ["```json", "```", "'''json", "'''"]:
+                    if fence in cleaned:
+                        idx = cleaned.find(fence)
+                        cleaned = cleaned[idx + len(fence):]
+                        end_fence = cleaned.rfind("```")
+                        if end_fence == -1:
+                            end_fence = cleaned.rfind("'''")
+                        if end_fence > 0:
+                            cleaned = cleaned[:end_fence]
+                        break
+
                 # Try extracting JSON block: find { ... } boundaries
-                start = content.find("{")
-                end = content.rfind("}") + 1
+                start = cleaned.find("{")
+                end = cleaned.rfind("}") + 1
                 if start >= 0 and end > start:
-                    json_str = content[start:end]
+                    json_str = cleaned[start:end]
                     # VLM models often add trailing commas — strip them
                     import re
                     json_str = re.sub(r',\s*}', '}', json_str)
                     json_str = re.sub(r',\s*]', ']', json_str)
+                    # Strip line comments
+                    json_str = re.sub(r'//.*$', '', json_str, flags=re.MULTILINE)
                     try:
                         parsed = json.loads(json_str)
                         logger.info("Extracted JSON from position %d-%d (with trailing comma fix)", start, end)
-                    except json.JSONDecodeError:
-                        pass
+                    except json.JSONDecodeError as je:
+                        # If truncated, try to auto-close
+                        open_braces = json_str.count('{') - json_str.count('}')
+                        open_brackets = json_str.count('[') - json_str.count(']')
+                        if open_braces > 0 or open_brackets > 0:
+                            json_str += ']' * open_brackets
+                            json_str += '}' * open_braces
+                            json_str = re.sub(r',\s*}', '}', json_str)
+                            json_str = re.sub(r',\s*]', ']', json_str)
+                            try:
+                                parsed = json.loads(json_str)
+                                logger.info("Auto-closed truncated JSON: +%d braces, +%d brackets",
+                                           open_braces, open_brackets)
+                            except json.JSONDecodeError:
+                                pass
 
             if parsed is None:
-                logger.warning("Vision model returned invalid JSON: %s", content[:300])
+                logger.warning("Vision model returned invalid JSON: %s", content[:500])
                 return None
 
             if "error" in parsed:
@@ -946,8 +1219,32 @@ class VASIService:
                 )
                 # Don't return None — use whatever else is in the response
 
-            vasi_score = float(parsed.get("vasi_score", 0))
-            area_percentage = float(parsed.get("area_percentage_estimate", parsed.get("area_percentage", 0)))
+            # Robust numeric parsing — VLMs sometimes append % or return strings
+            def _safe_float(val, default=0.0):
+                if val is None:
+                    return default
+                if isinstance(val, (int, float)):
+                    return float(val)
+                if isinstance(val, str):
+                    val = val.strip().rstrip('%').replace(',', '')
+                    try:
+                        return float(val)
+                    except ValueError:
+                        return default
+                return default
+
+            vasi_score = _safe_float(parsed.get("vasi_score", 0))
+            area_percentage = _safe_float(parsed.get("area_percentage_estimate", parsed.get("area_percentage", 0)))
+            estimated_total_area_cm2 = _safe_float(parsed.get("estimated_total_area_cm2", 0), 0)
+            if estimated_total_area_cm2 == 0:
+                estimated_total_area_cm2 = None
+
+            # Extract depigmentation level from VLM (0-3 scale → 0.0-1.0 for formula)
+            overall_depig = parsed.get("overall_depigmentation")
+            if overall_depig is not None:
+                depigmentation_level = _safe_float(overall_depig, 1.0) / 3.0
+            else:
+                depigmentation_level = 1.0
 
             raw_stage = parsed.get("stage", "未知")
             stage_map = {
@@ -972,6 +1269,42 @@ class VASIService:
             # Extract VLM localization guidance for SAM
             skin_region = parsed.get("skin_region", {})
             suspected_lesions = parsed.get("suspected_lesions", [])
+            reference_objects = parsed.get("reference_objects", [])
+
+            # Normalize numeric fields in suspected_lesions (VLMs may return strings)
+            for lesion in suspected_lesions:
+                if isinstance(lesion.get("estimated_size_percent"), str):
+                    lesion["estimated_size_percent"] = _safe_float(lesion["estimated_size_percent"])
+                if isinstance(lesion.get("confidence"), str):
+                    lesion["confidence"] = _safe_float(lesion["confidence"])
+                if isinstance(lesion.get("depigmentation_level"), str):
+                    lesion["depigmentation_level"] = _safe_float(lesion["depigmentation_level"])
+
+            # Extract per-lesion bboxes from VLM v4.0+ prompt
+            lesion_bboxes = []
+            for lesion in suspected_lesions:
+                bbox = lesion.get("bbox")
+                if bbox and len(bbox) == 4:
+                    valid = all(isinstance(v, (int, float)) and 0 <= v <= 1.5 for v in bbox)
+                    if valid and bbox[2] > bbox[0] and bbox[3] > bbox[1]:
+                        lesion_bboxes.append([float(v) for v in bbox])
+
+            # Extract per-lesion edge points for finer SAM guidance
+            lesion_edge_points = []
+            for lesion in suspected_lesions:
+                edge_pts = lesion.get("edge_points")
+                if edge_pts and isinstance(edge_pts, list) and len(edge_pts) >= 2:
+                    valid_pts = []
+                    for pt in edge_pts:
+                        if isinstance(pt, (list, tuple)) and len(pt) == 2:
+                            if isinstance(pt[0], (int, float)) and isinstance(pt[1], (int, float)):
+                                valid_pts.append([float(pt[0]), float(pt[1])])
+                    if valid_pts:
+                        lesion_edge_points.append(valid_pts)
+                    else:
+                        lesion_edge_points.append([])
+                else:
+                    lesion_edge_points.append([])
 
             # VLM no longer generates contours — SAM handles that.
             # If VLM still returns contours, validate them as a fallback.
@@ -1000,6 +1333,7 @@ class VASIService:
             return {
                 "vasi_score": round(vasi_score, 1),
                 "area_percentage": round(area_percentage, 1),
+                "depigmentation_level": depigmentation_level,
                 "classification": parsed.get("classification", "未确定"),
                 "stage": stage,
                 "body_site": body_site,
@@ -1007,8 +1341,12 @@ class VASIService:
                 "details": details,
                 "raw_response": parsed,
                 "source": f"vision-{config['provider']}",
+                "estimated_total_area_cm2": estimated_total_area_cm2,
+                "reference_objects": reference_objects,
                 "skin_region": skin_region,
                 "suspected_lesions": suspected_lesions,
+                "lesion_bboxes": lesion_bboxes,
+                "lesion_edge_points": lesion_edge_points,
                 "visual_features": parsed.get("visual_features"),
             }
 
@@ -1018,3 +1356,109 @@ class VASIService:
         except Exception as e:
             logger.error("Vision model call failed: %s", str(e), exc_info=True)
             return None
+
+    async def _call_vision_model_ensemble(self, image_file: bytes) -> Optional[Dict[str, Any]]:
+        """Make two VLM calls and intersect results for stability.
+
+        VLM stochasticity is the fundamental bottleneck. Running twice
+        and keeping only lesions found in BOTH calls dramatically reduces
+        random variation while preserving real lesions.
+
+        Cost: 2x API calls (only enable when stability matters).
+        """
+        logger.info("VLM ensemble: starting two independent calls")
+
+        result1, result2 = await asyncio.gather(
+            self._call_vision_model(image_file),
+            self._call_vision_model(image_file),
+        )
+
+        if not result1 or not result2:
+            logger.warning("VLM ensemble: one call failed, using available result")
+            return result1 or result2
+
+        lesions1 = result1.get("suspected_lesions", [])
+        lesions2 = result2.get("suspected_lesions", [])
+
+        if not lesions1 or not lesions2:
+            logger.info("VLM ensemble: one call found 0 lesions, returning intersection (0)")
+            result1["suspected_lesions"] = []
+            result1["lesion_bboxes"] = []
+            result1["_ensemble"] = True
+            return result1
+
+        # Intersect: keep lesions where bbox IoU > 0.3 with some lesion in other call
+        IOU_THRESHOLD = 0.2
+        matched = []
+        matched_indices_2: set = set()
+
+        for l1 in lesions1:
+            bbox1 = l1.get("bbox")
+            if not bbox1 or len(bbox1) != 4:
+                continue
+
+            best_iou = 0.0
+            best_idx = -1
+            for j, l2 in enumerate(lesions2):
+                if j in matched_indices_2:
+                    continue
+                bbox2 = l2.get("bbox")
+                if not bbox2 or len(bbox2) != 4:
+                    continue
+                iou = _bbox_iou(bbox1, bbox2)
+                if iou > best_iou:
+                    best_iou = iou
+                    best_idx = j
+
+            if best_iou >= IOU_THRESHOLD and best_idx >= 0:
+                l2 = lesions2[best_idx]
+                matched_indices_2.add(best_idx)
+
+                avg_bbox = [
+                    (float(bbox1[i]) + float(l2.get("bbox", bbox1)[i])) / 2
+                    for i in range(4)
+                ]
+
+                merged = dict(l1)
+                merged["bbox"] = avg_bbox
+                merged["confidence"] = (
+                    float(l1.get("confidence", 0.5)) + float(l2.get("confidence", 0.5))
+                ) / 2
+                merged["depigmentation_level"] = max(
+                    l1.get("depigmentation_level", 0),
+                    l2.get("depigmentation_level", 0),
+                )
+                merged["_ensemble_matched"] = True
+                matched.append(merged)
+
+        logger.info(
+            "VLM ensemble: %d/%d lesions from call1 matched → %d consensus",
+            len(matched), len(lesions1), len(matched),
+        )
+
+        # Rebuild lesion_bboxes from consensus
+        rebuilt_bboxes = []
+        for l in matched:
+            bbox = l.get("bbox")
+            if bbox and len(bbox) == 4:
+                rebuilt_bboxes.append([float(v) for v in bbox])
+
+        result1["suspected_lesions"] = matched
+        result1["lesion_bboxes"] = rebuilt_bboxes
+        result1["_ensemble"] = True
+        return result1
+
+
+def _bbox_iou(box1: list, box2: list) -> float:
+    """Compute IoU between two bboxes [x1, y1, x2, y2] in normalized coords."""
+    x1 = max(box1[0], box2[0])
+    y1 = max(box1[1], box2[1])
+    x2 = min(box1[2], box2[2])
+    y2 = min(box1[3], box2[3])
+    if x1 >= x2 or y1 >= y2:
+        return 0.0
+    intersection = (x2 - x1) * (y2 - y1)
+    area1 = (box1[2] - box1[0]) * (box1[3] - box1[1])
+    area2 = (box2[2] - box2[0]) * (box2[3] - box2[1])
+    union = area1 + area2 - intersection
+    return intersection / union if union > 0 else 0.0
