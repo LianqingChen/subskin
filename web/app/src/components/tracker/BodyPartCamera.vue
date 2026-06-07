@@ -8,7 +8,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-  'captured': [file: File]
+  'captured': [file: File, meta: { hasReferenceCard: boolean }]
 }>()
 
 const videoRef = ref<HTMLVideoElement | null>(null)
@@ -255,7 +255,7 @@ function capture() {
   canvas.toBlob((blob) => {
     if (!blob) return
     const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' })
-    emit('captured', file)
+    emit('captured', file, { hasReferenceCard: false })
   }, 'image/jpeg', 0.9)
 }
 

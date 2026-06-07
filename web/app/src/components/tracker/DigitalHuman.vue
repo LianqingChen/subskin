@@ -1,629 +1,324 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { useThemeStore } from '@/stores/theme'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import butterflyMascot from '/butterfly_mascot.png'
 
-export interface AssessmentSnapshot {
-  vasiScore: number
-  areaPercentage: number
-  stage: string
-  classification?: string
+interface BodyPart {
+  id: string
+  label: string
+  bodySite: string
+  hits: { cx: number; cy: number; rx: number; ry: number }[]
+  anchors: { x: number; y: number }[]
+  labelX: number
+  labelY: number
 }
+
+const props = withDefaults(defineProps<{
+  mode?: 'rain' | 'wave'
+  showParts?: boolean
+  activePart?: string | null
+  view?: 'front' | 'back'
+  showViewToggle?: boolean
+}>(), {
+  mode: 'rain',
+  showParts: true,
+  activePart: null,
+  view: 'front',
+  showViewToggle: true,
+})
 
 const emit = defineEmits<{
-  'open-chat': []
+  'select-part': [bodySite: string]
+  'update:view': [view: 'front' | 'back']
 }>()
 
-const containerRef = ref<HTMLDivElement>()
-let scene: THREE.Scene
-let camera: THREE.PerspectiveCamera
-let renderer: THREE.WebGLRenderer
-let controls: OrbitControls
-let raycaster: THREE.Raycaster
-let animationId = 0
+const currentView = ref<'front' | 'back'>(props.view)
+function toggleView() {
+  currentView.value = currentView.value === 'front' ? 'back' : 'front'
+  emit('update:view', currentView.value)
+}
 
-// Interactive objects
-let bubbleGroup: THREE.Group | null = null
+const imageAreaRef = ref<HTMLDivElement>()
+const isRainMode = computed(() => props.mode === 'rain')
+const isWaveMode = computed(() => props.mode === 'wave')
 
-// Highlight flash state
-let highlightTarget: 'bubble' | null = null
-let highlightStart = 0
-const HIGHLIGHT_DURATION = 500 // ms
+const showRain = ref(false)
+const showCurtain = ref(false)
+const showPartsInternal = ref(false)
+const rainColumns = ref<Array<{ id: number; left: string; duration: number; delay: number; chars: string; fontSize: number; opacity: number }>>([])
 
-// Idle greeting state
-const IDLE_MESSAGES = [
-  '你好呀~ 有什么需要帮助的吗？',
-  '点击我头顶的气泡，和我聊天吧~',
-  '左右滑动可以旋转查看我哦~',
-  '我是你的AI销售助手，随时为你服务~',
+const RAIN_CHARS = 'ｦｧｨｩｪｫｬｭｮｯｱｲｳｵｶXML012345λφΩ∑αβδγ'
+
+function randomChar() {
+  return RAIN_CHARS[Math.floor(Math.random() * RAIN_CHARS.length)]
+}
+
+function genColumn(len: number) {
+  let s = ''
+  for (let i = 0; i < len; i++) s += randomChar() + '\n'
+  return s
+}
+
+function generateColumns() {
+  const cols: typeof rainColumns.value = []
+  for (let i = 0; i < 18; i++) {
+    cols.push({
+      id: i,
+      left: ((i / 18) * 100).toFixed(1) + '%',
+      duration: 3 + Math.random() * 3,
+      delay: Math.random() * 1.5,
+      chars: genColumn(20 + Math.floor(Math.random() * 30)),
+      fontSize: 14 + Math.random() * 8,
+      opacity: 0.3 + Math.random() * 0.5,
+    })
+  }
+  return cols
+}
+
+let rainTimer: ReturnType<typeof setTimeout> | null = null
+let curtainTimer: ReturnType<typeof setTimeout> | null = null
+let cycleTimer: ReturnType<typeof setTimeout> | null = null
+
+function triggerRain() {
+  if (!isRainMode.value) return
+  showPartsInternal.value = false
+  showCurtain.value = true
+  curtainTimer = setTimeout(() => {
+    showCurtain.value = false
+    rainColumns.value = generateColumns()
+    showRain.value = true
+    rainTimer = setTimeout(() => {
+      showRain.value = false
+      rainColumns.value = []
+      showPartsInternal.value = props.showParts
+      scheduleNext()
+    }, 5000)
+  }, 600)
+}
+
+function scheduleNext() {
+  if (!isRainMode.value) return
+  cycleTimer = setTimeout(() => triggerRain(), 10000 + Math.random() * 10000)
+}
+
+const waveBars = [{ delay: '0s', duration: '2.5s' }]
+
+const frontParts: BodyPart[] = [
+  {"id": "face", "label": "面部", "bodySite": "face", "hits": [{"cx": 700, "cy": 132, "rx": 60, "ry": 60}], "anchors": [{"x": 660, "y": 132}], "labelX": 60, "labelY": 120},
+  {"id": "right_hand", "label": "右手", "bodySite": "right_hand", "hits": [{"cx": 305, "cy": 140, "rx": 52, "ry": 50}], "anchors": [{"x": 335, "y": 140}], "labelX": 60, "labelY": 255},
+  {"id": "neck", "label": "脖子", "bodySite": "neck", "hits": [{"cx": 640, "cy": 218, "rx": 30, "ry": 22}], "anchors": [{"x": 612, "y": 218}], "labelX": 60, "labelY": 400},
+  {"id": "right_arm", "label": "右臂", "bodySite": "right_arm", "hits": [{"cx": 380, "cy": 320, "rx": 55, "ry": 90}], "anchors": [{"x": 365, "y": 300}], "labelX": 60, "labelY": 560},
+  {"id": "right_leg", "label": "右腿", "bodySite": "right_leg", "hits": [{"cx": 548, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 492, "y": 806}], "labelX": 60, "labelY": 780},
+  {"id": "right_foot", "label": "右脚", "bodySite": "right_foot", "hits": [{"cx": 546, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 484, "y": 1242}], "labelX": 60, "labelY": 1235},
+  {"id": "left_hand", "label": "左手", "bodySite": "left_hand", "hits": [{"cx": 756, "cy": 192, "rx": 52, "ry": 48}], "anchors": [{"x": 806, "y": 192}], "labelX": 1220, "labelY": 175},
+  {"id": "left_arm", "label": "左臂", "bodySite": "left_arm", "hits": [{"cx": 782, "cy": 282, "rx": 44, "ry": 112}], "anchors": [{"x": 824, "y": 282}], "labelX": 1220, "labelY": 295},
+  {"id": "abdomen", "label": "腹部", "bodySite": "abdomen", "hits": [{"cx": 640, "cy": 500, "rx": 95, "ry": 75}], "anchors": [{"x": 744, "y": 500}], "labelX": 1220, "labelY": 425},
+  {"id": "chest", "label": "胸部", "bodySite": "chest", "hits": [{"cx": 640, "cy": 380, "rx": 90, "ry": 50}], "anchors": [{"x": 742, "y": 380}], "labelX": 1220, "labelY": 555},
+  {"id": "left_leg", "label": "左腿", "bodySite": "left_leg", "hits": [{"cx": 732, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 788, "y": 806}], "labelX": 1220, "labelY": 800},
+  {"id": "left_foot", "label": "左脚", "bodySite": "left_foot", "hits": [{"cx": 734, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 796, "y": 1242}], "labelX": 1220, "labelY": 1235}
 ]
-let hasGreeted = false
-let lastInteractionTime = Date.now()
-let idleTimer: ReturnType<typeof setInterval> | null = null
-let greetingIndex = 0
 
-// Greeting bubble overlay state
-const greetingText = ref('')
-const greetingPos = ref({ x: 0, y: 0 })
-let greetingTimeout: ReturnType<typeof setTimeout> | null = null
+const backParts: BodyPart[] = [
+  {"id": "face", "label": "后脑", "bodySite": "face", "hits": [{"cx": 640, "cy": 132, "rx": 60, "ry": 60}], "anchors": [{"x": 600, "y": 132}], "labelX": 60, "labelY": 120},
+  {"id": "left_hand", "label": "左手", "bodySite": "left_hand", "hits": [{"cx": 305, "cy": 140, "rx": 52, "ry": 50}], "anchors": [{"x": 335, "y": 140}], "labelX": 60, "labelY": 255},
+  {"id": "neck", "label": "颈后", "bodySite": "neck", "hits": [{"cx": 640, "cy": 218, "rx": 30, "ry": 22}], "anchors": [{"x": 612, "y": 218}], "labelX": 60, "labelY": 400},
+  {"id": "left_arm", "label": "左臂", "bodySite": "left_arm", "hits": [{"cx": 380, "cy": 320, "rx": 55, "ry": 90}], "anchors": [{"x": 365, "y": 300}], "labelX": 60, "labelY": 560},
+  {"id": "left_leg", "label": "左腿", "bodySite": "left_leg", "hits": [{"cx": 548, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 492, "y": 806}], "labelX": 60, "labelY": 780},
+  {"id": "left_foot", "label": "左脚", "bodySite": "left_foot", "hits": [{"cx": 546, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 484, "y": 1242}], "labelX": 60, "labelY": 1235},
+  {"id": "right_hand", "label": "右手", "bodySite": "right_hand", "hits": [{"cx": 756, "cy": 192, "rx": 52, "ry": 48}], "anchors": [{"x": 806, "y": 192}], "labelX": 1220, "labelY": 175},
+  {"id": "right_arm", "label": "右臂", "bodySite": "right_arm", "hits": [{"cx": 782, "cy": 282, "rx": 44, "ry": 112}], "anchors": [{"x": 824, "y": 282}], "labelX": 1220, "labelY": 295},
+  {"id": "upper_back", "label": "上背部", "bodySite": "upper_back", "hits": [{"cx": 640, "cy": 410, "rx": 95, "ry": 60}], "anchors": [{"x": 744, "y": 410}], "labelX": 1220, "labelY": 425},
+  {"id": "lower_back", "label": "下背部", "bodySite": "lower_back", "hits": [{"cx": 640, "cy": 580, "rx": 90, "ry": 60}], "anchors": [{"x": 742, "y": 580}], "labelX": 1220, "labelY": 555},
+  {"id": "right_leg", "label": "右腿", "bodySite": "right_leg", "hits": [{"cx": 732, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 788, "y": 806}], "labelX": 1220, "labelY": 800},
+  {"id": "right_foot", "label": "右脚", "bodySite": "right_foot", "hits": [{"cx": 734, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 796, "y": 1242}], "labelX": 1220, "labelY": 1235}
+]
 
-// 暗色模式适配
-const themeStore = useThemeStore()
-const isDarkMode = computed(() => themeStore.mode === 'dark')
+const visibleParts = computed(() => currentView.value === 'back' ? backParts : frontParts)
 
-// 眨眼动画
-const blinkState = ref(0) // 0=睁眼, 1=闭眼中
-let blinkCooldown: ReturnType<typeof setTimeout> | null = null
-
-function scheduleBlink() {
-  blinkCooldown = setTimeout(() => {
-    blinkState.value = 1
-    setTimeout(() => { blinkState.value = 0 }, 150)
-    blinkCooldown = null
-    scheduleBlink()
-  }, 2000 + Math.random() * 4000) // 2-6秒随机间隔
+function onPartClick(part: BodyPart) {
+  emit('select-part', part.bodySite)
 }
 
-// ── Idle Greeting System ──
-function showGreetingBubble(msg: string) {
-  // Clear any existing greeting
-  if (greetingTimeout) clearTimeout(greetingTimeout)
-  greetingText.value = msg
-  // Auto-dismiss after 5 seconds
-  greetingTimeout = setTimeout(() => { greetingText.value = '' }, 5000)
-}
-
-function startIdleGreeting() {
-  if (idleTimer) return
-  idleTimer = setInterval(() => {
-    const elapsed = Date.now() - lastInteractionTime
-    if (elapsed < 5000) return // Wait at least 5s of inactivity
-    if (!hasGreeted) {
-      showGreetingBubble(IDLE_MESSAGES[0])
-      hasGreeted = true
-      greetingIndex = 1
-    } else {
-      showGreetingBubble(IDLE_MESSAGES[greetingIndex % IDLE_MESSAGES.length])
-      greetingIndex++
-    }
-  }, 8000) // Every 8 seconds
-}
-
-function stopIdleGreeting() {
-  if (idleTimer) { clearInterval(idleTimer); idleTimer = null }
-  if (greetingTimeout) { clearTimeout(greetingTimeout); greetingTimeout = null }
-  greetingText.value = ''
-}
-
-function markInteraction() {
-  lastInteractionTime = Date.now()
-}
-
-function buildPanda() {
-  const blackMat = new THREE.MeshStandardMaterial({ color: '#1a1a1a', roughness: 0.45, metalness: 0.0 })
-  const whiteMat = new THREE.MeshStandardMaterial({ color: '#fafaf8', roughness: 0.5, metalness: 0.0 })
-  const noseMat = new THREE.MeshStandardMaterial({ color: '#111111', roughness: 0.3 })
-  const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.15, emissive: '#ffffff', emissiveIntensity: 0.2 })
-  const pupilMat = new THREE.MeshStandardMaterial({ color: '#0a0a0a', roughness: 0.05 })
-  const highlightMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.05, emissive: '#ffffff', emissiveIntensity: 0.6 })
-
-  const pandaGroup = new THREE.Group()
-  pandaGroup.name = 'panda'
-
-  // ── BODY (white ellipsoid, slightly squat) ──
-  const bodyGeo = new THREE.SphereGeometry(0.22, 32, 24)
-  bodyGeo.scale(1, 0.7, 0.65)
-  const bodyMesh = new THREE.Mesh(bodyGeo, whiteMat)
-  bodyMesh.position.set(0, 0.02, 0)
-  bodyMesh.castShadow = true
-  bodyMesh.receiveShadow = true
-  pandaGroup.add(bodyMesh)
-
-  // ── HEAD (large white sphere) ──
-  const headGroup = new THREE.Group()
-  headGroup.position.set(0, 0.48, 0)
-  const headGeo = new THREE.SphereGeometry(0.20, 32, 24)
-  headGeo.scale(1, 0.88, 0.82)
-  const headMesh = new THREE.Mesh(headGeo, whiteMat)
-  headMesh.castShadow = true
-  headMesh.receiveShadow = true
-  headGroup.add(headMesh)
-
-  // ── EARS (black spheres on top) ──
-  for (const sx of [-1, 1]) {
-    const earGeo = new THREE.SphereGeometry(0.07, 16, 12)
-    const ear = new THREE.Mesh(earGeo, blackMat)
-    ear.position.set(sx * 0.14, 0.18, -0.03)
-    ear.castShadow = true
-    headGroup.add(ear)
-  }
-
-  // ── EYE PATCHES (black ellipses, angled) ──
-  for (const sx of [-1, 1]) {
-    const patchShape = new THREE.Shape()
-    const rx = 0.06, ry = 0.045
-    // Draw an ellipse using a circle scaled
-    const segs = 24
-    for (let i = 0; i <= segs; i++) {
-      const angle = (i / segs) * Math.PI * 2
-      const x = Math.cos(angle) * rx
-      const y = Math.sin(angle) * ry
-      if (i === 0) patchShape.moveTo(x, y)
-      else patchShape.lineTo(x, y)
-    }
-    const patchGeo = new THREE.ShapeGeometry(patchShape)
-    const patch = new THREE.Mesh(patchGeo, blackMat)
-    patch.position.set(sx * 0.08, 0.05, 0.14)
-    patch.rotation.z = sx * -0.2
-    patch.rotation.y = sx * 0.15
-    headGroup.add(patch)
-  }
-
-  // ── EYES (white + pupil + highlight) ──
-  const eyeMeshes: THREE.Mesh[] = []
-  for (const sx of [-1, 1]) {
-    // White of eye
-    const ewGeo = new THREE.SphereGeometry(0.035, 14, 10)
-    ewGeo.scale(1.15, 1.0, 0.5)
-    const ew = new THREE.Mesh(ewGeo, eyeWhiteMat)
-    ew.position.set(sx * 0.075, 0.05, 0.155)
-    ew.userData.isPandaEye = true
-    headGroup.add(ew)
-    eyeMeshes.push(ew)
-
-    // Pupil
-    const pupilGeo = new THREE.SphereGeometry(0.016, 10, 8)
-    const pupil = new THREE.Mesh(pupilGeo, pupilMat)
-    pupil.position.set(sx * 0.075, 0.05, 0.170)
-    headGroup.add(pupil)
-
-    // Highlight sparkle
-    const hlGeo = new THREE.SphereGeometry(0.006, 6, 4)
-    const hl = new THREE.Mesh(hlGeo, highlightMat)
-    hl.position.set(sx * 0.068, 0.058, 0.172)
-    headGroup.add(hl)
-  }
-
-  // ── NOSE (small black oval) ──
-  const noseGeo = new THREE.SphereGeometry(0.025, 12, 8)
-  noseGeo.scale(1.3, 0.7, 0.6)
-  const nose = new THREE.Mesh(noseGeo, noseMat)
-  nose.position.set(0, -0.03, 0.18)
-  headGroup.add(nose)
-
-  // ── MOUTH (gentle curve) ──
-  const mouthCurve = new THREE.QuadraticBezierCurve3(
-    new THREE.Vector3(-0.025, 0, 0),
-    new THREE.Vector3(0, -0.01, 0.003),
-    new THREE.Vector3(0.025, 0, 0),
-  )
-  const mouthGeo = new THREE.TubeGeometry(mouthCurve, 12, 0.004, 6, false)
-  const mouthMesh = new THREE.Mesh(mouthGeo, blackMat)
-  mouthMesh.position.set(0, -0.07, 0.17)
-  headGroup.add(mouthMesh)
-
-  pandaGroup.add(headGroup)
-
-  // ── ARMS (black capsules, hanging at sides) ──
-  for (const sx of [-1, 1]) {
-    const upperGeo = new THREE.CapsuleGeometry(0.055, 0.18, 8, 16)
-    const upper = new THREE.Mesh(upperGeo, blackMat)
-    upper.position.set(sx * 0.22, 0.10, 0)
-    upper.rotation.z = sx * 0.15
-    upper.castShadow = true
-    pandaGroup.add(upper)
-
-    const lowerGeo = new THREE.CapsuleGeometry(0.045, 0.14, 8, 16)
-    const lower = new THREE.Mesh(lowerGeo, blackMat)
-    lower.position.set(sx * 0.27, -0.06, 0)
-    lower.rotation.z = sx * 0.1
-    lower.castShadow = true
-    pandaGroup.add(lower)
-  }
-
-  // ── LEGS (black short cylinders) ──
-  for (const sx of [-1, 1]) {
-    const legGeo = new THREE.CapsuleGeometry(0.07, 0.12, 8, 16)
-    const leg = new THREE.Mesh(legGeo, blackMat)
-    leg.position.set(sx * 0.09, -0.16, 0.02)
-    leg.castShadow = true
-    leg.receiveShadow = true
-    pandaGroup.add(leg)
-  }
-
-  // ── FEET (black ellipsoids) ──
-  for (const sx of [-1, 1]) {
-    const footGeo = new THREE.SphereGeometry(0.06, 16, 12)
-    footGeo.scale(1.15, 0.3, 1.3)
-    const foot = new THREE.Mesh(footGeo, blackMat)
-    foot.position.set(sx * 0.09, -0.24, 0.05)
-    foot.castShadow = true
-    foot.receiveShadow = true
-    pandaGroup.add(foot)
-  }
-
-  // ── TAIL (small white sphere at back) ──
-  const tailGeo = new THREE.SphereGeometry(0.05, 12, 10)
-  const tail = new THREE.Mesh(tailGeo, whiteMat)
-  tail.position.set(0, -0.10, -0.16)
-  pandaGroup.add(tail)
-
-  scene.add(pandaGroup)
-
-  // Store reference to panda group for animation
-  ;(scene as any).__pandaGroup = pandaGroup
-  ;(scene as any).__pandaEyeMeshes = eyeMeshes
-
-  // ── PLATFORM ──
-  const isDark = themeStore.mode === 'dark'
-  const platGeo = new THREE.CylinderGeometry(0.34, 0.37, 0.018, 32)
-  const platMat = new THREE.MeshStandardMaterial({ color: isDark ? '#2a2a3e' : '#e8e0d8', roughness: 0.85, metalness: 0.05 })
-  const plat = new THREE.Mesh(platGeo, platMat)
-  plat.position.y = -0.32
-  plat.receiveShadow = true
-  scene.add(plat)
-
-  // ── AI SPEECH BUBBLE ──
-  buildSpeechBubble()
-}
-
-function buildSpeechBubble() {
-  bubbleGroup = new THREE.Group()
-  // Position: right side of panda head
-  bubbleGroup.position.set(0.28, 0.60, 0.10)
-
-  const cloudMat = new THREE.MeshStandardMaterial({
-    color: '#ffffff',
-    roughness: 0.25,
-    metalness: 0.0,
-    transparent: true,
-    opacity: 0.95,
-    emissive: '#ffffff',
-    emissiveIntensity: 0.15,
-  })
-
-  // Main cloud body — large center sphere
-  const center = new THREE.Mesh(new THREE.SphereGeometry(0.045, 20, 14), cloudMat)
-  center.userData.isBubble = true
-  bubbleGroup.add(center)
-
-  // Cloud bumps — 5 spheres around center to create fluffy cloud outline
-  const bumps: { pos: [number, number, number]; r: number }[] = [
-    { pos: [0.035, 0.015, 0], r: 0.035 },   // top-right
-    { pos: [-0.03, 0.02, 0], r: 0.033 },     // top-left
-    { pos: [0.04, -0.012, 0], r: 0.030 },    // right
-    { pos: [-0.035, -0.01, 0], r: 0.028 },   // left
-    { pos: [0, -0.025, 0], r: 0.026 },        // bottom
-  ]
-  for (const b of bumps) {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(b.r, 14, 10), cloudMat)
-    m.position.set(...b.pos)
-    m.userData.isBubble = true
-    bubbleGroup.add(m)
-  }
-
-  // Tail — two small bubbles pointing toward mouth (left-downward)
-  const tailMat = new THREE.MeshStandardMaterial({
-    color: '#ffffff', roughness: 0.25, metalness: 0.0,
-    transparent: true, opacity: 0.92, emissive: '#ffffff', emissiveIntensity: 0.12,
-  })
-  const tail1 = new THREE.Mesh(new THREE.SphereGeometry(0.016, 10, 8), tailMat)
-  tail1.position.set(-0.07, -0.035, 0)
-  tail1.userData.isBubble = true
-  bubbleGroup.add(tail1)
-  const tail2 = new THREE.Mesh(new THREE.SphereGeometry(0.010, 8, 6), tailMat)
-  tail2.position.set(-0.10, -0.055, 0)
-  tail2.userData.isBubble = true
-  bubbleGroup.add(tail2)
-
-  // Green "AI" badge dot inside cloud
-  const badgeMat = new THREE.MeshStandardMaterial({ color: '#10b981', roughness: 0.3, emissive: '#10b981', emissiveIntensity: 0.4 })
-  const badge = new THREE.Mesh(new THREE.SphereGeometry(0.012, 10, 8), badgeMat)
-  badge.position.set(0, 0.005, 0.038)
-  badge.userData.isBubble = true
-  bubbleGroup.add(badge)
-
-  // Two small white "eyes" inside cloud for character
-  const eyeMat = new THREE.MeshStandardMaterial({ color: '#374151', roughness: 0.4 })
-  for (const sx of [-1, 1]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.006, 8, 6), eyeMat)
-    eye.position.set(sx * 0.012, 0.01, 0.04)
-    eye.userData.isBubble = true
-    bubbleGroup.add(eye)
-  }
-
-  // Subtle shadow ring beneath cloud
-  const shadowMat = new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.06 })
-  const shadow = new THREE.Mesh(new THREE.RingGeometry(0.03, 0.06, 20), shadowMat)
-  shadow.rotation.x = -Math.PI / 2
-  shadow.position.set(0, -0.035, -0.01)
-  shadow.userData.isBubble = true
-  bubbleGroup.add(shadow)
-
-  scene.add(bubbleGroup)
-}
-
-// 暗色模式监听
-watch(isDarkMode, (isDark) => {
-  if (isDark) {
-    scene.background = new THREE.Color('#1a1a2e')
-    const ambient = scene.children.find(c => c instanceof THREE.AmbientLight) as THREE.AmbientLight
-    if (ambient) ambient.color.set('#2a3050')
-  } else {
-    scene.background = new THREE.Color('#ede8e2')
-    const ambient = scene.children.find(c => c instanceof THREE.AmbientLight) as THREE.AmbientLight
-    if (ambient) ambient.color.set('#fef5ee')
-  }
-}, { immediate: false })
-
-function setupLighting() {
-  // Ambient — generous warm fill, keeps character clearly visible
-  scene.add(new THREE.AmbientLight('#fef5ee', 2.2))
-
-  // Key Light（主光）— 右上方45°，bright warm white
-  const key = new THREE.DirectionalLight('#fff5eb', 3.8)
-  key.position.set(3, 4, 5)
-  key.castShadow = true
-  key.shadow.mapSize.set(1024, 1024)
-  key.shadow.camera.near = 0.5
-  key.shadow.camera.far = 15
-  key.shadow.camera.left = -3
-  key.shadow.camera.right = 3
-  key.shadow.camera.top = 3
-  key.shadow.camera.bottom = -3
-  key.shadow.bias = -0.0001
-  scene.add(key)
-
-  // Fill Light（补光）— left fill for shadow softness
-  const fill = new THREE.DirectionalLight('#e8f0ff', 0.9)
-  fill.position.set(-2.5, 1.5, -1.5)
-  scene.add(fill)
-
-  // Rim Light（轮廓光）— strong back light for clear silhouette
-  const rim = new THREE.DirectionalLight('#c8d6ff', 2.0)
-  rim.position.set(0, 2.5, -3.5)
-  scene.add(rim)
-
-  // Bottom bounce — slight upward fill
-  const bounce = new THREE.DirectionalLight('#ffe4cc', 0.2)
-  bounce.position.set(0, -0.5, 1.5)
-  scene.add(bounce)
-}
-
-const pointer = new THREE.Vector2()
-
-function flashHighlight(target: 'bubble') {
-  highlightTarget = target
-  highlightStart = Date.now()
-}
-
-function onPointerDown(event: PointerEvent) {
-  if (!containerRef.value) return
-  markInteraction()
-  const rect = containerRef.value.getBoundingClientRect()
-  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
-  raycaster.setFromCamera(pointer, camera)
-
-  // Check bubble first
-  if (bubbleGroup) {
-    const bubbleHits = raycaster.intersectObjects(bubbleGroup.children, true)
-    if (bubbleHits.length > 0) {
-      flashHighlight('bubble')
-      setTimeout(() => emit('open-chat'), HIGHLIGHT_DURATION)
-      return
-    }
-  }
-
-  // Click on panda anywhere → open chat
-  emit('open-chat')
-}
-
-function onPointerMove(event: PointerEvent) {
-  if (!containerRef.value) return
-  markInteraction()
-  const rect = containerRef.value.getBoundingClientRect()
-  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
-  raycaster.setFromCamera(pointer, camera)
-
-  // Check bubble for pointer cursor
-  if (bubbleGroup) {
-    const bubbleHits = raycaster.intersectObjects(bubbleGroup.children, true)
-    if (bubbleHits.length > 0) { containerRef.value.style.cursor = 'pointer'; return }
-  }
-  containerRef.value.style.cursor = 'grab'
-}
-
-function updateGreetingBubblePos() {
-  if (!greetingText.value || !bubbleGroup || !camera || !containerRef.value) return
-  const rect = containerRef.value.getBoundingClientRect()
-  const worldPos = new THREE.Vector3()
-  bubbleGroup.getWorldPosition(worldPos)
-  // Offset slightly above the cloud
-  worldPos.y += 0.08
-  const projected = worldPos.clone().project(camera)
-  greetingPos.value = {
-    x: (projected.x * 0.5 + 0.5) * rect.width,
-    y: (-projected.y * 0.5 + 0.5) * rect.height,
-  }
-}
-
-function animate() {
-  animationId = requestAnimationFrame(animate)
-  const time = Date.now() * 0.001
-
-  // Panda gentle idle breathing — scale body slightly
-  const pandaGroup = (scene as any).__pandaGroup as THREE.Group | undefined
-  if (pandaGroup) {
-    const breath = 1 + Math.sin(time * 1.5) * 0.008
-    pandaGroup.scale.setScalar(breath)
-  }
-
-  // Bubble gentle bob
-  if (bubbleGroup) {
-    bubbleGroup.position.y = 0.60 + Math.sin(time * 1.2) * 0.008
-  }
-
-  // Highlight flash animation
-  if (highlightTarget) {
-    const elapsed = Date.now() - highlightStart
-    if (elapsed < HIGHLIGHT_DURATION) {
-      const t = elapsed / HIGHLIGHT_DURATION
-      const intensity = Math.max(0, 1 - t) * 1.5
-      bubbleGroup?.traverse(child => {
-        if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
-          child.material.emissive.set('#10b981')
-          child.material.emissiveIntensity = intensity
-        }
-      })
-    } else {
-      // Reset emissive
-      bubbleGroup?.traverse(child => {
-        if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
-          const isBadge = child.material.color.getHex() === 0x10b981
-          child.material.emissive.set(isBadge ? '#10b981' : '#ffffff')
-          child.material.emissiveIntensity = isBadge ? 0.4 : 0.15
-        }
-      })
-      highlightTarget = null
-    }
-  }
-
-  // 眨眼效果 — 使用 isPandaEye 标记
-  const blinkScale = blinkState.value === 1 ? 0.05 : 1
-  const eyeMeshes = (scene as any).__pandaEyeMeshes as THREE.Mesh[] | undefined
-  if (eyeMeshes) {
-    eyeMeshes.forEach(m => { m.scale.y = blinkScale })
-  }
-
-  controls.update()
-  updateGreetingBubblePos()
-  renderer.render(scene, camera)
-}
-
-function onResize() {
-  if (!containerRef.value) return
-  const { width, height } = containerRef.value.getBoundingClientRect()
-  if (width <= 0 || height <= 0) return
-  camera.aspect = width / height
-  camera.updateProjectionMatrix()
-  renderer.setSize(width, height)
-}
+let onTouchStart: (() => void) | null = null
+let onTouchEnd: (() => void) | null = null
 
 onMounted(() => {
-  if (!containerRef.value) return
-  const { width, height } = containerRef.value.getBoundingClientRect()
-  scene = new THREE.Scene()
-  scene.background = new THREE.Color('#ede8e2')
-
-  // 检查当前暗色模式
-  if (isDarkMode.value) {
-    scene.background = new THREE.Color('#1a1a2e')
-  }
-
-  camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 20)
-  camera.position.set(0, 0.30, 2.8)
-
-  renderer = new THREE.WebGLRenderer({ antialias: true })
-  renderer.setSize(width, height)
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-  renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap
-  renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.8
-  containerRef.value.appendChild(renderer.domElement)
-
-  controls = new OrbitControls(camera, renderer.domElement)
-  controls.target.set(0, 0.25, 0)
-  controls.enableDamping = true
-  controls.dampingFactor = 0.08
-  controls.minDistance = 1.5
-  controls.maxDistance = 4.5
-  controls.minPolarAngle = Math.PI / 2
-  controls.maxPolarAngle = Math.PI / 2
-  controls.autoRotate = true
-  controls.autoRotateSpeed = 0.5
-  controls.update()
-
-  // 生成环境贴图（让金属材质有真实反射）
-  const pmremGenerator = new THREE.PMREMGenerator(renderer)
-  pmremGenerator.compileEquirectangularShader()
-
-  // 用简单渐变色创建环境贴图
-  const envCanvas = document.createElement('canvas')
-  envCanvas.width = 256
-  envCanvas.height = 128
-  const ctx = envCanvas.getContext('2d')!
-  const gradient = ctx.createLinearGradient(0, 0, 0, 128)
-  gradient.addColorStop(0, '#ede8e2')    // 顶部暖米色
-  gradient.addColorStop(0.5, '#ddd5cc')  // 中部
-  gradient.addColorStop(1, '#c8c0b8')    // 底部
-  ctx.fillStyle = gradient
-  ctx.fillRect(0, 0, 256, 128)
-  const envTexture = new THREE.CanvasTexture(envCanvas)
-  envTexture.mapping = THREE.EquirectangularReflectionMapping
-
-  const envMap = pmremGenerator.fromEquirectangular(envTexture).texture
-  scene.environment = envMap
-  scene.background = new THREE.Color('#ede8e2')
-
-  envTexture.dispose()
-  pmremGenerator.dispose()
-
-  raycaster = new THREE.Raycaster()
-  setupLighting()
-  buildPanda()
-
-  containerRef.value.addEventListener('pointerdown', onPointerDown)
-  containerRef.value.addEventListener('pointermove', onPointerMove)
-  window.addEventListener('resize', onResize)
-  startIdleGreeting()
-  scheduleBlink()
-  animate()
+  const el = imageAreaRef.value
+  if (!el) return
+  onTouchStart = () => nextTick()
+  onTouchEnd = () => nextTick()
+  el.addEventListener('touchstart', onTouchStart, { passive: true })
+  el.addEventListener('touchend', onTouchEnd, { passive: true })
+  el.addEventListener('touchcancel', onTouchEnd, { passive: true })
+  showPartsInternal.value = props.showParts
 })
+
+defineExpose({ triggerRain })
 
 onUnmounted(() => {
-  cancelAnimationFrame(animationId)
-  stopIdleGreeting()
-  if (blinkCooldown) clearTimeout(blinkCooldown)
-  containerRef.value?.removeEventListener('pointerdown', onPointerDown)
-  containerRef.value?.removeEventListener('pointermove', onPointerMove)
-  window.removeEventListener('resize', onResize)
-  controls?.dispose()
-  renderer?.dispose()
-  // Clean up bubble
-  if (bubbleGroup) bubbleGroup.traverse(c => {
-    if (c instanceof THREE.Mesh) { c.geometry.dispose(); (c.material as THREE.Material).dispose() }
-  })
+  if (rainTimer) clearTimeout(rainTimer)
+  if (curtainTimer) clearTimeout(curtainTimer)
+  if (cycleTimer) clearTimeout(cycleTimer)
+  nextTick()
+  const el = imageAreaRef.value
+  if (el) {
+    if (onTouchStart) el.removeEventListener('touchstart', onTouchStart)
+    if (onTouchEnd) {
+      el.removeEventListener('touchend', onTouchEnd)
+      el.removeEventListener('touchcancel', onTouchEnd)
+    }
+  }
 })
-
 </script>
 
 <template>
-  <div class="relative w-full h-full min-h-[320px]">
-    <div ref="containerRef" class="w-full h-full rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing" />
-    <!-- Greeting bubble overlay -->
-    <Transition name="greeting">
-      <div
-        v-if="greetingText"
-        class="absolute pointer-events-none z-10"
-        :style="{ left: greetingPos.x + 'px', top: greetingPos.y + 'px', transform: 'translate(-50%, -100%)' }"
-      >
-        <div class="relative bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-xs leading-relaxed px-3 py-2 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 max-w-[180px] whitespace-normal">
-          {{ greetingText }}
-          <!-- Speech bubble tail pointing down -->
-          <div class="absolute -bottom-[6px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white dark:border-t-gray-800" />
-        </div>
+  <div class="relative w-full h-full min-h-[280px]">
+    <div
+      ref="imageAreaRef"
+      class="relative w-full h-full"
+      :style="{ touchAction: 'none' }"
+      data-swipe-ignore
+    >
+      <div class="w-full h-full p-6 sm:p-8">
+        <img
+          :src="butterflyMascot"
+          alt="小金 - 身体部位参考图"
+          :class="['w-full h-full object-contain select-none relative z-10', { 'scale-x-[-1]': currentView === 'back' }]"
+          draggable="false"
+        />
       </div>
-    </Transition>
+
+      <button
+        v-if="showViewToggle && showParts"
+        type="button"
+        class="absolute top-2 right-2 z-30 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/70 dark:bg-gray-800/70 backdrop-blur text-xs font-medium text-primary-700 dark:text-primary-300 hover:bg-white dark:hover:bg-gray-800 transition-colors shadow-sm"
+        @click="toggleView"
+      >
+        <i class="ri-flip-horizontal-line"></i>
+        {{ currentView === 'front' ? '正面' : '背面' }}
+      </button>
+
+      <div v-if="isWaveMode" :key="1" class="absolute inset-0 pointer-events-none overflow-hidden" :style="{ zIndex: 12 }">
+        <div
+          v-for="(bar, i) in waveBars"
+          :key="'w' + i"
+          class="wave-bar"
+          :style="{ animationDelay: bar.delay, animationDuration: bar.duration }"
+        ></div>
+      </div>
+
+      <Transition name="parts-fade">
+        <div v-if="showPartsInternal" class="absolute inset-0 p-6 sm:p-8" :style="{ zIndex: 20, pointerEvents: 'none' }">
+          <svg
+            viewBox="0 0 1280 1280"
+            class="w-full h-full"
+            :style="{ pointerEvents: 'auto' }"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            <defs>
+              <filter id="dash-glow">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <g
+              v-for="part in visibleParts"
+              :key="part.id"
+              class="body-part-group"
+              :class="{ 'body-part-active': activePart === part.bodySite }"
+              role="button"
+              tabindex="0"
+              :aria-label="part.label"
+              @keydown.enter.prevent="onPartClick(part)"
+              @keydown.space.prevent="onPartClick(part)"
+            >
+              <ellipse
+                v-for="(hit, hi) in part.hits"
+                :key="'hit-' + hi"
+                :cx="hit.cx"
+                :cy="hit.cy"
+                :rx="hit.rx + 10"
+                :ry="hit.ry + 10"
+                fill="transparent"
+                stroke="transparent"
+                class="cursor-pointer"
+                @click.stop="onPartClick(part)"
+              />
+              <g v-for="(anc, ai) in part.anchors" :key="'line-' + ai">
+                <line
+                  :x1="anc.x"
+                  :y1="anc.y"
+                  :x2="part.labelX < 640 ? anc.x - 25 : anc.x + 25"
+                  :y2="anc.y"
+                  :stroke="activePart === part.bodySite ? '#ffffff' : '#26A69A'"
+                  stroke-width="2"
+                  stroke-dasharray="6 4"
+                  stroke-linecap="round"
+                  filter="url(#dash-glow)"
+                  :opacity="activePart === part.bodySite ? 1 : 0.7"
+                />
+                <line
+                  :x1="part.labelX < 640 ? anc.x - 25 : anc.x + 25"
+                  :y1="anc.y"
+                  :x2="part.labelX < 640 ? part.labelX + 30 : part.labelX - 30"
+                  :y2="part.labelY"
+                  :stroke="activePart === part.bodySite ? '#ffffff' : '#26A69A'"
+                  stroke-width="2"
+                  stroke-dasharray="6 4"
+                  stroke-linecap="round"
+                  filter="url(#dash-glow)"
+                  :opacity="activePart === part.bodySite ? 1 : 0.7"
+                />
+                <circle
+                  :cx="anc.x"
+                  :cy="anc.y"
+                  :r="activePart === part.bodySite ? 8 : 6"
+                  :fill="activePart === part.bodySite ? '#ffffff' : '#26A69A'"
+                  opacity="0.9"
+                  filter="url(#dash-glow)"
+                />
+              </g>
+              <text
+                :x="part.labelX"
+                :y="part.labelY"
+                :text-anchor="part.labelX < 640 ? 'end' : 'start'"
+                :fill="activePart === part.bodySite ? '#ffffff' : '#26A69A'"
+                font-size="72"
+                font-family="system-ui, -apple-system, sans-serif"
+                font-weight="600"
+                class="select-none part-label cursor-pointer"
+                :style="activePart === part.bodySite ? 'text-shadow: 0 0 12px rgba(38,166,154,0.8), 0 0 24px rgba(38,166,154,0.4);' : 'text-shadow: 0 0 6px rgba(38,166,154,0.35);'"
+                @click.stop="onPartClick(part)"
+              >{{ part.label }}</text>
+            </g>
+          </svg>
+        </div>
+      </Transition>
+
+      <div v-if="isRainMode" :key="2" class="absolute top-0 left-0 right-0 pointer-events-none" :style="{ zIndex: 16, height: '2px' }">
+        <Transition name="curtain-sweep">
+          <div v-if="showCurtain" class="h-full w-full" :style="{ background: 'linear-gradient(90deg, transparent 0%, rgba(38,166,154,0.9) 30%, rgba(38,166,154,0.9) 70%, transparent 100%)', boxShadow: '0 0 12px rgba(38,166,154,0.6), 0 0 30px rgba(38,166,154,0.2)' }"></div>
+        </Transition>
+      </div>
+
+      <Transition name="rain-fade">
+        <div v-if="isRainMode && showRain" class="absolute inset-0 pointer-events-none overflow-hidden" :style="{ zIndex: 15 }">
+          <div
+            v-for="col in rainColumns"
+            :key="col.id"
+            class="rain-column"
+            :style="{ left: col.left, animationDuration: col.duration + 's', animationDelay: col.delay + 's', fontSize: col.fontSize + 'px', opacity: col.opacity }"
+          >{{ col.chars }}</div>
+        </div>
+      </Transition>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.greeting-enter-active { transition: all 0.3s ease-out; }
-.greeting-leave-active { transition: all 0.25s ease-in; }
-.greeting-enter-from { opacity: 0; transform: translate(-50%, -90%) scale(0.9); }
-.greeting-leave-to { opacity: 0; transform: translate(-50%, -90%) scale(0.9); }
+.curtain-sweep-enter-active{animation:curtain-slide .5s ease-out forwards}.curtain-sweep-leave-active{transition:opacity .15s ease-in}.curtain-sweep-leave-to{opacity:0}@keyframes curtain-slide{0%{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}.rain-fade-enter-active{transition:opacity .3s ease-out}.rain-fade-leave-active{transition:opacity .4s ease-in}.rain-fade-enter-from,.rain-fade-leave-to{opacity:0}.rain-column{position:absolute;top:-5%;font-family:Courier New,monospace;font-weight:700;color:#26a69a;text-shadow:0 0 6px rgba(38,166,154,.6);white-space:pre;line-height:1.3;animation-name:rain-fall;animation-timing-function:linear;animation-fill-mode:forwards}.rain-column:first-line{color:#fff;text-shadow:0 0 14px rgba(38,166,154,1),0 0 28px rgba(38,166,154,.8)}@keyframes rain-fall{0%{transform:translateY(-5%)}to{transform:translateY(105vh)}}.wave-bar{position:absolute;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,rgba(38,166,154,.15) 20%,rgba(38,166,154,.5) 45%,rgba(38,166,154,.7) 50%,rgba(38,166,154,.5) 55%,rgba(38,166,154,.15) 80%,transparent 100%);box-shadow:0 0 20px #26a69a66,0 0 40px #26a69a26;animation-name:wave-scan;animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate;top:-10px}@keyframes wave-scan{0%{top:-2%;opacity:0}5%{opacity:.8}10%{opacity:1}90%{opacity:1}95%{opacity:.5}to{top:102%;opacity:0}}.parts-fade-enter-active{transition:opacity .5s ease-out}.parts-fade-leave-active{transition:opacity .2s ease-in}.parts-fade-enter-from,.parts-fade-leave-to{opacity:0}.body-part-group:hover text.part-label{fill:#fff;filter:drop-shadow(0 0 6px rgba(38,166,154,.6))}.body-part-active text.part-label{fill:#fff!important;filter:drop-shadow(0 0 10px rgba(38,166,154,.7))}.body-part-group:hover circle{fill:#fff;r:7}.body-part-active circle{fill:#fff!important}.body-part-group{transition:opacity .2s;outline:none}.body-part-group:focus-visible{outline:none}.body-part-group:focus-visible text.part-label{fill:#fff;filter:drop-shadow(0 0 8px rgba(38,166,154,.8))}.body-part-group:active{opacity:.7}.body-part-active{opacity:1!important}
+
 </style>

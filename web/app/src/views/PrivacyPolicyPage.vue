@@ -23,19 +23,19 @@ function scrollTo(id: string) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#F5F7FA] dark:bg-gray-900">
+  <div class="min-h-screen bg-[#F5F7FA] ">
     <!-- Header -->
-    <div class="sticky top-0 z-10 bg-[#F5F7FA]/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
+    <div class="sticky top-0 z-10 bg-[#F5F7FA]/80  backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
       <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
         <button
-          class="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
+          class="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 "
           @click="router.back()"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 class="text-lg font-semibold text-gray-900 dark:text-gray-100">隐私政策</h1>
+        <h1 class="text-lg font-semibold text-gray-900 ">隐私政策</h1>
       </div>
     </div>
 
@@ -43,11 +43,11 @@ function scrollTo(id: string) {
       <!-- Sidebar TOC (desktop) -->
       <nav class="hidden lg:block w-48 shrink-0">
         <div class="sticky top-20 space-y-1">
-          <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">目录</p>
+          <p class="text-xs font-medium text-gray-400  uppercase tracking-wider mb-2">目录</p>
           <button
             v-for="s in sections"
             :key="s.id"
-            class="block w-full text-left text-sm px-3 py-1.5 rounded-md text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition"
+            class="block w-full text-left text-sm px-3 py-1.5 rounded-md text-gray-600  hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition"
             @click="scrollTo(s.id)"
           >
             {{ s.title }}
@@ -57,7 +57,7 @@ function scrollTo(id: string) {
 
       <!-- Content -->
       <article class="flex-1 min-w-0 prose prose-sm dark:prose-invert max-w-none">
-        <p class="text-sm text-gray-500 dark:text-gray-400">最近更新日期：2026年4月18日 &nbsp;|&nbsp; 生效日期：2026年4月18日</p>
+        <p class="text-sm text-gray-500 ">最近更新日期：2026年4月18日 &nbsp;|&nbsp; 生效日期：2026年4月18日</p>
 
         <div id="overview" class="pt-4">
           <h2>概述</h2>
@@ -245,39 +245,39 @@ function scrollTo(id: string) {
           <p>根据相关法律法规，您享有以下权利：</p>
 
           <div class="not-prose space-y-3 my-4">
-            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 ">
               <span class="text-xl"><i class="ri-search-line"></i></span>
               <div>
-                <p class="font-medium text-gray-900 dark:text-gray-100">查阅权</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">随时查看您的个人信息和使用记录</p>
+                <p class="font-medium text-gray-900 ">查阅权</p>
+                <p class="text-sm text-gray-600 ">随时查看您的个人信息和使用记录</p>
               </div>
             </div>
-            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 ">
               <span class="text-xl"><i class="ri-edit-line"></i></span>
               <div>
-                <p class="font-medium text-gray-900 dark:text-gray-100">更正权</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">更正不准确的信息</p>
+                <p class="font-medium text-gray-900 ">更正权</p>
+                <p class="text-sm text-gray-600 ">更正不准确的信息</p>
               </div>
             </div>
-            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 ">
               <span class="text-xl"><i class="ri-delete-bin-line"></i></span>
               <div>
-                <p class="font-medium text-gray-900 dark:text-gray-100">删除权（被遗忘权）</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">请求删除您的个人信息，我们将在30天内完成。注销账户后所有个人数据（L2-L4）将被彻底删除</p>
+                <p class="font-medium text-gray-900 ">删除权（被遗忘权）</p>
+                <p class="text-sm text-gray-600 ">请求删除您的个人信息，我们将在30天内完成。注销账户后所有个人数据（L2-L4）将被彻底删除</p>
               </div>
             </div>
-            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 ">
               <span class="text-xl">📥</span>
               <div>
-                <p class="font-medium text-gray-900 dark:text-gray-100">数据可携带权</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">导出您的个人数据（JSON格式）</p>
+                <p class="font-medium text-gray-900 ">数据可携带权</p>
+                <p class="text-sm text-gray-600 ">导出您的个人数据（JSON格式）</p>
               </div>
             </div>
-            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 ">
               <span class="text-xl"><i class="ri-forbid-line"></i></span>
               <div>
-                <p class="font-medium text-gray-900 dark:text-gray-100">撤回同意权</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">随时撤回对信息处理的同意</p>
+                <p class="font-medium text-gray-900 ">撤回同意权</p>
+                <p class="text-sm text-gray-600 ">随时撤回对信息处理的同意</p>
               </div>
             </div>
           </div>
@@ -326,19 +326,19 @@ function scrollTo(id: string) {
           </ul>
         </div>
 
-        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500 text-center">
+        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400  text-center">
           <p>版本 v1.0 &nbsp;|&nbsp; 生效日期：2026年4月18日 &nbsp;|&nbsp; SubSkin 隐私政策</p>
         </div>
       </article>
     </div>
 
     <!-- Mobile TOC (bottom bar) -->
-    <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-[#F5F7FA]/90 dark:bg-gray-800/90 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 px-4 py-2 z-20 safe-bottom">
+    <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-[#F5F7FA]/90  backdrop-blur-md border-t border-gray-200 dark:border-gray-700 px-4 py-2 z-20 safe-bottom">
       <div class="flex overflow-x-auto gap-2 scrollbar-hide">
         <button
           v-for="s in sections"
           :key="s.id"
-          class="shrink-0 text-xs px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-primary-100 dark:hover:bg-primary-900 hover:text-primary-600 dark:hover:text-primary-400 transition"
+          class="shrink-0 text-xs px-3 py-1.5 rounded-full bg-gray-100  text-gray-600  hover:bg-primary-100 dark:hover:bg-primary-900 hover:text-primary-600 dark:hover:text-primary-400 transition"
           @click="scrollTo(s.id)"
         >
           {{ s.title }}

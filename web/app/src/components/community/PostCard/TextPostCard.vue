@@ -34,9 +34,9 @@ function timeAgo(dateStr: string): string {
 <template>
   <router-link
     :to="`/community/${post.id}`"
-    class="block no-underline break-inside-avoid mb-2.5 rounded-xl overflow-hidden bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-all duration-200 group p-3.5"
+    class="block no-underline break-inside-avoid mb-2.5 rounded-xl overflow-hidden bg-white  shadow-sm hover:shadow-md transition-all duration-200 group p-3.5"
   >
-    <p class="text-[13px] text-gray-800 dark:text-gray-200 leading-relaxed line-clamp-4 mb-2.5">
+    <p class="text-[13px] text-gray-800  leading-relaxed line-clamp-4 mb-2.5">
       {{ post.content_preview || post.content.replace(/<[^>]+>/g, '').slice(0, 120) }}
     </p>
 
@@ -44,12 +44,12 @@ function timeAgo(dateStr: string): string {
       <div class="w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 text-[10px] font-bold flex-shrink-0">
         {{ post.author.username.charAt(0) }}
       </div>
-      <span class="text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-[80px]">{{ post.author.username }}</span>
-      <span class="text-[10px] text-gray-300 dark:text-gray-600">·</span>
-      <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ timeAgo(post.created_at) }}</span>
+      <span class="text-[11px] text-gray-500  truncate max-w-[80px]">{{ post.author.username }}</span>
+      <span class="text-[10px] text-gray-300 ">·</span>
+      <span class="text-[10px] text-gray-400 ">{{ timeAgo(post.created_at) }}</span>
     </div>
 
-    <div class="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500">
+    <div class="flex items-center gap-1 text-[11px] text-gray-400 ">
       <!-- Like (heart) -->
       <span class="flex items-center gap-0.5 cursor-pointer p-1 -m-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" :class="post.is_liked ? 'text-red-500' : 'hover:text-red-500'" @click.stop="emit('like-click', post.id)">
         <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">

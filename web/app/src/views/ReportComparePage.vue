@@ -164,7 +164,7 @@ function getStatusColor(status: string | null) {
   if (status === 'normal') return 'text-green-600 dark:text-green-400'
   if (status === 'high' || status === 'critical') return 'text-red-600 dark:text-red-400'
   if (status === 'low') return 'text-blue-600 dark:text-blue-400'
-  return 'text-gray-400 dark:text-gray-500 italic'
+  return 'text-gray-400  italic'
 }
 
 function getTrendIcon(trend: string) {
@@ -182,7 +182,7 @@ function getTrendLabel(trend: string) {
 function getDeltaColor(type: string) {
   if (type === 'improving') return 'text-green-600 dark:text-green-400'
   if (type === 'worsening') return 'text-red-600 dark:text-red-400'
-  return 'text-gray-500 dark:text-gray-400'
+  return 'text-gray-500 '
 }
 
 onMounted(() => {
@@ -191,26 +191,26 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-20 md:pb-8">
+  <div class="min-h-dvh bg-gray-50  pb-20 md:pb-8">
     <!-- Header -->
-    <header class="sticky top-0 z-30 bg-white/80 dark:bg-gray-800/80 backdrop-blur border-b border-gray-200 dark:border-gray-700">
+    <header class="sticky top-0 z-30 bg-white/80  backdrop-blur border-b border-gray-200 dark:border-gray-700">
       <div class="max-w-6xl mx-auto flex items-center gap-3 px-4 h-14">
-        <button @click="router.push('/report')" class="p-2 -ml-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <button @click="router.push('/report')" class="p-2 -ml-2 text-gray-600  hover:text-gray-900 dark:hover:text-gray-100 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
           <i class="ri-arrow-left-line text-xl"></i>
         </button>
-        <h1 class="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">报告对比</h1>
+        <h1 class="text-lg font-semibold text-gray-900  truncate">报告对比</h1>
       </div>
     </header>
 
     <main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
       <!-- Loading State -->
-      <div v-if="loading" class="text-center py-20 text-gray-400 dark:text-gray-500">
+      <div v-if="loading" class="text-center py-20 text-gray-400 ">
         <div class="text-4xl mb-4 animate-pulse"><i class="ri-scales-line"></i></div>
         <p>正在生成对比分析...</p>
       </div>
 
       <!-- Error State -->
-      <div v-else-if="!compareData" class="text-center py-20 text-gray-400 dark:text-gray-500">
+      <div v-else-if="!compareData" class="text-center py-20 text-gray-400 ">
         <div class="text-4xl mb-4"><i class="ri-error-warning-line"></i></div>
         <p>无法加载对比数据，请确保选择了至少两份报告</p>
         <button @click="router.push('/report')" class="mt-4 btn-primary px-6 py-2">返回</button>
@@ -225,25 +225,25 @@ onMounted(() => {
               :class="{
                 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400': compareData.overall_trend === 'improving',
                 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400': compareData.overall_trend === 'worsening',
-                'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400': compareData.overall_trend === 'stable'
+                'bg-gray-100 text-gray-600  ': compareData.overall_trend === 'stable'
               }">
               <i class="text-2xl" :class="getTrendIcon(compareData.overall_trend).split(' ')[0]"></i>
             </div>
             <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">总体趋势</p>
-              <p class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ getTrendLabel(compareData.overall_trend) }}</p>
+              <p class="text-sm text-gray-500  mb-1">总体趋势</p>
+              <p class="text-lg font-bold text-gray-900 ">{{ getTrendLabel(compareData.overall_trend) }}</p>
             </div>
           </div>
 
           <!-- Card 2: Counts -->
           <div class="card p-5 flex flex-col justify-center">
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">指标变化统计</p>
+            <p class="text-sm text-gray-500  mb-2">指标变化统计</p>
             <div class="flex items-center gap-3 text-sm font-medium">
               <span class="text-green-600 dark:text-green-400">{{ compareData.counts.improving }}项改善</span>
-              <span class="text-gray-300 dark:text-gray-600">|</span>
+              <span class="text-gray-300 ">|</span>
               <span class="text-red-600 dark:text-red-400">{{ compareData.counts.worsening }}项恶化</span>
-              <span class="text-gray-300 dark:text-gray-600">|</span>
-              <span class="text-gray-600 dark:text-gray-400">{{ compareData.counts.stable }}项稳定</span>
+              <span class="text-gray-300 ">|</span>
+              <span class="text-gray-600 ">{{ compareData.counts.stable }}项稳定</span>
             </div>
           </div>
 
@@ -253,8 +253,8 @@ onMounted(() => {
               <i class="ri-error-warning-fill text-2xl"></i>
             </div>
             <div>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">必看项</p>
-              <p class="text-lg font-bold text-gray-900 dark:text-gray-100">
+              <p class="text-sm text-gray-500  mb-1">必看项</p>
+              <p class="text-lg font-bold text-gray-900 ">
                 <span v-if="compareData.counts.attention_needed > 0" class="text-yellow-600 dark:text-yellow-500">{{ compareData.counts.attention_needed }}项需关注</span>
                 <span v-else class="text-green-600 dark:text-green-500">全部良好</span>
               </p>
@@ -267,19 +267,19 @@ onMounted(() => {
           <!-- Filter Tabs -->
           <div class="border-b border-gray-100 dark:border-gray-800 px-4 py-3 overflow-x-auto hide-scrollbar flex gap-2">
             <button @click="activeFilter = 'all'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
-              :class="activeFilter === 'all' ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'">
+              :class="activeFilter === 'all' ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400' : 'text-gray-600  hover:bg-gray-50 dark:hover:bg-gray-800'">
               全部指标
             </button>
             <button @click="activeFilter = 'abnormal'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
-              :class="activeFilter === 'abnormal' ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'">
+              :class="activeFilter === 'abnormal' ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400' : 'text-gray-600  hover:bg-gray-50 dark:hover:bg-gray-800'">
               异常项
             </button>
             <button @click="activeFilter = 'improving'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
-              :class="activeFilter === 'improving' ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'">
+              :class="activeFilter === 'improving' ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400' : 'text-gray-600  hover:bg-gray-50 dark:hover:bg-gray-800'">
               改善项
             </button>
             <button @click="activeFilter = 'worsening'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
-              :class="activeFilter === 'worsening' ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'">
+              :class="activeFilter === 'worsening' ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400' : 'text-gray-600  hover:bg-gray-50 dark:hover:bg-gray-800'">
               恶化项
             </button>
           </div>
@@ -288,7 +288,7 @@ onMounted(() => {
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse min-w-[600px]">
               <thead>
-                <tr class="bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <tr class="bg-gray-50  text-xs text-gray-500  uppercase tracking-wider">
                   <th class="p-4 font-medium">指标名称</th>
                   <th v-for="report in compareData.reports" :key="report.id" class="p-4 font-medium">{{ report.date }}</th>
                   <th class="p-4 font-medium">变化</th>
@@ -303,7 +303,7 @@ onMounted(() => {
                     <td class="p-4">
                       <div class="flex items-center gap-2">
                         <i class="ri-arrow-right-s-line text-gray-400 transition-transform duration-200" :class="{ 'rotate-90': ind._expanded }"></i>
-                        <span class="font-medium text-gray-900 dark:text-gray-100 text-sm">{{ ind.name }}</span>
+                        <span class="font-medium text-gray-900  text-sm">{{ ind.name }}</span>
                       </div>
                     </td>
                     <td v-for="report in compareData.reports" :key="report.id" class="p-4">
@@ -317,25 +317,25 @@ onMounted(() => {
                     <td class="p-4">
                       <div class="flex items-center gap-1.5">
                         <i :class="getTrendIcon(ind.trend)"></i>
-                        <span class="text-sm text-gray-700 dark:text-gray-300">{{ getTrendLabel(ind.trend) }}</span>
+                        <span class="text-sm text-gray-700 ">{{ getTrendLabel(ind.trend) }}</span>
                       </div>
                     </td>
                   </tr>
                   <!-- Expanded Interpretation Row -->
-                  <tr v-if="ind._expanded" class="bg-gray-50/50 dark:bg-gray-800/20">
+                  <tr v-if="ind._expanded" class="bg-gray-50/50 ">
                     <td :colspan="compareData.reports.length + 3" class="p-4 pt-0">
-                      <div class="ml-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm flex items-start gap-3">
+                      <div class="ml-6 p-4 bg-white  rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm flex items-start gap-3">
                         <i class="ri-robot-line text-primary-500 text-lg mt-0.5"></i>
                         <div>
-                          <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">AI 趋势解读</p>
-                          <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ ind.trend_interpretation }}</p>
+                          <p class="text-xs font-medium text-gray-500  mb-1">AI 趋势解读</p>
+                          <p class="text-sm text-gray-700  leading-relaxed">{{ ind.trend_interpretation }}</p>
                         </div>
                       </div>
                     </td>
                   </tr>
                 </template>
                 <tr v-if="filteredIndicators.length === 0">
-                  <td :colspan="compareData.reports.length + 3" class="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+                  <td :colspan="compareData.reports.length + 3" class="p-8 text-center text-gray-500  text-sm">
                     没有找到符合条件的指标
                   </td>
                 </tr>
@@ -352,11 +352,11 @@ onMounted(() => {
             'border-t-gray-400': compareData.overall_trend === 'stable'
           }">
           <div class="flex items-center gap-2 mb-4">
-            <i class="ri-file-list-3-line text-xl text-gray-700 dark:text-gray-300"></i>
-            <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">综合评估报告</h2>
+            <i class="ri-file-list-3-line text-xl text-gray-700 "></i>
+            <h2 class="text-lg font-bold text-gray-900 ">综合评估报告</h2>
           </div>
           
-          <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-6 text-sm md:text-base">
+          <p class="text-gray-700  leading-relaxed mb-6 text-sm md:text-base">
             {{ compareData.assessment.summary }}
           </p>
 
@@ -368,7 +368,7 @@ onMounted(() => {
                   <i class="ri-thumb-up-line"></i> 改善亮点
                 </h3>
                 <ul class="space-y-2">
-                  <li v-for="(item, idx) in compareData.assessment.highlights" :key="idx" class="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <li v-for="(item, idx) in compareData.assessment.highlights" :key="idx" class="flex items-start gap-2 text-sm text-gray-700 ">
                     <i class="ri-checkbox-circle-fill text-green-500 mt-0.5 shrink-0"></i>
                     <span>{{ item }}</span>
                   </li>
@@ -380,7 +380,7 @@ onMounted(() => {
                   <i class="ri-error-warning-line"></i> 需关注项
                 </h3>
                 <ul class="space-y-2">
-                  <li v-for="(item, idx) in compareData.assessment.concerns" :key="idx" class="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <li v-for="(item, idx) in compareData.assessment.concerns" :key="idx" class="flex items-start gap-2 text-sm text-gray-700 ">
                     <i class="ri-error-warning-fill text-red-500 mt-0.5 shrink-0"></i>
                     <span>{{ item }}</span>
                   </li>
@@ -394,7 +394,7 @@ onMounted(() => {
                 <i class="ri-lightbulb-line"></i> 下一步建议
               </h3>
               <ul class="space-y-3">
-                <li v-for="(item, idx) in compareData.assessment.recommendations" :key="idx" class="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <li v-for="(item, idx) in compareData.assessment.recommendations" :key="idx" class="flex items-start gap-2 text-sm text-gray-700 ">
                   <span class="w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 flex items-center justify-center text-xs font-medium shrink-0 mt-0.5">{{ idx + 1 }}</span>
                   <span class="leading-relaxed">{{ item }}</span>
                 </li>

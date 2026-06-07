@@ -92,23 +92,23 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="card overflow-hidden flex flex-col bg-gray-100 dark:bg-gray-800/50 h-full">
-    <div v-if="files.length > 1" class="flex overflow-x-auto border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+  <div class="card overflow-hidden flex flex-col bg-gray-100  h-full">
+    <div v-if="files.length > 1" class="flex overflow-x-auto border-b border-gray-200 dark:border-gray-700 bg-white ">
       <button v-for="(file, idx) in files" :key="file.id"
         @click="activeFileIndex = idx"
         class="px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors"
-        :class="activeFileIndex === idx ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'">
+        :class="activeFileIndex === idx ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700  dark:hover:text-gray-200'">
         <i :class="file.file_type?.startsWith('image/') ? 'ri-image-line' : 'ri-file-text-line'" class="mr-1"></i>
         {{ file.file_name }}
       </button>
     </div>
 
     <div class="relative flex-1 min-h-[400px] flex items-center justify-center p-4">
-      <div v-if="loading && !currentImageUrl" class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 z-10">
+      <div v-if="loading && !currentImageUrl" class="absolute inset-0 flex items-center justify-center bg-white/50  z-10">
         <i class="ri-loader-4-line animate-spin text-3xl text-primary-500"></i>
       </div>
       
-      <img v-if="currentImageUrl" :src="currentImageUrl" class="max-w-full max-h-[70vh] object-contain shadow-sm rounded bg-white dark:bg-gray-900" />
+      <img v-if="currentImageUrl" :src="currentImageUrl" class="max-w-full max-h-[70vh] object-contain shadow-sm rounded bg-white " />
       
       <div v-else-if="!loading" class="text-gray-400 flex flex-col items-center">
         <i class="ri-file-damage-line text-4xl mb-2"></i>
@@ -116,11 +116,11 @@ onMounted(() => {
       </div>
     </div>
 
-    <div v-if="isPdf" class="flex items-center justify-center gap-4 p-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+    <div v-if="isPdf" class="flex items-center justify-center gap-4 p-3 bg-white  border-t border-gray-200 dark:border-gray-700">
       <button @click="prevPage" :disabled="currentPage <= 1 || loading" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors">
         <i class="ri-arrow-left-s-line text-xl"></i>
       </button>
-      <span class="text-sm font-medium text-gray-600 dark:text-gray-300">第 {{ currentPage }} 页</span>
+      <span class="text-sm font-medium text-gray-600 ">第 {{ currentPage }} 页</span>
       <button @click="nextPage" :disabled="loading" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors">
         <i class="ri-arrow-right-s-line text-xl"></i>
       </button>

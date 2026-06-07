@@ -110,11 +110,11 @@ onUnmounted(() => {
 <template>
   <router-link
     :to="`/community/${post.id}`"
-    class="block no-underline break-inside-avoid mb-2.5 rounded-xl overflow-hidden bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-all duration-200 group"
+    class="block no-underline break-inside-avoid mb-2.5 rounded-xl overflow-hidden bg-white  shadow-sm hover:shadow-md transition-all duration-200 group"
   >
     <!-- Cover area: carousel or press-and-hold overlay -->
     <div
-      class="relative aspect-[3/4] bg-gray-100 dark:bg-gray-700 overflow-hidden select-none"
+      class="relative aspect-[3/4] bg-gray-100  overflow-hidden select-none"
       @mousedown.prevent="onPointerDown"
       @mouseup="onPointerUp"
       @mouseleave="onPointerUp"
@@ -142,7 +142,7 @@ onUnmounted(() => {
         <!-- Fallback when no images -->
         <div v-else class="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30">
           <span class="text-3xl">{{ post.category?.icon || '📷' }}</span>
-          <span class="text-xs text-gray-500 dark:text-gray-400 font-medium px-2 text-center">{{ post.category?.name }}</span>
+          <span class="text-xs text-gray-500  font-medium px-2 text-center">{{ post.category?.name }}</span>
         </div>
 
         <!-- Carousel dot indicators -->
@@ -175,14 +175,14 @@ onUnmounted(() => {
       <!-- Press-and-hold: text content scroll overlay -->
       <div
         v-else
-        class="absolute inset-0 bg-white dark:bg-gray-800 z-10 overflow-hidden"
+        class="absolute inset-0 bg-white  z-10 overflow-hidden"
         @click.stop
       >
         <div class="p-3 animate-text-scroll">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 leading-snug">
+          <h3 class="text-sm font-semibold text-gray-900  mb-2 leading-snug">
             {{ post.title }}
           </h3>
-          <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">
+          <p class="text-xs text-gray-600  leading-relaxed whitespace-pre-line">
             {{ holdText }}
           </p>
         </div>
@@ -191,7 +191,7 @@ onUnmounted(() => {
 
     <!-- Card footer -->
     <div class="px-2.5 pt-2 pb-2">
-      <h3 class="text-[13px] font-medium text-gray-900 dark:text-gray-100 leading-snug line-clamp-2 mb-2">
+      <h3 class="text-[13px] font-medium text-gray-900  leading-snug line-clamp-2 mb-2">
         {{ post.title }}
       </h3>
 
@@ -199,13 +199,13 @@ onUnmounted(() => {
         <div class="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 text-[9px] font-bold flex-shrink-0">
           {{ post.author.username.charAt(0) }}
         </div>
-        <span class="text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-[70px]">{{ post.author.username }}</span>
-        <span class="text-[10px] text-gray-300 dark:text-gray-600">·</span>
-        <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ timeAgo(post.created_at) }}</span>
+        <span class="text-[11px] text-gray-500  truncate max-w-[70px]">{{ post.author.username }}</span>
+        <span class="text-[10px] text-gray-300 ">·</span>
+        <span class="text-[10px] text-gray-400 ">{{ timeAgo(post.created_at) }}</span>
       </div>
 
       <div class="flex items-center justify-between">
-        <div class="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500">
+        <div class="flex items-center gap-1 text-[11px] text-gray-400 ">
           <!-- Like (heart) -->
           <span class="flex items-center gap-0.5 cursor-pointer p-1 -m-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" :class="post.is_liked ? 'text-red-500' : 'hover:text-red-500'" @click.stop="emit('like-click', post.id)">
             <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">

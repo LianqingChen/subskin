@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { AssessmentSnapshot } from './DigitalHuman.vue'
+
+interface AssessmentSnapshot {
+  vasiScore: number
+  stage?: string
+  areaPercentage?: number
+}
 
 const props = defineProps<{
   part: string | null
@@ -64,7 +69,7 @@ function chooseGallery() {
   <div v-if="part" class="card p-5 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
     <!-- Header -->
     <div class="flex items-center justify-between">
-      <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+      <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
         <i class="ri-focus-3-line text-primary-500"></i>
         {{ partLabel }}
       </h3>
@@ -83,8 +88,8 @@ function chooseGallery() {
           <div class="text-xl font-bold" :class="scoreLevel.color">{{ assessment.vasiScore }}</div>
           <div class="text-[10px] text-gray-500 mt-0.5">VASI评分</div>
         </div>
-        <div class="text-center p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
-          <div class="text-xl font-bold text-gray-700 dark:text-gray-300">{{ areaPercent }}%</div>
+        <div class="text-center p-3 rounded-xl bg-gray-50 ">
+          <div class="text-xl font-bold text-gray-700 ">{{ areaPercent }}%</div>
           <div class="text-[10px] text-gray-500 mt-0.5">白斑面积</div>
         </div>
         <div class="text-center p-3 rounded-xl flex items-center justify-center">
@@ -99,7 +104,7 @@ function chooseGallery() {
           <span>轻度 0</span>
           <span>重度 100</span>
         </div>
-        <div class="h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+        <div class="h-2 rounded-full bg-gray-200  overflow-hidden">
           <div
             class="h-full rounded-full transition-all duration-500"
             :class="{
@@ -114,7 +119,7 @@ function chooseGallery() {
       </div>
     </template>
 
-    <div v-else class="text-center py-6 text-gray-400 dark:text-gray-500">
+    <div v-else class="text-center py-6 text-gray-400 ">
       <i class="ri-camera-line text-3xl block mb-2"></i>
       <p class="text-sm">该部位暂无评估记录</p>
       <p class="text-xs mt-1">拍照或上传照片开始评估</p>
@@ -132,7 +137,7 @@ function chooseGallery() {
       <!-- Chooser dropdown -->
       <div
         v-if="showChooser"
-        class="absolute left-0 right-0 top-full mt-2 p-3 rounded-xl bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 z-20 flex gap-2"
+        class="absolute left-0 right-0 top-full mt-2 p-3 rounded-xl bg-white  shadow-xl border border-gray-200 dark:border-gray-700 z-20 flex gap-2"
       >
         <button
           class="flex-1 flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors border border-transparent hover:border-primary-200 dark:hover:border-primary-800"
@@ -141,7 +146,7 @@ function chooseGallery() {
           <div class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
             <i class="ri-camera-line text-2xl text-primary-600 dark:text-primary-400"></i>
           </div>
-          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">拍照</span>
+          <span class="text-sm font-medium text-gray-700 ">拍照</span>
           <span class="text-[10px] text-gray-400">使用相机拍摄</span>
         </button>
         <button
@@ -151,7 +156,7 @@ function chooseGallery() {
           <div class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
             <i class="ri-image-line text-2xl text-primary-600 dark:text-primary-400"></i>
           </div>
-          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">相册选择</span>
+          <span class="text-sm font-medium text-gray-700 ">相册选择</span>
           <span class="text-[10px] text-gray-400">从图库上传</span>
         </button>
       </div>
@@ -159,14 +164,14 @@ function chooseGallery() {
 
     <!-- Per-part History -->
     <div v-if="history.length > 0">
-      <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
+      <h4 class="text-sm font-semibold text-gray-700  mb-2 flex items-center gap-1.5">
         <i class="ri-history-line"></i> {{ partLabel }}评估历史
       </h4>
       <div class="space-y-2">
         <div
           v-for="record in history.slice(0, 5)"
           :key="record.id"
-          class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          class="flex items-center gap-3 p-3 rounded-xl bg-gray-50  cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           @click="emit('view-detail', record.id)"
         >
           <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
@@ -178,7 +183,7 @@ function chooseGallery() {
           >{{ record.vasiScore }}</div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 text-sm">
-              <span class="text-gray-400 dark:text-gray-500 text-xs">{{ record.date }}</span>
+              <span class="text-gray-400  text-xs">{{ record.date }}</span>
               <span class="text-[11px] px-1.5 py-0.5 rounded-full"
                 :class="{
                   'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': record.stage.includes('好转'),
@@ -187,7 +192,7 @@ function chooseGallery() {
                 }"
               >{{ record.stage }}</span>
             </div>
-            <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <div class="text-xs text-gray-500  mt-0.5">
               面积 {{ record.areaPercentage }}%
               <span v-if="record.classification" class="ml-2">· {{ record.classification }}型</span>
             </div>

@@ -61,11 +61,11 @@ function toggleSource(item: any) {
     <div class="card p-5">
       <div class="flex items-start justify-between mb-4">
         <div>
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">总体评估</h2>
+          <h2 class="text-lg font-semibold text-gray-900  mb-1">总体评估</h2>
           <div class="flex items-center gap-3 text-sm">
-            <span class="text-gray-500 dark:text-gray-400">共检测 <span class="font-medium text-gray-900 dark:text-gray-100">{{ totalIndicators }}</span> 项指标</span>
-            <span class="text-gray-300 dark:text-gray-600">|</span>
-            <span class="text-gray-500 dark:text-gray-400">发现 <span class="font-medium text-red-500">{{ totalAbnormal }}</span> 项异常</span>
+            <span class="text-gray-500 ">共检测 <span class="font-medium text-gray-900 ">{{ totalIndicators }}</span> 项指标</span>
+            <span class="text-gray-300 ">|</span>
+            <span class="text-gray-500 ">发现 <span class="font-medium text-red-500">{{ totalAbnormal }}</span> 项异常</span>
           </div>
         </div>
         <div class="px-3 py-1.5 rounded-full flex items-center gap-1.5 font-medium text-sm" :class="riskClass">
@@ -74,7 +74,7 @@ function toggleSource(item: any) {
       </div>
       
       <!-- Extracted patient info -->
-      <div v-if="interpretation.extracted_patient_info" class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/30 rounded-lg px-3 py-2">
+      <div v-if="interpretation.extracted_patient_info" class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs text-gray-500  bg-gray-50  rounded-lg px-3 py-2">
         <template v-if="interpretation.extracted_patient_info.name">
           <span class="flex items-center gap-1">
             <i class="ri-user-line"></i> {{ interpretation.extracted_patient_info.name }}
@@ -96,7 +96,7 @@ function toggleSource(item: any) {
         </span>
       </div>
 
-      <p class="text-gray-700 dark:text-gray-300 leading-relaxed text-sm bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
+      <p class="text-gray-700  leading-relaxed text-sm bg-gray-50  p-3 rounded-lg">
         {{ interpretation.summary }}
       </p>
     </div>
@@ -116,9 +116,9 @@ function toggleSource(item: any) {
           <div class="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
             @click="section._expanded = !section._expanded">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ section.section_name }}</h3>
+              <h3 class="text-base font-semibold text-gray-900 ">{{ section.section_name }}</h3>
               <div class="flex items-center gap-3">
-                <span class="text-sm text-gray-500 dark:text-gray-400">
+                <span class="text-sm text-gray-500 ">
                   {{ section.indicator_count }}项指标
                   <template v-if="section.abnormal_count > 0">
                     <span v-if="section.risk === 'red'" class="text-red-500 font-medium ml-1"><i class="ri-error-warning-fill"></i> {{ section.abnormal_count }}项异常</span>
@@ -130,29 +130,29 @@ function toggleSource(item: any) {
                   :class="section._expanded ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
               </div>
             </div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">{{ section.section_summary }}</p>
+            <p class="text-sm text-gray-600 ">{{ section.section_summary }}</p>
           </div>
 
           <!-- Expanded detail (Layer 3) -->
-          <div v-if="section._expanded" class="border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/20">
+          <div v-if="section._expanded" class="border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 ">
             
             <!-- Abnormal items -->
             <div v-if="section.abnormal_items?.length" class="p-4 space-y-4">
-              <h4 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">异常指标解读</h4>
+              <h4 class="text-xs font-medium text-gray-400  uppercase tracking-wider">异常指标解读</h4>
               
               <div v-for="item in section.abnormal_items" :key="item.indicator_name"
-                class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                class="bg-white  rounded-lg p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                 
                 <div class="flex items-center gap-3 flex-wrap mb-3">
-                  <span class="font-semibold text-gray-900 dark:text-gray-100">{{ item.indicator_name }}</span>
-                  <span class="text-sm text-gray-600 dark:text-gray-300">{{ item.value }}</span>
+                  <span class="font-semibold text-gray-900 ">{{ item.indicator_name }}</span>
+                  <span class="text-sm text-gray-600 ">{{ item.value }}</span>
                   <span class="px-2 py-0.5 rounded text-xs font-medium"
                     :class="item.status === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'">
                     {{ statusLabel(item.status) }}
                   </span>
                 </div>
                 
-                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-3">{{ item.interpretation }}</p>
+                <p class="text-sm text-gray-700  leading-relaxed mb-3">{{ item.interpretation }}</p>
                 
                 <!-- Traceability -->
                 <div v-if="item.source_indicators?.length || item.source_text_excerpt" class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
@@ -170,12 +170,12 @@ function toggleSource(item: any) {
                     </span>
                   </button>
                   
-                  <div v-if="(item as any)._showSource" class="mt-2 p-3 bg-gray-50 dark:bg-gray-900 rounded text-xs space-y-2">
+                  <div v-if="(item as any)._showSource" class="mt-2 p-3 bg-gray-50  rounded text-xs space-y-2">
                     <div v-if="item.source_indicators?.length">
                       <div class="text-gray-500 mb-1">提取的指标数据：</div>
                       <table class="w-full text-left">
                         <tr v-for="src in item.source_indicators" :key="src.indicator_name" class="border-b border-gray-200 dark:border-gray-700 last:border-0">
-                          <td class="py-1 text-gray-700 dark:text-gray-300">{{ src.indicator_name }}</td>
+                          <td class="py-1 text-gray-700 ">{{ src.indicator_name }}</td>
                           <td class="py-1 font-medium">{{ src.value }}</td>
                           <td class="py-1 text-gray-500">{{ src.ref_range }}</td>
                         </tr>
@@ -183,7 +183,7 @@ function toggleSource(item: any) {
                     </div>
                     <div v-if="item.source_text_excerpt">
                       <div class="text-gray-500 mb-1">报告原文片段：</div>
-                      <blockquote class="border-l-2 border-gray-300 dark:border-gray-600 pl-2 text-gray-600 dark:text-gray-400 italic">
+                      <blockquote class="border-l-2 border-gray-300 dark:border-gray-600 pl-2 text-gray-600  italic">
                         "{{ item.source_text_excerpt }}"
                       </blockquote>
                     </div>
@@ -194,10 +194,10 @@ function toggleSource(item: any) {
 
             <!-- Normal indicators -->
             <div v-if="section.indicators?.length" class="p-4 pt-0">
-              <h4 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 mt-2">全部指标</h4>
-              <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <h4 class="text-xs font-medium text-gray-400  uppercase tracking-wider mb-2 mt-2">全部指标</h4>
+              <div class="bg-white  rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <table class="w-full text-sm text-left">
-                  <thead class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-xs">
+                  <thead class="bg-gray-50  text-gray-500  text-xs">
                     <tr>
                       <th class="px-3 py-2 font-medium">指标名称</th>
                       <th class="px-3 py-2 font-medium">结果</th>
@@ -206,7 +206,7 @@ function toggleSource(item: any) {
                   </thead>
                   <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     <tr v-for="ind in section.indicators" :key="ind.name" class="hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                      <td class="px-3 py-2 text-gray-700 dark:text-gray-300">
+                      <td class="px-3 py-2 text-gray-700 ">
                         <span class="inline-block w-1.5 h-1.5 rounded-full mr-1.5"
                           :class="{
                             'bg-red-500': ind.status === 'high' || ind.status === 'low' || ind.status === 'critical',
@@ -215,7 +215,7 @@ function toggleSource(item: any) {
                           }"></span>
                         {{ ind.name }}
                       </td>
-                      <td class="px-3 py-2 font-medium" :class="ind.status !== 'normal' && ind.status ? 'text-red-500' : 'text-gray-900 dark:text-gray-100'">
+                      <td class="px-3 py-2 font-medium" :class="ind.status !== 'normal' && ind.status ? 'text-red-500' : 'text-gray-900 '">
                         {{ ind.value }} {{ ind.unit }}
                       </td>
                       <td class="px-3 py-2 text-gray-500">{{ ind.ref_range }}</td>
@@ -233,19 +233,19 @@ function toggleSource(item: any) {
     <div v-if="interpretation.recommendations?.length" class="card p-5">
       <div class="flex items-center gap-2 mb-4">
         <i class="ri-lightbulb-line text-primary-500 text-lg"></i>
-        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">改善建议</h3>
+        <h3 class="text-base font-semibold text-gray-900 ">改善建议</h3>
       </div>
       <div class="space-y-3">
         <div v-for="(rec, idx) in interpretation.recommendations" :key="idx"
           class="flex items-start gap-3 p-3 rounded-lg bg-primary-50/50 dark:bg-primary-900/10">
           <span class="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center text-xs font-medium shrink-0 mt-0.5">{{ idx + 1 }}</span>
-          <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ rec.content || rec }}</p>
+          <p class="text-sm text-gray-700  leading-relaxed">{{ rec.content || rec }}</p>
         </div>
       </div>
     </div>
 
     <!-- Disclaimer -->
-    <div class="text-center text-xs text-gray-400 dark:text-gray-500 py-4">
+    <div class="text-center text-xs text-gray-400  py-4">
       <i class="ri-error-warning-line"></i> {{ interpretation.disclaimer || '本解读仅供参考，不构成医疗诊断建议。如有异常指标，请咨询专业医生。' }}
     </div>
   </div>

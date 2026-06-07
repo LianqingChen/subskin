@@ -1,0 +1,212 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Teal-based theme — safe, organic, medical warmth */
+  --color-primary-h: 174;
+  --color-primary-s: 63%;
+  --color-primary-l: 50%;
+  --color-primary-50: hsl(var(--color-primary-h), calc(var(--color-primary-s) * 0.3), 96%);
+  --color-primary-100: hsl(var(--color-primary-h), calc(var(--color-primary-s) * 0.5), 91%);
+  --color-primary-200: hsl(var(--color-primary-h), calc(var(--color-primary-s) * 0.7), 82%);
+  --color-primary-300: hsl(var(--color-primary-h), var(--color-primary-s), 70%);
+  --color-primary-400: hsl(var(--color-primary-h), var(--color-primary-s), 55%);
+  --color-primary-500: hsl(var(--color-primary-h), var(--color-primary-s), var(--color-primary-l));
+  --color-primary-600: hsl(var(--color-primary-h), var(--color-primary-s), 40%);
+  --color-primary-700: hsl(var(--color-primary-h), var(--color-primary-s), 32%);
+  --color-primary-800: hsl(var(--color-primary-h), calc(var(--color-primary-s) * 0.8), 24%);
+  --color-primary-900: hsl(var(--color-primary-h), calc(var(--color-primary-s) * 0.7), 16%);
+  --color-primary: var(--color-primary-600);
+  --color-primary-light: var(--color-primary-500);
+  --color-secondary: #A5D6A7;
+  --color-secondary-light: #C8E6C9;
+  --color-accent: #FFB74D;
+  --color-accent-light: #FFCC80;
+  --color-success: #4CAF50;
+  --color-bg: #F5F7FA;
+  --color-surface: #E0F2F1;
+  --color-text-primary: #37474F;
+  --color-text-secondary: #78909C;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+@layer base {
+  html {
+    font-family: 'Inter', 'PingFang SC', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    overscroll-behavior-y: contain;
+    touch-action: manipulation;
+  }
+
+  body {
+    @apply bg-[var(--color-bg)] text-[var(--color-text-primary)] dark:bg-gray-950 dark:text-gray-100 transition-colors duration-200;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  input, textarea, select {
+    @apply text-base;
+  }
+
+  a {
+    @apply dark:text-gray-300;
+  }
+
+  button, a, [role="button"] {
+    @apply select-none;
+  }
+
+  /* 44px touch targets for interactive elements that need them,
+     but not for inline nav links which have their own sizing */
+  button, [role="button"] {
+    min-height: 44px;
+  }
+
+  /* Navigation links use own padding for sizing, touch targets via padding */
+  a {
+    min-height: 0;
+  }
+
+  button:active {
+    @apply scale-[0.97];
+    transition: transform 0.1s ease;
+  }
+
+  img {
+    -webkit-user-drag: none;
+  }
+
+  html[data-ios] {
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+}
+
+@layer components {
+  .setting-switch {
+    width: 38px;
+    height: 10px;
+    border-radius: 5px;
+    padding: 1px;
+    transition: background 0.25s ease;
+    flex-shrink: 0;
+  }
+  .setting-switch-off {
+    background: rgb(209 213 219);
+  }
+  .dark .setting-switch-off {
+    background: rgb(75 85 99);
+  }
+  .setting-switch-on {
+    background: var(--color-primary-500);
+  }
+  .setting-switch-thumb {
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: white;
+    box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.12);
+    transition: transform 0.25s ease;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 text-white px-4 py-2.5 rounded-lg font-medium
+    hover:bg-primary-700 active:bg-primary-800
+    dark:bg-primary-700 dark:hover:bg-primary-600 dark:active:bg-primary-800
+    transition-all duration-150 active:scale-[0.97]
+    disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-gray-700 px-4 py-2.5 rounded-lg font-medium
+    border border-gray-300
+    hover:bg-gray-50 active:bg-gray-100
+    dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600
+    dark:hover:bg-gray-700 dark:active:bg-gray-600
+    transition-all duration-150 active:scale-[0.97]
+    disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply text-gray-600 px-4 py-2.5 rounded-lg font-medium
+    hover:bg-gray-100 active:bg-gray-200
+    dark:text-gray-300 dark:hover:bg-gray-800 dark:active:bg-gray-700
+    transition-all duration-150 active:scale-[0.97]
+    disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-[var(--color-surface)];
+  }
+
+  .card-hover {
+    @apply card hover:shadow-md hover:border-gray-200
+    dark:hover:border-gray-600 transition-all duration-200
+    active:scale-[0.98];
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-lg border border-gray-300
+    focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+    dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100
+    dark:focus:ring-primary-400 dark:focus:border-primary-400
+    text-base transition-colors duration-150;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-100 text-primary-700
+    dark:bg-primary-900 dark:text-primary-300;
+  }
+
+  .badge-success {
+    @apply badge bg-secondary-100 text-secondary-700
+    dark:bg-secondary-900 dark:text-secondary-300;
+  }
+
+  .section-title {
+    @apply text-2xl font-bold text-gray-900 dark:text-gray-100;
+  }
+
+  .section-desc {
+    @apply text-gray-500 dark:text-gray-400 text-sm mt-1;
+  }
+
+  .pwa-safe-top {
+    padding-top: max(var(--safe-top), 0.5rem);
+  }
+
+  .pwa-safe-bottom {
+    padding-bottom: max(var(--safe-bottom), 0.5rem);
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .overscroll-dock {
+    overscroll-behavior-y: contain;
+  }
+}

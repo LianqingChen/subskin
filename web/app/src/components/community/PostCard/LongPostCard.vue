@@ -40,14 +40,14 @@ function readTime(post: Post): string {
 <template>
   <router-link
     :to="`/community/${post.id}`"
-    class="block no-underline break-inside-avoid mb-2.5 rounded-xl overflow-hidden bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-all duration-200 group"
+    class="block no-underline break-inside-avoid mb-2.5 rounded-xl overflow-hidden bg-white  shadow-sm hover:shadow-md transition-all duration-200 group"
   >
     <div class="p-3.5">
-      <h3 class="text-[14px] font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2 mb-2">
+      <h3 class="text-[14px] font-semibold text-gray-900  leading-snug line-clamp-2 mb-2">
         {{ post.title }}
       </h3>
 
-      <p class="text-[12px] text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-3 mb-2">
+      <p class="text-[12px] text-gray-600  leading-relaxed line-clamp-3 mb-2">
         {{ post.content_preview || post.content.replace(/<[^>]+>/g, '').slice(0, 150) }}
       </p>
 
@@ -59,12 +59,12 @@ function readTime(post: Post): string {
         <div class="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 text-[9px] font-bold flex-shrink-0">
           {{ post.author.username.charAt(0) }}
         </div>
-        <span class="text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-[70px]">{{ post.author.username }}</span>
-        <span class="text-[10px] text-gray-300 dark:text-gray-600">·</span>
-        <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ timeAgo(post.created_at) }}</span>
+        <span class="text-[11px] text-gray-500  truncate max-w-[70px]">{{ post.author.username }}</span>
+        <span class="text-[10px] text-gray-300 ">·</span>
+        <span class="text-[10px] text-gray-400 ">{{ timeAgo(post.created_at) }}</span>
       </div>
 
-      <div class="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500">
+      <div class="flex items-center gap-1 text-[11px] text-gray-400 ">
         <!-- Like (heart) -->
         <span class="flex items-center gap-0.5 cursor-pointer p-1 -m-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" :class="post.is_liked ? 'text-red-500' : 'hover:text-red-500'" @click.stop="emit('like-click', post.id)">
           <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">

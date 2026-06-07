@@ -182,22 +182,22 @@ defineExpose({ loadMedicalReports })
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
             </svg>
           </div>
-          <p class="text-sm font-medium text-gray-600 dark:text-gray-300">点击或拖拽上传体检报告</p>
-          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">支持图片 / PDF，单个最大 20MB，标题自动生成</p>
+          <p class="text-sm font-medium text-gray-600 ">点击或拖拽上传体检报告</p>
+          <p class="text-xs text-gray-400  mt-1">支持图片 / PDF，单个最大 20MB，标题自动生成</p>
         </div>
 
         <!-- Files selected: show file list inside the box -->
         <div v-else class="space-y-2 text-left">
           <div v-for="(file, idx) in reportFiles" :key="idx"
-            class="flex items-center gap-3 p-2.5 rounded-lg bg-white/80 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700">
+            class="flex items-center gap-3 p-2.5 rounded-lg bg-white/80  border border-gray-100 dark:border-gray-700">
             <span class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
               :class="file.type.startsWith('image/') ? 'bg-primary-50 dark:bg-primary-900/30' : 'bg-amber-50 dark:bg-amber-900/30'">
               <svg v-if="file.type.startsWith('image/')" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-primary-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" /></svg>
               <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" /></svg>
             </span>
             <div class="flex-1 min-w-0">
-              <div class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{{ file.name }}</div>
-              <div class="text-xs text-gray-400 dark:text-gray-500">{{ (file.size / 1024).toFixed(1) }} KB</div>
+              <div class="text-sm font-medium text-gray-800  truncate">{{ file.name }}</div>
+              <div class="text-xs text-gray-400 ">{{ (file.size / 1024).toFixed(1) }} KB</div>
             </div>
             <button class="p-1 text-gray-400 hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               @click="reportFiles.splice(idx, 1); reportPreviews.splice(idx, 1)">
@@ -223,7 +223,7 @@ defineExpose({ loadMedicalReports })
 
     <div class="card p-4">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100"><i class="ri-file-list-3-line mr-1"></i>历史报告</h2>
+        <h2 class="text-lg font-semibold text-gray-900 "><i class="ri-file-list-3-line mr-1"></i>历史报告</h2>
         <button v-if="medicalReports.length > 1" @click="toggleCompareMode" class="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 flex items-center gap-1">
           <i class="ri-scales-line"></i> {{ isCompareMode ? '取消对比' : '对比报告' }}
         </button>
@@ -231,13 +231,13 @@ defineExpose({ loadMedicalReports })
       
       <!-- Filters -->
       <div v-if="medicalReports.length > 0" class="flex gap-2 mb-4 overflow-x-auto pb-1 hide-scrollbar">
-        <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 whitespace-nowrap">全部</button>
-        <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 whitespace-nowrap flex items-center gap-1">按时间筛选 <i class="ri-arrow-down-s-line"></i></button>
-        <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 whitespace-nowrap flex items-center gap-1">按体检人筛选 <i class="ri-arrow-down-s-line"></i></button>
+        <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100  text-gray-800  whitespace-nowrap">全部</button>
+        <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-white  border border-gray-200 dark:border-gray-700 text-gray-600  whitespace-nowrap flex items-center gap-1">按时间筛选 <i class="ri-arrow-down-s-line"></i></button>
+        <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-white  border border-gray-200 dark:border-gray-700 text-gray-600  whitespace-nowrap flex items-center gap-1">按体检人筛选 <i class="ri-arrow-down-s-line"></i></button>
       </div>
 
-      <div v-if="loadingReports" class="text-center py-8 text-gray-400 dark:text-gray-500">加载中...</div>
-      <div v-else-if="medicalReports.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500">
+      <div v-if="loadingReports" class="text-center py-8 text-gray-400 ">加载中...</div>
+      <div v-else-if="medicalReports.length === 0" class="text-center py-8 text-gray-400 ">
         <div class="text-4xl mb-3"><i class="ri-file-list-3-line"></i></div>
         <p>暂无体检报告</p>
         <p class="text-xs mt-1">上传报告后，AI将自动提取关键指标</p>
@@ -252,13 +252,13 @@ defineExpose({ loadMedicalReports })
           @click="isCompareMode ? toggleReportSelection(report.id) : viewInterpretation(report)">
           
           <!-- Checkbox for compare mode -->
-          <div v-if="isCompareMode" class="absolute top-4 right-4 text-xl" :class="selectedForCompare.includes(report.id) ? 'text-primary-500' : 'text-gray-300 dark:text-gray-600'">
+          <div v-if="isCompareMode" class="absolute top-4 right-4 text-xl" :class="selectedForCompare.includes(report.id) ? 'text-primary-500' : 'text-gray-300 '">
             <i :class="selectedForCompare.includes(report.id) ? 'ri-checkbox-circle-fill' : 'ri-checkbox-blank-circle-line'"></i>
           </div>
 
           <!-- Row 1: title + delete -->
           <div class="flex items-center justify-between pr-8">
-            <h3 class="font-medium text-gray-900 dark:text-gray-100 text-sm truncate flex-1 min-w-0">{{ report.title }}</h3>
+            <h3 class="font-medium text-gray-900  text-sm truncate flex-1 min-w-0">{{ report.title }}</h3>
             <button v-if="!isCompareMode" class="p-1.5 text-red-400 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0 ml-2"
               title="删除" @click.stop="deleteReport(report.id)"><i class="ri-delete-bin-line"></i></button>
           </div>
@@ -266,13 +266,13 @@ defineExpose({ loadMedicalReports })
           <div class="flex items-center gap-2 mt-1 flex-wrap">
             <span v-for="tag in (report.tags || '').split(',').filter(Boolean)" :key="tag"
               class="px-2 py-0.5 rounded-full text-xs bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300">{{ tag }}</span>
-            <span class="text-xs text-gray-400 dark:text-gray-500">{{ formatDate(report.created_at) }}</span>
+            <span class="text-xs text-gray-400 ">{{ formatDate(report.created_at) }}</span>
           </div>
           <!-- Row 3: files + AI badge -->
           <div class="flex items-center gap-2 mt-2">
             <button v-for="file in report.files" :key="file.id"
               @click.stop="handleFileClick(file.id)"
-              class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs bg-gray-100 dark:bg-gray-700 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors cursor-pointer">
+              class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs bg-gray-100  text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors cursor-pointer">
               <i :class="file.file_type?.startsWith('image/') ? 'ri-image-line' : 'ri-file-text-line'"></i> {{ file.file_name }}
             </button>
             <button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors cursor-pointer"
@@ -291,12 +291,12 @@ defineExpose({ loadMedicalReports })
       </div>
     </div>
 
-    <section class="text-center text-xs text-gray-400 dark:text-gray-500 py-4 border-t border-gray-100 dark:border-gray-800">
+    <section class="text-center text-xs text-gray-400  py-4 border-t border-gray-100 dark:border-gray-800">
       <i class="ri-error-warning-line"></i> 体检报告分析结果仅供参考，不构成医疗诊断建议
     </section>
 
     <!-- Compare Mode Sticky Bar -->
-    <div v-if="isCompareMode" class="fixed bottom-0 left-0 right-0 bg-gray-900 dark:bg-gray-950 text-white p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-50 flex items-center justify-between" style="padding-bottom: calc(1rem + env(safe-area-inset-bottom));">
+    <div v-if="isCompareMode" class="fixed bottom-0 left-0 right-0 bg-gray-900  text-white p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-50 flex items-center justify-between" style="padding-bottom: calc(1rem + env(safe-area-inset-bottom));">
       <div class="text-sm">已选择 <span class="font-bold text-primary-400">{{ selectedForCompare.length }}</span>/3 份报告</div>
       <div class="flex gap-3">
         <button @click="toggleCompareMode" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white bg-gray-800 hover:bg-gray-700 transition-colors">取消</button>

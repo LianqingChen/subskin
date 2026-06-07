@@ -79,38 +79,38 @@ onMounted(loadProfiles)
         <i class="ri-user-smile-line text-xl"></i>
       </div>
       <div class="flex-1 min-w-0">
-        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">识别到患者信息</h3>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">报告中包含以下患者信息，是否关联到健康档案？</p>
+        <h3 class="text-base font-semibold text-gray-900  mb-1">识别到患者信息</h3>
+        <p class="text-sm text-gray-600  mb-3">报告中包含以下患者信息，是否关联到健康档案？</p>
         
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-          <div class="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
-            <div class="text-xs text-gray-400 mb-1">姓名 <span class="text-[10px] bg-gray-100 dark:bg-gray-700 px-1 rounded ml-1">来自报告</span></div>
-            <div class="font-medium text-gray-900 dark:text-gray-100">{{ extractedInfo.name || '-' }}</div>
+          <div class="bg-white  p-2 rounded border border-gray-200 dark:border-gray-700">
+            <div class="text-xs text-gray-400 mb-1">姓名 <span class="text-[10px] bg-gray-100  px-1 rounded ml-1">来自报告</span></div>
+            <div class="font-medium text-gray-900 ">{{ extractedInfo.name || '-' }}</div>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
-            <div class="text-xs text-gray-400 mb-1">性别 <span class="text-[10px] bg-gray-100 dark:bg-gray-700 px-1 rounded ml-1">来自报告</span></div>
-            <div class="font-medium text-gray-900 dark:text-gray-100">{{ extractedInfo.gender || '-' }}</div>
+          <div class="bg-white  p-2 rounded border border-gray-200 dark:border-gray-700">
+            <div class="text-xs text-gray-400 mb-1">性别 <span class="text-[10px] bg-gray-100  px-1 rounded ml-1">来自报告</span></div>
+            <div class="font-medium text-gray-900 ">{{ extractedInfo.gender || '-' }}</div>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
-            <div class="text-xs text-gray-400 mb-1">年龄 <span class="text-[10px] bg-gray-100 dark:bg-gray-700 px-1 rounded ml-1">来自报告</span></div>
-            <div class="font-medium text-gray-900 dark:text-gray-100">{{ extractedInfo.age ? `${extractedInfo.age}岁` : '-' }}</div>
+          <div class="bg-white  p-2 rounded border border-gray-200 dark:border-gray-700">
+            <div class="text-xs text-gray-400 mb-1">年龄 <span class="text-[10px] bg-gray-100  px-1 rounded ml-1">来自报告</span></div>
+            <div class="font-medium text-gray-900 ">{{ extractedInfo.age ? `${extractedInfo.age}岁` : '-' }}</div>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
-            <div class="text-xs text-gray-400 mb-1">体检日期 <span class="text-[10px] bg-gray-100 dark:bg-gray-700 px-1 rounded ml-1">来自报告</span></div>
-            <div class="font-medium text-gray-900 dark:text-gray-100">{{ extractedInfo.exam_date || '-' }}</div>
+          <div class="bg-white  p-2 rounded border border-gray-200 dark:border-gray-700">
+            <div class="text-xs text-gray-400 mb-1">体检日期 <span class="text-[10px] bg-gray-100  px-1 rounded ml-1">来自报告</span></div>
+            <div class="font-medium text-gray-900 ">{{ extractedInfo.exam_date || '-' }}</div>
           </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
           <template v-if="profiles.length > 0">
-            <select v-model="selectedProfileId" class="text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 py-1.5 pl-3 pr-8">
+            <select v-model="selectedProfileId" class="text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white  py-1.5 pl-3 pr-8">
               <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
             </select>
             <button @click="linkProfile" :disabled="isLinking" class="btn-primary py-1.5 px-3 text-sm">
               <i class="ri-user-line mr-1"></i> 关联已有档案
             </button>
           </template>
-          <button @click="createProfile" :disabled="isCreating" class="btn-ghost py-1.5 px-3 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <button @click="createProfile" :disabled="isCreating" class="btn-ghost py-1.5 px-3 text-sm border border-gray-200 dark:border-gray-700 bg-white ">
             <i class="ri-user-add-line mr-1"></i> 创建新档案
           </button>
           <button @click="$emit('skipped')" class="btn-ghost py-1.5 px-3 text-sm text-gray-500">

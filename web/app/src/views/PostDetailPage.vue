@@ -63,7 +63,7 @@ const categoryColor: Record<string, string> = {
   '诊断咨询': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300',
   '白白日记': 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
   '最新资讯': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-  '其他': 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  '其他': 'bg-gray-100 text-gray-700  ',
 }
 
 function formatTimeAgo(dateStr: string): string {
@@ -219,21 +219,21 @@ function goBack() {
 <template>
   <div class="max-w-2xl mx-auto px-3 pb-24">
     <!-- Top bar -->
-    <div class="flex items-center gap-3 py-3 sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-20">
-      <button @click="goBack" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+    <div class="flex items-center gap-3 py-3 sticky top-0 bg-white/80  backdrop-blur-md z-20">
+      <button @click="goBack" class="text-gray-600  hover:text-gray-900 dark:hover:text-gray-100">
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
         </svg>
       </button>
-      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">帖子详情</span>
+      <span class="text-sm font-medium text-gray-700 ">帖子详情</span>
       <!-- Author actions -->
       <div v-if="authStore.user && post && post.author.id === authStore.user.id" class="ml-auto flex items-center gap-3">
-        <button class="text-xs text-gray-400 dark:text-gray-500 hover:text-primary-600" @click="showEditModal = true">编辑</button>
-        <button class="text-xs text-gray-400 dark:text-gray-500 hover:text-red-500" @click="showDeleteConfirm = true">删除</button>
+        <button class="text-xs text-gray-400  hover:text-primary-600" @click="showEditModal = true">编辑</button>
+        <button class="text-xs text-gray-400  hover:text-red-500" @click="showDeleteConfirm = true">删除</button>
       </div>
     </div>
 
-    <div v-if="loading" class="text-center py-12 text-gray-400 dark:text-gray-500">加载中...</div>
+    <div v-if="loading" class="text-center py-12 text-gray-400 ">加载中...</div>
 
     <template v-else-if="post">
       <!-- Image Carousel -->
@@ -276,26 +276,26 @@ function goBack() {
             {{ post.author.username.charAt(0) }}
           </div>
           <div class="flex-1 min-w-0">
-            <div class="font-medium text-sm text-gray-900 dark:text-gray-100">
+            <div class="font-medium text-sm text-gray-900 ">
             {{ post.author.username }}
             <svg v-if="post.author.is_doctor" class="w-3.5 h-3.5 text-primary-500 inline -mt-0.5" viewBox="0 0 20 20" fill="currentColor" title="认证医生">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
             </svg>
           </div>
-            <div class="text-[11px] text-gray-400 dark:text-gray-500">{{ formatTimeAgo(post.created_at) }}</div>
+            <div class="text-[11px] text-gray-400 ">{{ formatTimeAgo(post.created_at) }}</div>
           </div>
           <FollowButton
             v-if="authStore.isLoggedIn && post.author.id !== authStore.user?.id"
             :targetUserId="post.author.id"
             class="ml-2"
           />
-          <span :class="categoryColor[post.category.name] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0">
+          <span :class="categoryColor[post.category.name] || 'bg-gray-100 text-gray-700  '" class="px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0">
             {{ post.category.icon }} {{ post.category.name }}
           </span>
         </div>
 
         <!-- Title -->
-        <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100 leading-snug">{{ post.title }}</h1>
+        <h1 class="text-lg font-bold text-gray-900  leading-snug">{{ post.title }}</h1>
 
         <!-- Tags -->
         <div v-if="post.tags && post.tags.length > 0" class="flex flex-wrap gap-1.5">
@@ -310,7 +310,7 @@ function goBack() {
         </div>
 
         <!-- Mood badge -->
-        <div v-if="post.mood" class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300">
+        <div v-if="post.mood" class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100  text-sm text-gray-700 ">
           {{ post.mood }}
         </div>
 
@@ -323,7 +323,7 @@ function goBack() {
         <FileAttachment v-if="post.attachments && post.attachments.length > 0" :attachments="post.attachments" />
 
         <!-- Content -->
-        <div class="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 text-[15px] leading-relaxed" v-html="protectedContent"></div>
+        <div class="prose prose-sm dark:prose-invert max-w-none text-gray-700  text-[15px] leading-relaxed" v-html="protectedContent"></div>
 
         <!-- Medical disclaimer -->
         <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-lg p-3 flex items-start gap-2">
@@ -332,7 +332,7 @@ function goBack() {
         </div>
 
         <!-- Engagement stats -->
-        <div class="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500 py-2">
+        <div class="flex items-center gap-4 text-xs text-gray-400  py-2">
           <span>{{ post.like_count }} 人觉得有帮助</span>
           <span>{{ post.comment_count }} 条评论</span>
         </div>
@@ -340,22 +340,22 @@ function goBack() {
 
       <!-- Comments Section -->
       <section class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
-        <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-4">评论 ({{ comments.length }})</h3>
+        <h3 class="font-semibold text-sm text-gray-900  mb-4">评论 ({{ comments.length }})</h3>
         <div class="space-y-4">
           <div v-for="comment in comments" :key="comment.id" class="flex gap-3 pb-4 border-b border-gray-50 dark:border-gray-800 last:border-0">
-            <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-400 text-xs font-medium flex-shrink-0">
+            <div class="w-8 h-8 rounded-full bg-gray-100  flex items-center justify-center text-gray-600  text-xs font-medium flex-shrink-0">
               {{ comment.author.username.charAt(0) }}
             </div>
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
-                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ comment.author.username }}</span>
+                <span class="text-sm font-medium text-gray-900 ">{{ comment.author.username }}</span>
                 <span v-if="post && comment.author.id === post.author.id" class="text-[10px] bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 px-1.5 py-0.5 rounded font-medium">楼主</span>
-                <span class="text-[11px] text-gray-400 dark:text-gray-500">{{ formatTimeAgo(comment.created_at) }}</span>
+                <span class="text-[11px] text-gray-400 ">{{ formatTimeAgo(comment.created_at) }}</span>
               </div>
-              <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{{ comment.content }}</p>
+              <p class="text-sm text-gray-600  leading-relaxed">{{ comment.content }}</p>
             </div>
           </div>
-          <div v-if="comments.length === 0" class="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
+          <div v-if="comments.length === 0" class="text-center py-8 text-sm text-gray-400 ">
             暂无评论，来说两句吧 💬
           </div>
         </div>
@@ -363,7 +363,7 @@ function goBack() {
 
       <!-- Related Posts -->
       <section v-if="relatedPosts.length > 0" class="mt-8 pt-4 border-t border-gray-100 dark:border-gray-800">
-        <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-3">相关分享</h3>
+        <h3 class="font-semibold text-sm text-gray-900  mb-3">相关分享</h3>
         <div class="columns-2 gap-2">
           <PostCard v-for="rp in relatedPosts" :key="rp.id" :post="rp" />
         </div>
@@ -371,7 +371,7 @@ function goBack() {
     </template>
 
     <!-- Fixed bottom action bar -->
-    <div v-if="post" class="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 z-30 safe-bottom">
+    <div v-if="post" class="fixed bottom-0 left-0 right-0 bg-white/90  backdrop-blur-md border-t border-gray-100 dark:border-gray-800 z-30 safe-bottom">
       <div class="max-w-2xl mx-auto px-3 py-2 flex items-center gap-2">
         <!-- Comment input -->
         <div class="flex-1 relative">
@@ -379,13 +379,13 @@ function goBack() {
             v-model="newComment"
             type="text"
             placeholder="写下你的评论..."
-            class="w-full bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 outline-none"
+            class="w-full bg-gray-100  rounded-full px-4 py-2 text-sm text-gray-700  placeholder-gray-400 dark:placeholder-gray-500 outline-none"
             @keydown.enter="submitComment"
           />
         </div>
         <!-- Action buttons -->
         <button class="flex flex-col items-center gap-0.5 px-2 py-1 transition-colors"
-          :class="post.is_liked ? 'text-red-500' : 'text-gray-400 dark:text-gray-500 hover:text-red-500'"
+          :class="post.is_liked ? 'text-red-500' : 'text-gray-400  hover:text-red-500'"
           @click="toggleLike"
         >
           <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
@@ -395,7 +395,7 @@ function goBack() {
           <span class="text-[10px]">{{ post.like_count }}</span>
         </button>
         <button class="flex flex-col items-center gap-0.5 px-2 py-1 transition-colors"
-          :class="post.is_bookmarked ? 'text-yellow-500' : 'text-gray-400 dark:text-gray-500 hover:text-yellow-500'"
+          :class="post.is_bookmarked ? 'text-yellow-500' : 'text-gray-400  hover:text-yellow-500'"
           @click="toggleBookmark"
         >
           <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
@@ -404,7 +404,7 @@ function goBack() {
           </svg>
           <span class="text-[10px]">收藏</span>
         </button>
-        <button class="flex flex-col items-center gap-0.5 px-2 py-1 text-gray-400 dark:text-gray-500 hover:text-primary-600 transition-colors" @click="showShare = true">
+        <button class="flex flex-col items-center gap-0.5 px-2 py-1 text-gray-400  hover:text-primary-600 transition-colors" @click="showShare = true">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/>
           </svg>
@@ -421,9 +421,9 @@ function goBack() {
   <!-- Delete Confirmation Modal -->
   <Teleport to="body">
     <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center" @click.self="showDeleteConfirm = false">
-      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-sm w-full mx-4">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">确认删除</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">删除后无法恢复，确定要删除这篇分享吗？</p>
+      <div class="bg-white  rounded-xl p-6 max-w-sm w-full mx-4">
+        <h3 class="text-lg font-semibold text-gray-900  mb-2">确认删除</h3>
+        <p class="text-sm text-gray-500  mb-4">删除后无法恢复，确定要删除这篇分享吗？</p>
         <div class="flex gap-3 justify-end">
           <button class="btn-ghost px-4 py-2" @click="showDeleteConfirm = false">取消</button>
           <button class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors" @click="confirmDeletePost">删除</button>
@@ -435,14 +435,14 @@ function goBack() {
   <!-- Edit Post Modal -->
   <Teleport to="body">
     <div v-if="showEditModal" class="fixed inset-0 bg-black/50 z-[110] flex items-stretch md:items-center justify-center" @click.self="showEditModal = false">
-      <div class="bg-white dark:bg-gray-800 w-full md:max-w-2xl md:rounded-xl flex flex-col h-full md:h-auto md:max-h-[90vh]">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10 flex-shrink-0">
-          <h2 class="text-lg font-semibold dark:text-gray-100">编辑分享</h2>
-          <button class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-2xl" @click="showEditModal = false">&times;</button>
+      <div class="bg-white  w-full md:max-w-2xl md:rounded-xl flex flex-col h-full md:h-auto md:max-h-[90vh]">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white  z-10 flex-shrink-0">
+          <h2 class="text-lg font-semibold ">编辑分享</h2>
+          <button class="text-gray-400  hover:text-gray-600 dark:hover:text-gray-300 text-2xl" @click="showEditModal = false">&times;</button>
         </div>
         <div class="p-6 space-y-4 overflow-y-auto flex-1">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">分类</label>
+            <label class="block text-sm font-medium text-gray-700  mb-1">分类</label>
             <div class="flex flex-wrap gap-2">
               <button
                 v-for="cat in categories"
@@ -450,7 +450,7 @@ function goBack() {
                 class="px-3 py-1.5 rounded-lg text-sm border transition-colors"
                 :class="editCategoryId === cat.id
                   ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
-                  : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-primary-300'"
+                  : 'border-gray-200 dark:border-gray-600 text-gray-600  hover:border-primary-300'"
                 @click="editCategoryId = cat.id"
               >
                 {{ cat.icon }} {{ cat.name }}
@@ -458,11 +458,11 @@ function goBack() {
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">标题</label>
+            <label class="block text-sm font-medium text-gray-700  mb-1">标题</label>
             <input v-model="editTitle" type="text" class="input-field" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">内容</label>
+            <label class="block text-sm font-medium text-gray-700  mb-1">内容</label>
             <RichEditor v-model="editContent" placeholder="编辑你的分享内容..." />
           </div>
           <button

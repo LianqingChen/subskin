@@ -38,19 +38,19 @@ const dimensions = [
 </script>
 
 <template>
-  <div class="card dark:bg-gray-800 overflow-hidden">
+  <div class="card  overflow-hidden">
     <!-- Header -->
     <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
       <div class="w-6 h-6 rounded-lg bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center">
         <i class="ri-search-eye-line text-primary-600 dark:text-primary-400 text-xs"></i>
       </div>
-      <span class="font-semibold text-sm text-gray-800 dark:text-gray-200">白斑视觉特征分析</span>
+      <span class="font-semibold text-sm text-gray-800 ">白斑视觉特征分析</span>
       <span class="ml-auto px-1.5 py-0.5 rounded text-[10px] bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">仅供参考</span>
     </div>
 
     <!-- Conclusion: similarity_note + recommendation combined -->
     <div v-if="visualFeatures.similarity_note" class="px-4 py-2.5">
-      <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed flex items-start gap-1.5">
+      <p class="text-xs text-gray-600  leading-relaxed flex items-start gap-1.5">
         <i class="ri-information-line text-primary-500 mt-0.5 flex-shrink-0"></i>
         <span>
           {{ visualFeatures.similarity_note }}
@@ -68,15 +68,15 @@ const dimensions = [
         :key="dim.key"
         class="flex items-center gap-2 text-xs"
       >
-        <i :class="[dim.icon, 'text-gray-400 dark:text-gray-500 w-4 text-center flex-shrink-0']"></i>
-        <span class="font-medium text-gray-600 dark:text-gray-400 w-10 flex-shrink-0">{{ dim.label }}</span>
+        <i :class="[dim.icon, 'text-gray-400  w-4 text-center flex-shrink-0']"></i>
+        <span class="font-medium text-gray-600  w-10 flex-shrink-0">{{ dim.label }}</span>
         <span
           v-if="levelLabel(dim.key, visualFeatures[dim.key])"
           class="px-1.5 py-px rounded text-[10px] font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex-shrink-0"
         >
           {{ levelLabel(dim.key, visualFeatures[dim.key]) }}
         </span>
-        <span class="text-gray-500 dark:text-gray-500 truncate">{{ visualFeatures[dim.key].description }}</span>
+        <span class="text-gray-500  truncate">{{ visualFeatures[dim.key].description }}</span>
       </div>
     </div>
 
@@ -97,7 +97,7 @@ const dimensions = [
       </button>
       <div
         v-if="showKnowledge"
-        class="mt-1.5 px-3 py-2 rounded-lg bg-blue-50/30 dark:bg-blue-900/10 text-xs text-gray-600 dark:text-gray-400 space-y-1 leading-relaxed"
+        class="mt-1.5 px-3 py-2 rounded-lg bg-blue-50/30 dark:bg-blue-900/10 text-xs text-gray-600  space-y-1 leading-relaxed"
       >
         <p>· 颜色：乳白色或瓷白色，与正常皮肤色差明显</p>
         <p>· 边缘：边界通常清晰，边缘可能有色素加深</p>
@@ -115,7 +115,7 @@ const dimensions = [
 
     <!-- Disclaimer -->
     <div class="px-4 py-2.5">
-      <p class="text-[10px] text-gray-400 dark:text-gray-500 flex items-start gap-1">
+      <p class="text-[10px] text-gray-400  flex items-start gap-1">
         <i class="ri-shield-check-line mt-0.5 flex-shrink-0"></i>
         <span>以上分析基于照片视觉观察，仅供参考，不构成医疗诊断。</span>
       </p>

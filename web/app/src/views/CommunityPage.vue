@@ -303,14 +303,7 @@ function toggleSearch() {
 
 
 function getFallbackPosts(): Post[] {
-  return [
-    { id: 1, title: '308准分子激光3个月心得分享', content: '从去年11月开始做308，每周2次，3个月下来面部的白斑明显缩小了...', content_json: null, post_type: 'long' as const, content_preview: null, video_url: null, video_thumbnail: null, category_id: 1, author: { id: 1, username: '小王', avatar: null, is_doctor: false }, category: { id: 1, name: '治疗分享', description: null, icon: '💊', post_count: 0 }, images: [], audios: [], attachments: [], tags: [], is_private: false, diary_date: null, mood: null, is_anonymous: false, like_count: 89, comment_count: 23, is_liked: false, is_bookmarked: false, created_at: new Date(Date.now() - 2 * 86400000).toISOString(), updated_at: new Date(Date.now() - 2 * 86400000).toISOString() },
-    { id: 2, title: '他克莫司软膏使用体验记录', content: '用了2个月他克莫司，手部有一点色素恢复，但不是很明显...', content_json: null, post_type: 'long' as const, content_preview: null, video_url: null, video_thumbnail: null, category_id: 2, author: { id: 2, username: '李姐', avatar: null, is_doctor: false }, category: { id: 2, name: '心理支持', description: null, icon: '💝', post_count: 0 }, images: [], audios: [], attachments: [], tags: [], is_private: false, diary_date: null, mood: null, is_anonymous: false, like_count: 56, comment_count: 12, is_liked: false, is_bookmarked: false, created_at: new Date(Date.now() - 5 * 86400000).toISOString(), updated_at: new Date(Date.now() - 5 * 86400000).toISOString() },
-    { id: 3, title: '3年白癜风心路历程', content: '刚确诊的时候真的很害怕，但现在回想起来其实没什么...', content_json: null, post_type: 'text' as const, content_preview: null, video_url: null, video_thumbnail: null, category_id: 2, author: { id: 3, username: '张哥', avatar: null, is_doctor: false }, category: { id: 2, name: '心理支持', description: null, icon: '💝', post_count: 0 }, images: [], audios: [], attachments: [], tags: [], is_private: false, diary_date: null, mood: null, is_anonymous: false, like_count: 128, comment_count: 34, is_liked: false, is_bookmarked: false, created_at: new Date(Date.now() - 7 * 86400000).toISOString(), updated_at: new Date(Date.now() - 7 * 86400000).toISOString() },
-    { id: 4, title: '协和医院皮肤科就诊体验', content: '昨天去了协和挂了专家号，医生很有耐心，给我做了详细检查...', content_json: null, post_type: 'long' as const, content_preview: null, video_url: null, video_thumbnail: null, category_id: 5, author: { id: 4, username: '陈姐', avatar: null, is_doctor: false }, category: { id: 5, name: '诊断咨询', description: null, icon: '🔬', post_count: 0 }, images: [], audios: [], attachments: [], tags: [], is_private: false, diary_date: null, mood: null, is_anonymous: false, like_count: 67, comment_count: 28, is_liked: false, is_bookmarked: false, created_at: new Date(Date.now() - 3 * 86400000).toISOString(), updated_at: new Date(Date.now() - 3 * 86400000).toISOString() },
-    { id: 5, title: '白癜风饮食忌口清单整理', content: '整理了常见的忌口食物和推荐食物，希望能帮到大家...', content_json: null, post_type: 'long' as const, content_preview: null, video_url: null, video_thumbnail: null, category_id: 4, author: { id: 5, username: '刘哥', avatar: null, is_doctor: false }, category: { id: 4, name: '日常饮食', description: null, icon: '🥗', post_count: 0 }, images: [], audios: [], attachments: [], tags: [], is_private: false, diary_date: null, mood: null, is_anonymous: false, like_count: 203, comment_count: 89, is_liked: false, is_bookmarked: false, created_at: new Date(Date.now() - 1 * 86400000).toISOString(), updated_at: new Date(Date.now() - 1 * 86400000).toISOString() },
-    { id: 6, title: '遮盖小妙招分享！亲测有效', content: '分享一下我用的遮盖液和化妆技巧，夏天穿短袖也不怕了...', content_json: null, post_type: 'image' as const, content_preview: null, video_url: null, video_thumbnail: null, category_id: 3, author: { id: 6, username: '赵姐', avatar: null, is_doctor: false }, category: { id: 3, name: '护肤经验', description: null, icon: '🧴', post_count: 0 }, images: [], audios: [], attachments: [], tags: [], is_private: false, diary_date: null, mood: null, is_anonymous: false, like_count: 156, comment_count: 45, is_liked: false, is_bookmarked: false, created_at: new Date(Date.now() - 4 * 86400000).toISOString(), updated_at: new Date(Date.now() - 4 * 86400000).toISOString() },
-  ]
+  return []
 }
 </script>
 
@@ -324,13 +317,13 @@ function getFallbackPosts(): Post[] {
         class="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap"
         :class="activeFeedType === ft.key && !activeTag
           ? 'bg-primary-500 text-white shadow-sm'
-          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
+          : 'bg-gray-100  text-gray-600  hover:bg-gray-200 dark:hover:bg-gray-700'"
         @click="activeTag = null; activeFeedType = ft.key as any"
       >
         {{ ft.label }}
       </button>
       <!-- Loading indicator for geolocation -->
-      <span v-if="activeFeedType === 'local' && geo.loading.value" class="text-xs text-gray-400 dark:text-gray-500 self-center ml-2">正在获取位置...</span>
+      <span v-if="activeFeedType === 'local' && geo.loading.value" class="text-xs text-gray-400  self-center ml-2">正在获取位置...</span>
       <!-- Active tag filter chip -->
       <button
         v-if="activeTag"
@@ -343,7 +336,7 @@ function getFallbackPosts(): Post[] {
       <div class="flex-1 min-w-0"></div>
       <!-- Search magnifier icon -->
       <button
-        class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-gray-400  hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         @click="toggleSearch"
       >
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -354,8 +347,8 @@ function getFallbackPosts(): Post[] {
 
     <!-- Search overlay (animated expand/collapse) -->
     <div v-if="showSearch" class="relative transition-all duration-200">
-      <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 gap-2">
-        <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div class="flex items-center bg-gray-100  rounded-full px-4 py-2 gap-2">
+        <svg class="w-4 h-4 text-gray-400  flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
         <input
@@ -363,7 +356,7 @@ function getFallbackPosts(): Post[] {
           v-model="searchQuery"
           type="text"
           placeholder="搜索病友分享或标签..."
-          class="flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 outline-none"
+          class="flex-1 bg-transparent text-sm text-gray-700  placeholder-gray-400 dark:placeholder-gray-500 outline-none"
           @keydown.enter="handleSearch"
           @input="onSearchInput"
           @blur="onSearchBlur"
@@ -381,19 +374,19 @@ function getFallbackPosts(): Post[] {
       <!-- Tag autocomplete dropdown -->
       <div
         v-if="showSuggestions"
-        class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
+        class="absolute top-full left-0 right-0 mt-1 bg-white  rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
       >
         <button
           v-for="tag in tagSuggestions"
           :key="tag.id"
-          class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
+          class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700  hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
           @mousedown.prevent="selectTagSuggestion(tag)"
         >
           <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
           </svg>
           <span>#{{ tag.name }}</span>
-          <span class="ml-auto text-[11px] text-gray-400 dark:text-gray-500">{{ tag.usage_count }} 篇</span>
+          <span class="ml-auto text-[11px] text-gray-400 ">{{ tag.usage_count }} 篇</span>
         </button>
       </div>
     </div>
@@ -402,11 +395,11 @@ function getFallbackPosts(): Post[] {
     <main class="min-w-0">
       <!-- Loading skeleton -->
       <div v-if="loading" class="columns-2 sm:columns-3 lg:columns-4 gap-2.5">
-        <div v-for="i in 6" :key="i" class="break-inside-avoid mb-2.5 rounded-xl overflow-hidden bg-white dark:bg-gray-800 animate-pulse">
-          <div class="aspect-[3/4] bg-gray-200 dark:bg-gray-700"></div>
+        <div v-for="i in 6" :key="i" class="break-inside-avoid mb-2.5 rounded-xl overflow-hidden bg-white  animate-pulse">
+          <div class="aspect-[3/4] bg-gray-200 "></div>
           <div class="px-2.5 pt-2 pb-2 space-y-2">
-            <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-4/5"></div>
-            <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/5"></div>
+            <div class="h-3 bg-gray-200  rounded w-4/5"></div>
+            <div class="h-3 bg-gray-200  rounded w-3/5"></div>
           </div>
         </div>
       </div>
@@ -415,16 +408,16 @@ function getFallbackPosts(): Post[] {
       <div v-else-if="posts.length === 0" class="text-center py-16 space-y-3">
         <template v-if="activeFeedType === 'local' && geo.error.value && !geo.loading.value">
           <div class="text-4xl">📍</div>
-          <p class="text-gray-400 dark:text-gray-500 text-sm">{{ geo.error.value }}</p>
+          <p class="text-gray-400  text-sm">{{ geo.error.value }}</p>
           <button class="btn-primary text-sm" @click="showCityPicker = true">手动选择城市</button>
         </template>
         <template v-else-if="activeFeedType === 'local' && geo.city.value">
           <div class="text-4xl">🏙️</div>
-          <p class="text-gray-400 dark:text-gray-500 text-sm">暂无 {{ geo.city.value }} 的同城分享</p>
+          <p class="text-gray-400  text-sm">暂无 {{ geo.city.value }} 的同城分享</p>
         </template>
         <template v-else>
           <div class="text-4xl">📝</div>
-          <p class="text-gray-400 dark:text-gray-500 text-sm">暂无分享，成为第一个分享的人吧</p>
+          <p class="text-gray-400  text-sm">暂无分享，成为第一个分享的人吧</p>
           <button v-if="authStore.isLoggedIn" class="btn-primary text-sm" @click="showCreateSheet = true">✏️ 发布分享</button>
         </template>
       </div>
@@ -434,21 +427,21 @@ function getFallbackPosts(): Post[] {
 
       <!-- Load more sentinel -->
       <div v-if="hasMore" ref="loadMoreSentinel" class="text-center py-4">
-        <span v-if="loadingMore" class="text-sm text-gray-400 dark:text-gray-500">加载中...</span>
+        <span v-if="loadingMore" class="text-sm text-gray-400 ">加载中...</span>
       </div>
-      <div v-else-if="!loading && posts.length > 0" class="text-center py-4 text-sm text-gray-400 dark:text-gray-500">
+      <div v-else-if="!loading && posts.length > 0" class="text-center py-4 text-sm text-gray-400 ">
         — 已经到底了 —
       </div>
     </main>
 
     <!-- Login prompt for non-logged-in users -->
-    <div v-if="!authStore.isLoggedIn" class="card dark:bg-gray-800 p-5 text-center mt-4">
-      <p class="text-gray-500 dark:text-gray-400 text-sm mb-3">登录后可以发布分享和评论</p>
+    <div v-if="!authStore.isLoggedIn" class="card  p-5 text-center mt-4">
+      <p class="text-gray-500  text-sm mb-3">登录后可以发布分享和评论</p>
       <button class="btn-primary text-sm" @click="showLoginModal = true">立即登录</button>
     </div>
 
     <!-- Medical disclaimer -->
-    <div class="text-center text-[10px] text-gray-400 dark:text-gray-500 py-2">
+    <div class="text-center text-[10px] text-gray-400  py-2">
       ⚠️ 本平台不构成医疗建议，分享内容仅供参考
     </div>
   </div>
@@ -486,14 +479,14 @@ function getFallbackPosts(): Post[] {
   <!-- Manual city picker modal -->
   <Teleport to="body">
     <div v-if="showCityPicker" class="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center" @click.self="showCityPicker = false">
-      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-sm w-full mx-4">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">选择城市</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">输入你所在的城市名称，查看同城分享</p>
+      <div class="bg-white  rounded-xl p-6 max-w-sm w-full mx-4">
+        <h3 class="text-lg font-semibold text-gray-900  mb-2">选择城市</h3>
+        <p class="text-sm text-gray-500  mb-4">输入你所在的城市名称，查看同城分享</p>
         <input
           v-model="manualCity"
           type="text"
           placeholder="例如：北京、上海、广州..."
-          class="w-full bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 outline-none mb-4"
+          class="w-full bg-gray-100  rounded-lg px-4 py-2.5 text-sm text-gray-700  placeholder-gray-400 dark:placeholder-gray-500 outline-none mb-4"
           @keydown.enter="setManualCity"
         />
         <div class="flex gap-3 justify-end">

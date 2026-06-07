@@ -112,20 +112,20 @@ function formatDate(dateStr: string) {
 </script>
 
 <template>
-  <div class="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-20 md:pb-8">
+  <div class="min-h-dvh bg-gray-50  pb-20 md:pb-8">
     <!-- Header -->
-    <header class="sticky top-0 z-30 bg-white/80 dark:bg-gray-800/80 backdrop-blur border-b border-gray-200 dark:border-gray-700">
+    <header class="sticky top-0 z-30 bg-white/80  backdrop-blur border-b border-gray-200 dark:border-gray-700">
       <div class="max-w-6xl mx-auto flex items-center gap-3 px-4 h-12">
-        <button @click="router.back()" class="p-1 -ml-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">
+        <button @click="router.back()" class="p-1 -ml-1 text-gray-600  hover:text-gray-900 dark:hover:text-gray-100">
           <i class="ri-arrow-left-s-line text-xl"></i>
         </button>
-        <h1 class="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">体检报告解读</h1>
+        <h1 class="text-base font-semibold text-gray-900  truncate">体检报告解读</h1>
       </div>
     </header>
 
     <main class="max-w-6xl mx-auto px-4 py-4">
       <!-- Loading -->
-      <div v-if="loading" class="text-center py-16 text-gray-400 dark:text-gray-500">
+      <div v-if="loading" class="text-center py-16 text-gray-400 ">
         <div class="text-4xl mb-3 animate-pulse"><i class="ri-file-list-3-line"></i></div>
         <p>加载中...</p>
       </div>
@@ -136,13 +136,13 @@ function formatDate(dateStr: string) {
           <!-- Left Column: File Viewer -->
           <div class="w-full lg:w-1/2 flex flex-col gap-4">
             <div class="card p-4">
-              <h2 class="font-semibold text-gray-900 dark:text-gray-100">{{ report.title }}</h2>
+              <h2 class="font-semibold text-gray-900 ">{{ report.title }}</h2>
               <div class="flex items-center gap-2 mt-1 flex-wrap">
                 <span v-for="tag in (report.tags || '').split(',').filter(Boolean)" :key="tag"
                   class="px-2 py-0.5 rounded-full text-xs bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300">
                   {{ tag }}
                 </span>
-                <span class="text-xs text-gray-400 dark:text-gray-500">{{ formatDate(report.created_at) }}</span>
+                <span class="text-xs text-gray-400 ">{{ formatDate(report.created_at) }}</span>
               </div>
             </div>
             
@@ -172,8 +172,8 @@ function formatDate(dateStr: string) {
             <!-- Not yet interpreted -->
             <div v-if="!interpretation && !interpreting" class="card p-8 text-center flex-1 flex flex-col items-center justify-center">
               <div class="text-5xl mb-4 text-primary-500"><i class="ri-robot-line"></i></div>
-              <p class="text-gray-900 dark:text-gray-100 font-medium mb-2 text-lg">还未进行AI解读</p>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm">AI将用通俗易懂的语言解读你的体检报告，提示风险项并给出建议</p>
+              <p class="text-gray-900  font-medium mb-2 text-lg">还未进行AI解读</p>
+              <p class="text-sm text-gray-500  mb-6 max-w-sm">AI将用通俗易懂的语言解读你的体检报告，提示风险项并给出建议</p>
               <button @click="triggerInterpret" class="btn-primary px-6 py-2.5">
                 <i class="ri-magic-line mr-1"></i> 开始AI解读
               </button>
@@ -186,7 +186,7 @@ function formatDate(dateStr: string) {
                   <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-500 mb-4">
                     <i class="ri-loader-4-line text-3xl animate-spin"></i>
                   </div>
-                  <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">AI正在解读报告</h3>
+                  <h3 class="text-lg font-medium text-gray-900 ">AI正在解读报告</h3>
                   <p class="text-sm text-gray-500 mt-1">通常需要10-30秒，请耐心等待</p>
                 </div>
                 
@@ -219,7 +219,7 @@ function formatDate(dateStr: string) {
       </template>
 
       <!-- Report not found -->
-      <div v-else class="text-center py-16 text-gray-400 dark:text-gray-500">
+      <div v-else class="text-center py-16 text-gray-400 ">
         <div class="text-4xl mb-3"><i class="ri-file-damage-line"></i></div>
         <p>报告不存在或已被删除</p>
         <button @click="router.push('/tracker')" class="mt-4 text-sm text-primary-500 hover:underline">返回健康手帐</button>
