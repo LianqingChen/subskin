@@ -25,6 +25,13 @@ export interface ModerationListResponse {
   items: ModerationItem[]
 }
 
+export interface ReviewRequest {
+  action: string
+  note?: string
+  mute_hours?: number
+  ban?: boolean
+}
+
 export interface ViolationLogItem {
   id: number
   user_id: number
@@ -67,32 +74,44 @@ export interface NotificationListResponse {
   items: NotificationItem[]
 }
 
+export interface UnreadCountResponse {
+  unread_count: number
+}
+
+export interface UserActionParams {
+  action: string
+  hours?: number
+  reason?: string
+}
+
 export const moderationApi = {
   getPending(params?: { risk_level?: string; limit?: number; offset?: number }) {
-    return apiClient.get<ModerationListResponse>('/moderation/pending', { params }).then(r => r.data)
+    return apiClient.get<ModerationListResponse>('/moderation/pending', { params }).then((r) => r.data)
   },
 
-  review(moderationId: number, data: { action: string; note?: string; mute_hours?: number; ban?: boolean }) {
-    return apiClient.post(`/moderation/${moderationId}/review`, data).then(r => r.data)
+  review(moderationId: number, body: ReviewRequest) {
+    return apiClient.post<{ status: string; action: string }>(`/moderation/${moderationId}/review`, body).then((r) => r.data)
   },
 
   getUserProfile(userId: number) {
-    return apiClient.get<UserProfileModeration>(`/moderation/user/${userId}`).then(r => r.data)
+    return apiClient.get<UserProfileModeration>(`/moderation/user/${userId}`).then((r) => r.data)
   },
 
-  userAction(userId: number, params: { action: string; hours?: number; reason?: string }) {
-    return apiClient.post(`/moderation/user/${userId}/action`, null, { params }).then(r => r.data)
+  userAction(userId: number, params: UserActionParams) {
+    return apiClient.post<{ status: string; action: string }>(`/moderation/user/${userId}/action`, null, { params }).then((r) => r.data)
   },
 
   getNotifications(params?: { limit?: number; offset?: number }) {
-    return apiClient.get<NotificationListResponse>('/moderation/notifications', { params }).then(r => r.data)
+    return apiClient.get<NotificationListResponse>('/moderation/notifications', { params }).then((r) => r.data)
   },
 
   markNotificationRead(notificationId: number) {
-    return apiClient.post(`/moderation/notifications/${notificationId}/read`).then(r => r.data)
+    return apiClient.post<{ status: string }>(`/moderation/notifications/${notificationId}/read`).then((r) => r.data)
   },
 
   getUnreadCount() {
-    return apiClient.get<{ unread_count: number }>('/moderation/notifications/unread-count').then(r => r.data)
+    return apiClient.get<UnreadCountResponse>('/moderation/notifications/unread-count').then((r) => r.data)
   },
 }
+
+export default moderationApi

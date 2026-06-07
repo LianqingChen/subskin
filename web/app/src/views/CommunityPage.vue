@@ -2,7 +2,6 @@
 import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { communityApi } from '@/api/community'
 import { useAuthStore } from '@/stores/auth'
-import { useGeolocation } from '@/composables/useGeolocation'
 import type { Post, Category, PostTag } from '@/types'
 import LoginModal from '@/components/common/LoginModal.vue'
 import CreatePostSheet from '@/components/community/CreatePostSheet.vue'
@@ -22,18 +21,14 @@ const categories = ref<Category[]>([])
 const publicPostsLoaded = ref(0)
 const searchQuery = ref('')
 const isSearching = ref(false)
-const activeFeedType = ref<'follow' | 'recommend' | 'local'>('recommend')
+const activeFeedType = ref<'follow' | 'recommend'>('recommend')
 const activeTag = ref<string | null>(null)
 const tagSuggestions = ref<PostTag[]>([])
 const showSuggestions = ref(false)
 const tagSearchMode = ref(false)
-const showCityPicker = ref(false)
-const manualCity = ref('')
 const showSearch = ref(false)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 let suggestTimer: ReturnType<typeof setTimeout> | null = null
-
-const geo = useGeolocation()
 
 let scrollObserver: IntersectionObserver | null = null
 
@@ -70,7 +65,7 @@ function mergePosts(...lists: Post[][]): Post[] {
 
 
 async function loadPosts(offset = 0, append = false) {
-  const params: { limit: number; offset: number; feed_type?: string; tag?: string; city?: string } = {
+  const params: { limit: number; offset: number; feed_type?: string; tag?: string } = {
     limit: pageSize,
     offset,
   }
@@ -78,15 +73,6 @@ async function loadPosts(offset = 0, append = false) {
   // 映射前端标签到后端 feed_type
   if (activeFeedType.value === 'follow') {
     params.feed_type = 'following'
-  } else if (activeFeedType.value === 'local') {
-    params.feed_type = 'local'
-    // 同城需要城市参数
-    const userCity = geo.city.value || await geo.requestCity()
-    if (userCity) {
-      params.city = userCity
-    } else {
-      // 无法获取位置，显示空状态
-    }
   } else {
     params.feed_type = 'recommend'
   }
@@ -218,14 +204,6 @@ function handleTagClick(tagName: string) {
   isSearching.value = false
 }
 
-function setManualCity() {
-  const city = manualCity.value.trim()
-  if (!city) return
-  showCityPicker.value = false
-  geo.city.value = city
-  loadPosts()
-}
-
 async function handleLikeClick(postId: number) {
   if (!authStore.isLoggedIn) {
     showLoginModal.value = true
@@ -312,7 +290,7 @@ function getFallbackPosts(): Post[] {
     <!-- Feed type tabs + search icon row -->
     <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
       <button
-        v-for="ft in [{ key: 'follow', label: '关注' }, { key: 'recommend', label: '推荐' }, { key: 'local', label: '同城' }]"
+        v-for="ft in [{ key: 'follow', label: '关注' }, { key: 'recommend', label: '推荐' }]"
         :key="ft.key"
         class="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap"
         :class="activeFeedType === ft.key && !activeTag
@@ -322,8 +300,6 @@ function getFallbackPosts(): Post[] {
       >
         {{ ft.label }}
       </button>
-      <!-- Loading indicator for geolocation -->
-      <span v-if="activeFeedType === 'local' && geo.loading.value" class="text-xs text-gray-400  self-center ml-2">正在获取位置...</span>
       <!-- Active tag filter chip -->
       <button
         v-if="activeTag"
@@ -406,20 +382,9 @@ function getFallbackPosts(): Post[] {
 
       <!-- Empty state -->
       <div v-else-if="posts.length === 0" class="text-center py-16 space-y-3">
-        <template v-if="activeFeedType === 'local' && geo.error.value && !geo.loading.value">
-          <div class="text-4xl">📍</div>
-          <p class="text-gray-400  text-sm">{{ geo.error.value }}</p>
-          <button class="btn-primary text-sm" @click="showCityPicker = true">手动选择城市</button>
-        </template>
-        <template v-else-if="activeFeedType === 'local' && geo.city.value">
-          <div class="text-4xl">🏙️</div>
-          <p class="text-gray-400  text-sm">暂无 {{ geo.city.value }} 的同城分享</p>
-        </template>
-        <template v-else>
-          <div class="text-4xl">📝</div>
-          <p class="text-gray-400  text-sm">暂无分享，成为第一个分享的人吧</p>
-          <button v-if="authStore.isLoggedIn" class="btn-primary text-sm" @click="showCreateSheet = true">✏️ 发布分享</button>
-        </template>
+        <div class="text-4xl">📝</div>
+        <p class="text-gray-400  text-sm">暂无分享，成为第一个分享的人吧</p>
+        <button v-if="authStore.isLoggedIn" class="btn-primary text-sm" @click="showCreateSheet = true">✏️ 发布分享</button>
       </div>
 
       <!-- Waterfall feed with type-aware cards -->
@@ -476,26 +441,7 @@ function getFallbackPosts(): Post[] {
 
   <LoginModal v-if="showLoginModal" @close="showLoginModal = false" />
 
-  <!-- Manual city picker modal -->
-  <Teleport to="body">
-    <div v-if="showCityPicker" class="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center" @click.self="showCityPicker = false">
-      <div class="bg-white  rounded-xl p-6 max-w-sm w-full mx-4">
-        <h3 class="text-lg font-semibold text-gray-900  mb-2">选择城市</h3>
-        <p class="text-sm text-gray-500  mb-4">输入你所在的城市名称，查看同城分享</p>
-        <input
-          v-model="manualCity"
-          type="text"
-          placeholder="例如：北京、上海、广州..."
-          class="w-full bg-gray-100  rounded-lg px-4 py-2.5 text-sm text-gray-700  placeholder-gray-400 dark:placeholder-gray-500 outline-none mb-4"
-          @keydown.enter="setManualCity"
-        />
-        <div class="flex gap-3 justify-end">
-          <button class="btn-ghost px-4 py-2" @click="showCityPicker = false">取消</button>
-          <button class="btn-primary px-4 py-2" :disabled="!manualCity.trim()" @click="setManualCity">确认</button>
-        </div>
-      </div>
-    </div>
-  </Teleport></template>
+</template>
 
 <style scoped>
 .no-scrollbar::-webkit-scrollbar {

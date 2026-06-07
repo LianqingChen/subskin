@@ -26,6 +26,19 @@ export interface CommunityUserStats {
   comment_count: number
 }
 
+export interface PublicProfile {
+  id: number
+  username: string
+  avatar_url: string | null
+  is_doctor: boolean
+  patient_relation: string | null
+  post_count: number
+  following_count: number
+  follower_count: number
+  is_followed: boolean
+  created_at: string | null
+}
+
 export const communityApi = {
   async getCategories(): Promise<Category[]> {
     const { data } = await apiClient.get('/community/categories')
@@ -236,5 +249,17 @@ export const communityApi = {
 
   async reportUser(targetUserId: number, reason: string, postId?: number): Promise<void> {
     await apiClient.post('/community/report', { target_user_id: targetUserId, reason, post_id: postId })
+  },
+
+  // ── Profile ──
+
+  async getPublicProfile(userId: number): Promise<PublicProfile> {
+    const { data } = await apiClient.get(`/community/profile/${userId}`)
+    return data
+  },
+
+  async getUserPosts(userId: number, limit = 20, offset = 0): Promise<PostListResponse> {
+    const { data } = await apiClient.get(`/community/profile/${userId}/posts`, { params: { limit, offset } })
+    return data
   },
 }

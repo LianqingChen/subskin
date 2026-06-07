@@ -4,18 +4,15 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { useDrafts } from '@/composables/useDrafts'
-import { useGeolocation } from '@/composables/useGeolocation'
 import { communityApi } from '@/api/community'
 import type { Category } from '@/types'
 import TagSelector from '@/components/community/TagSelector.vue'
-import CityPicker from '@/components/community/CityPicker.vue'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const toast = useToast()
 const { saveDraftWithSync } = useDrafts()
-const geo = useGeolocation()
 
 const isEdit = computed(() => !!route.params.id)
 const postId = computed(() => Number(route.params.id) || 0)
@@ -24,8 +21,6 @@ const title = ref('')
 const content = ref('')
 const categoryId = ref<number | null>(null)
 const isAnonymous = ref(false)  // kept for backward compat; always forced to false
-const showCity = ref(true)
-const showCityPicker = ref(false)
 const mood = ref('')
 const tags = ref<string[]>([])
 const categories = ref<Category[]>([])
@@ -118,7 +113,6 @@ const loadPost = async () => {
 
 onMounted(async () => {
   if (!authStore.isLoggedIn) { toast.warning('请先登录'); router.push('/community'); return }
-  await geo.requestCity()
   await loadCategories()
   if (isEdit.value) {
     await loadPost()
@@ -165,9 +159,6 @@ const handlePublish = async () => {
       tag_names: tags.value,
       is_anonymous: false,
       mood: mood.value || undefined,
-      city: showCity.value ? (geo.city.value || undefined) : null,
-      latitude: showCity.value ? (geo.lat.value ?? undefined) : undefined,
-      longitude: showCity.value ? (geo.lng.value ?? undefined) : undefined,
     }
     let result
     if (isEdit.value) {
@@ -249,33 +240,11 @@ const handlePublish = async () => {
           <TagSelector v-model="tags" :max-tags="5" />
         </div>
 
-        <div class="flex items-center justify-between py-2">
-          <div class="flex-1">
-            <span class="text-sm font-medium text-gray-700"><i class="ri-map-pin-line"></i> 显示城市</span>
-            <p class="text-[11px] text-gray-400 ">{{ showCity && geo.city.value ? geo.city.value : '不显示城市' }}</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input v-model="showCity" type="checkbox" class="sr-only peer">
-              <div class="w-10 h-5 rounded-full bg-gray-200 peer-focus:outline-none peer peer-checked:bg-primary-500 peer-checked:after:translate-x-full after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all"></div>
-            </label>
-            <button v-if="showCity" @click="showCityPicker = true" class="text-[11px] text-primary-600 dark:text-primary-400 hover:underline whitespace-nowrap">
-              {{ geo.city.value ? '切换' : '选择' }}
-            </button>
-          </div>
-        </div>
-
         <div class="bg-gray-50  border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-start gap-2">
           <span class="text-amber-500 text-sm mt-0.5"><i class="ri-error-warning-line"></i></span>
           <p class="text-xs text-gray-500  leading-relaxed">本平台不构成医疗建议，分享内容仅供参考。</p>
         </div>
       </div>
     </main>
-
-    <CityPicker
-      v-if="showCityPicker"
-      @select="(city: any) => { geo.setManualCity(city.name); showCityPicker = false }"
-      @close="showCityPicker = false"
-    />
   </div>
 </template>
