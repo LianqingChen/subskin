@@ -3,14 +3,23 @@
 """
 
 import os
-import json
+import secrets
 import requests
-from typing import Optional, Dict
-from datetime import datetime, timedelta
+from typing import Any, Dict, Optional, cast
+from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from web.backend.database.models import User
+from web.backend.database.models import User, OAuthState
+from web.backend.utils.uid import generate_uid
+from web.backend.services.credential import bind_credential, find_user_by_credential
+
+
+STATE_EXPIRE_MINUTES = 10
+
+
+def _utcnow():
+    return datetime.now(timezone.utc)
 
 
 class WechatAuthService:
@@ -42,7 +51,33 @@ class WechatAuthService:
         url = f"{self.base_url}?{self._build_query(params)}"
         return url
 
-    def get_access_token(self, code: str) -> Dict:
+    def create_auth_state(self, db: Session) -> str:
+        state = secrets.token_urlsafe(32)
+        expired_at = _utcnow() + timedelta(minutes=STATE_EXPIRE_MINUTES)
+        oauth_state = OAuthState(state=state, provider="wechat", expired_at=expired_at)
+        db.add(oauth_state)
+        db.commit()
+        return state
+
+    def validate_state(self, db: Session, state: str) -> Optional[OAuthState]:
+        now = _utcnow()
+        return (
+            db.query(OAuthState)
+            .filter(OAuthState.state == state)
+            .filter(OAuthState.provider == "wechat")
+            .filter(OAuthState.used == False)
+            .filter(OAuthState.expired_at > now)
+            .first()
+        )
+
+    def mark_state_used(self, db: Session, state: str, user_id: int):
+        oauth_state = db.query(OAuthState).filter(OAuthState.state == state).first()
+        if oauth_state is not None:
+            setattr(oauth_state, "used", True)
+            setattr(oauth_state, "user_id", user_id)
+            db.commit()
+
+    def get_access_token(self, code: str) -> Dict[str, Any]:
         """通过授权码获取access_token"""
         params = {
             "appid": self.app_id,
@@ -62,7 +97,7 @@ class WechatAuthService:
 
         return data
 
-    def get_userinfo(self, access_token: str, openid: str) -> Dict:
+    def get_userinfo(self, access_token: str, openid: str) -> Dict[str, Any]:
         """获取用户信息"""
         params = {"access_token": access_token, "openid": openid, "lang": "zh_CN"}
 
@@ -77,29 +112,44 @@ class WechatAuthService:
 
         return data
 
-    def get_or_create_user(self, db: Session, wechat_userinfo: Dict) -> User:
+    def get_or_create_user(self, db: Session, wechat_userinfo: Dict[str, Any]) -> User:
         """根据微信用户信息获取或创建用户"""
-        openid = wechat_userinfo.get("openid")
-        unionid = wechat_userinfo.get("unionid")  # 开放平台唯一标识
+        openid = cast(Optional[str], wechat_userinfo.get("openid"))
+        unionid = cast(Optional[str], wechat_userinfo.get("unionid"))
 
         wechat_id = unionid if unionid else openid
+        if not wechat_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="无法获取微信用户ID",
+            )
 
-        user = db.query(User).filter(User.wechat_id == wechat_id).first()
+        user = find_user_by_credential(db, "wechat", wechat_id)
 
-        if not user:
+        if user is None:
+            username = f"wechat_{wechat_id[:10]}"
+            if db.query(User).filter(User.username == username).first():
+                username = f"wechat_{secrets.token_hex(6)}"
+
             user = User(
-                username=f"wechat_{wechat_id[:10]}",
+                uid=generate_uid(wechat_id, db),
+                username=username,
                 wechat_id=wechat_id,
-                hashed_password="",  # 社交登录无需密码
+                hashed_password=None,
                 is_active=True,
                 is_admin=False,
             )
             db.add(user)
             db.commit()
             db.refresh(user)
+            bind_credential(
+                db, cast(int, cast(object, user.id)), "wechat", wechat_id, verified=True
+            )
+            setattr(user, "wechat_id", wechat_id)
+            db.commit()
 
         return user
 
-    def _build_query(self, params: Dict) -> str:
+    def _build_query(self, params: Dict[str, Any]) -> str:
         """构建查询字符串"""
         return "&".join([f"{k}={v}" for k, v in params.items()])

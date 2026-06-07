@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 
 from web.backend.database.database import get_db
 from web.backend.database.models import User, UserFollow, UserBlock, UserReport
-from web.backend.services.auth import auth
+from web.backend.services.auth import auth, get_current_user_optional
+from web.backend.api.notifications import create_notification
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,18 @@ async def follow_user(
     follow = UserFollow(followee_id=user_id, follower_id=current_user.id)
     db.add(follow)
     db.commit()
+    try:
+        create_notification(
+            db,
+            user_id=user_id,
+            type="follow",
+            actor_id=current_user.id,
+            body="",
+            ref_type="user",
+            ref_id=current_user.id,
+        )
+    except Exception:
+        logger.warning("Failed to create follow notification: user=%s -> %s", current_user.id, user_id, exc_info=True)
     return {"status": "ok", "message": "关注成功"}
 
 
@@ -238,3 +251,69 @@ async def report_user(
     db.add(report)
     db.commit()
     return {"status": "ok", "message": "举报已提交"}
+
+
+@router.get("/profile/{user_id}")
+async def get_public_profile(
+    user_id: int,
+    current_user=Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    target = db.query(User).filter_by(id=user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    from web.backend.services.community import CommunityService
+    service = CommunityService(db)
+    post_count = db.query(User).filter_by(id=user_id).join(
+        User.posts
+    ).count() or 0
+    following_count = db.query(UserFollow).filter_by(follower_id=user_id).count()
+    follower_count = db.query(UserFollow).filter_by(followee_id=user_id).count()
+    is_followed = False
+    if current_user:
+        is_followed = db.query(UserFollow).filter_by(
+            followee_id=user_id, follower_id=current_user.id
+        ).first() is not None
+
+    return {
+        "id": target.id,
+        "username": target.username,
+        "avatar_url": target.avatar_url,
+        "is_doctor": getattr(target, "is_doctor", False),
+        "patient_relation": target.patient_relation,
+        "post_count": post_count,
+        "following_count": following_count,
+        "follower_count": follower_count,
+        "is_followed": is_followed,
+        "created_at": target.created_at.isoformat() if target.created_at else None,
+    }
+
+
+@router.get("/profile/{user_id}/posts")
+async def get_user_posts(
+    user_id: int,
+    limit: int = 20,
+    offset: int = 0,
+    current_user=Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    from web.backend.database.models import Post as PostORM
+    from web.backend.services.community import CommunityService
+
+    query = db.query(PostORM).filter(
+        PostORM.user_id == user_id,
+        PostORM.is_private == False,
+    ).order_by(PostORM.created_at.desc())
+
+    if not current_user or (current_user.id != user_id and not current_user.is_admin):
+        query = query.filter(
+            (PostORM.moderation_status != "blocked") | (PostORM.moderation_status == None)
+        )
+
+    total = query.count()
+    posts = query.offset(offset).limit(min(limit, 50)).all()
+
+    service = CommunityService(db)
+    items = [service.post_to_model(p, current_user.id if current_user else None) for p in posts]
+    return {"total": total, "items": items}

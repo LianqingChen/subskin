@@ -45,6 +45,11 @@ from web.backend.api import (
     im_groups,
     im_admin,
     im_contacts,
+    notifications,
+    llm_config_admin,
+    admin_general,
+    content_generation_admin,
+    image_label,
 )
 from web.backend.api.files import router as files_router
 from web.backend.database.database import Base, engine
@@ -56,6 +61,9 @@ from web.backend.services.temp_cleanup import (
 )
 
 _ = models
+
+from web.backend.models.vasi import VASIAssessment, ImageQualityTag
+from web.backend.models.image_label import ImageLabel, ImageLabelAnnotation, ImageLabelLog
 
 Base.metadata.create_all(bind=engine)
 
@@ -139,14 +147,51 @@ def ensure_medical_report_patient_profile_columns() -> None:
 
 
 ensure_medical_report_patient_profile_columns()
+
+
+def ensure_vasi_assessment_columns() -> None:
+    try:
+        from web.backend.models.vasi import ensure_vasi_columns
+        ensure_vasi_columns()
+    except Exception:
+        pass
+
+
+ensure_vasi_assessment_columns()
+
+
+def ensure_image_label_tables_on_startup() -> None:
+    try:
+        from web.backend.models.image_label import ensure_image_label_columns
+        ensure_image_label_columns()
+    except Exception:
+        pass
+
+
+ensure_image_label_tables_on_startup()
+
+
+def ensure_feedback_tables_on_startup() -> None:
+    try:
+        from web.backend.models.vasi import ensure_feedback_columns
+        ensure_feedback_columns()
+    except Exception:
+        pass
+
+
+ensure_feedback_tables_on_startup()
+
 uploads_dir = Path("data/uploads")
 uploads_dir.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_ALLOWED_ORIGINS = [
     "https://subskin.cn",
     "https://www.subskin.cn",
+    "https://admin.subskin.cn",
+    "https://staging.subskin.cn",
     "http://localhost:5173",
     "http://localhost:3000",
+    "http://localhost:5174",  # admin dev server
 ]
 
 
@@ -169,6 +214,21 @@ async def lifespan(app_instance: FastAPI):
     _ = app_instance
     _ = cleanup_temp_uploads()
     _temp_cleanup_task = asyncio.create_task(run_temp_cleanup_loop())
+
+    # Clean refresh tokens on startup and every 24 hours
+    from web.backend.services.auth import cleanup_expired_refresh_tokens
+    cleanup_expired_refresh_tokens()
+
+    async def _token_cleanup_loop():
+        while True:
+            await asyncio.sleep(86400)  # 24 hours
+            try:
+                cleanup_expired_refresh_tokens()
+            except Exception:
+                pass
+
+    _token_cleanup_task = asyncio.create_task(_token_cleanup_loop())
+
     try:
         yield
     finally:
@@ -179,6 +239,8 @@ async def lifespan(app_instance: FastAPI):
             except asyncio.CancelledError:
                 pass
             _temp_cleanup_task = None
+        if _token_cleanup_task is not None:
+            _token_cleanup_task.cancel()
 
 
 app = FastAPI(
@@ -201,6 +263,7 @@ app.add_middleware(
 app.include_router(analytics.router, prefix="/api/analytics", tags=["分析驾驶舱"])
 app.include_router(user.router, prefix="/api/user", tags=["用户"])
 app.include_router(user.profile_router, prefix="/api/users", tags=["用户"])
+app.include_router(user.admin_router, prefix="/api/admin", tags=["管理员-用户"])
 app.include_router(content.router, prefix="/api/content", tags=["内容"])
 app.include_router(comment.router, prefix="/api/comment", tags=["评论"])
 app.include_router(
@@ -219,7 +282,7 @@ app.include_router(files_router, prefix="/api/files", tags=["文件"])
 app.include_router(audit.router, prefix="/api/audit", tags=["审计日志"])
 app.include_router(patient_profile.router, prefix="/api", tags=["白友档案"])
 app.include_router(wechat.router, prefix="/api/wechat", tags=["微信"])
-app.include_router(encyclopedia.router, tags=["白白百科"])
+app.include_router(encyclopedia.router, tags=["小白百科"])
 app.include_router(moderation.router, tags=["内容审核"])
 app.include_router(im_conversations.router)
 app.include_router(im_messages.router)
@@ -228,6 +291,15 @@ app.include_router(im_share.router)
 app.include_router(im_groups.router)
 app.include_router(im_admin.router)
 app.include_router(im_contacts.router)
+app.include_router(notifications.router, prefix="/api/notifications", tags=["通知"])
+app.include_router(llm_config_admin.router)
+app.include_router(admin_general.router)
+app.include_router(content_generation_admin.router)
+app.include_router(image_label.router, prefix="/api/vasi", tags=["图片打标管理"])
+
+# 初始化 LLM 模块配置
+from web.backend.services.llm_config_service import LLMConfigService
+LLMConfigService.init_defaults()
 
 
 @app.websocket("/ws/chat")

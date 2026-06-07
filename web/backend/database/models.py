@@ -78,7 +78,7 @@ class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
     id = Column(Integer, primary_key=True, index=True)
-    token = Column(String, unique=True, nullable=False, index=True)
+    token = Column(String(128), unique=True, nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     created_at = Column(DateTime, default=_utcnow)
     expired_at = Column(DateTime, nullable=False)
@@ -103,14 +103,15 @@ class User(Base):
     is_admin = Column(Boolean, default=False)
     is_test = Column(Boolean, default=False)
     is_doctor = Column(Boolean, default=False)  # 认证医生标识
+    real_name_verified = Column(Boolean, default=False)  # 实名认证标识
     pwa_installed = Column(Boolean, default=False)
     pwa_installed_at = Column(DateTime, nullable=True)
     privacy_mode = Column(
         Boolean, default=True, nullable=False
-    )  # True = eye open = info visible
+    )  # WARNING: True = discoverable/open (NOT "private"). Use is_discoverable in API layer. False = hidden.
     phone_discoverable = Column(
         Boolean, default=True, nullable=False
-    )  # True = 允许他人通过手机号匹配到我
+    )  # True = 允许他人通过手机号匹配到我 (only effective when privacy_mode=True)
     patient_relation = Column(
         String, nullable=True
     )  # 白友=本人, 白友父母, 白友伴侣, 白友朋友, 医护人员, 其他
@@ -333,7 +334,7 @@ class Post(Base):
     diary_date = Column(Date, nullable=True, index=True)
     mood = Column(String, nullable=True)  # 心情标签: 💪坚持中 / 😔低落 / 🎉好转 / 🤔疑问
     is_anonymous = Column(Boolean, default=False)  # 匿名发布
-    moderation_status = Column(String(20), default="normal", nullable=False, index=True)  # normal/blocked/approved
+    moderation_status = Column(String(20), default="normal", nullable=False, index=True)  # normal/flagged/blocked/approved
     city = Column(String(100), nullable=True, index=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
@@ -909,14 +910,18 @@ class UserNotification(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    type = Column(String(30), nullable=False, index=True)  # moderation_warning/mute/ban/post_approved/post_rejected
+    type = Column(String(30), nullable=False, index=True)  # like/comment/follow/bookmark/collect/system/moderation/mute/ban/post_approved/post_rejected
     title = Column(String(200), nullable=False)
     content = Column(Text, nullable=True)
+    actor_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    ref_type = Column(String(20), nullable=True)  # post/comment/user
+    ref_id = Column(Integer, nullable=True)
     is_read = Column(Boolean, default=False, index=True)
-    related_id = Column(Integer, nullable=True)  # 关联的moderation_id等
+    related_id = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=_utcnow, index=True)
 
-    user = relationship("User", foreign_keys=[user_id])
+    user = relationship("User", foreign_keys=[user_id], backref="user_notifications")
+    actor = relationship("User", foreign_keys=[actor_id])
 
 
 # ── IM 即时通讯 ──
@@ -990,6 +995,26 @@ class ImMessage(Base):
     created_at = Column(DateTime, default=_utcnow, index=True)
 
 
+class LLMModuleConfig(Base):
+    """LLM 模块配置"""
+
+    __tablename__ = "llm_module_configs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    module_key = Column(String(50), unique=True, nullable=False, index=True)
+    module_name = Column(String(100), nullable=False)
+    module_description = Column(String(500), nullable=True)
+    provider = Column(String(50), nullable=False, default="dashscope")
+    chat_model = Column(String(100), nullable=True)
+    vision_model = Column(String(100), nullable=True)
+    embedding_model = Column(String(100), nullable=True)
+    api_key = Column(String(500), nullable=True)
+    base_url = Column(String(500), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+
 class ImMessageRead(Base):
     """消息已读追踪"""
 
@@ -1020,3 +1045,55 @@ class ImMessageModeration(Base):
     status = Column(String(20), default="pending", index=True)
     reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=_utcnow, index=True)
+
+
+class Notification(Base):
+    """用户通知"""
+
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    # 触发者 (可为空，如系统通知)
+    actor_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    type = Column(String(20), nullable=False, index=True)  # like/comment/follow/bookmark/collect/system/moderation
+    title = Column(String(200), nullable=False)
+    body = Column(Text, nullable=True)
+    # 关联对象
+    ref_type = Column(String(20), nullable=True)  # post/comment/user
+    ref_id = Column(Integer, nullable=True)
+    is_read = Column(Boolean, default=False, index=True)
+    created_at = Column(DateTime, default=_utcnow, index=True)
+
+    user = relationship("User", foreign_keys=[user_id], backref="notifications")
+    actor = relationship("User", foreign_keys=[actor_id])
+
+
+class AdminGeneratedPost(Base):
+    """管理员自动生成的内容草稿"""
+    __tablename__ = "admin_generated_posts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    content_json = Column(Text, nullable=True)
+    content_preview = Column(Text, nullable=True)
+    category_id = Column(Integer, ForeignKey("community_categories.id"), nullable=False)
+    post_type = Column(String(20), default="long", nullable=False)
+    images = Column(Text, nullable=True)  # JSON array of image URLs
+    tag_names = Column(Text, nullable=True)  # JSON array of tag names
+    city = Column(String(100), nullable=True)
+    mood = Column(String(50), nullable=True)
+    source_type = Column(String(50), nullable=True)  # pubmed/crossref/cma/foundation/news
+    source_refs = Column(Text, nullable=True)  # JSON array of source references
+    status = Column(String(20), default="draft", nullable=False)  # draft/pending/published/rejected
+    ai_confidence = Column(Float, nullable=True)
+    scheduled_at = Column(DateTime, nullable=True)
+    published_post_id = Column(Integer, ForeignKey("posts.id"), nullable=True)
+    published_at = Column(DateTime, nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)  # admin user id
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    category = relationship("CommunityCategory", backref="generated_posts")
+    published_post = relationship("Post", backref="generated_from")

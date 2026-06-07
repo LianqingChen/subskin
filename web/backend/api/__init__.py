@@ -17,6 +17,17 @@ from . import (
     audit,
     patient_profile,
     files,
+    moderation,
+    im_conversations,
+    im_messages,
+    im_friends,
+    im_share,
+    im_groups,
+    im_admin,
+    im_contacts,
+    llm_config_admin,
+    admin_general,
+    content_generation_admin,
 )
 from .vasi import router as vasi_router
 
@@ -36,4 +47,15 @@ __all__ = [
     "audit",
     "patient_profile",
     "files",
+    "moderation",
+    "im_conversations",
+    "im_messages",
+    "im_friends",
+    "im_share",
+    "im_groups",
+    "im_admin",
+    "im_contacts",
+    "llm_config_admin",
+    "admin_general",
+    "content_generation_admin",
 ]

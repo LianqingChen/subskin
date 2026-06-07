@@ -168,7 +168,7 @@ class VASIService:
         )
 
         # 调用VASI识别API（TODO：等方案确定后实现）
-        vasi_result = await self._call_vasi_api(image_file, precision)
+        vasi_result = await self._call_vasi_api(image_file, precision, body_site)
 
         # 创建评估记录
         details_data = vasi_result.get("details", {})
@@ -193,6 +193,7 @@ class VASIService:
         )
 
         assessment = VASIAssessment(
+            status="draft",  # 草稿状态，用户确认后才变为active
             user_id=user_id,
             image_url=image_url,
             image_key=image_key,
@@ -218,6 +219,43 @@ class VASIService:
 
         return assessment
 
+
+    def finalize_assessment(self, assessment_id: int, user_id: int) -> bool:
+        """确认草稿测评，将其状态从draft改为active。
+        
+        如果用户没有走完完整流程，草稿不会被确认，
+        后续可以被清理任务删除。
+        """
+        assessment = (
+            self.db.query(VASIAssessment)
+            .filter(VASIAssessment.id == assessment_id, VASIAssessment.user_id == user_id)
+            .first()
+        )
+        if not assessment:
+            return False
+        if assessment.status == "active":
+            return True  # already finalized
+        assessment.status = "active"
+        assessment.updated_at = datetime.utcnow()
+        self.db.commit()
+        logger.info("VASI assessment %d finalized by user %d", assessment_id, user_id)
+        return True
+
+    def abandon_assessment(self, assessment_id: int, user_id: int) -> bool:
+        """放弃草稿测评，标记为abandoned。"""
+        assessment = (
+            self.db.query(VASIAssessment)
+            .filter(VASIAssessment.id == assessment_id, VASIAssessment.user_id == user_id)
+            .first()
+        )
+        if not assessment:
+            return False
+        assessment.status = "abandoned"
+        assessment.updated_at = datetime.utcnow()
+        self.db.commit()
+        logger.info("VASI assessment %d abandoned by user %d", assessment_id, user_id)
+        return True
+
     def get_user_history(
         self,
         user_id: int,
@@ -240,10 +278,11 @@ class VASIService:
         Returns:
             tuple: (总数, 评估记录列表)
         """
-        query = self.db.query(VASIAssessment).filter(VASIAssessment.user_id == user_id)
+        query = self.db.query(VASIAssessment).filter(VASIAssessment.user_id == user_id, VASIAssessment.status != "abandoned")
 
-        # 筛选条件
+        # 筛选条件：body_site 可能是前端传来的英文 key，需要翻译成中文 label
         if body_site:
+            body_site = self.BODY_SITE_LABELS.get(body_site, body_site)
             query = query.filter(VASIAssessment.body_site == body_site)
 
         if start_date:
@@ -388,6 +427,7 @@ class VASIService:
         )
 
         if body_site:
+            body_site = self.BODY_SITE_LABELS.get(body_site, body_site)
             query = query.filter(VASIAssessment.body_site == body_site)
 
         assessments = query.order_by(VASIAssessment.assessment_date.asc()).all()
@@ -499,7 +539,7 @@ class VASIService:
 
         return image_url, image_key
 
-    async def _call_vasi_api(self, image_file: bytes, precision: str = "quick") -> Dict[str, Any]:
+    async def _call_vasi_api(self, image_file: bytes, precision: str = "quick", body_site: str = "面部") -> Dict[str, Any]:
         """Call AI services for VASI assessment.
 
         Flow (v2): quality check → preprocess → VLM classification +
@@ -526,9 +566,9 @@ class VASIService:
 
         # Step 3: VLM first — get classification + localization guidance
         if ENABLE_VLM_ENSEMBLE:
-            vlm_result = await self._call_vision_model_ensemble(processed_image)
+            vlm_result = await self._call_vision_model_ensemble(processed_image, body_site)
         else:
-            vlm_result = await self._call_vision_model(processed_image)
+            vlm_result = await self._call_vision_model(processed_image, body_site)
 
         # Extract VLM localization for SAM
         skin_bbox: Optional[List[float]] = None
@@ -953,7 +993,7 @@ class VASIService:
             "source": "mock",
         }
 
-    async def _call_vision_model(self, image_file: bytes) -> Optional[Dict[str, Any]]:
+    async def _call_vision_model(self, image_file: bytes, body_site: str = "面部") -> Optional[Dict[str, Any]]:
         """调用百炼 DashScope 视觉大模型进行白斑图像分析
 
         Args:
@@ -987,7 +1027,15 @@ class VASIService:
             elif image_file[:4] == b"RIFF" and image_file[8:12] == b"WEBP":
                 mime_type = "image/webp"
 
-            prompt = """你是一位皮肤科AI助手。请采用"逐斑精确定位法"仔细分析这张皮肤照片：
+            # Phase 2: Dynamic prompt with few-shot examples from user corrections
+            try:
+                from web.backend.services.vasi_prompt_evolver import get_prompt_evolver
+                evolver = get_prompt_evolver(self.db)
+                prompt = evolver.get_current_prompt()
+                logger.info("Using evolved prompt (%d chars)", len(prompt))
+            except Exception as e:
+                logger.warning("Prompt evolver unavailable, using static prompt: %s", e)
+                prompt = """你是一位皮肤科AI助手。请采用"逐斑精确定位法"仔细分析这张皮肤照片：
 
 重要声明：你不是医生，不能进行医疗诊断。你的分析仅基于照片中肉眼可见的视觉特征，供用户参考。请在所有描述中使用"观察到"、"可见"等客观措辞。
 
@@ -1353,7 +1401,7 @@ class VASIService:
             logger.error("Vision model call failed: %s", str(e), exc_info=True)
             return None
 
-    async def _call_vision_model_ensemble(self, image_file: bytes) -> Optional[Dict[str, Any]]:
+    async def _call_vision_model_ensemble(self, image_file: bytes, body_site: str = "面部") -> Optional[Dict[str, Any]]:
         """Make two VLM calls and intersect results for stability.
 
         VLM stochasticity is the fundamental bottleneck. Running twice
@@ -1365,8 +1413,8 @@ class VASIService:
         logger.info("VLM ensemble: starting two independent calls")
 
         result1, result2 = await asyncio.gather(
-            self._call_vision_model(image_file),
-            self._call_vision_model(image_file),
+            self._call_vision_model(image_file, body_site),
+            self._call_vision_model(image_file, body_site),
         )
 
         if not result1 or not result2:

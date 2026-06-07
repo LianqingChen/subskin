@@ -112,6 +112,8 @@ class PostAuthor(BaseModel):
     username: str
     avatar: Optional[str] = None
     is_doctor: bool = Field(False, description="是否认证医生")
+    is_verified: bool = Field(False, description="是否实名认证")
+    is_followed: bool = Field(False, description="当前用户是否已关注该作者")
 
     class Config:
         from_attributes = True
@@ -150,6 +152,7 @@ class Post(PostBase):
 class PostListResponse(BaseModel):
     total: int = Field(..., description="总帖子数")
     items: List[Post] = Field(..., description="帖子列表")
+    next_cursor: Optional[str] = Field(None, description="下一页游标，null表示没有更多")
 
 
 class PostCommentBase(BaseModel):

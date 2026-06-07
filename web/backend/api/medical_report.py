@@ -1,3 +1,4 @@
+import json as _json
 import logging
 import os
 from datetime import datetime
@@ -87,6 +88,12 @@ def _get_report_extracted_patient_info(report: MedicalReport) -> Optional[Dict[s
     direct_value = getattr(report, "extracted_patient_info_json", None)
     if isinstance(direct_value, dict):
         return direct_value
+    # Handle JSON string from Text column type
+    if isinstance(direct_value, str):
+        try:
+            return _json.loads(direct_value)
+        except (_json.JSONDecodeError, TypeError):
+            pass
 
     interpretation = _get_report_interpretation(report)
     embedded_value = interpretation.get("extracted_patient_info")
@@ -108,7 +115,13 @@ def _set_report_extracted_patient_info(
     report: MedicalReport, extracted_patient_info: Optional[Dict[str, Any]]
 ) -> None:
     if _report_has_column(report, "extracted_patient_info_json"):
-        setattr(report, "extracted_patient_info_json", extracted_patient_info)
+        # Column is Text type — must serialize dict to JSON string first
+        value = (
+            _json.dumps(extracted_patient_info, ensure_ascii=False)
+            if isinstance(extracted_patient_info, dict)
+            else extracted_patient_info
+        )
+        setattr(report, "extracted_patient_info_json", value)
 
     interpretation = _get_report_interpretation(report)
     if extracted_patient_info is None:

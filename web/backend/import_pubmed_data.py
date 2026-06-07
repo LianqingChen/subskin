@@ -63,6 +63,9 @@ def process_pubmed_json(file_path: str, db: Session):
                 source=source,
                 source_url=source_url,
                 category=category,
+                source_tier="A",
+                authority_weight=1.2,
+                pub_date=paper.get("pub_date"),
             )
             count += 1
             print(f"✓ 已导入: {title[:60]}...")

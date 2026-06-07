@@ -13,6 +13,10 @@ from web.backend.services.auth import auth, get_current_user, get_current_user_o
 from web.backend.services.community import CommunityService
 from web.backend.services.recommendation import RecommendationService
 from web.backend.services.audit import AuditLogService
+from web.backend.services.content_safety import moderate_comment
+from web.backend.app.middleware.rate_limit import ReadRateLimit, limit_write_for_user
+from web.backend.utils.cursor import decode_cursor, encode_cursor_from_post
+from web.backend.api.notifications import create_notification
 
 logger = logging.getLogger(__name__)
 from web.backend.models.community import (
@@ -134,6 +138,16 @@ async def create_post(
     current_user: User = Depends(auth),
     db: Session = Depends(get_db),
 ):
+    await limit_write_for_user(request, current_user.id)
+    if current_user.user_status == "banned":
+        raise HTTPException(status_code=403, detail="账号已被封禁，无法发布内容")
+    if current_user.user_status == "muted" and current_user.muted_until:
+        from datetime import timezone as _tz
+        if current_user.muted_until.replace(tzinfo=_tz.utc) > datetime.now(_tz.utc):
+            remaining = current_user.muted_until.replace(tzinfo=_tz.utc) - datetime.now(_tz.utc)
+            hours = int(remaining.total_seconds() / 3600)
+            raise HTTPException(status_code=403, detail=f"账号已被禁言，剩余{hours}小时")
+
     service = CommunityService(db)
     exaggerated = check_exaggerated_claims(post_data.title, post_data.content)
     if exaggerated:
@@ -152,12 +166,16 @@ async def create_post(
         is_private=post_data.is_private,
         diary_date=post_data.diary_date,
         mood=post_data.mood,
-        is_anonymous=post_data.is_anonymous,
+        is_anonymous=False,  # Anonymous posting removed
         post_type=post_data.post_type,
         video_url=post_data.video_url,
         video_thumbnail=post_data.video_thumbnail,
         city=post_data.city,
     )
+    # Flag post with exaggerated claims for moderation review
+    if exaggerated:
+        post.moderation_status = "flagged"
+        db.commit()
     # Audit: user published a post
     try:
         AuditLogService(db).create_log(
@@ -171,38 +189,57 @@ async def create_post(
         )
     except Exception:
         logger.warning("Audit log failed for post creation %s", post.id, exc_info=True)
+
+    try:
+        import threading
+        from web.backend.services.content_safety import moderate_post
+        t = threading.Thread(target=moderate_post, args=(post.id,), daemon=True)
+        t.start()
+    except Exception:
+        logger.warning("Content moderation launch failed for post %s", post.id, exc_info=True)
+
     return _post_to_model(post, current_user.id, db)
 
 
 @router.get("/posts", response_model=PostListResponse)
 async def list_posts(
+    request: Request,
     category_id: Optional[int] = None,
     tag: Optional[str] = None,
     post_type: Optional[str] = None,
     feed_type: Optional[str] = None,
     city: Optional[str] = None,
+    user_lat: Optional[float] = None,
+    user_lng: Optional[float] = None,
     is_private: Optional[bool] = None,
     limit: int = 20,
     offset: int = 0,
+    after: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
+    _rate: None = Depends(ReadRateLimit()),
 ):
     user_id = current_user.id if current_user else None
     if is_private is True and user_id is None:
         raise HTTPException(status_code=401, detail="请先登录后查看私密帖子")
 
+    next_cursor: Optional[str] = None
     if feed_type and feed_type in ("recommend", "hot", "following", "local"):
         rec_svc = RecommendationService(db)
-        total, posts = rec_svc.get_feed(
+        page = 0 if after else (offset // max(limit, 1))
+        total, posts, next_cursor = rec_svc.get_feed(
             user_id=user_id,
-            page=offset // max(limit, 1),
+            page=page,
             page_size=limit,
             feed_type=feed_type,
             city=city,
+            user_lat=user_lat,
+            user_lng=user_lng,
+            after=after,
         )
     else:
         service = CommunityService(db)
-        total, posts = service.get_posts(
+        total, posts, next_cursor = service.get_posts(
             category_id=category_id,
             tag_name=tag,
             post_type=post_type,
@@ -211,43 +248,54 @@ async def list_posts(
             offset=offset,
             user_id=user_id,
             is_private=is_private,
+            after=after,
         )
-    items = [_post_to_model(post, user_id, db) for post in posts]
-    return PostListResponse(total=total, items=items)
+    items = [_post_to_model(post, user_id, db, user_lat=user_lat, user_lng=user_lng) for post in posts]
+    if user_id is None:
+        items = [i for i in items if i.moderation_status != "blocked"]
+    elif not (current_user and current_user.is_admin):
+        items = [i for i in items if i.moderation_status != "blocked" or i.author.id == user_id]
+    return PostListResponse(total=total, items=items, next_cursor=next_cursor)
 
 
 @router.get("/my-diaries", response_model=PostListResponse)
 async def get_my_diaries(
     limit: int = 20,
     offset: int = 0,
+    after: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    diary_category = (
-        db.query(CategoryORM).filter(CategoryORM.name == "白白日记").first()
-    )
-    if not diary_category:
-        return PostListResponse(total=0, items=[])
-
     query = (
         db.query(PostORM)
-        .filter(
-            PostORM.user_id == current_user.id,
-            PostORM.category_id == diary_category.id,
-        )
-        .order_by(desc(PostORM.diary_date), desc(PostORM.created_at))
+        .filter(PostORM.user_id == current_user.id)
     )
+    if after:
+        cursor = decode_cursor(after)
+        if cursor:
+            cursor_ts, cursor_id = cursor
+            query = query.filter(
+                (PostORM.created_at < cursor_ts) |
+                ((PostORM.created_at == cursor_ts) & (PostORM.id < cursor_id))
+            )
+    query = query.order_by(desc(PostORM.is_private), desc(PostORM.diary_date), desc(PostORM.created_at))
     total = query.count()
-    posts = query.offset(offset).limit(min(limit, 50)).all()
+    posts = query.limit(min(limit, 50) + 1).all()
+    has_more = len(posts) > min(limit, 50)
+    if has_more:
+        posts = posts[:min(limit, 50)]
+    next_cursor = encode_cursor_from_post(posts[-1]) if has_more and posts else None
     items = [_post_to_model(post, current_user.id, db) for post in posts]
-    return PostListResponse(total=total, items=items)
+    return PostListResponse(total=total, items=items, next_cursor=next_cursor)
 
 
 @router.get("/posts/{post_id}", response_model=PostModel)
 async def get_post(
+    request: Request,
     post_id: int,
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
+    _rate: None = Depends(ReadRateLimit()),
 ):
     service = CommunityService(db)
     user_id = current_user.id if current_user else None
@@ -278,10 +326,11 @@ async def update_post(
             is_private=post_data.is_private,
             diary_date=post_data.diary_date,
             mood=post_data.mood,
-            is_anonymous=post_data.is_anonymous,
+            is_anonymous=False,  # Anonymous posting removed
             post_type=post_data.post_type,
             video_url=post_data.video_url,
             video_thumbnail=post_data.video_thumbnail,
+            image_urls=post_data.images,
             city=post_data.city,
         )
     except ValueError as e:
@@ -333,15 +382,29 @@ async def delete_post(
 
 @router.post("/posts/{post_id}/like", response_model=LikeResponse)
 async def toggle_like(
+    request: Request,
     post_id: int,
     current_user: User = Depends(auth),
     db: Session = Depends(get_db),
 ):
+    await limit_write_for_user(request, current_user.id)
     service = CommunityService(db)
     try:
         liked, like_count = service.toggle_like(
             post_id=post_id, user_id=current_user.id
         )
+        from web.backend.database.models import Post as DBPost
+        post = db.query(DBPost).filter(DBPost.id == post_id).first()
+        if post and liked and post.user_id != current_user.id:
+            create_notification(
+                db,
+                user_id=post.user_id,
+                type="like",
+                actor_id=current_user.id,
+                body=post.title or "",
+                ref_type="post",
+                ref_id=post_id,
+            )
         return LikeResponse(liked=liked, like_count=like_count)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -355,7 +418,16 @@ async def add_comment(
     current_user: User = Depends(auth),
     db: Session = Depends(get_db),
 ):
+    await limit_write_for_user(request, current_user.id)
     service = CommunityService(db)
+    user_status = getattr(current_user, "user_status", "normal")
+    if user_status == "banned":
+        raise HTTPException(status_code=403, detail="账号已被封禁，无法评论")
+    if user_status == "muted":
+        muted_until = getattr(current_user, "muted_until", None)
+        from datetime import datetime, timezone
+        if muted_until and muted_until > datetime.now(timezone.utc):
+            raise HTTPException(status_code=403, detail="账号处于禁言状态，无法评论")
     try:
         comment = service.add_comment(
             post_id=post_id,
@@ -364,6 +436,9 @@ async def add_comment(
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    import threading
+    thread = threading.Thread(target=moderate_comment, args=(comment.id, comment.content, current_user.id), daemon=True)
+    thread.start()
     try:
         AuditLogService(db).create_log(
             user_id=current_user.id,
@@ -376,6 +451,19 @@ async def add_comment(
         )
     except Exception:
         logger.warning("Audit log failed for comment creation", exc_info=True)
+    # 通知帖子作者（如果不是自己评论）
+    from web.backend.database.models import Post as DBPost
+    post = db.query(DBPost).filter(DBPost.id == post_id).first()
+    if post and post.user_id != current_user.id:
+        create_notification(
+            db,
+            user_id=post.user_id,
+            type="comment",
+            actor_id=current_user.id,
+            body=comment_data.content[:100],
+            ref_type="post",
+            ref_id=post_id,
+        )
     return _comment_to_model(comment)
 
 
@@ -430,7 +518,8 @@ async def upload_image(
         )
         return ImageUploadResponse(image_url=image_url)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
+        logger.error("图片上传失败: %s", str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail="上传失败，请稍后重试")
 
 
 @router.post("/upload/audio", response_model=AudioUploadResponse)
@@ -454,7 +543,8 @@ async def upload_audio(
             file_size=len(content),
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
+        logger.error("音频上传失败: %s", str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail="上传失败，请稍后重试")
 
 
 @router.post("/upload/file", response_model=FileUploadResponse)
@@ -479,107 +569,18 @@ async def upload_file(
             file_type=file.content_type or "",
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
+        logger.error("文件上传失败: %s", str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail="上传失败，请稍后重试")
 
 
-def _post_to_model(post, user_id: Optional[int], db: Session) -> PostModel:
+def _post_to_model(post, user_id: Optional[int], db: Session, user_lat: Optional[float] = None, user_lng: Optional[float] = None) -> PostModel:
     service = CommunityService(db)
-    like_count = service.get_like_count(post.id)
-    comment_count = service.get_comment_count(post.id)
-    is_liked = service.is_liked(post.id, user_id) if user_id else False
-    is_bookmarked = service.is_bookmarked(post.id, user_id) if user_id else False
-
-    images = (
-        db.query(PostImageORM)
-        .filter_by(post_id=post.id)
-        .order_by(PostImageORM.order)
-        .all()
-    )
-
-    audios = (
-        db.query(PostAudio).filter_by(post_id=post.id).order_by(PostAudio.order).all()
-    )
-
-    attachments = (
-        db.query(PostAttachment)
-        .filter_by(post_id=post.id)
-        .order_by(PostAttachment.order)
-        .all()
-    )
-
-    post_tag_records = db.query(PostTag).filter_by(post_id=post.id).all()
-    tag_ids = [pt.tag_id for pt in post_tag_records]
-    tags = db.query(Tag).filter(Tag.id.in_(tag_ids)).all() if tag_ids else []
-
-    return PostModel(
-        id=post.id,
-        title=post.title,
-        content=post.content,
-        content_json=post.content_json,
-        post_type=getattr(post, "post_type", None),
-        video_url=getattr(post, "video_url", None),
-        video_thumbnail=getattr(post, "video_thumbnail", None),
-        content_preview=getattr(post, "content_preview", None),
-        read_count=getattr(post, "read_count", 0),
-        category_id=post.category_id,
-        is_private=post.is_private,
-        diary_date=post.diary_date.isoformat() if post.diary_date else None,
-        mood=post.mood,
-        is_anonymous=post.is_anonymous,
-        city=post.city,
-        author=PostAuthor(
-            id=post.author.id,
-            username="匿名用户" if post.is_anonymous else post.author.username,
-            avatar=None if post.is_anonymous else None,
-            is_doctor=getattr(post.author, "is_doctor", False),
-        ),
-        category=_category_to_model(post.category, db),
-        images=[
-            PostImageModel(id=img.id, image_url=img.image_url, order=img.order)
-            for img in images
-        ],
-        audios=[
-            PostAudioModel(
-                id=a.id,
-                audio_url=a.audio_url,
-                duration=a.duration,
-                file_size=a.file_size,
-                order=a.order,
-            )
-            for a in audios
-        ],
-        attachments=[
-            PostAttachmentModel(
-                id=a.id,
-                file_url=a.file_url,
-                file_name=a.file_name,
-                file_size=a.file_size,
-                file_type=a.file_type,
-                order=a.order,
-            )
-            for a in attachments
-        ],
-        tags=[TagModel(id=t.id, name=t.name, usage_count=t.usage_count) for t in tags],
-        like_count=like_count,
-        comment_count=comment_count,
-        is_liked=is_liked,
-        is_bookmarked=is_bookmarked,
-        created_at=post.created_at,
-        updated_at=post.updated_at,
-    )
+    return service.post_to_model(post, user_id, user_lat=user_lat, user_lng=user_lng)
 
 
 def _category_to_model(category, db: Session) -> CategoryModel:
-    post_count = (
-        db.query(func.count(PostORM.id)).filter_by(category_id=category.id).scalar()
-    )
-    return CategoryModel(
-        id=category.id,
-        name=category.name,
-        description=category.description,
-        icon=category.icon,
-        post_count=post_count,
-    )
+    service = CommunityService(db)
+    return service.category_to_model(category)
 
 
 def _comment_to_model(comment) -> PostCommentModel:
@@ -913,10 +914,27 @@ async def get_collection_by_slug(share_slug: str, db: Session = Depends(get_db))
 
 @router.post("/posts/{post_id}/bookmark", response_model=BookmarkResponse)
 async def toggle_bookmark(
-    post_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    request: Request, post_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
+    await limit_write_for_user(request, user.id)
     svc = CommunityService(db)
     bookmarked = svc.toggle_bookmark(post_id=post_id, user_id=user.id)
+    if bookmarked:
+        from web.backend.database.models import Post as DBPost
+        post = db.query(DBPost).filter(DBPost.id == post_id).first()
+        if post and post.user_id != user.id:
+            try:
+                create_notification(
+                    db,
+                    user_id=post.user_id,
+                    type="bookmark",
+                    actor_id=user.id,
+                    body=post.title or "",
+                    ref_type="post",
+                    ref_id=post_id,
+                )
+            except Exception:
+                logger.warning("Failed to create bookmark notification: user=%s post=%s", user.id, post_id, exc_info=True)
     return BookmarkResponse(bookmarked=bookmarked, post_id=post_id)
 
 

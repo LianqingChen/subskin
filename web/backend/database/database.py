@@ -2,14 +2,18 @@
 数据库连接配置
 """
 
+import os
+from pathlib import Path
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-import os
+# Use absolute path based on this file's location to avoid working-directory dependency
+_BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent  # .../subskin/
+DEFAULT_DB_PATH = str(_BASE_DIR / "data" / "subskin.db")
 
-# 数据库URL，从环境变量读取，默认使用SQLite
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/subskin.db")
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH}")
 
 engine = create_engine(
     DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
