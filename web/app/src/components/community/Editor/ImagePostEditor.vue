@@ -4,11 +4,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { useDrafts } from '@/composables/useDrafts'
-
+import { useGeolocation } from '@/composables/useGeolocation'
 import { communityApi } from '@/api/community'
 import type { Category } from '@/types'
 import TagSelector from '@/components/community/TagSelector.vue'
-
+import CityPicker from '@/components/community/CityPicker.vue'
 import { toProtectedFileUrl } from '@/utils/file-url'
 import RichEditor from '@/components/community/RichEditor.vue'
 
@@ -17,7 +17,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const toast = useToast()
 const { saveDraft: saveDraftToStorage } = useDrafts()
-
+const geo = useGeolocation()
 
 const isEdit = computed(() => !!route.params.id)
 const postId = computed(() => Number(route.params.id) || 0)
@@ -38,8 +38,8 @@ const publishing = ref(false)
 const uploading = ref(false)
 const currentDraftKey = ref('')
 const draftServerId = ref<number | null>(null)  // server post ID if draft was synced
-
-
+const showCityPicker = ref(false)
+const showCity = ref(true)
 
 const isValid = computed(() => title.value.trim().length > 0 || content.value.trim().length > 0 || previewImages.value.length > 0)
 
@@ -67,13 +67,13 @@ const autoSaveDraft = () => {
     mood: mood.value,
     isAnonymous: isAnonymous.value,
     isPrivate: isPrivate.value,
-
+    showCity: showCity.value,
     existingKey: currentDraftKey.value || undefined,
   })
   if (!currentDraftKey.value) currentDraftKey.value = key
 }
 
-watch([title, content, contentJson, categoryId, isAnonymous, isPrivate, mood, tags, previewImages], () => {
+watch([title, content, contentJson, categoryId, isAnonymous, isPrivate, showCity, mood, tags, previewImages], () => {
   if (autoSaveTimer) clearTimeout(autoSaveTimer)
   autoSaveTimer = setTimeout(autoSaveDraft, 1000)
 }, { deep: true })
@@ -126,7 +126,7 @@ const loadDraftByKey = () => {
     mood.value = d.mood || ''
     isAnonymous.value = d.isAnonymous ?? false
     isPrivate.value = d.isPrivate ?? false
-
+    showCity.value = d.showCity ?? true
     currentDraftKey.value = draftKey.value
     draftServerId.value = d.serverId ?? null
     toast.show('已恢复草稿', 'info')
@@ -155,6 +155,7 @@ const loadPost = async () => {
 
 onMounted(async () => {
   if (!authStore.isLoggedIn) { toast.warning('请先登录'); router.push('/community'); return }
+  await geo.requestCity()
   await loadCategories()
   if (isEdit.value) {
     await loadPost()
@@ -186,6 +187,9 @@ const handlePublish = async () => {
       is_anonymous: false,
       is_private: isPrivate.value,
       mood: mood.value || undefined,
+      city: showCity.value ? (geo.city.value || undefined) : null,
+      latitude: showCity.value ? (geo.lat.value ?? undefined) : undefined,
+      longitude: showCity.value ? (geo.lng.value ?? undefined) : undefined,
     }
     let result
     if (isEdit.value) {
@@ -322,7 +326,21 @@ const handleSaveDraft = async () => {
           </label>
         </div>
 
-
+        <div class="flex items-center justify-between py-2">
+          <div class="flex-1">
+            <span class="text-sm font-medium text-gray-700"><i class="ri-map-pin-line"></i> 显示城市</span>
+            <p class="text-[11px] text-gray-400 ">{{ showCity && geo.city.value ? geo.city.value : '不显示城市' }}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input v-model="showCity" type="checkbox" class="sr-only peer">
+              <div class="w-10 h-5 rounded-full bg-gray-200 peer-focus:outline-none peer peer-checked:bg-primary-500 peer-checked:after:translate-x-full after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all"></div>
+            </label>
+            <button v-if="showCity" @click="showCityPicker = true" class="text-[11px] text-primary-600 dark:text-primary-400 hover:underline whitespace-nowrap">
+              {{ geo.city.value ? '切换' : '选择' }}
+            </button>
+          </div>
+        </div>
 
         <div class="bg-gray-50  border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-start gap-2">
           <span class="text-amber-500 text-sm mt-0.5"><i class="ri-error-warning-line"></i></span>
@@ -330,5 +348,11 @@ const handleSaveDraft = async () => {
         </div>
       </div>
     </main>
+
+    <CityPicker
+      v-if="showCityPicker"
+      @select="(city: any) => { geo.setManualCity(city.name); showCityPicker = false }"
+      @close="showCityPicker = false"
+    />
   </div>
 </template>
