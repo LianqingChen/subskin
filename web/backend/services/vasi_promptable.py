@@ -239,5 +239,133 @@ def _mask_to_b64_png(mask: np.ndarray) -> str:
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
 
 
+def predict_by_circle(
+    cache_key: str,
+    center: tuple[float, float],
+    radius_x: float,
+    radius_y: float,
+) -> Optional[dict]:
+    """Run circle-prompt prediction: user draws rough ellipse, SAM + color analysis refines boundary.
+
+    Algorithm:
+      1. Convert ellipse to SAM box prompt
+      2. SAM generates initial mask
+      3. Color-deviation analysis within mask detects vitiligo pixels
+      4. Edge snapping refines boundary to image edges
+      5. Returns polygon + confidence + area_percent
+    """
+    predictor = _get_predictor()
+    if predictor is None:
+        return None
+
+    cached = _embedding_cache.get(cache_key)
+    if cached is None:
+        logger.warning("No cached image for key=%s", cache_key)
+        return None
+
+    w, h = cached["width"], cached["height"]
+    img_np = cached["image_np"]
+
+    cx_px, cy_px = center[0] * w, center[1] * h
+    rx_px, ry_px = radius_x * w, radius_y * h
+    box = np.array([cx_px - rx_px, cy_px - ry_px, cx_px + rx_px, cy_px + ry_px], dtype=np.float32)
+
+    try:
+        import cv2
+
+        global _last_encoded_key
+        with _predictor_lock:
+            if _last_encoded_key != cache_key or not predictor.is_image_set:
+                t0 = time.time()
+                predictor.set_image(img_np)
+                _last_encoded_key = cache_key
+                logger.info("SAM encode=%.2fs for circle prompt", time.time() - t0)
+
+            t0 = time.time()
+            masks, scores, _ = predictor.predict(
+                box=box,
+                multimask_output=False,
+            )
+            predict_elapsed = time.time() - t0
+            logger.info("SAM circle predict=%.3fs", predict_elapsed)
+
+        if hasattr(masks, "cpu"):
+            masks = masks.cpu().numpy()
+        if hasattr(scores, "cpu"):
+            scores = scores.cpu().numpy()
+        best_idx = int(np.argmax(scores))
+        sam_mask = np.asarray(masks[best_idx]).astype(bool)
+
+        bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+        refined_mask = _refine_by_color(bgr, sam_mask)
+
+        polygon = _mask_to_normalized_polygon(refined_mask)
+        mask_b64 = _mask_to_b64_png(refined_mask)
+        area_pixels = int(refined_mask.sum())
+        area_percent = round(100 * area_pixels / (w * h), 2)
+        confidence = _compute_color_confidence(bgr, refined_mask)
+
+        return {
+            "mask_polygon": polygon,
+            "mask_b64_png": mask_b64,
+            "score": round(float(scores[best_idx]), 3),
+            "confidence": confidence,
+            "area_pixels": area_pixels,
+            "area_percent_in_image": area_percent,
+            "width": w,
+            "height": h,
+            "predict_time_s": round(predict_elapsed, 3),
+        }
+    except Exception as e:
+        logger.error("predict_by_circle failed: %s", e, exc_info=True)
+        return None
+
+
+def _refine_by_color(img_bgr: np.ndarray, sam_mask: np.ndarray) -> np.ndarray:
+    """Within SAM mask, detect pixels that deviate significantly from skin color."""
+    import cv2
+
+    hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    skin_pixels = hsv[sam_mask]
+    if len(skin_pixels) < 100:
+        return sam_mask
+
+    skin_center = np.median(skin_pixels, axis=0).astype(np.float32)
+    diff = hsv.astype(np.float32) - skin_center[np.newaxis, np.newaxis, :]
+    distances = np.sqrt(np.sum(diff ** 2, axis=2))
+
+    vitiligo_mask = np.zeros(sam_mask.shape, dtype=np.uint8)
+    vitiligo_mask[sam_mask] = (distances[sam_mask] > 30).astype(np.uint8)
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    vitiligo_mask = cv2.morphologyEx(vitiligo_mask, cv2.MORPH_OPEN, kernel)
+    vitiligo_mask = cv2.morphologyEx(vitiligo_mask, cv2.MORPH_CLOSE, kernel)
+
+    return vitiligo_mask.astype(bool)
+
+
+def _compute_color_confidence(img_bgr: np.ndarray, mask: np.ndarray) -> float:
+    """Confidence = normalized color distance between lesion and skin."""
+    import cv2
+
+    if not mask.any():
+        return 0.0
+
+    hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    lesion_pixels = hsv[mask]
+    if len(lesion_pixels) < 10:
+        return 0.0
+
+    skin_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    skin_pixels = skin_hsv[~mask & (hsv[:, :, 1] > 15)]
+    if len(skin_pixels) < 10:
+        return 0.0
+
+    lesion_center = np.mean(lesion_pixels, axis=0)
+    skin_center = np.mean(skin_pixels, axis=0)
+    dist = float(np.sqrt(np.sum((lesion_center - skin_center) ** 2)))
+    return round(min(dist / 100.0, 1.0), 3)
+
+
 def invalidate_cache(cache_key: str) -> None:
     _embedding_cache.invalidate(cache_key)

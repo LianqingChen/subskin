@@ -1,8 +1,10 @@
-"""WeChat Notifier for daily automated notifications via OpenClaw.
+"""WeChat Notifier for daily automated notifications.
 
-This module sends daily notifications to your personal WeChat via OpenClaw
-WeChat plugin. It uses the openclaw CLI command to send messages, which is
-the most reliable way when running locally on the same server.
+Primary delivery: writes formatted brief to /root/subskin/data/briefings/
+for pickup by Hermes cronjob (hermes_daily_brief) which sends via
+the Hermes weixin channel.
+
+Fallback: openclaw CLI (may have expired WeChat sessions).
 """
 
 from __future__ import annotations
@@ -51,16 +53,34 @@ class WeChatNotifier:
         self.timeout = timeout
     
     def send_message(self, text: str) -> bool:
-        """Send plain text message to WeChat using openclaw CLI.
+        """Send plain text message to WeChat.
+        
+        Primary: write brief to file for Hermes cronjob pickup.
+        Fallback: try openclaw CLI (may be stale/expired).
         
         Args:
             text: Message text to send
             
         Returns:
-            True if sent successfully, False otherwise
+            True if at least the file was written successfully
         """
+        success = False
+        
+        # PRIMARY: Write brief to file for Hermes delivery
         try:
-            # Use --message - to read message from stdin
+            brief_dir = "/root/subskin/data/briefings"
+            os.makedirs(brief_dir, exist_ok=True)
+            date_str = datetime.now().strftime("%Y-%m-%d")
+            brief_path = os.path.join(brief_dir, f"daily_{date_str}.md")
+            with open(brief_path, "w", encoding="utf-8") as f:
+                f.write(text)
+            logger.info(f"Briefing written to {brief_path} for Hermes delivery")
+            success = True
+        except Exception as e:
+            logger.error(f"Failed to write briefing file: {str(e)}")
+        
+        # FALLBACK: Try openclaw CLI
+        try:
             cmd = [
                 self.openclaw_path,
                 "message",
@@ -69,9 +89,6 @@ class WeChatNotifier:
                 "--target", self.target,
                 "--message", "-",
             ]
-            
-            logger.debug(f"Running: {' '.join(cmd)} (reading from stdin)")
-            
             result = subprocess.run(
                 cmd,
                 input=text,
@@ -79,95 +96,84 @@ class WeChatNotifier:
                 text=True,
                 timeout=self.timeout
             )
-            
             if result.returncode == 0:
                 logger.info("WeChat message sent successfully via openclaw CLI")
-                return True
             else:
-                logger.error(f"Failed to send WeChat message. Exit code: {result.returncode}")
-                logger.error(f"Stderr: {result.stderr}")
-                return False
-                
+                logger.warning(f"OpenClaw send failed (exit {result.returncode}): {result.stderr}")
         except Exception as e:
-            logger.error(f"Failed to send WeChat message: {str(e)}")
-            return False
+            logger.warning(f"OpenClaw send exception: {str(e)}")
+        
+        return success
     
     def format_daily_summary(self, summary: dict[str, Any]) -> str:
         """Format daily update summary for WeChat.
-        
+
+        Uses the S/A/B/C/D authority tier framework for source categorization.
+
         Args:
             summary: Daily summary from incremental tracker (dict)
-            
+
         Returns:
             Formatted markdown text ready for sending
         """
-        from datetime import datetime
+        from collections import defaultdict
+
         date_obj = datetime.strptime(summary["date"], "%Y-%m-%d")
         date_str = date_obj.strftime("%Y年%m月%d日")
-        
-        # Count by source category
-        from collections import defaultdict
+
         source_counts = defaultdict(int)
+        source_new_items = defaultdict(list)
         details = summary.get("details", [])
         for d in details:
             source = d.get("source", "other")
-            source_counts[source] += d.get("change_details", {}).get("items_collected", 1)
-        
+            items = d.get("change_details", {}).get("items_collected", 0)
+            source_counts[source] += (items or 1)
+            title = d.get("resource_title", "")[:80]
+            if title:
+                source_new_items[source].append(title)
+
         lines = [
-            f"🌿 **SubSkin 每日更新摘要 - {date_str}**\n",
-            "### 📊 按信息来源分类\n",
+            f"🌿 **SubSkin 每日简报 — {date_str}**\n",
         ]
-        
-        # 分类统计 - 按照整理好的信息来源框架
-        categories = [
-            ("📜", "官方期刊与学术论文", "pubmed"),
-            ("🏥", "医院官媒与临床机构", "clinical"),
-            ("🌿", "特色诊疗指南", "traditional"),
-            ("💊", "新药研发与临床试验", "clinical_trials"),
-            ("📰", "新闻媒体与官方报道", "news"),
-            ("💬", "患者社区", "community"),
-        ]
-        
-        new_papers = summary.get("new_papers", 0)
-        new_trials = summary.get("new_trials", 0)
-        updated_trials = summary.get("updated_trials", 0)
-        total_papers = summary.get("total_papers", 0)
-        total_trials = summary.get("total_trials", 0)
-        new_papers_with_summary = summary.get("new_papers_with_summary", 0)
-        
+
+        tier_map = {
+            "pubmed": ("S/A 📜", "PubMed 权威研究论文"),
+            "crossref": ("S/A 📜", "CrossRef 学术论文"),
+            "semantic_scholar": ("S/A 📜", "Semantic Scholar 学术"),
+            "cma": ("C 🏥", "中华医学会科普"),
+            "clinical_trials": ("B 💊", "ClinicalTrials 新药试验"),
+            "foundation_news": ("B/C 📰", "基金会与行业动态"),
+            "omicsdi": ("B 🧬", "OmicsDI 组学数据"),
+            "medical_content": ("C/D 📚", "医学科普与用药参考"),
+        }
+
         total_new = 0
-        for emoji, name, key in categories:
-            count = source_counts.get(key, 0)
+        found_any = False
+        for crawler_id, (tier_label, name) in tier_map.items():
+            count = source_counts.get(crawler_id, 0)
             total_new += count
             if count > 0:
-                lines.append(f"{emoji} **{name}**: +{count} 篇")
+                found_any = True
+                items = source_new_items.get(crawler_id, [])
+                preview = ""
+                if items:
+                    first = items[0]
+                    preview = f" — {first[:50]}{'...' if len(first) > 50 else ''}"
+                lines.append(f"{tier_label} **{name}**: +{count}{preview}")
             else:
-                lines.append(f"{emoji} **{name}**: 无更新")
-        
-        # JAK inhibitor trials (special focus for this project)
-        jak_trials = [t for t in details if t.get("update_type") == "new_trial" and 
-                     t.get("change_details", {}).get("is_jak", False)]
-        if jak_trials:
-            lines.append(f"\n🔬 重点关注: JAK 抑制剂相关试验: {len(jak_trials)} 项")
-            for trial in jak_trials[:3]:  # Show top 3
-                status_emoji = "🟢"  # Default to active
-                lines.append(f"  {status_emoji} {trial.get('resource_title', 'Untitled')[:60]}...")
-            if len(jak_trials) > 3:
-                lines.append(f"  ...还有 {len(jak_trials) - 3} 项")
-        
-        # Total stats
-        lines.append(f"\n### 📈 累计总量")
-        lines.append(f"- 累计收录论文: **{total_papers + total_new}** 篇")
-        lines.append(f"- 累计收录临床试验: **{total_trials}** 项")
-        
-        if new_papers_with_summary > 0:
-            lines.append(f"- 完成AI翻译总结: {new_papers_with_summary} 篇")
-        
-        if new_papers > 0 or new_trials > 0:
-            lines.append(f"\n✅ 数据已保存到 `/root/subskin/data/raw/`，可随时查看完整内容。")
-        
-        lines.append(f"\n—— SubSkin 项目 · 用AI缩短医学前沿和普通患者之间的知识鸿沟")
-        
+                lines.append(f"{tier_label} **{name}**: —")
+
+        if not found_any:
+            lines.append("\n🔔 今日所有数据源均无更新。")
+
+        lines.append(f"\n📊 **今日共新增/更新**: {total_new} 项")
+        lines.append(f"📁 数据已保存至 `/root/subskin/data/raw/`")
+
+        if total_new > 0:
+            lines.append(f"\n💡 今日新增内容可通过[小白助手](/chat)查询最新信息。")
+
+        lines.append(f"\n—— SubSkin · 每日凌晨5点自动采集 · {date_str}")
+
         return "\n".join(lines)
     
     def send_daily_summary(self, summary: dict[str, Any]) -> bool:

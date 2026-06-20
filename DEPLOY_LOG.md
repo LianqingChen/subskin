@@ -2,20 +2,51 @@
 
 > This file tracks all staging and production deployments.
 > **Staging changes accumulate here until explicitly pushed to production.**
-> **When user says "推送到正式环境", ALL pending items will be pushed together.**
+> **When user says "推送到正式环境" / "更新到正式环境", it means FULL SYNC — ALL pending items since the last production push will be deployed together, not just the latest change.**
 
 ## Pending Changes
 
-| 2026-06-07 | 全站 | **全局暗色背景/字体颜色修复**：从正式环境基线 `7784f18` 还原后，仅移除所有 `dark:bg-gray-*` 和 `dark:text-gray-*` 类。不涉及结构、布局、功能或组件变更。 | 1780765933687 |
-| 2026-06-07 | 测评页 + 体检页 | **修复测试环境顶部图片变成熊猫的Bug**：从正式环境 `DigitalHuman-DYEA1R29.js` 反编译还原木头小人SVG身体部位图。①重写`DigitalHuman.vue`（324行，rain/wave模式，12正面+12背面身体部位，butterfly_mascot吉祥物，雨/波/帘动画）；②`AssessmentPage.vue`移除失效的`AssessmentSnapshot`类型导入；③`BodyPartPanel.vue`内联定义`AssessmentSnapshot`类型；④`BodyPartCamera.vue`扩展`captured`事件类型加`meta`参数；⑤`ChatInput.vue`修复早前color修复留下的未闭合字符串。构建产物`DigitalHuman.js` 9806字节 / `.css` 2592字节，与正式环境完全一致（正式版9816字节）。 | 1780790251510 |
-| 2026-06-07 | AssessmentPage + CommunityPage | **回滚测试环境：删除多余的 dead code**：①`AssessmentPage.vue`删除无用的`@open-chat`/`@open-report`事件处理（DigitalHuman木头小人不发这些事件）；②`CommunityPage.vue`删除6个硬编码fallback Mock示例帖子（刘哥/李姐/陈姐/张哥/小王/赵姐等测试数据），用于正式环境不存在的数据。CommunityPage bundle 20.7KB → 16.8KB（-19%）。 | 1780826657997 |
-| 2026-06-07 | 后端 | **git commit 后端代码**（commit `d27542a`）：103个文件，23,457行插入。仅提交到版本控制，不重启服务、不影响用户。包括：rag.py流式/3模式、vasi.py草稿评估流、recommendation.py新排序公式、sms.py阿里云号码认证、wechat_auth.py OAuth状态管理等。此前已在生产环境运行中。 | (不部署) |
-| 2026-06-07 | 社区 | **删除测试环境的「同城分享」功能**（与正式环境对齐）：移除 useGeolocation composable + CityPicker 组件（共 261 行删除），从 CommunityPage 删除「同城」Tab + 城市筛选逻辑 + 城市选择弹窗，从 4 个发帖 Editor (Text/Long/Image/Video) 删除「显示城市」开关 + city/lat/lng 字段。后端接口仍接受 city 参数（向后兼容），前端不再传送。CommunityPage bundle 20.7KB→14.8KB（-29%），9个文件改动，净删除 386 行。Batch 1 反编译验证发现 vasi.ts/community.ts/medical-report.ts/useDrafts.ts/im.ts/moderation.ts 等源码与 prod bundle 一致——community.ts 补齐 2 个方法 (getPublicProfile/getUserPosts)，moderation.ts 改进类型定义。 | 1780830874264 |
-
+| 日期 | 模块 | 变更描述 | buildTime |
+|------|------|---------|-----------|
+| 2026-06-14 | 测评页+体检页+UI一致性 | **3项UI修复**：①测评页(AssessmentStep1Capture)背景从白色(bg-white)改为#F5F7FA，与其他页面一致；②移除数字小人上方标题文字"白斑测评"及描述"上传白斑照片，AI量化评估面积与严重程度"；③数字小人显示尺寸从280px固定高度改为50vh响应式高度(min 320px, max 480px, max-w-md居中)，与体检页视觉大小保持一致；④体检页(ReportPage)背景从#f7f7f7改为#F5F7FA并添加dark mode支持；⑤AssessmentWizard step1背景同步修正为#F5F7FA | 1781450546174 |
+| 2026-06-14 | 测评页 | **修复AssessmentStep1Capture自动滚动Bug**：card.scrollIntoView()改为card.closest('main') + scrollTo()，解决嵌套overflow容器滚动问题 | 1781451755081 |
+| 2026-06-14 | 测评页 MaskEditor | **修复MaskEditor画布4项Bug**：①移除zoomToFit中Math.min(1,fit)放大上限，允许图像填充容器；②maxHeight从65vh改为calc(100dvh-200px)增大移动端显示空间；③浮动工具栏从overflow:hidden视口内移到外部sticky定位，修复裁剪问题；④zoomToFit从requestAnimationFrame改为setTimeout(50ms)解决渲染时机问题 | 1781451907523 |
+| 2026-06-14 | 后端 VASI | **修复VLM视觉特征缺失Bug**：①VLM静态prompt新增shape和surface两个字段（前端VisualFeatures接口要求8个字段，原prompt只有6个）；②vasi.py新增defensive fallback，当VLM未返回visual_features时自动填充8字段默认值，防止API返回null | 1781451907523 + backend restart |
+| 2026-06-14 | 测评页 | **修复2项VASI测评流Bug**：①AssessmentStep1Capture自动滚动修复——offsetTop替换为getBoundingClientRect()计算（offsetTop相对offsetParent而非main滚动容器）；②BodyPartCamera相机退出遮罩冻结修复——leave动画期间添加pointer-events:none防止透明fixed遮罩拦截页面点击 | 1781452721847 |
+| 2026-06-14 | 测评页 | **修复step3页面冻结根因——移除竞态自推进watch**：移除`watch(showContourEditor)`自动推进step3→step4的watch（与`onSubmitAssessment`路由决策冲突，导致step3渲染后立即被跳到step4，造成页面卡死）；step路由现由`onSubmitAssessment`和`onVisualFeaturesContinue`显式控制 | 1781453171647 |
+| 2026-06-15 | 测评页 | **前置身体部位选择提醒**：测评流程中拍照/相册按钮增加身体部位检查——用户点击拍照或相册时，若未选择身体部位则弹出toast提醒"请先在数字人上点击选择身体部位"，阻止相机/文件选择器打开。修改AssessmentWizard.vue（新AI流）和AssessmentStep1Capture.vue（旧快速流） | 1781453548398 |
+| 2026-06-15 | 测评页 MaskEditor | **修复AI测评返回后页面卡死Bug**：3项主线程优化——①ResizeObserver增加rAF节流防回流风暴；②loadLayerFromDataUrl在resolve前等待浏览器绘制，避免下游getImageData读到空白canvas；③AI图层加载后先stopAnimation再defer到rAF中执行updateAreas/rebuildEdgeCaches，消除RAF竞争导致的主线程死锁 | 1781456579077 |
+| 2026-06-15 | 测评页 MaskEditor | **第二轮卡死修复（6项）**：①resizeObserver rAF去重+节流guard；②loadLayerFromDataUrl等待浏览器paint后resolve；③onImgLoad和layer watcher将重像素操作(extractEdgePixels/updateAreas)延迟2帧rAF执行；④移除snapshot()外冗余的rebuildEdgeCaches调用（内部已调用，避免双重像素遍历）；⑤onImgLoad/stAni增加防止重复startAnimation的guard；⑥imageLoading标志位移入rAF回调，防止主线程阻塞时提早释放loading状态 | 1781493458865 |
+| 2026-06-15 | 测评页 MaskEditor | **⚡ 根因修复：Canvas分辨率封顶MAX_CANVAS_DIM=2048px**。手机相机4000×3000像素照片之前直接设为canvas尺寸，3个canvas缓冲区各45MB、getImageData遍历45MB×3次、快照历史30帧×45MB×2=2.7GB——这是卡死的真正原因。现在canvas工作分辨率上限2048px，CSS显示尺寸不变(自然分辨率)，内存/CPU降低12×，触摸坐标自动适配(~1行代码)。配合前9项rAF/节流/延迟修复，彻底消除主线程阻塞 | 1781499418125 |
+| 2026-06-15 | 测评页 MaskEditor | **⚡ 最终根因修复：Vue响应式在60fps动画循环中的性能屠杀**。3项关键优化——①dashOffset从ref(0)改为plain let变量，消除60次/秒的Vue triggerRefValue()调度器开销；②edgePixelsSkin/edgePixelsLesion从ref改为plain数组，消除每帧canvas渲染中的Vue proxy拦截；③history从ref改为shallowRef，避免Vue深度代理对12MB+ ImageData对象的track/trigger开销。同时修复AssessmentStep2Analyze高度计算(calc(100dvh-52px)→h-full flex)，解决移动端底部按钮被BottomNav遮挡 | 1781538705204 |
+| 2026-06-15 | 测评页 MaskEditor | **🔥 第二轮卡死根因修复：Canvas动画循环性能屠杀(4项)**。①动画从60fps节流到~12fps（CPU工作减5倍，行军蚁效果12fps视觉足够流畅）；②overlay canvas去掉willReadFrequently标记（允许浏览器GPU加速合成，手机性能提升巨大）；③overlay上下文缓存变量_overlayCtx（避免每帧调用getContext）；④updateAreas从同步阻塞改为requestIdleCallback延迟执行（避免初始化时3×getImageData阻塞主线程） | 1781539418172 |
+| 2026-06-16 | 测评页 MaskEditor | **🔥🔥 第三轮根本性架构修复：84K个体draw call→2个drawImage(离屏canvas预渲染)**。核心架构改变——①renderContourOutlines从逐点fillRect(84K calls/frame)改为offscreen canvas预渲染+2个drawImage合成(从~80K GPU指令降到2个)；②边缘缓存重建时设_contourBufDirty标记，动画帧仅dirty时重建；③updateAreas防抖150ms(防止快速连续笔触时每笔3×getImageData)；④tab隐藏时暂停动画(visibilitychange)；⑤组件卸载时清理离屏canvas避免内存泄漏 | 1781540766838 |
+| 2026-06-16 | 测评页 MaskEditor | **🔥🔥🔥 第四轮终极修复：初始化拆分为5步异步+分辨率降4倍**。①MAX_CANVAS_DIM从2048→1024(像素数据减4倍，所有getImageData/fillRect操作快4倍)；②初始化从单个同步块拆分为5个requestAnimationFrame步骤(snapshot→drawOverlay→startAnimation→updateAreas)，每步之间浏览器可处理用户输入；③HISTORY_MAX从30→10(内存从186MB→62MB)；④updateAreas延迟从200ms→500ms(给浏览器更多空闲时间) | 1781543313012 |
+| 2026-06-17 | 测评页 MaskEditor | **🔥🔥🔥🔥 根因修复：zoomToFit()无限微任务死循环**。`zoomToFit()`在容器高度为0时使用`nextTick(() => zoomToFit())`重试——Vue 3的nextTick是微任务(Promise.resolve().then())，在浏览器layout之前执行，clientHeight永远不会改变→无限微任务循环→主线程永久阻塞→整个网站卡死(需关闭标签页)。修复：nextTick→requestAnimationFrame(在layout/paint后执行，dimensions可变)+添加10次重试上限+fallback默认zoom。触发条件：AI测评后VisualFeaturesCard默认展开占满移动端垂直空间→MaskEditor flex-1容器高度为0→zoomToFit进入死循环 | 1781706247394 |
+| 2026-06-17 | 测评页 Step2 | **修复标注画布不可见+误跳结果页**：①VisualFeaturesCard默认展开(showVisualFeatures=true)占满移动端屏幕→MaskEditor(flex-1 min-h-0)被挤压到0高度不可见。改为默认折叠(showVisualFeatures=false)，画布获得全部剩余空间。②VisualFeaturesCard底部"继续VASI测评"按钮触发skipContourEdit直接跳到结果页，绕过手动标注。移除该冗余按钮(底部操作栏已有"跳过标注→"/"✓查看结果"按钮)，避免用户误点跳过标注 | 1781707243205 |
+| 2026-06-17 | 测评页 Step2 | **修复工具栏被遮挡+缺少确认按钮**：①AssessmentStep2Analyze容器添加pb-[calc(54px+env(safe-area-inset-bottom))]底部留白，避免全局BottomNav(fixed z-50 ~54px)遮挡MaskEditor工具栏和底部操作栏。②MaskEditor新增confirmMasks()方法(toDataURL导出皮肤/白斑canvas→emit confirm)+defineExpose暴露。③AssessmentStep2Analyze添加maskEditorRef+底部操作栏新增"确认提交标注"主按钮(触发confirmMasks→maskConfirm→后端重新计算VASI)。原"跳过标注"改为次要"跳过"按钮 | 1781708832082 |
+| 2026-06-17 | 测评页 Step3 | **修复分享封面图data URL无法上传问题**：测评完成后点击"分享"，annotated image（原始照片+AI皮肤/白斑图层合成图）之前是data URL(base64)直接存入草稿，导致后端API拒绝、localStorage超限、发布失败。修复：先通过communityApi.uploadImage将data URL上传到服务器获取真实URL，再存入草稿。分享时第1张封面=标注合成图，第2张=原始照片 | 1781712249965 |
 
 ## Production Deployment History
 
-> Latest: 2026-06-06 — buildTime: 1780761601399
+> Latest: 2026-06-10 — buildTime: 1781069684404
+| 2026-06-13 01:10:21 | 测评页重构 v3 + VLM优化 | **测评页面全面重构**：①前端3步极简流程(拍照→AI分析+画布→结果)替换原5步，组件从2个超标文件(1368行)拆分为8个合规文件(全部在limit内)；②评估历史独立为桌面侧边栏+移动端底部sheet；③删除VisualFeatures阻断页、简化进度条、统一布局；④后端6个自进化文件优雅禁用(数据不足)；⑤VLM prompt从~250行精简到~70行(提高响应可靠性和速度)；⑥MaskEditor TS修复 | 1781284199040 |
+
+
+| 日期 | 模块 | 变更描述 | buildTime |
+|------|------|---------|-----------|
+| 2026-06-10 | 测评页 | **2项合并推送**：①修复DigitalHuman身体部位标签被截断（SVG viewBox 1280→1400、所有x坐标+60、阈值640→700、overflow-hidden→overflow-visible）；②VASI测评步骤4界面简化（工具栏移入视口底部悬浮、面积占比改为badge、新手引导8秒自动关闭、信息栏紧凑单行+可折叠、移除冗余统计/提示/按钮） | 1781069684404 |
+
+| 日期 | 模块 | 变更描述 | buildTime |
+|------|------|---------|-----------|
+| 2026-06-09 | 测评页+UX重构 | **2项合并推送**：①评估历史分页（useVasiAssessment composable新增分页API + AssessmentSection删除加载更多、新增分页条）；②VASI测评模块全面UX优化——架构统一(TrackerPage裁剪+路由修复+6文件路径更新)+5步向导流程(AssessmentWizard新建)+画笔简化(默认白斑画笔+新手引导+面积进度条)+AI辅助(部位确认牌+信心度徽章)+结果展示(sparkline趋势图+对比箭头) | 1780980449779 |
+| 2026-06-09 | 测评页 | **VASI"灰色方框"双修推送（合并2条pending）**：①真正根因修复——MaskEditor.vue template transform 嵌套 bug：外层 `absolute top-1/2 left-1/2` + 内层 `translate(-50%, -50%)` + scale(zoom)，`translate(-50%)` 按图片**自然尺寸**算偏移，3000×4000 图在 zoom<0.5 时被推到 -1500px/-2000px 渲染在 viewport 外，只剩 `bg-gray-300` 灰底。改为 `absolute inset-0 flex items-center justify-center` flex 居中容器，内层只保留 scale + pan transform。②首轮 zoomToFit/minZoom 改动也带上：`minZoom 0.15→0.05`，独立 `fitFloor=0.02`，`onImgLoad` 加 `nextTick + requestAnimationFrame`，`watch(imageUrl)` 改 async 并对 cached blob 主动触发 onImgLoad，新增 `watch([skinLayer,lesionLayer])` 在 AI 图层后到达时重画 canvas。③修复 prod build TS2322——watch oldValue 默认值与 `MaybeUndefined<T,Immediate>` 类型冲突，去掉默认值（非 immediate watch 必有 oldValue） | 1780961725111 |
+| 2026-06-09 | 社区+测评+登录 | **5项合并推送**：①发现页帖子卡片Footer简化（仅昵称+爱心，移除多余按钮）；②关注按钮从加号图标改为文字"关注"/"已关注"按钮（FollowPlus.vue重写）；③帖子详情页头像改为真实图片+私信按钮（PostDetailPage.vue）；④登录闪跳修复——PWA controllerchange不再强制刷新打断输入，showLoginModal持久化到sessionStorage（usePWA.ts+auth.ts），统一全局LoginModal（CommunityPage+PostDetailPage移除本地LoginModal）；⑤VASI测评结果页照片不再被隐私模式blur-lg模糊覆盖（用户自己的医疗照片不应对自己模糊），添加图片加载失败容错 | 1780940088791 |
+| 2026-06-08 | 测评页 | **修复VASI测评3项Bug**：①VisualFeaturesCard特征分析描述文字移除`truncate`类改为自动换行（原超出屏幕显示省略号）；②`useVasiAssessment`的`loadImagePreview`从`URL.createObjectURL`(blob URL)改为`FileReader.readAsDataURL`(data URL)，修复MaskEditor灰色区域问题（blob URL在上传后可能失效导致图片不渲染）；③MaskEditor取消按钮行为修复——新增`cancelAssessment`函数：取消测评→终止draft(调用abandonAssessment)→重置状态→回到上传步骤，不再显示"测评完成"结果和"分享至发现"按钮；④特征分析步骤(Step 3)和VASI测评步骤(Step 4)添加"取消测评"和"返回特征分析"按钮，允许用户返回上一个操作 | 1780850708209 |
+
+| 日期 | 模块 | 变更描述 | buildTime |
+|------|------|---------|-----------|
+| 2026-06-07 | 社区+后端 | **4项合并推送**：①恢复同城分享功能（CityPicker+useGeolocation+CommunityPage三Tab+4个发帖Editor+TS错误修复）；②RAG向量化改为每月增量执行（batch_embed+embed-batch端点+monthly_embed脚本+systemd timer）；③同城定位速度优化（IP优先+GPS异步升级，6-13秒→<1秒）；④同城Tab改为动态城市名+城市切换器（省份→城市层级选择+搜索） | 1780847821604 |
 
 | 日期 | 模块 | 变更描述 | buildTime |
 |------|------|---------|-----------|
@@ -42,19 +73,24 @@
 
 ## Environment Sync Baseline
 
-## Environment Sync Baseline
-
-## Environment Sync Baseline
-
-> **2026-05-16 Sync**: Both environments rebuilt from same source code.
-> The ONLY difference is the staging nav bar color (dark blue `bg-slate-800` vs white `bg-white`).
-> This is the cold start point — all future changes must follow the staging→prod workflow.
+> **🔴 2026-06-09 SYNC POINT — LATEST**: Staging and Production are EXACTLY identical in code content.
+> This is the current baseline. All future changes start from this sync point.
+> **The ONLY intentional differences between staging and production are:**
+> 1. Nav bar color: staging = 深蓝 `bg-slate-800`, production = 白色 `bg-white`
+> 2. PWA app name: staging = "SubSkin [STAGING]", production = "SubSkin更懂你"
+> 3. version.json `env` field: staging = `"staging"`, production = `"production"`
+> 4. Update banner text: staging = "测试环境有新版本可用", production = "有新版本可用"
+>
+> **Everything else (功能、页面、组件、逻辑、API) is 100% identical.**
+> **Any new change MUST go to staging first, then FULL sync to production after user confirmation.**
 
 | | Staging | Production |
 |---|---------|------------|
-| BuildTime | 1778986869891 | 1778986691825 |
+| BuildTime | 1780940124396 | 1780940088791 |
+| Source code | ✅ Identical | ✅ Identical |
 | Nav bar | Dark blue (`bg-slate-800`) | White (`bg-white`) |
 | PWA name | SubSkin [STAGING] | SubSkin更懂你 |
+| __APP_ENV__ | `'staging'` | `'production'` |
 | Update banner | "测试环境有新版本可用" | "有新版本可用" |
 | Everything else | ✅ Identical | ✅ Identical |
 
@@ -89,6 +125,10 @@
 
 | Date | BuildTime | Changes |
 |------|-----------|---------|
+| 2026-06-09 | 1780940124396 | 🔄 **环境同步**：staging rebuilt 与 production 完全一致（代码相同，仅环境标识不同） |
+| 2026-06-08 | 1780939893026 | 社区+测评+登录修复：FollowPlus文字按钮+PostDetailPage头像/私信+LoginModal闪跳修复+VASI照片blur移除 |
+| 2026-06-08 | 1780850708209 | 测评页3项Bug修复：VisualFeaturesCard自动换行+MaskEditor blob→dataURL+cancelAssessment取消行为 |
+| 2026-06-07 | 1780847849864 | 🔄 **环境同步**：staging rebuilt 与 production 完全一致（代码相同，仅环境标识不同） |
 | 2026-06-06 | 1780761444132 | 🎨 **个人中心+全局文本修复**：ProfilePage残留暗色bg移除+5个profile弹窗暗色bg移除+全局`dark:text-gray-100/200/300`移除(覆盖所有已修改页面) |
 | 2026-05-16 | 1778945043533 | 🖼️ 图片认证修复 + 📐 布局优化 + 🏙️ 同城发帖修复 + 📍 定位预加载 + 📝 类型更新 |
 | 2026-05-16 | 1778928302036 | 🔧 K 修复：移除"精确分析"按钮（CPU 必失败）+ 修复 SAM 并发 RuntimeError |

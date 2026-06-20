@@ -23,6 +23,16 @@ const router = createRouter({
       redirect: '/',
     },
     {
+      path: '/assessment/vasi/:id',
+      name: 'vasi-detail',
+      component: () => import('@/views/VasiDetailPage.vue'),
+    },
+    {
+      path: '/assessment/compare',
+      name: 'vasi-compare',
+      component: () => import('@/views/VasiComparePage.vue'),
+    },
+    {
       path: '/tracker',
       redirect: '/assessment',
     },

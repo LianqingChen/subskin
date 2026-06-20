@@ -9,9 +9,8 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'tag-click', tagName: string): void
   (e: 'like-click', postId: number): void
-  (e: 'bookmark-click', postId: number): void
+  (e: 'follow-change', followed: boolean, userId: number): void
 }>()
 
 function getPostType(post: Post): string {
@@ -23,25 +22,21 @@ function getPostType(post: Post): string {
   return 'text'
 }
 
-function onTagClick(tagName: string) {
-  emit('tag-click', tagName)
-}
-
 function onLikeClick(postId: number) {
   emit('like-click', postId)
 }
 
-function onBookmarkClick(postId: number) {
-  emit('bookmark-click', postId)
+function onFollowChange(followed: boolean, userId: number) {
+  emit('follow-change', followed, userId)
 }
 </script>
 
 <template>
-  <div class="columns-2 sm:columns-3 lg:columns-4 gap-2.5">
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
     <template v-for="post in posts" :key="post.id">
-      <ImagePostCard v-if="getPostType(post) === 'image' || getPostType(post) === 'video'" :post="post" @tag-click="onTagClick" @like-click="onLikeClick" @bookmark-click="onBookmarkClick" />
-      <TextPostCard v-else-if="getPostType(post) === 'text'" :post="post" @tag-click="onTagClick" @like-click="onLikeClick" @bookmark-click="onBookmarkClick" />
-      <LongPostCard v-else :post="post" @tag-click="onTagClick" @like-click="onLikeClick" @bookmark-click="onBookmarkClick" />
+      <ImagePostCard v-if="getPostType(post) === 'image' || getPostType(post) === 'video'" :post="post" @like-click="onLikeClick" @follow-change="onFollowChange" />
+      <TextPostCard v-else-if="getPostType(post) === 'text'" :post="post" @like-click="onLikeClick" @follow-change="onFollowChange" />
+      <LongPostCard v-else :post="post" @like-click="onLikeClick" @follow-change="onFollowChange" />
     </template>
   </div>
 </template>

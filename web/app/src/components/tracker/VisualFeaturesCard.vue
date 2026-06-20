@@ -6,10 +6,6 @@ defineProps<{
   visualFeatures: VisualFeatures
 }>()
 
-const emit = defineEmits<{
-  continue: []
-}>()
-
 const showKnowledge = ref(false)
 
 const LEVEL_MAP: Record<string, Record<string, string>> = {
@@ -76,7 +72,7 @@ const dimensions = [
         >
           {{ levelLabel(dim.key, visualFeatures[dim.key]) }}
         </span>
-        <span class="text-gray-500  truncate">{{ visualFeatures[dim.key].description }}</span>
+        <span class="text-gray-500">{{ visualFeatures[dim.key].description }}</span>
       </div>
     </div>
 
@@ -119,17 +115,6 @@ const dimensions = [
         <i class="ri-shield-check-line mt-0.5 flex-shrink-0"></i>
         <span>以上分析基于照片视觉观察，仅供参考，不构成医疗诊断。</span>
       </p>
-    </div>
-
-    <!-- Continue Button -->
-    <div class="px-4 pb-4">
-      <button
-        class="w-full py-3 rounded-xl bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white text-sm font-medium transition-colors flex items-center justify-center gap-1.5 min-h-[44px]"
-        @click="emit('continue')"
-      >
-        继续VASI测评
-        <i class="ri-arrow-right-line"></i>
-      </button>
     </div>
   </div>
 </template>

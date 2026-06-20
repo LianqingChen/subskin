@@ -1139,13 +1139,16 @@ def add_document(
     source_tier: str = "C",
     authority_weight: float = 1.0,
     pub_date: str = None,
+    compute_embedding: bool = False,
 ) -> Document:
-    """添加文档到知识库并计算 embedding"""
+    """添加文档到知识库。默认不计算 embedding（每月1号批量增量向量化），如需即时计算可设 compute_embedding=True。"""
     import json
 
-    content_truncated = content[:8000]
-    embedding = get_embedding(content_truncated)
-    embedding_json = json.dumps(embedding)
+    embedding_value = None
+    if compute_embedding:
+        content_truncated = content[:8000]
+        embedding = get_embedding(content_truncated)
+        embedding_value = json.dumps(embedding)
 
     doc = Document(
         title=title,
@@ -1156,9 +1159,77 @@ def add_document(
         source_tier=source_tier,
         authority_weight=authority_weight,
         pub_date=pub_date,
-        embedding=embedding_json,
+        embedding=embedding_value,
     )
     db.add(doc)
     db.commit()
     db.refresh(doc)
     return doc
+
+
+def batch_embed_unembedded(db: Session) -> dict:
+    """对 embedding=NULL 的文档做增量向量化（每月1号批量执行）。
+
+    Returns:
+        dict with embedded_count, failed_count, total, skipped_count
+    """
+    import json
+    import time
+
+    from web.backend.database.models import Document
+
+    unembedded = db.query(Document).filter(Document.embedding.is_(None)).all()
+    total = len(unembedded)
+
+    if total == 0:
+        logger.info("没有需要向量化的新文档")
+        return {"embedded_count": 0, "failed_count": 0, "total": 0, "skipped_count": 0}
+
+    logger.info("开始增量向量化: %d 篇文档需要处理", total)
+
+    embedded_count = 0
+    failed_count = 0
+
+    for i, doc in enumerate(unembedded):
+        try:
+            content_truncated = doc.content[:8000] if doc.content else ""
+            if not content_truncated.strip():
+                failed_count += 1
+                logger.warning("文档 %d 内容为空，跳过", doc.id)
+                continue
+
+            embedding = get_embedding(content_truncated)
+            doc.embedding = json.dumps(embedding)
+            db.commit()
+
+            embedded_count += 1
+            if (embedded_count) % 10 == 0:
+                logger.info(
+                    "向量化进度: %d/%d 已完成 (%.1f%%)",
+                    embedded_count,
+                    total,
+                    embedded_count / total * 100,
+                )
+
+            # 限速：每次 API 调用间隔 1.5 秒，避免触发 rate limit
+            time.sleep(1.5)
+
+        except Exception as e:
+            failed_count += 1
+            logger.error("文档 %d 向量化失败: %s", doc.id, str(e))
+            db.rollback()
+            continue
+
+    logger.info(
+        "增量向量化完成: 成功 %d, 失败 %d, 总计 %d",
+        embedded_count,
+        failed_count,
+        total,
+    )
+
+    return {
+        "embedded_count": embedded_count,
+        "failed_count": failed_count,
+        "total": total,
+        "skipped_count": 0,
+    }

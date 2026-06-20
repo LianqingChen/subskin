@@ -222,7 +222,7 @@ function formatDate(dateStr: string) {
       <div v-else class="text-center py-16 text-gray-400 ">
         <div class="text-4xl mb-3"><i class="ri-file-damage-line"></i></div>
         <p>报告不存在或已被删除</p>
-        <button @click="router.push('/tracker')" class="mt-4 text-sm text-primary-500 hover:underline">返回健康手帐</button>
+        <button @click="router.push({ name: 'assessment' })" class="mt-4 text-sm text-primary-500 hover:underline">返回健康手帐</button>
       </div>
     </main>
   </div>

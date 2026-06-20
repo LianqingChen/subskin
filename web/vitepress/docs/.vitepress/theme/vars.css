@@ -1,62 +1,132 @@
 /**
- * SubSkin Medical-tech Design System - Color Palette
- *
- * Calm, professional palette for medical/healthcare application:
- * - Primary: Soft blue - represents trust, medical science, calmness
- * - Secondary: Teal - represents healing, cleanliness
- * - Neutral: Clean grays for readability
- * - Background: Pure white with subtle spacing for patient readability
+ * SubSkin Design System Variables
+ * 
+ * Inspired by PandaWiki — clean, professional, tech-forward aesthetic.
+ * Medical knowledge base optimized for readability and trust.
  */
 
 :root {
-  /* Brand Colors - Medical Blue Palette */
-  --subskin-color-primary: #2b6cb0;
-  --subskin-color-primary-light: #4a8bdf;
-  --subskin-color-primary-dark: #1a4980;
-  --subskin-color-secondary: #319795;
-  --subskin-color-secondary-light: #4fd1c5;
-  --subskin-color-secondary-dark: #236763;
+  /* ══════════════════════════════════════
+   * Brand Colors — Sky Cyan + Teal
+   * ══════════════════════════════════════ */
+  --subskin-color-primary: #26A69A;
+  --subskin-color-primary-light: #5EC4BA;
+  --subskin-color-primary-dark: #1C857C;
+  --subskin-color-secondary: #A5D6A7;
+  --subskin-color-secondary-light: #C8E6C9;
+  --subskin-color-secondary-dark: #81C784;
 
-  /* Semantic Colors */
-  --subskin-color-success: #2f855a;
-  --subskin-color-warning: #d69e2e;
-  --subskin-color-danger: #e53e3e;
-  --subskin-color-info: #3182ce;
+  /* ══════════════════════════════════════
+   * Semantic Colors
+   * ══════════════════════════════════════ */
+  --subskin-color-success: #4CAF50;
+  --subskin-color-warning: #FFA726;
+  --subskin-color-danger: #DC2626;
+  --subskin-color-info: #26A69A;
 
-  /* Neutral Colors */
-  --subskin-color-text: #2d3748;
-  --subskin-color-text-light: #4a5568;
-  --subskin-color-text-muted: #718096;
-  --subskin-color-border: #e2e8f0;
-  --subskin-color-bg: #ffffff;
-  --subskin-color-bg-soft: #f7fafc;
+  /* ══════════════════════════════════════
+   * Neutral Palette — Warm Gray (softer than pure gray)
+   * ══════════════════════════════════════ */
+  --subskin-color-text: #111827;
+  --subskin-color-text-light: #4B5563;
+  --subskin-color-text-muted: #9CA3AF;
+  --subskin-color-border: #E5E7EB;
+  --subskin-color-bg: #FFFFFF;
+  --subskin-color-bg-soft: #F9FAFB;
+  --subskin-color-bg-muted: #F3F4F6;
 
-  /* Spacing Scale */
-  --subskin-space-1: 0.25rem;
-  --subskin-space-2: 0.5rem;
-  --subskin-space-3: 0.75rem;
-  --subskin-space-4: 1rem;
-  --subskin-space-6: 1.5rem;
-  --subskin-space-8: 2rem;
-  --subskin-space-12: 3rem;
-  --subskin-space-16: 4rem;
+  /* ══════════════════════════════════════
+   * Gradient Tokens — Hero, Cards, Accents
+   * ══════════════════════════════════════ */
+  --subskin-gradient-hero: linear-gradient(135deg, #1C857C 0%, #26A69A 50%, #A5D6A7 100%);
+  --subskin-gradient-hero-subtle: linear-gradient(135deg, #1C857C 0%, #5EC4BA 100%);
+  --subskin-gradient-card: linear-gradient(135deg, rgba(38, 166, 154, 0.03) 0%, rgba(165, 214, 167, 0.03) 100%);
+  --subskin-gradient-card-hover: linear-gradient(135deg, rgba(38, 166, 154, 0.06) 0%, rgba(165, 214, 167, 0.06) 100%);
+  --subskin-gradient-accent: linear-gradient(135deg, #26A69A 0%, #A5D6A7 100%);
 
-  /* Typography Scale - Patient Friendly Readability */
-  --subskin-font-size-base: 18px;
-  --subskin-line-height-base: 1.7;
-  --subskin-font-size-h1: 2rem;
-  --subskin-font-size-h2: 1.5rem;
-  --subskin-font-size-h3: 1.25rem;
-  --subskin-font-size-h4: 1.125rem;
-  --subskin-font-size-small: 0.875rem;
+  /* ══════════════════════════════════════
+   * Spacing Scale (4px base)
+   * ══════════════════════════════════════ */
+  --subskin-space-1: 0.25rem;   /* 4px */
+  --subskin-space-2: 0.5rem;    /* 8px */
+  --subskin-space-3: 0.75rem;   /* 12px */
+  --subskin-space-4: 1rem;      /* 16px */
+  --subskin-space-5: 1.25rem;   /* 20px */
+  --subskin-space-6: 1.5rem;    /* 24px */
+  --subskin-space-8: 2rem;      /* 32px */
+  --subskin-space-10: 2.5rem;   /* 40px */
+  --subskin-space-12: 3rem;     /* 48px */
+  --subskin-space-16: 4rem;     /* 64px */
+  --subskin-space-20: 5rem;     /* 80px */
+  --subskin-space-24: 6rem;     /* 96px */
 
-  /* Border Radius */
-  --subskin-radius-sm: 0.25rem;
-  --subskin-radius-md: 0.5rem;
-  --subskin-radius-lg: 0.75rem;
+  /* ══════════════════════════════════════
+   * Typography — Patient-Friendly Readability
+   * ══════════════════════════════════════ */
+  --subskin-font-family-base: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Noto Sans SC", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --subskin-font-family-heading: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Noto Sans SC", Helvetica, Arial, sans-serif;
+  --subskin-font-size-base: 16px;
+  --subskin-font-size-sm: 0.875rem;
+  --subskin-font-size-xs: 0.75rem;
+  --subskin-line-height-base: 1.8;
+  --subskin-line-height-heading: 1.3;
+  --subskin-font-size-h1: 2.5rem;
+  --subskin-font-size-h2: 1.875rem;
+  --subskin-font-size-h3: 1.5rem;
+  --subskin-font-size-h4: 1.25rem;
+  --subskin-font-weight-heading: 700;
+  --subskin-font-weight-body: 400;
+  --subskin-font-weight-medium: 500;
+  --subskin-font-weight-semibold: 600;
 
-  /* Shadows - Soft for medical aesthetic */
-  --subskin-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --subskin-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --subskin-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  /* ══════════════════════════════════════
+   * Border Radius — Soft but Modern
+   * ══════════════════════════════════════ */
+  --subskin-radius-sm: 0.375rem;   /* 6px */
+  --subskin-radius-md: 0.5rem;     /* 8px */
+  --subskin-radius-lg: 0.75rem;    /* 12px */
+  --subskin-radius-xl: 1rem;       /* 16px */
+  --subskin-radius-2xl: 1.5rem;    /* 24px */
+  --subskin-radius-full: 9999px;
+
+  /* ══════════════════════════════════════
+   * Shadows — Layered Depth, Not Flat
+   * ══════════════════════════════════════ */
+  --subskin-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --subskin-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --subskin-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --subskin-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --subskin-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --subskin-shadow-glow: 0 0 20px rgba(38, 166, 154, 0.15);
+
+  /* ══════════════════════════════════════
+   * Transition Timing
+   * ══════════════════════════════════════ */
+  --subskin-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --subskin-transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --subskin-transition-slow: 350ms cubic-bezier(0.25, 0.8, 0.25, 1);
+  --subskin-transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ══════════════════════════════════════
+ * Dark Mode — Rich, Not Just Inverted
+ * ══════════════════════════════════════ */
+html.dark {
+  --subskin-color-text: #F3F4F6;
+  --subskin-color-text-light: #D1D5DB;
+  --subskin-color-text-muted: #6B7280;
+  --subskin-color-border: #374151;
+  --subskin-color-bg: #0F172A;
+  --subskin-color-bg-soft: #1E293B;
+  --subskin-color-bg-muted: #1E293B;
+  
+  --subskin-gradient-hero: linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, #0D4F4F 100%);
+  --subskin-gradient-card: linear-gradient(135deg, rgba(38, 166, 154, 0.05) 0%, rgba(165, 214, 167, 0.05) 100%);
+  --subskin-gradient-card-hover: linear-gradient(135deg, rgba(38, 166, 154, 0.08) 0%, rgba(165, 214, 167, 0.08) 100%);
+
+  --subskin-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --subskin-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --subskin-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+  --subskin-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  --subskin-shadow-glow: 0 0 20px rgba(38, 166, 154, 0.25);
 }

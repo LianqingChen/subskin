@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Mobile responsive utilities */
+@media (max-width: 768px) {
+  /* Reduce font sizes on mobile */
+  .n-page-header__title {
+    font-size: 18px !important;
+  }
+
+  .page-desc {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+
+  /* Ensure tables scroll horizontally */
+  .n-data-table {
+    min-width: 100%;
+  }
+
+  /* Cards padding on mobile */
+  .n-card__content {
+    padding: 12px !important;
+  }
+
+  /* Modals full width on mobile */
+  .n-modal-body {
+    padding: 12px !important;
+  }
+
+  /* Reduce gaps in space */
+  .n-space {
+    gap: 8px !important;
+  }
+
+  /* Descriptions single column on mobile */
+  .n-descriptions {
+    --n-td-padding: 8px 12px !important;
+  }
+  .n-descriptions .n-descriptions-table-content {
+    font-size: 13px;
+  }
+
+  /* Modal nearly full screen on mobile */
+  .n-modal {
+    max-width: 96vw !important;
+  }
+
+  /* Larger touch targets for buttons */
+  .n-button {
+    min-height: 36px;
+  }
+
+  /* Pagination compact on mobile */
+  .n-pagination .n-pagination-quick-jumper {
+    display: none;
+  }
+
+  /* Radio group compact */
+  .n-radio-group {
+    flex-wrap: wrap;
+  }
+
+  /* Form items spacing */
+  .n-form-item {
+    margin-bottom: 12px;
+  }
+
+  /* Statistic values smaller */
+  .n-statistic .n-statistic-value__content {
+    font-size: 22px;
+  }
+}
+
+/* Ensure page descriptions are styled */
+.page-desc {
+  color: #94a3b8;
+  font-size: 14px;
+  margin-top: 8px;
+}

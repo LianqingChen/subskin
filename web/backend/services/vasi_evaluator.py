@@ -486,6 +486,9 @@ class VasiEvaluator:
 # Module-level convenience
 # ══════════════════════════════════════════════════════════════════════════════
 
+# ═══ SELF-EVOLVING DISABLED (2026-06-13) — data insufficient for effective RL ═══
 def get_evaluator(db: Session) -> VasiEvaluator:
+    return None  # DISABLED — insufficient training data
+
     """获取 VasiEvaluator 实例"""
     return VasiEvaluator(db)

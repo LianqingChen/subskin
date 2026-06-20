@@ -147,7 +147,7 @@ onMounted(load)
       <div v-else-if="notFound || !data" class="text-center py-16 text-gray-400 ">
         <div class="text-4xl mb-3"><i class="ri-file-damage-line"></i></div>
         <p>评估记录不存在或已被删除</p>
-        <button @click="router.push('/tracker')" class="mt-4 text-sm text-primary-500 hover:underline">返回小白追踪</button>
+        <button @click="router.push({ name: 'assessment' })" class="mt-4 text-sm text-primary-500 hover:underline">返回测评</button>
       </div>
 
       <template v-else>
@@ -264,13 +264,19 @@ onMounted(load)
                  @confirm="(p) => handleTwoLayerConfirm(p.skinMaskDataUrl, p.lesionMaskDataUrl)"
                  @cancel="editMode = false"
                />
-               <div v-else-if="authedImageUrl" class="relative">
-                 <img
-                   :src="authedImageUrl"
-                   alt="评估照片"
-                   class="w-full rounded-xl"
-                   :class="{ 'blur-lg': !privacyStore.privacyMode }"
-                 />
+<div v-else-if="authedImageUrl" class="relative">
+                  <img
+                    :src="authedImageUrl"
+                    alt="评估照片"
+                    class="w-full rounded-xl min-h-[200px]"
+                    @error="($event.target as HTMLImageElement).style.display='none'; ($event.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden')"
+                  />
+                  <div class="hidden aspect-square flex items-center justify-center bg-gray-100 rounded-xl">
+                    <div class="text-center text-gray-400 p-4">
+                      <i class="ri-image-line text-4xl block mb-2"></i>
+                      <p class="text-sm">图片加载失败</p>
+                    </div>
+                  </div>
                  <p v-if="!data.contours?.length && !data.skin_layer_data_url" class="text-xs text-gray-400  mt-2 text-center">
                    本次评估未生成轮廓数据
                  </p>

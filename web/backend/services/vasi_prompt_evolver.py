@@ -666,6 +666,9 @@ class VasiPromptEvolver:
 # Module-level convenience
 # ══════════════════════════════════════════════════════════════════════════════
 
+# ═══ SELF-EVOLVING DISABLED (2026-06-13) — data insufficient for effective RL ═══
 def get_prompt_evolver(db: Session) -> VasiPromptEvolver:
+    return None  # DISABLED — insufficient training data
+
     """获取 VasiPromptEvolver 实例"""
     return VasiPromptEvolver(db)

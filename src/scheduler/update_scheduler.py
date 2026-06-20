@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 from src.config import settings
 from src.exceptions import CrawlerError
+from src.utils.cache import Cache
 from src.utils.incremental_tracker import IncrementalTracker, UpdateType, DailySummary
 from src.utils.logger import get_logger
 
@@ -238,49 +239,69 @@ class UpdateScheduler:
         # Visual separator for better log readability
         logger.info("".join(["="] * 60))        
         # Run crawlers by information source category
-        # Category mapping: 
-        # - pubmed -> 📜 官方期刊与学术论文
-        # - cma (Chinese Medical Association) -> 📜 官方期刊与学术论文 (中华医学会)
-        # - semantic_scholar -> 📜 官方期刊与学术论文
-        # - clinical_trials -> 💊 新药研发与临床试验
+        # Category mapping: pubmed/crossref/semantic_scholar -> academic papers
+        # cma -> medical association, clinical_trials -> drug trials
+        # foundation_news -> research orgs & media, omicsdi -> bioinformatics
         crawlers_to_run = [
-            # (source_category, crawler_method)
             ("pubmed", self._run_pubmed_crawler),
+            ("pubmed_fulltext", self._run_pubmed_fulltext),
             ("cma", self._run_cma_crawler),
+            ("crossref", self._run_crossref_crawler),
             ("semantic_scholar", self._run_semantic_scholar_crawler),
             ("clinical_trials", self._run_clinical_trials_crawler),
-            # Other categories will be added as crawlers implemented:
-            # - clinical: 医院官媒与临床机构
-            # - traditional: 特色诊疗指南
-            # - news: 新闻媒体与官方报道
-            # - community: 患者社区
+            ("foundation_news", self._run_foundation_news_crawler),
+            ("omicsdi", self._run_omicsdi_crawler),
+            ("medical_content", self._run_medical_content_crawler),
         ]
         
+        CRAWLER_TIMEOUT_SECONDS = 3600  # 60 minutes max per crawler (PubMed needs ~55min)
+
         for crawler_name, crawler_func in crawlers_to_run:
-            try:
-                result = crawler_func()
-                crawler_results.append(result)
-                
-                if result["status"] == CrawlerStatus.COMPLETED:
-                    total_collected += result["items_collected"]
-                    total_updated += result["items_updated"]
-                elif result["status"] == CrawlerStatus.FAILED:
-                    all_errors.extend(result["errors"])
-            
-            except Exception as e:
-                error_result: CrawlerResult = {
+            result = None
+            exc = None
+
+            def _run():
+                nonlocal result, exc
+                try:
+                    result = crawler_func()
+                except Exception as e:
+                    exc = e
+
+            t = threading.Thread(target=_run, daemon=True)
+            t.start()
+            t.join(timeout=CRAWLER_TIMEOUT_SECONDS)
+
+            if exc:
+                logger.error("Crawler %s failed: %s", crawler_name, exc)
+                result = {
                     "crawler_name": crawler_name,
                     "status": CrawlerStatus.FAILED,
                     "items_collected": 0,
                     "items_updated": 0,
-                    "errors": [str(e)],
+                    "errors": [str(exc)],
                     "start_time": datetime.now().isoformat(),
                     "end_time": datetime.now().isoformat(),
-                    "duration_seconds": 0.0
+                    "duration_seconds": 0.0,
                 }
-                crawler_results.append(error_result)
-                all_errors.append(f"{crawler_name}: {e}")
-                logger.error(f"Crawler {crawler_name} failed: {e}")
+            elif result is None:
+                logger.error("Crawler %s timed out after %ds", crawler_name, CRAWLER_TIMEOUT_SECONDS)
+                result = {
+                    "crawler_name": crawler_name,
+                    "status": CrawlerStatus.FAILED,
+                    "items_collected": 0,
+                    "items_updated": 0,
+                    "errors": [f"Timed out after {CRAWLER_TIMEOUT_SECONDS}s"],
+                    "start_time": datetime.now().isoformat(),
+                    "end_time": datetime.now().isoformat(),
+                    "duration_seconds": float(CRAWLER_TIMEOUT_SECONDS),
+                }
+
+            crawler_results.append(result)
+            if result["status"] == CrawlerStatus.COMPLETED:
+                total_collected += result["items_collected"]
+                total_updated += result["items_updated"]
+            elif result["status"] == CrawlerStatus.FAILED:
+                all_errors.extend(result["errors"])
         
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
@@ -324,39 +345,39 @@ class UpdateScheduler:
         logger.info(f"Scheduled update completed: {overall_status}, "
                    f"collected {total_collected}, updated {total_updated}, "
                    f"duration {duration:.1f}s")
+
+        if total_collected > 0:
+            try:
+                imported = self._import_crawled_data_to_rag()
+                if imported > 0:
+                    logger.info("Imported %d new documents into RAG knowledge base", imported)
+            except Exception as e:
+                logger.error("Failed to import data to RAG: %s", str(e))
         
         # Send notification if enabled
         if settings.WECHAT_NOTIFICATION_ENABLED and self.config.get("notify_on_completion", True):
             try:
-                # Get daily summary
-                if self.incremental_tracker:
-                    today_iso = datetime.now().date().isoformat()
-                    summary = self.incremental_tracker.get_daily_summary(today_iso)
-                    summary_dict = dict(summary)
-                    
-                    # Add totals from this run
-                    summary_dict["total_papers"] = self.incremental_tracker.count_total_by_type(UpdateType.NEW_PAPER)
-                    summary_dict["total_trials"] = self.incremental_tracker.count_total_by_type(UpdateType.NEW_TRIAL)
-                    summary_dict["new_papers_with_summary"] = 0  # Will be populated by processing step
-                    
-                    # Send via WeChat using openclaw CLI
-                    # Your chat ID from the current conversation: o9cq80xDxxnZ9B-8BCXQkbOXnPag@im.wechat
-                    notifier = WeChatNotifier(
-                        channel="openclaw-weixin",
-                        target="o9cq80xDxxnZ9B-8BCXQkbOXnPag@im.wechat",
-                        openclaw_path="openclaw"
-                    )
-                    success = notifier.send_daily_summary(summary_dict)
-                    
-                    if success:
-                        logger.info("Daily summary sent to WeChat successfully")
-                    else:
-                        logger.warning("Failed to send daily summary to WeChat")
+                crawl_summary = {"date": datetime.now().date().isoformat(), "details": []}
+                for cr in crawler_results:
+                    crawl_summary["details"].append({
+                        "source": cr["crawler_name"],
+                        "change_details": {"items_collected": cr["items_collected"]},
+                        "resource_title": "",
+                    })
+
+                notifier = WeChatNotifier(
+                    channel="openclaw-weixin",
+                    target="o9cq80xDxxnZ9B-8BCXQkbOXnPag@im.wechat",
+                    openclaw_path="openclaw",
+                )
+                success = notifier.send_daily_summary(crawl_summary)
+                if success:
+                    logger.info("Daily briefing sent to WeChat successfully")
                 else:
-                    logger.debug("Incremental tracking not enabled, skipping WeChat notification")
+                    logger.warning("Failed to send daily briefing to WeChat")
             except Exception as e:
-                logger.error(f"Error sending WeChat notification: {str(e)}")
-        
+                logger.error("Error sending WeChat notification: %s", str(e))
+
         return result_data
     
     def _run_pubmed_crawler(self) -> CrawlerResult:
@@ -431,63 +452,163 @@ class UpdateScheduler:
             
             return result
     
+    def _run_pubmed_fulltext(self) -> CrawlerResult:
+        """Fetch PMC full text for newly crawled PubMed papers with PMCID."""
+        start_time = datetime.now()
+        
+        try:
+            logger.info("Running PubMed full-text fetcher")
+            import json
+            from src.crawlers.pubmed_fulltext import PubmedFulltextFetcher
+            
+            # Read today's PubMed data to find papers with PMCID
+            today = datetime.now().date().isoformat()
+            pubmed_file = PROJECT_ROOT / "data/raw" / f"pubmed_incremental_{today}.json"
+            
+            if not pubmed_file.exists():
+                logger.info("No PubMed data file for today, skipping full-text fetch")
+                return {
+                    "crawler_name": "pubmed_fulltext",
+                    "status": CrawlerStatus.SKIPPED,
+                    "items_collected": 0,
+                    "items_updated": 0,
+                    "errors": [],
+                    "start_time": start_time.isoformat(),
+                    "end_time": datetime.now().isoformat(),
+                    "duration_seconds": 0,
+                }
+            
+            with open(pubmed_file) as f:
+                papers = json.load(f)
+            
+            pmcids = [p["pmcid"] for p in papers if p.get("pmcid")]
+            logger.info(f"Found {len(pmcids)} papers with PMCID out of {len(papers)}")
+            
+            if not pmcids:
+                return {
+                    "crawler_name": "pubmed_fulltext",
+                    "status": CrawlerStatus.COMPLETED,
+                    "items_collected": 0,
+                    "items_updated": 0,
+                    "errors": [],
+                    "start_time": start_time.isoformat(),
+                    "end_time": datetime.now().isoformat(),
+                    "duration_seconds": (datetime.now() - start_time).total_seconds(),
+                }
+            
+            fetcher = PubmedFulltextFetcher(data_dir=str(PROJECT_ROOT / "data/fulltext"))
+            deduped = list(set(pmcids))
+            results = fetcher.fetch_batch(deduped)
+            
+            success = sum(1 for v in results.values() if v is not None)
+            failed = len(results) - success
+            
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            
+            logger.info(
+                f"Full-text fetch complete: {success}/{len(results)} papers "
+                f"({success/len(results)*100:.1f}%) in {duration:.1f}s"
+            )
+            
+            errors: list[str] = []
+            if failed > 0:
+                errors.append(f"{failed} papers had no full text available")
+            
+            return {
+                "crawler_name": "pubmed_fulltext",
+                "status": CrawlerStatus.COMPLETED,
+                "items_collected": success,
+                "items_updated": success,
+                "errors": errors,
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "duration_seconds": duration,
+            }
+            
+        except Exception as e:
+            end_time = datetime.now()
+            logger.warning(f"Full-text fetch failed: {e}", exc_info=True)
+            return {
+                "crawler_name": "pubmed_fulltext",
+                "status": CrawlerStatus.FAILED,
+                "items_collected": 0,
+                "items_updated": 0,
+                "errors": [str(e)],
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "duration_seconds": (end_time - start_time).total_seconds(),
+            }
+    
     def _run_cma_crawler(self) -> CrawlerResult:
         start_time = datetime.now()
         
         try:
-            logger.info("Running Chinese Medical Association (中华医学会) crawler")
-            import json
-            from src.crawlers.cma_crawler import CMACrawler
-            from src.models.paper import Paper
+            logger.info("Running CMA (中华医学会) crawler - direct page crawl")
+            import json, re
+            import requests
+            from bs4 import BeautifulSoup
             
-            # Initialize crawler and search for vitiligo
-            crawler = CMACrawler()
-            papers = crawler.search_vitiligo()
-            
-            items_collected = len(papers)
-            items_updated = 0
+            items_collected = 0
             errors: List[str] = []
+            articles = []
             
-            # Save raw data to json
+            cma_pages = [
+                "https://www.cma.org.cn/col/col12/index.html",
+            ]
+            
+            for url in cma_pages:
+                try:
+                    resp = requests.get(url, timeout=15, headers={
+                        "User-Agent": "Mozilla/5.0 (compatible; SubSkin/2.0)"
+                    })
+                    if resp.status_code != 200:
+                        continue
+                    soup = BeautifulSoup(resp.text, "html.parser")
+                    for link in soup.select("a[href]"):
+                        title = link.get_text(strip=True)
+                        href = link.get("href", "")
+                        if not title or len(title) < 6:
+                            continue
+                        if "白癜风" not in title and "皮肤" not in title:
+                            continue
+                        if href.startswith("/"):
+                            href = "https://www.cma.org.cn" + href
+                        articles.append({
+                            "title": title[:300],
+                            "url": href,
+                            "source": "中华医学会",
+                            "source_tier": "C",
+                            "authority_weight": 0.8,
+                        })
+                except Exception as e:
+                    errors.append(str(e))
+            
+            items_collected = len(articles)
+            
             output_dir = PROJECT_ROOT / "data/raw"
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path = output_dir / f"cma_incremental_{datetime.now().date().isoformat()}.json"
-            
-            # Save papers to JSON
-            papers_data = [paper.model_dump() for paper in papers]
             with open(output_path, 'w', encoding='utf-8') as f:
-                json.dump(papers_data, f, indent=2, default=str)
+                json.dump(articles, f, indent=2, default=str)
             
-            logger.info(f"Saved {items_collected} articles to {output_path}")
-            
-            # All are new on first run
-            items_updated = items_collected
-            
-            status = CrawlerStatus.COMPLETED
+            logger.info(f"Saved {items_collected} CMA articles to {output_path}")
             
             end_time = datetime.now()
-            duration = (end_time - start_time).total_seconds()
-            
-            logger.info(f"CMA crawler completed: {items_collected} items collected in {duration:.1f}s")
-            
-            result: CrawlerResult = {
+            return {
                 "crawler_name": "cma",
-                "status": status,
+                "status": CrawlerStatus.COMPLETED,
                 "items_collected": items_collected,
-                "items_updated": items_updated,
+                "items_updated": items_collected,
                 "errors": errors,
                 "start_time": start_time.isoformat(),
                 "end_time": end_time.isoformat(),
-                "duration_seconds": duration
+                "duration_seconds": (end_time - start_time).total_seconds(),
             }
-            
-            return result
             
         except Exception as e:
             end_time = datetime.now()
-            duration = (end_time - start_time).total_seconds()
-            
-            result: CrawlerResult = {
+            return {
                 "crawler_name": "cma",
                 "status": CrawlerStatus.FAILED,
                 "items_collected": 0,
@@ -495,10 +616,8 @@ class UpdateScheduler:
                 "errors": [str(e)],
                 "start_time": start_time.isoformat(),
                 "end_time": end_time.isoformat(),
-                "duration_seconds": duration
+                "duration_seconds": (end_time - start_time).total_seconds(),
             }
-            
-            return result
     
     def _run_semantic_scholar_crawler(self) -> CrawlerResult:
         start_time = datetime.now()
@@ -548,38 +667,43 @@ class UpdateScheduler:
         start_time = datetime.now()
         
         try:
-            logger.info("Running ClinicalTrials.gov crawler")
+            logger.info("Running ClinicalTrials.gov crawler (API v2)")
+            import json
+            from src.crawlers.clinical_trials_crawler import ClinicalTrialsCrawler
             
-            items_collected = 0
-            items_updated = 0
+            crawler = ClinicalTrialsCrawler(cache=Cache())
+            trials = crawler.search_vitiligo_trials(max_results=100)
+            
+            items_collected = len(trials)
             errors: List[str] = []
             
-            # For incremental updates, run the clinical trials crawler
-            # This is placeholder - actual implementation calls scrapy
-            # Currently disabled for incremental to avoid rate limits
-            items_collected = 0
+            output_dir = PROJECT_ROOT / "data/raw"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_path = output_dir / f"clinical_trials_{datetime.now().date().isoformat()}.json"
+            
+            trials_data = [t.model_dump() for t in trials]
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(trials_data, f, indent=2, default=str)
+            
+            logger.info(f"Saved {items_collected} trials to {output_path}")
             
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
             
-            result: CrawlerResult = {
+            return {
                 "crawler_name": "clinical_trials",
                 "status": CrawlerStatus.COMPLETED,
                 "items_collected": items_collected,
-                "items_updated": items_updated,
+                "items_updated": items_collected,
                 "errors": errors,
                 "start_time": start_time.isoformat(),
                 "end_time": end_time.isoformat(),
-                "duration_seconds": duration
+                "duration_seconds": duration,
             }
-            
-            return result
             
         except Exception as e:
             end_time = datetime.now()
-            duration = (end_time - start_time).total_seconds()
-            
-            result: CrawlerResult = {
+            return {
                 "crawler_name": "clinical_trials",
                 "status": CrawlerStatus.FAILED,
                 "items_collected": 0,
@@ -587,10 +711,354 @@ class UpdateScheduler:
                 "errors": [str(e)],
                 "start_time": start_time.isoformat(),
                 "end_time": end_time.isoformat(),
-                "duration_seconds": duration
+                "duration_seconds": (end_time - start_time).total_seconds(),
+            }
+    
+    def _run_crossref_crawler(self) -> CrawlerResult:
+        start_time = datetime.now()
+        
+        try:
+            logger.info("Running CrossRef crawler")
+            import json
+            from src.crawlers.crossref_crawler import CrossRefCrawler
+            
+            crawler = CrossRefCrawler()
+            papers = crawler.search(query="vitiligo", max_results=200)
+            
+            items_collected = len(papers)
+            errors: List[str] = []
+            
+            output_dir = PROJECT_ROOT / "data/raw"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_path = output_dir / f"crossref_incremental_{datetime.now().date().isoformat()}.json"
+            
+            papers_data = [paper.model_dump() for paper in papers]
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(papers_data, f, indent=2, default=str)
+            
+            logger.info(f"Saved {items_collected} papers to {output_path}")
+            
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            
+            return {
+                "crawler_name": "crossref",
+                "status": CrawlerStatus.COMPLETED,
+                "items_collected": items_collected,
+                "items_updated": items_collected,
+                "errors": errors,
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "duration_seconds": duration,
             }
             
-            return result
+        except Exception as e:
+            end_time = datetime.now()
+            return {
+                "crawler_name": "crossref",
+                "status": CrawlerStatus.FAILED,
+                "items_collected": 0,
+                "items_updated": 0,
+                "errors": [str(e)],
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "duration_seconds": (end_time - start_time).total_seconds(),
+            }
+    
+    def _run_foundation_news_crawler(self) -> CrawlerResult:
+        start_time = datetime.now()
+        
+        try:
+            logger.info("Running Foundation News crawler")
+            import json
+            from src.crawlers.foundation_news_crawler import FoundationNewsCrawler
+            
+            crawler = FoundationNewsCrawler()
+            articles = crawler.crawl_all()
+            
+            items_collected = len(articles)
+            errors: List[str] = []
+            
+            output_dir = PROJECT_ROOT / "data/raw"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_path = output_dir / f"foundation_news_{datetime.now().date().isoformat()}.json"
+            
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(articles, f, indent=2, default=str)
+            
+            logger.info(f"Saved {items_collected} news articles to {output_path}")
+            
+            end_time = datetime.now()
+            
+            return {
+                "crawler_name": "foundation_news",
+                "status": CrawlerStatus.COMPLETED,
+                "items_collected": items_collected,
+                "items_updated": items_collected,
+                "errors": errors,
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "duration_seconds": (end_time - start_time).total_seconds(),
+            }
+            
+        except Exception as e:
+            end_time = datetime.now()
+            return {
+                "crawler_name": "foundation_news",
+                "status": CrawlerStatus.FAILED,
+                "items_collected": 0,
+                "items_updated": 0,
+                "errors": [str(e)],
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "duration_seconds": (end_time - start_time).total_seconds(),
+            }
+    
+    def _run_omicsdi_crawler(self) -> CrawlerResult:
+        start_time = datetime.now()
+        
+        try:
+            logger.info("Running OmicsDI crawler")
+            import json
+            from src.crawlers.omicsdi_crawler import OmicsDICrawler
+            
+            crawler = OmicsDICrawler()
+            datasets = crawler.search_datasets(query="vitiligo", max_results=100)
+            
+            items_collected = len(datasets)
+            errors: List[str] = []
+            
+            output_dir = PROJECT_ROOT / "data/raw"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_path = output_dir / f"omicsdi_{datetime.now().date().isoformat()}.json"
+            
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(datasets, f, indent=2, default=str)
+            
+            logger.info(f"Saved {items_collected} datasets to {output_path}")
+            
+            end_time = datetime.now()
+            
+            return {
+                "crawler_name": "omicsdi",
+                "status": CrawlerStatus.COMPLETED,
+                "items_collected": items_collected,
+                "items_updated": items_collected,
+                "errors": errors,
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "duration_seconds": (end_time - start_time).total_seconds(),
+            }
+            
+        except Exception as e:
+            end_time = datetime.now()
+            return {
+                "crawler_name": "omicsdi",
+                "status": CrawlerStatus.FAILED,
+                "items_collected": 0,
+                "items_updated": 0,
+                "errors": [str(e)],
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "duration_seconds": (end_time - start_time).total_seconds(),
+            }
+    
+    def _run_medical_content_crawler(self) -> CrawlerResult:
+        start_time = datetime.now()
+        
+        try:
+            logger.info("Running Medical Content crawler (MSD, DXY, Dove, Broad, Haodf, AVRF)")
+            import json
+            from src.crawlers.medical_content_crawler import MedicalContentCrawler
+            
+            crawler = MedicalContentCrawler()
+            articles = crawler.crawl_all()
+            
+            items_collected = len(articles)
+            errors: List[str] = []
+            
+            output_dir = PROJECT_ROOT / "data/raw"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_path = output_dir / f"medical_content_{datetime.now().date().isoformat()}.json"
+            
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(articles, f, indent=2, default=str)
+            
+            logger.info(f"Saved {items_collected} articles to {output_path}")
+            
+            end_time = datetime.now()
+            
+            return {
+                "crawler_name": "medical_content",
+                "status": CrawlerStatus.COMPLETED,
+                "items_collected": items_collected,
+                "items_updated": items_collected,
+                "errors": errors,
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "duration_seconds": (end_time - start_time).total_seconds(),
+            }
+            
+        except Exception as e:
+            end_time = datetime.now()
+            return {
+                "crawler_name": "medical_content",
+                "status": CrawlerStatus.FAILED,
+                "items_collected": 0,
+                "items_updated": 0,
+                "errors": [str(e)],
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "duration_seconds": (end_time - start_time).total_seconds(),
+            }
+    
+    def _import_crawled_data_to_rag(self) -> int:
+        """Import today's crawled JSON files into the RAG knowledge base.
+
+        Reads all incremental JSON files from data/raw/ for today's date,
+        extracts title+abstract+source info, and adds them to the RAG
+        document store with proper source tier and authority weighting.
+
+        Returns:
+            Number of documents imported.
+        """
+        import json as _json
+        import os as _os
+
+        today = datetime.now().date().isoformat()
+        raw_dir = PROJECT_ROOT / "data/raw"
+        if not raw_dir.exists():
+            return 0
+
+        tier_map = {
+            "pubmed": ("A", 1.2),
+            "pubmed_fulltext": ("A", 1.3),
+            "crossref": ("A", 1.1),
+            "scholar": ("A", 1.2),
+            "clinical_trials": ("B", 1.0),
+            "foundation_news": ("B", 1.0),
+            "omicsdi": ("B", 1.0),
+            "cma": ("C", 0.8),
+            "medical_content": ("C", 0.8),
+        }
+
+        try:
+            from web.backend.database.database import get_db
+            from web.backend.database.models import Document
+            from web.backend.services.rag import add_document
+
+            db = next(get_db())
+        except Exception:
+            logger.warning("Cannot connect to RAG database for import")
+            return 0
+
+        # === 增量去重：预加载 DB 中已有的 source_url 和 title，避免重复 embedding ===
+        # 注意：之前的实现仅用进程内 set 去重，跨执行完全失效，导致每天对几千条
+        # 历史文献重新调用 text-embedding-v4，造成 API 费用浪费。这里改为读取 DB
+        # 实际已入库的指纹，命中即跳过 embedding 调用。
+        try:
+            existing_urls = {
+                row[0] for row in db.query(Document.source_url).filter(
+                    Document.source_url.isnot(None),
+                    Document.source_url != "",
+                ).all()
+            }
+            existing_titles = {
+                row[0] for row in db.query(Document.title).all()
+            }
+            logger.info(
+                "RAG dedup baseline: %d existing URLs, %d existing titles",
+                len(existing_urls), len(existing_titles)
+            )
+        except Exception as e:
+            logger.warning("Failed to load existing doc fingerprints, falling back to in-memory dedup: %s", e)
+            existing_urls = set()
+            existing_titles = set()
+
+        total_imported = 0
+        total_skipped_existing = 0
+        total_skipped_empty = 0
+        seen_titles_this_run = set()
+
+        for fname in _os.listdir(str(raw_dir)):
+            if today not in fname or not fname.endswith(".json"):
+                continue
+
+            crawler_id = fname.split("_")[0]
+            tier, weight = tier_map.get(crawler_id, ("C", 1.0))
+            fpath = raw_dir / fname
+
+            try:
+                with open(fpath, "r") as f:
+                    data = _json.load(f)
+            except (_json.JSONDecodeError, IOError):
+                continue
+
+            if not isinstance(data, list):
+                continue
+
+            for item in data:
+                if not isinstance(item, dict):
+                    continue
+
+                title = item.get("title", "")
+                if not title:
+                    total_skipped_empty += 1
+                    continue
+
+                # 三层去重：本次运行内 + DB 已有 title + DB 已有 url
+                if title in seen_titles_this_run:
+                    total_skipped_existing += 1
+                    continue
+                seen_titles_this_run.add(title)
+
+                url = item.get("url", "")
+
+                # 命中已有指纹 → 直接跳过，不调 embedding，不花钱
+                if (url and url in existing_urls) or title in existing_titles:
+                    total_skipped_existing += 1
+                    continue
+
+                abstract = item.get("abstract") or item.get("description") or item.get("content") or ""
+                source = item.get("source_name") or item.get("source") or crawler_id
+                pub_date = item.get("pub_date") or item.get("publicationDate") or ""
+
+                content = f"标题: {title}\n\n摘要: {abstract}"
+                if "authors" in item:
+                    authors = item["authors"]
+                    if isinstance(authors, list):
+                        content += f"\n\n作者: {', '.join(authors[:5])}"
+                if "journal" in item:
+                    content += f"\n\n期刊: {item['journal']}"
+
+                try:
+                    add_document(
+                        db=db,
+                        title=title[:500],
+                        content=content[:8000],
+                        source=source,
+                        source_url=url,
+                        category="academic_paper",
+                        source_tier=tier,
+                        authority_weight=weight,
+                        pub_date=pub_date,
+                    )
+                    total_imported += 1
+                    # 更新内存指纹，防止同一次运行内同 url/title 在不同 JSON 中重复
+                    if url:
+                        existing_urls.add(url)
+                    existing_titles.add(title)
+                except Exception as e:
+                    logger.debug("Skipping duplicate or invalid doc: %s", str(e)[:80])
+                    continue
+
+        logger.info(
+            "RAG import complete: %d new documents imported, %d skipped (already in DB), "
+            "%d skipped (empty title), from %d crawler files",
+            total_imported, total_skipped_existing, total_skipped_empty,
+            sum(1 for fname in _os.listdir(str(raw_dir)) if today in fname and fname.endswith(".json"))
+        )
+        return total_imported
     
     def _save_execution_result(
         self,
@@ -787,20 +1255,22 @@ class UpdateScheduler:
 
 
 def create_daily_scheduler() -> UpdateScheduler:
-    """Create a scheduler configured for daily updates at 7 AM (GMT+8)."""
-    config: ScheduleConfig = {
-        "frequency": ScheduleFrequency.DAILY,
-        "hour": 7,
-        "minute": 0,
-        "enabled": True,
-        "max_runtime_hours": 2.0,
-        "notify_on_completion": True,
-        "notify_on_failure": True
-    }
-    
+    """Create a scheduler that loads its frequency/hour/minute from scheduler_config.json.
+
+    Historical note: this function used to hard-code daily 02:00 and overwrite the
+    on-disk config — which silently defeated any external schedule changes. Now it
+    just instantiates UpdateScheduler (which already loads scheduler_config.json
+    via __init__) and returns it as-is. The function name is kept for backwards
+    compat with existing callers / systemd entry point.
+    """
     scheduler = UpdateScheduler()
-    scheduler.update_config(**config)
-    
+    logger.info(
+        "Scheduler loaded from config: frequency=%s, hour=%02d:%02d, enabled=%s",
+        scheduler.config["frequency"],
+        scheduler.config["hour"],
+        scheduler.config["minute"],
+        scheduler.config["enabled"],
+    )
     return scheduler
 
 

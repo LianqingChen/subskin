@@ -29,7 +29,11 @@ class Settings(BaseModel):
 
     NCBI_API_KEY: str | None = Field(
         default=None,
-        description="PubMed/NCBI API key.",
+        description="PubMed/NCBI API key. Enables 10 requests/sec (vs 3 without).",
+    )
+    NCBI_EMAIL: str | None = Field(
+        default=None,
+        description="Email associated with NCBI account. Recommended by NCBI for API usage.",
     )
     OPENAI_API_KEY: str | None = Field(
         default=None,

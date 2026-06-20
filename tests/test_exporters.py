@@ -154,7 +154,7 @@ class TestMarkdownExporter:
         assert "# Test Paper on Vitiligo" in content
         assert "## 摘要（英文）" in content
         assert "## 摘要（中文）" in content
-        assert "## 患者友好总结" in content
+        assert "## 白友易懂总结" in content
         assert "免责声明" in content
     
     def test_export_paper_minimal(self, sample_paper_minimal, tmp_path):
@@ -166,7 +166,7 @@ class TestMarkdownExporter:
         assert "# Minimal Test Paper" in content
         # Should not have Chinese sections since fields are None
         assert "## 摘要（中文）" not in content
-        assert "## 患者友好总结" not in content
+        assert "## 白友易懂总结" not in content
     
     def test_export_papers_batch(self, sample_paper, sample_paper_minimal, tmp_path):
         exporter = MarkdownExporter(export_dir=tmp_path / "exports")

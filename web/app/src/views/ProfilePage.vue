@@ -1045,7 +1045,7 @@ async function handleAvatarChange(event: Event) {
             <div class="text-xs text-gray-500 ">VASI评分</div>
           </div>
         </div>
-        <router-link to="/tracker" class="block text-center text-sm text-primary-600 hover:underline mt-3">
+        <router-link :to="{ name: 'assessment' }" class="block text-center text-sm text-primary-600 hover:underline mt-3">
           前往测评 →
         </router-link>
       </div>

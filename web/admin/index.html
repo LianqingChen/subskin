@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SubSkin 管理后台</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <!-- 清理残留 Service Worker (防止主站 PWA 覆盖管理后台域名) -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          regs.forEach(function(r) { r.unregister() })
+        })
+      }
+    </script>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

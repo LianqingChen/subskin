@@ -394,6 +394,9 @@ class EvolutionOrchestrator:
 # Module-level convenience
 # ══════════════════════════════════════════════════════════════════════════════
 
+# ═══ SELF-EVOLVING DISABLED (2026-06-13) — data insufficient for effective RL ═══
 def get_orchestrator(db: Session) -> EvolutionOrchestrator:
+    return None  # DISABLED — insufficient training data
+
     """获取 EvolutionOrchestrator 实例"""
     return EvolutionOrchestrator(db)

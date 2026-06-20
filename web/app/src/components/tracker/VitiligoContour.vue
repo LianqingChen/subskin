@@ -320,7 +320,7 @@ function contourFill(ci: number) {
           <circle
             :cx="toPixel(point[0], point[1])[0]"
             :cy="toPixel(point[0], point[1])[1]"
-            :r="selectedContourIdx === ci && selectedPointIdx === pi ? 8 : 5"
+            :r="selectedContourIdx === ci && selectedPointIdx === pi ? 22 : 18"
             :fill="selectedContourIdx === ci && selectedPointIdx === pi ? contourColors[ci % contourColors.length] : 'white'"
             :stroke="contourColors[ci % contourColors.length]"
             :stroke-width="2"

@@ -766,7 +766,7 @@ class CommunityService:
             author=PostAuthor(
                 id=post.author.id,
                 username=post.author.username,
-                avatar=None,
+                avatar=post.author.avatar_url,
                 is_doctor=getattr(post.author, "is_doctor", False),
                 is_verified=getattr(post.author, "real_name_verified", False),
                 is_followed=(

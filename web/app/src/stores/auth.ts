@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { authApi, type LoginResponse } from '@/api/auth'
 import { trackEvent } from '@/composables/useTracking'
 import type { User } from '@/types'
@@ -9,7 +9,16 @@ export const useAuthStore = defineStore('auth', () => {
   const refreshToken = ref<string | null>(null)
   const user = ref<User | null>(null)
   const isLoggedIn = computed(() => !!token.value)
-  const showLoginModal = ref(false)
+  const _loginModalState = sessionStorage.getItem('subskin_login_modal')
+const showLoginModal = ref(_loginModalState === 'true')
+
+watch(showLoginModal, (val: boolean) => {
+  if (val) {
+    sessionStorage.setItem('subskin_login_modal', 'true')
+  } else {
+    sessionStorage.removeItem('subskin_login_modal')
+  }
+})
 
   function setUser(nextUser: User | null) {
     user.value = nextUser

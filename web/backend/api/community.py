@@ -60,6 +60,72 @@ from web.backend.database.models import (
 
 router = APIRouter()
 
+# ─── IP 地理定位端点（同城页面快速定位） ───
+
+import time as _time
+import requests as _requests
+
+_IP_LOCATION_CACHE_TTL = 3600
+_ip_location_cache: dict[str, tuple[float, dict[str, object]]] = {}
+
+
+def _get_client_ip(request: Request) -> str:
+    """从请求中提取客户端IP"""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _is_private_ip(ip: str) -> bool:
+    """判断是否为内网IP（无法通过公网定位）"""
+    if ip in ("127.0.0.1", "unknown", "::1", "localhost"):
+        return True
+    if ip.startswith(("192.168.", "10.", "172.16.", "172.17.", "172.18.", "172.19.",
+                      "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.",
+                      "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.")):
+        return True
+    return False
+
+
+@router.get("/user-location")
+async def get_user_location(request: Request):
+    """基于请求IP的快速城市定位（用于同城页面）"""
+    ip = _get_client_ip(request)
+
+    # 内网IP无法定位
+    if _is_private_ip(ip):
+        return {"city": None, "latitude": None, "longitude": None, "region": None, "source": "ip"}
+
+    cached = _ip_location_cache.get(ip)
+    if cached and (_time.time() - cached[0]) < _IP_LOCATION_CACHE_TTL:
+        return cached[1]
+
+    # 调用 ip-api.com（免费、无需密钥、支持中文、响应~50ms）
+    try:
+        resp = _requests.get(
+            f"http://ip-api.com/json/{ip}?lang=zh-CN&fields=status,city,regionName,lat,lon",
+            timeout=3,
+        )
+        if resp.ok:
+            data = resp.json()
+            if data.get("status") == "success" and data.get("city"):
+                city_name = data["city"].replace("市", "")
+                result = {
+                    "city": city_name,
+                    "latitude": data.get("lat"),
+                    "longitude": data.get("lon"),
+                    "region": data.get("regionName"),
+                    "source": "ip",
+                }
+                _ip_location_cache[ip] = (_time.time(), result)
+                return result
+    except Exception as e:
+        logger.warning("IP定位服务调用失败: %s", str(e))
+
+    return {"city": None, "latitude": None, "longitude": None, "region": None, "source": "ip"}
+
+
 EXAGGERATED_WORDS = [
     "根治", "治愈", "包治", "断根", "永不复发", "100%治愈", "百治百愈",
     "偏方根治", "祖传秘方", "特效药", "包好", "药到病除", "一劳永逸",

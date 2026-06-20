@@ -9,6 +9,18 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, validator
 
 
+class AuthorityTier(str, Enum):
+    """Authority tier for AI Q&A source weighting.
+
+    Higher tiers get larger weight multipliers in RAG retrieval ranking.
+    """
+    S_GOLD_STANDARD = "S"  # 黄金标准: 诊疗指南、监管批准文件 (×1.5)
+    A_AUTHORITATIVE = "A"  # 权威研究: 同行评审论文、核心期刊 (×1.2)
+    B_FRONTIER = "B"       # 前沿实证: 临床试验、基金会报告 (×1.0)
+    C_REFERENCE = "C"      # 参考补充: 预印本、专业媒体 (×0.8)
+    D_COMMUNITY = "D"      # 社区经验: 患者社区、百科 (×0.5)
+
+
 class DataSourceCategory(str, Enum):
     """Categories of data sources."""
     ENGLISH_RESEARCH = "english_research"
@@ -17,6 +29,9 @@ class DataSourceCategory(str, Enum):
     CLINICAL_TRIALS = "clinical_trials"
     GUIDELINES = "guidelines"
     IMAGE_DATA = "image_data"
+    GENOMIC_DATABASE = "genomic_database"
+    RESEARCH_FOUNDATION = "research_foundation"
+    FRONTIER_NEWS = "frontier_news"
 
 
 class DataSourceType(str, Enum):
@@ -37,6 +52,13 @@ class DataSourceType(str, Enum):
     CLINICAL_GUIDELINE = "clinical_guideline"
     SKIN_IMAGE_DATABASE = "skin_image_database"
     OPEN_SOURCE_CODE_DATASET = "open_source_code_dataset"
+    FOUNDATION_REPORT = "foundation_report"
+    GENOMIC_DATABASE = "genomic_database"
+    NEWS_MEDIA = "news_media"
+    DRUG_ENCYCLOPEDIA = "drug_encyclopedia"
+    REGISTRY_STUDY = "registry_study"
+    GLOBAL_INITIATIVE = "global_initiative"
+    MEDICAL_SOCIETY = "medical_society"
 
 
 class AccessMethod(str, Enum):
@@ -92,6 +114,14 @@ class DataSource(BaseModel):
     data_quality: int = Field(
         ge=1, le=5, 
         description="Data quality rating on a 1-5 scale (5=highest quality)"
+    )
+    authority_tier: AuthorityTier = Field(
+        default=AuthorityTier.C_REFERENCE,
+        description="Authority tier for AI Q&A source weighting (S/A/B/C/D)",
+    )
+    authority_weight: float = Field(
+        default=1.0,
+        description="Weight multiplier for RAG retrieval ranking",
     )
     priority: PriorityLevel = Field(..., description="Collection priority level")
     collection_method: CollectionMethod = Field(

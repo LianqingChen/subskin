@@ -1,7 +1,6 @@
-"""
-Tests for auth service
-"""
+"""Tests for auth service"""
 
+import asyncio
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
@@ -14,6 +13,7 @@ from web.backend.services.auth import (
     create_access_token,
     authenticate_user,
     get_current_user,
+    get_current_user_optional,
     auth,
     SECRET_KEY,
     ALGORITHM,
@@ -195,6 +195,18 @@ async def test_get_current_user_nonexistent_user(db_session):
 
     assert exc_info.value.status_code == 401
     assert "无法验证凭据" in exc_info.value.detail
+
+
+def test_get_current_user_optional_without_token_returns_none(db_session):
+    result = asyncio.run(get_current_user_optional(token=None, db=db_session))
+    assert result is None
+
+
+def test_get_current_user_optional_invalid_token_returns_none(db_session):
+    result = asyncio.run(
+        get_current_user_optional(token="invalid.token", db=db_session)
+    )
+    assert result is None
 
 
 def test_auth_alias():

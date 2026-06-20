@@ -214,6 +214,17 @@ export const vasiApi = {
     return data
   },
 
+  async refineCircle(cacheKey: string, circle: { center_x: number; center_y: number; radius_x: number; radius_y: number }): Promise<{
+    mask_polygon: number[][]; mask_b64_png: string; score: number; confidence: number;
+    area_pixels: number; area_percent_in_image: number; width: number; height: number
+  }> {
+    const { data } = await apiClient.post('/vasi/promptable/refine-circle', {
+      cache_key: cacheKey,
+      circle,
+    }, { timeout: 15000 })
+    return data
+  },
+
   async finalizeAssessment(assessmentId: number): Promise<{ status: string; message: string }> {
     const { data } = await apiClient.post(`/vasi/assess/${assessmentId}/finalize`)
     return data

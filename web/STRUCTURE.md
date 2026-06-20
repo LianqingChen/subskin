@@ -104,7 +104,7 @@ The site has two main navigation areas:
    - 首页
    - AI问答
    - AI病情量化
-   - 病友社区
+   - 发现
 
 2. **Sidebar Navigation** (context-aware):
    - Community sections (about, experience, treatment, hospitals)

@@ -54,6 +54,7 @@ if (typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAg
 // Dynamic title & canonical per route
 const pageTitles: Record<string, string> = {
   '/': 'SubSkin - AI赋能的白癜风知识库与社区平台',
+  '/assessment': '白斑VASI测评 - SubSkin',
   '/tracker': '白斑VASI测评 - SubSkin',
   '/report': '体检报告AI解读 - SubSkin',
   '/community': '社区动态 - SubSkin',

@@ -768,6 +768,9 @@ class VasiFeedbackCollector:
 # Module-level convenience
 # ══════════════════════════════════════════════════════════════════════════════
 
+# ═══ SELF-EVOLVING DISABLED (2026-06-13) — data insufficient for effective RL ═══
 def get_feedback_collector(db: Session) -> VasiFeedbackCollector:
+    return None  # DISABLED — insufficient training data
+
     """获取 VasiFeedbackCollector 实例"""
     return VasiFeedbackCollector(db)

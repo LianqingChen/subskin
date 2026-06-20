@@ -23,6 +23,10 @@ class Paper(BaseModel):
         None, 
         description="PubMed ID"
     )
+    pmcid: Optional[str] = Field(
+        None,
+        description="PubMed Central ID (PMCID)"
+    )
     doi: Optional[str] = Field(
         None, 
         description="Digital Object Identifier"
@@ -79,6 +83,10 @@ class Paper(BaseModel):
         None, 
         description="URL to the paper"
     )
+    full_text_url: Optional[str] = Field(
+        None,
+        description="URL to full text (PMC or PDF)"
+    )
     citation_count: Optional[int] = Field(
         None, 
         description="Number of citations"
@@ -93,9 +101,19 @@ class Paper(BaseModel):
         None,
         description="Chinese translation of the abstract"
     )
+    chinese_fulltext: Optional[str] = Field(
+        None,
+        description="Chinese translation of the full text"
+    )
     summary: Optional[str] = Field(
         None,
         description="Patient-friendly Chinese summary"
+    )
+    
+    # Full text storage
+    full_text_path: Optional[str] = Field(
+        None,
+        description="Local path to full-text file"
     )
     
     # Processing status
@@ -217,7 +235,11 @@ class PaperUpdate(BaseModel):
     mesh_terms: Optional[List[str]] = None
     keywords: Optional[List[str]] = None
     citation_count: Optional[int] = None
+    pmcid: Optional[str] = None
+    full_text_url: Optional[str] = None
+    full_text_path: Optional[str] = None
     chinese_abstract: Optional[str] = None
+    chinese_fulltext: Optional[str] = None
     summary: Optional[str] = None
     translated: Optional[bool] = None
     summarized: Optional[bool] = None

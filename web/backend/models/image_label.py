@@ -144,6 +144,12 @@ class ImageLabel(Base):
     training_set_split = Column(String(10), nullable=True, comment="train/val/test — 训练集划分标记")
     training_exported_at = Column(DateTime, nullable=True, comment="最近一次导出训练数据的时间")
 
+    # ── 主动学习字段 ───────────────────────────────────────────
+    priority_score = Column(Float, nullable=True, comment="主动学习优先级分数 (0-1)")
+    active_learning_round = Column(Integer, nullable=True, comment="被主动学习队列选中的轮次")
+    last_model_version = Column(String, nullable=True, comment="标注时使用的模型版本")
+    labeling_duration_ms = Column(Integer, nullable=True, comment="管理员标注耗时(毫秒)")
+
     # ── 标注产物路径 ───────────────────────────────────────────
     annotated_image_path = Column(String, nullable=True, comment="管理员标注合成图本地路径")
     annotated_image_url = Column(String, nullable=True, comment="管理员标注合成图访问 URL")
@@ -203,6 +209,10 @@ class ImageLabelAnnotation(Base):
     # ── 置信度 ─────────────────────────────────────────────────
     confidence = Column(Float, nullable=True, comment="标注置信度 (0-1)")
     notes = Column(Text, nullable=True, comment="备注")
+
+    # ── 工具追踪 ───────────────────────────────────────────────
+    tool_used = Column(String, nullable=True, comment="创建此标注使用的工具 (brush/flood-fill/lasso/polygon/eraser)")
+    edit_duration_ms = Column(Integer, nullable=True, comment="编辑此标注耗时(毫秒)")
     
     # ── 时间戳 ──────────────────────────────────────────────────
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -240,6 +250,27 @@ class ImageLabelLog(Base):
     operator = relationship("User", foreign_keys=[operator_id])
 
 
+class LabelingWorkSession(Base):
+    """打标工作会话 — 追踪管理员打标效率和生产力"""
+
+    __tablename__ = "labeling_work_sessions"
+    __table_args__ = (
+        Index("idx_work_session_admin", "admin_user_id"),
+        Index("idx_work_session_started", "started_at"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    admin_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    ended_at = Column(DateTime, nullable=True)
+    labels_completed = Column(Integer, default=0)
+    labels_skipped = Column(Integer, default=0)
+    total_edit_ms = Column(Integer, default=0)
+
+    # ── 关系 ────────────────────────────────────────────────────
+    admin_user = relationship("User", foreign_keys=[admin_user_id])
+
+
 def ensure_image_label_columns() -> None:
     """Add image label tables and missing columns to the database.
 
@@ -252,6 +283,7 @@ def ensure_image_label_columns() -> None:
             ImageLabel.__table__,
             ImageLabelAnnotation.__table__,
             ImageLabelLog.__table__,
+            LabelingWorkSession.__table__,
         ])
 
         # ── Add missing columns for existing tables (SQLite safe) ──
@@ -266,17 +298,24 @@ def ensure_image_label_columns() -> None:
             # ImageLabel new columns
             cursor.execute("PRAGMA table_info(image_labels)")
             il_cols = [row[1] for row in cursor.fetchall()]
-            for col_name in ("annotated_image_path", "annotated_image_url", "annotated_layers_path"):
+            for col_name in ("annotated_image_path", "annotated_image_url", "annotated_layers_path",
+                              "priority_score", "active_learning_round", "last_model_version",
+                              "labeling_duration_ms"):
                 if col_name not in il_cols:
-                    cursor.execute(f"ALTER TABLE image_labels ADD COLUMN {col_name} VARCHAR")
+                    col_type = "FLOAT" if col_name == "priority_score" else (
+                        "INTEGER" if col_name in ("active_learning_round", "labeling_duration_ms") else "VARCHAR"
+                    )
+                    cursor.execute(f"ALTER TABLE image_labels ADD COLUMN {col_name} {col_type}")
                     logger.info("Added column image_labels.%s", col_name)
 
             # ImageLabelAnnotation new columns
             cursor.execute("PRAGMA table_info(image_label_annotations)")
             ila_cols = [row[1] for row in cursor.fetchall()]
-            if "skin_mask_data" not in ila_cols:
-                cursor.execute("ALTER TABLE image_label_annotations ADD COLUMN skin_mask_data TEXT")
-                logger.info("Added column image_label_annotations.skin_mask_data")
+            for col_name in ("skin_mask_data", "tool_used", "edit_duration_ms"):
+                if col_name not in ila_cols:
+                    col_type = "INTEGER" if col_name == "edit_duration_ms" else "TEXT"
+                    cursor.execute(f"ALTER TABLE image_label_annotations ADD COLUMN {col_name} {col_type}")
+                    logger.info("Added column image_label_annotations.%s", col_name)
 
             conn.commit()
             conn.close()

@@ -331,6 +331,44 @@ async def promptable_click(
     return result
 
 
+class CirclePrompt(BaseModel):
+    center_x: float
+    center_y: float
+    radius_x: float
+    radius_y: float
+
+
+class RefineCircleRequest(BaseModel):
+    cache_key: str
+    circle: CirclePrompt
+
+
+@router.post("/promptable/refine-circle")
+async def promptable_refine_circle(
+    request: RefineCircleRequest,
+    current_user: User = Depends(get_current_user),
+):
+    from web.backend.services.vasi_promptable import predict_by_circle
+
+    expected_prefix = f"user{current_user.id}:"
+    if not request.cache_key.startswith(expected_prefix):
+        raise HTTPException(status_code=403, detail="无效的 cache_key")
+
+    result = await __import__("asyncio").to_thread(
+        predict_by_circle,
+        request.cache_key,
+        (request.circle.center_x, request.circle.center_y),
+        request.circle.radius_x,
+        request.circle.radius_y,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=410,
+            detail="图片缓存已失效，请重新准备图片",
+        )
+    return result
+
+
 @router.get("/trend", response_model=VASITrendResponse)
 async def get_trend(
     body_site: Optional[str] = None,

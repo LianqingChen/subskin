@@ -2,10 +2,10 @@
 import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { communityApi } from '@/api/community'
+import { imApi } from '@/api/im'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import type { Post, PostComment as PostCommentType, Category } from '@/types'
-import LoginModal from '@/components/common/LoginModal.vue'
 import ShareSheet from '@/components/community/ShareSheet.vue'
 import SharePoster from '@/components/community/SharePoster.vue'
 import AudioPlayer from '@/components/community/AudioPlayer.vue'
@@ -25,7 +25,6 @@ const post = ref<Post | null>(null)
 const comments = ref<PostCommentType[]>([])
 const categories = ref<Category[]>([])
 const newComment = ref('')
-const showLoginModal = ref(false)
 const showShare = ref(false)
 const showPoster = ref(false)
 const relatedPosts = ref<Post[]>([])
@@ -158,6 +157,27 @@ async function handleUpdatePost() {
   }
 }
 
+// Avatar URL for the author
+const authorAvatarUrl = computed(() => toProtectedFileUrl(post.value?.author.avatar))
+const authorAvatarError = ref(false)
+
+// Reset avatar error when post changes
+watch(postId, () => { authorAvatarError.value = false })
+
+async function handleSendMessage() {
+  if (!authStore.isLoggedIn || !post.value) {
+    authStore.showLoginModal = true
+    return
+  }
+  try {
+    const res = await imApi.createPrivateChat(post.value.author.id)
+    router.push(`/chat/${res.data.conversation_id}`)
+  } catch (err) {
+    toast.error('发起聊天失败')
+    console.error('Failed to create private chat:', err)
+  }
+}
+
 async function confirmDeletePost() {
   if (!post.value) return
   try {
@@ -172,7 +192,7 @@ async function confirmDeletePost() {
 }
 
 async function toggleLike() {
-  if (!authStore.isLoggedIn) { showLoginModal.value = true; return }
+  if (!authStore.isLoggedIn) { authStore.showLoginModal = true; return }
   if (!post.value) return
   try {
     const res = await communityApi.toggleLike(post.value.id)
@@ -184,7 +204,7 @@ async function toggleLike() {
 }
 
 async function toggleBookmark() {
-  if (!authStore.isLoggedIn) { showLoginModal.value = true; return }
+  if (!authStore.isLoggedIn) { authStore.showLoginModal = true; return }
   if (!post.value) return
   try {
     const res = await communityApi.toggleBookmark(post.value.id)
@@ -195,7 +215,7 @@ async function toggleBookmark() {
 }
 
 async function submitComment() {
-  if (!authStore.isLoggedIn) { showLoginModal.value = true; return }
+  if (!authStore.isLoggedIn) { authStore.showLoginModal = true; return }
   if (!newComment.value.trim() || !post.value) return
   try {
     const comment = await communityApi.addComment(post.value.id, { content: newComment.value.trim() })
@@ -272,9 +292,12 @@ function goBack() {
       <article class="space-y-4">
         <!-- Author + category -->
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 text-sm font-medium">
-            {{ post.author.username.charAt(0) }}
-          </div>
+          <router-link :to="`/user/${post.author.id}`" class="flex-shrink-0 no-underline">
+            <img v-if="authorAvatarUrl && !authorAvatarError" :src="authorAvatarUrl" :alt="post.author.username" class="w-9 h-9 rounded-full object-cover bg-gray-100" @error="authorAvatarError = true" />
+            <div v-else class="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 text-sm font-medium">
+              {{ post.author.username.charAt(0) }}
+            </div>
+          </router-link>
           <div class="flex-1 min-w-0">
             <div class="font-medium text-sm text-gray-900 ">
             {{ post.author.username }}
@@ -284,11 +307,15 @@ function goBack() {
           </div>
             <div class="text-[11px] text-gray-400 ">{{ formatTimeAgo(post.created_at) }}</div>
           </div>
-          <FollowButton
-            v-if="authStore.isLoggedIn && post.author.id !== authStore.user?.id"
-            :targetUserId="post.author.id"
-            class="ml-2"
-          />
+          <div v-if="authStore.isLoggedIn && post.author.id !== authStore.user?.id" class="flex items-center gap-2">
+            <FollowButton :targetUserId="post.author.id" />
+            <button
+              class="text-xs px-3 py-1 rounded-full font-medium transition-colors bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              @click="handleSendMessage"
+            >
+              私信
+            </button>
+          </div>
           <span :class="categoryColor[post.category.name] || 'bg-gray-100 text-gray-700  '" class="px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0">
             {{ post.category.icon }} {{ post.category.name }}
           </span>
@@ -414,7 +441,6 @@ function goBack() {
     </div>
   </div>
 
-  <LoginModal v-if="showLoginModal" @close="showLoginModal = false" />
   <ShareSheet v-if="post" :visible="showShare" :post="post" @close="showShare = false" @generate-poster="showShare = false; showPoster = true" />
   <SharePoster v-if="post" :visible="showPoster" :post="post" @close="showPoster = false" />
 

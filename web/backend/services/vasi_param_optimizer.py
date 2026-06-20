@@ -378,6 +378,9 @@ class VasiParameterOptimizer:
 vasi_param_optimizer = VasiParameterOptimizer()
 
 
+# ═══ SELF-EVOLVING DISABLED (2026-06-13) — data insufficient for effective RL ═══
 def get_param_optimizer() -> VasiParameterOptimizer:
+    return None  # DISABLED — insufficient training data
+
     """获取全局 VasiParameterOptimizer 实例"""
     return vasi_param_optimizer

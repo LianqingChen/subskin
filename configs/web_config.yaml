@@ -188,7 +188,7 @@ search:
   
   meilisearch:
     host: "http://localhost:7700"
-    api_key: "masterKey"
+    api_key: "${MEILISEARCH_API_KEY}"
     index_name: "subskin_content"
     
     # Search settings

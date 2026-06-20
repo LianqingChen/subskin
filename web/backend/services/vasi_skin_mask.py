@@ -63,6 +63,15 @@ VITILIGO_MAX_CHROMA = 35.0
 MIN_SKIN_RATIO_FOR_DETECTION = 0.05
 MORPH_KERNEL_SIZE = 7
 
+FITZPATRICK_VITILIGO_THRESHOLDS: dict[str, tuple[float, float]] = {
+    "I": (10.0, 30.0),
+    "II": (11.0, 32.0),
+    "III": (12.0, 35.0),
+    "IV": (14.0, 38.0),
+    "V": (16.0, 40.0),
+    "VI": (18.0, 42.0),
+}
+
 
 def _estimate_fitzpatrick(img_rgb: np.ndarray) -> str:
     """Estimate Fitzpatrick skin type from median L channel in skin region."""
@@ -203,11 +212,14 @@ def expand_skin_mask_to_include_vitiligo(
 def detect_vitiligo_within_skin(
     img_rgb: np.ndarray,
     analysis_region: np.ndarray,
-    l_offset: float = VITILIGO_L_OFFSET,
-    max_chroma: float = VITILIGO_MAX_CHROMA,
+    l_offset: Optional[float] = None,
+    max_chroma: Optional[float] = None,
 ) -> Tuple[Optional[np.ndarray], dict]:
     """Detect vitiligo pixels within the analysis region using a *relative*
     lightness test against the surrounding skin's median.
+
+    If l_offset/max_chroma are not provided, they are auto-adapted based on
+    estimated Fitzpatrick skin type.
 
     Returns:
         (mask, stats) where mask is a boolean array (True = vitiligo) and
@@ -221,6 +233,15 @@ def detect_vitiligo_within_skin(
     }
     if not _CV2_AVAILABLE:
         return None, stats
+
+    if l_offset is None or max_chroma is None:
+        fitz = _estimate_fitzpatrick(img_rgb)
+        adaptive_l, adaptive_chroma = FITZPATRICK_VITILIGO_THRESHOLDS.get(fitz, (12.0, 35.0))
+        if l_offset is None:
+            l_offset = adaptive_l
+        if max_chroma is None:
+            max_chroma = adaptive_chroma
+        stats["fitzpatrick_type"] = fitz
 
     try:
         img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)

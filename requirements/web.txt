@@ -5,7 +5,8 @@ uvicorn[standard]>=0.24.0 # ASGI server
 
 # Authentication and authorization
 python-jose[cryptography]>=3.3.0 # JWT token handling
-passlib[bcrypt]>=1.7.4 # Password hashing
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.1,<5.0.0 # Password hashing
 python-multipart>=0.0.6 # Form parsing for file uploads
 
 # Database and ORM

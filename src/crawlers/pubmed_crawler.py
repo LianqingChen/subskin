@@ -3,19 +3,30 @@
 This module provides a crawler for fetching vitiligo-related papers from PubMed
 using the metapub library with proper rate limiting, caching, and exponential
 backoff retry for transient errors.
+
+When an NCBI API key is configured (via ``NCBI_API_KEY`` environment variable),
+the rate limit is automatically raised from 3 req/s to 10 req/s as per NCBI
+guidelines.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 import time
 from datetime import datetime, timezone
 from importlib import import_module
 from typing import Any
 
+from dotenv import load_dotenv
+
 from src.models.paper import Paper, PaperSource
 from src.utils.cache import Cache
 from src.utils.rate_limiter import RateLimiter
+
+# Load .env BEFORE importing metapub so that NCBI_API_KEY is available
+# at module-load time (metapub.config reads it via os.getenv on import).
+load_dotenv()
 
 try:
     _metapub = import_module("metapub")
@@ -32,9 +43,13 @@ class PubMedCrawler:
     The crawler uses metapub's ``PubMedFetcher`` over PubMed E-utilities and
     integrates project-level caching and rate limiting utilities.
 
+    When an NCBI API key is present (``NCBI_API_KEY`` env var), the default
+    rate limit is raised from 3 to 10 requests per second.
+
     Args:
         query: PubMed query string. Defaults to ``"vitiligo[MeSH Terms]"``.
-        requests_per_second: PubMed free-tier request rate limit.
+        requests_per_second: PubMed request rate limit. Auto-set to 10 if
+            ``NCBI_API_KEY`` is available, otherwise 3.
         page_size: Number of PMIDs to fetch per page.
         max_results: Hard ceiling for total number of records to fetch.
         cache: Optional cache instance. If omitted, an in-memory cache is used.
@@ -48,12 +63,14 @@ class PubMedCrawler:
     DEFAULT_CACHE_TTL_SECONDS = 60 * 60 * 24
     DEFAULT_PAGE_SIZE = 250
     DEFAULT_MAX_RESULTS = 10_000
+    RATE_LIMIT_WITH_API_KEY = 10.0
+    RATE_LIMIT_WITHOUT_API_KEY = 3.0
 
     def __init__(
         self,
         *,
         query: str = DEFAULT_QUERY,
-        requests_per_second: float = 3.0,
+        requests_per_second: float | None = None,
         page_size: int = DEFAULT_PAGE_SIZE,
         max_results: int = DEFAULT_MAX_RESULTS,
         cache: Cache | None = None,
@@ -71,6 +88,14 @@ class PubMedCrawler:
         if backoff_base_seconds <= 0:
             raise ValueError("backoff_base_seconds must be positive")
 
+        api_key = os.getenv("NCBI_API_KEY")
+        if requests_per_second is None:
+            requests_per_second = (
+                self.RATE_LIMIT_WITH_API_KEY
+                if api_key
+                else self.RATE_LIMIT_WITHOUT_API_KEY
+            )
+
         if fetcher is None:
             if PubMedFetcher is None:
                 raise RuntimeError(
@@ -78,6 +103,18 @@ class PubMedCrawler:
                     "PubMedCrawler."
                 )
             fetcher = PubMedFetcher()
+
+        if api_key:
+            logger.info(
+                "NCBI API key detected — rate limit set to %.0f req/s",
+                requests_per_second,
+            )
+        else:
+            logger.warning(
+                "No NCBI_API_KEY found — rate limit capped at %.0f req/s. "
+                "Set NCBI_API_KEY for 10 req/s.",
+                requests_per_second,
+            )
 
         self._query = query
         self._limiter = RateLimiter(requests_per_second=requests_per_second)
@@ -203,6 +240,7 @@ class PubMedCrawler:
 
         return Paper(
             pmid=str(getattr(article, "pmid", pmid) or pmid),
+            pmcid=self._safe_optional_str(getattr(article, "pmc", None)),
             doi=self._safe_optional_str(getattr(article, "doi", None)),
             title=title,
             abstract=self._safe_optional_str(getattr(article, "abstract", None)),

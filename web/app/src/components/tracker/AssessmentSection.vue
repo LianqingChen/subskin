@@ -30,13 +30,15 @@ const {
   assessmentResult, lastAssessment, showContourEditor,
   isSubmittingContour, contourDiffResult,
   qualityResult, qualityChecking,
-  recentAssessments, loadingHistory, loadingMore, historyHasMore,
+  recentAssessments, loadingHistory,
+  historyPage, historyPageSize, historyTotal, historyTotalPages,
   selectMode, selectedIds, deletingIds, currentStep,
   aiSkinLayerUrl, aiLesionLayerUrl,
   assessmentSource, suspectedLesions, visualFeatures,
   setBodySite, setHasReferenceCard, handleFileSelect, handleDrop, submitAssessment,
   removeImage, handleTwoLayerConfirm,
-  skipContourEdit, loadAssessmentHistory, loadMoreHistory,
+  skipContourEdit, cancelAssessment, loadAssessmentHistory,
+  goToHistoryPage, setHistoryPageSize,
   toggleSelectMode, toggleSelect, isSwiped, onTouchStart, onTouchEnd,
   deleteSingle, deleteSelected, createAssessmentDraft,
 } = useVasiAssessment()
@@ -123,13 +125,7 @@ function handleCameraCapture(file: File, meta?: { hasReferenceCard?: boolean }) 
   handleFileSelect(fakeEvent)
 }
 
-const displayHistory = computed(() => {
-  if (props.selectedPart) {
-    const label = PART_LABELS[props.selectedPart] || props.selectedPart
-    return recentAssessments.value.filter(r => r.bodySite === props.selectedPart || r.bodySite === label)
-  }
-  return recentAssessments.value
-})
+const displayHistory = computed(() => recentAssessments.value)
 
 const assessmentTitle = computed(() => {
   if (props.selectedPart && PART_LABELS[props.selectedPart]) {
@@ -140,7 +136,16 @@ const assessmentTitle = computed(() => {
 
 watch(() => props.selectedPart, (part) => {
   if (part) setBodySite(part)
+  historyPage.value = 1
   loadAssessmentHistory(true, part || undefined)
+})
+
+// 新评估完成后回到第 1 页刷新历史
+watch(assessmentResult, (r) => {
+  if (r) {
+    historyPage.value = 1
+    loadAssessmentHistory(true, props.selectedPart || undefined)
+  }
 })
 
 onMounted(() => {
@@ -254,6 +259,12 @@ defineExpose({ handleCameraCapture, triggerUpload, setBodySite })
     <!-- Visual Features Analysis Step (Step 3) -->
     <div v-if="showVisualFeaturesStep && visualFeatures" class="max-w-lg mx-auto mt-4">
       <div class="flex items-center gap-2 mb-3">
+        <button
+          class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors min-h-[44px]"
+          @click="cancelAssessment"
+        >
+          <i class="ri-arrow-left-s-line text-xl"></i>
+        </button>
         <span class="w-6 h-6 rounded-full bg-primary-500 text-white text-xs flex items-center justify-center font-bold">3</span>
         <span class="text-sm font-semibold text-gray-700">特征分析</span>
       </div>
@@ -261,9 +272,15 @@ defineExpose({ handleCameraCapture, triggerUpload, setBodySite })
         :visual-features="visualFeatures"
         @continue="onVisualFeaturesContinue"
       />
-      <div class="text-center mt-3">
+      <div class="text-center mt-3 flex items-center justify-center gap-4">
         <button
-          class="text-xs text-gray-400  hover:text-gray-600 dark:hover:text-gray-300 transition-colors min-h-[44px]"
+          class="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors min-h-[44px]"
+          @click="cancelAssessment"
+        >
+          取消测评
+        </button>
+        <button
+          class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors min-h-[44px]"
           @click="onVisualFeaturesContinue"
         >
           跳过，直接查看 VASI 测评结果 →
@@ -315,13 +332,14 @@ defineExpose({ handleCameraCapture, triggerUpload, setBodySite })
             :initial-skin-layer-url="aiSkinLayerUrl"
             :initial-lesion-layer-url="aiLesionLayerUrl"
             @confirm="(p) => handleTwoLayerConfirm(p.skinMaskDataUrl, p.lesionMaskDataUrl)"
-            @cancel="skipContourEdit"
+            @cancel="cancelAssessment"
           />
           <div class="mt-4 flex items-center justify-between">
             <div v-if="isSubmittingContour" class="flex items-center gap-2 text-sm text-primary-500">
               <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> 提交中...
             </div>
-            <button class="text-xs text-gray-400  hover:text-gray-600 dark:hover:text-gray-300 transition-colors" :disabled="isSubmittingContour" @click="skipContourEdit">跳过，直接查看结果 →</button>
+            <button v-if="visualFeatures" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors min-h-[44px]" :disabled="isSubmittingContour" @click="showContourEditor = false; showVisualFeaturesStep = true; currentStep = 3"><i class="ri-arrow-left-s-line mr-0.5"></i>返回特征分析</button>
+            <button class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" :disabled="isSubmittingContour" @click="skipContourEdit">跳过，直接查看结果 →</button>
           </div>
           <div v-if="contourDiffResult" class="mt-4 p-3 rounded-xl border" :class="contourDiffResult.modified ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'">
             <div class="flex items-center gap-2">
@@ -486,11 +504,34 @@ defineExpose({ handleCameraCapture, triggerUpload, setBodySite })
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
         </div>
-        <div v-if="historyHasMore" class="text-center pt-2">
-          <button class="text-sm text-primary-600 dark:text-primary-400 hover:underline" :disabled="loadingMore" @click="loadMoreHistory">
-            <span v-if="loadingMore">加载中...</span>
-            <span v-else>加载更多</span>
-          </button>
+        <div v-if="historyTotal > 0" class="flex items-center justify-between gap-2 pt-3 text-xs text-gray-600 dark:text-gray-400">
+          <div class="flex items-center gap-1">
+            <span>每页</span>
+            <select
+              :value="historyPageSize"
+              @change="setHistoryPageSize(Number(($event.target as HTMLSelectElement).value))"
+              class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary-400"
+            >
+              <option :value="10">10</option>
+              <option :value="20">20</option>
+              <option :value="50">50</option>
+              <option :value="100">100</option>
+            </select>
+            <span>条 / 共 {{ historyTotal }} 条</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button
+              class="px-2 py-0.5 rounded border border-gray-200 dark:border-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800"
+              :disabled="historyPage <= 1 || loadingHistory"
+              @click="goToHistoryPage(historyPage - 1)"
+            >上一页</button>
+            <span class="px-1">{{ historyPage }} / {{ historyTotalPages }}</span>
+            <button
+              class="px-2 py-0.5 rounded border border-gray-200 dark:border-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800"
+              :disabled="historyPage >= historyTotalPages || loadingHistory"
+              @click="goToHistoryPage(historyPage + 1)"
+            >下一页</button>
+          </div>
         </div>
       </div>
       <div v-else class="text-center py-8 text-gray-400 ">

@@ -119,7 +119,7 @@ onMounted(load)
       <div v-else-if="errorMsg" class="text-center py-16 text-gray-400 ">
         <div class="text-4xl mb-3"><i class="ri-file-damage-line"></i></div>
         <p>{{ errorMsg }}</p>
-        <button @click="router.push('/tracker')" class="mt-4 text-sm text-primary-500 hover:underline">返回小白追踪</button>
+        <button @click="router.push({ name: 'assessment' })" class="mt-4 text-sm text-primary-500 hover:underline">返回测评</button>
       </div>
 
       <template v-else-if="before && after">

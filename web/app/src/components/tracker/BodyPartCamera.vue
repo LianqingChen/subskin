@@ -375,6 +375,12 @@ onUnmounted(() => {
 .camera-fade-leave-active {
   transition: opacity 0.25s ease;
 }
+/* During leave, the overlay is transparent but still fixed inset-0 z-[200] —
+   it intercepts all clicks on the underlying page content for 250ms.
+   pointer-events: none prevents this invisible overlay from blocking interaction. */
+.camera-fade-leave-active {
+  pointer-events: none;
+}
 .camera-fade-enter-from,
 .camera-fade-leave-to {
   opacity: 0;

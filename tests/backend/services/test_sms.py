@@ -2,8 +2,9 @@
 Tests for SMS service
 """
 
+import os
 from datetime import datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -12,51 +13,51 @@ from web.backend.services.sms import (
     create_sms_code,
     verify_sms_code,
     send_sms,
+    _verify_sms_code_aliyun_auth,
+    _mark_local_code_used,
+    _increment_local_attempt,
 )
 from web.backend.database.models import SMSCode
 
 
+# ── generate_code ──
+
+
 def test_generate_code_length():
-    """Test that generate_code returns 6-digit code"""
     code = generate_code()
     assert len(code) == 6
     assert isinstance(code, str)
 
 
 def test_generate_code_format():
-    """Test that generate_code returns only digits"""
     code = generate_code()
     assert code.isdigit()
 
 
-def test_generate_code_random_unqiue():
-    """Test that generate_code produces different codes (with high probability)"""
+def test_generate_code_random_unique():
     codes = set()
     for _ in range(100):
         codes.add(generate_code())
-
-    # With good random, 100 iterations should produce many unique codes
     assert len(codes) > 50
 
 
+# ── create_sms_code ──
+
+
 def test_create_sms_code_format(db_session):
-    """Test that create_sms_code returns 6-digit code"""
     code = create_sms_code(db_session, "13800138000")
     assert len(code) == 6
     assert code.isdigit()
 
 
 def test_create_sms_code_invalidates_previous(db_session):
-    """Test that create_sms_code invalidates previous codes for same phone"""
     phone = "13800138000"
-
-    # Create first code
     first_code = create_sms_code(db_session, phone)
 
-    # Create second code (should invalidate first)
-    second_code = create_sms_code(db_session, phone)
+    # Patch rate limit to allow second request within 60s
+    with patch("web.backend.services.sms.check_sms_rate_limit"):
+        second_code = create_sms_code(db_session, phone)
 
-    # Verify first code is now used
     first_sms = (
         db_session.query(SMSCode)
         .filter(SMSCode.phone == phone, SMSCode.code == first_code)
@@ -65,7 +66,6 @@ def test_create_sms_code_invalidates_previous(db_session):
     assert first_sms is not None
     assert first_sms.used is True
 
-    # Verify second code is not used
     second_sms = (
         db_session.query(SMSCode)
         .filter(SMSCode.phone == phone, SMSCode.code == second_code)
@@ -76,7 +76,6 @@ def test_create_sms_code_invalidates_previous(db_session):
 
 
 def test_create_sms_code_saves_to_db(db_session):
-    """Test that create_sms_code saves to database"""
     phone = "13800138000"
     code = create_sms_code(db_session, phone)
 
@@ -94,7 +93,6 @@ def test_create_sms_code_saves_to_db(db_session):
 
 
 def test_create_sms_code_custom_expiry(db_session):
-    """Test that create_sms_code uses custom expiry time"""
     phone = "13800138000"
     expire_minutes = 10
     code = create_sms_code(db_session, phone, expire_minutes=expire_minutes)
@@ -107,82 +105,261 @@ def test_create_sms_code_custom_expiry(db_session):
 
     expected_expiry = datetime.utcnow() + timedelta(minutes=expire_minutes)
     time_diff = abs((sms.expired_at - expected_expiry).total_seconds())
-    assert time_diff < 5  # Allow 5 seconds tolerance
+    assert time_diff < 5
+
+
+# ── verify_sms_code (local mode) ──
 
 
 def test_verify_sms_code_valid(db_session, test_sms_code):
-    """Test that verify_sms_code returns True for valid code"""
-    result = verify_sms_code(db_session, test_sms_code.phone, test_sms_code.code)
+    with patch.dict(os.environ, {"SMS_PROVIDER": "log"}):
+        result = verify_sms_code(db_session, test_sms_code.phone, test_sms_code.code)
     assert result is True
 
-    # Verify code is now marked as used
     db_session.refresh(test_sms_code)
     assert test_sms_code.used is True
 
 
 def test_verify_sms_code_invalid_code(db_session, test_sms_code):
-    """Test that verify_sms_code returns False for wrong code"""
-    result = verify_sms_code(db_session, test_sms_code.phone, "wrong_code")
+    with patch.dict(os.environ, {"SMS_PROVIDER": "log"}):
+        result = verify_sms_code(db_session, test_sms_code.phone, "wrong_code")
     assert result is False
 
 
 def test_verify_sms_code_invalid_phone(db_session):
-    """Test that verify_sms_code returns False for non-existent phone"""
-    result = verify_sms_code(db_session, "99999999999", "123456")
+    with patch.dict(os.environ, {"SMS_PROVIDER": "log"}):
+        result = verify_sms_code(db_session, "99999999999", "123456")
     assert result is False
 
 
 def test_verify_sms_code_expired(db_session, test_expired_sms_code):
-    """Test that verify_sms_code returns False for expired code"""
-    result = verify_sms_code(
-        db_session, test_expired_sms_code.phone, test_expired_sms_code.code
-    )
+    with patch.dict(os.environ, {"SMS_PROVIDER": "log"}):
+        result = verify_sms_code(
+            db_session, test_expired_sms_code.phone, test_expired_sms_code.code
+        )
     assert result is False
 
 
 def test_verify_sms_code_already_used(db_session, test_sms_code):
-    """Test that verify_sms_code returns False for already used code"""
-    # Mark as used
     test_sms_code.used = True
     db_session.commit()
 
-    result = verify_sms_code(db_session, test_sms_code.phone, test_sms_code.code)
+    with patch.dict(os.environ, {"SMS_PROVIDER": "log"}):
+        result = verify_sms_code(db_session, test_sms_code.phone, test_sms_code.code)
     assert result is False
 
 
 def test_verify_sms_code_one_time_use(db_session, test_sms_code):
-    """Test that verify_sms_code can only be used once"""
-    # First verification should succeed
-    result1 = verify_sms_code(db_session, test_sms_code.phone, test_sms_code.code)
+    with patch.dict(os.environ, {"SMS_PROVIDER": "log"}):
+        result1 = verify_sms_code(db_session, test_sms_code.phone, test_sms_code.code)
     assert result1 is True
 
-    # Second verification should fail
-    result2 = verify_sms_code(db_session, test_sms_code.phone, test_sms_code.code)
+    with patch.dict(os.environ, {"SMS_PROVIDER": "log"}):
+        result2 = verify_sms_code(db_session, test_sms_code.phone, test_sms_code.code)
     assert result2 is False
 
 
+def test_verify_sms_code_locked(db_session, test_sms_code):
+    test_sms_code.locked = True
+    db_session.commit()
+
+    with patch.dict(os.environ, {"SMS_PROVIDER": "log"}):
+        result = verify_sms_code(db_session, test_sms_code.phone, test_sms_code.code)
+    assert result is False
+
+
+# ── send_sms ──
+
+
 def test_send_sms_log_provider(monkeypatch):
-    """Test that send_sms returns True with log provider"""
     monkeypatch.setenv("SMS_PROVIDER", "log")
+    success, code = send_sms("13800138000", "123456")
+    assert success is True
+    assert code == "123456"
 
-    result = send_sms("13800138000", "123456")
+
+def test_send_sms_log_returns_code(monkeypatch):
+    monkeypatch.setenv("SMS_PROVIDER", "log")
+    success, code = send_sms("13800138000", "654321")
+    assert success is True
+    assert code == "654321"
+
+
+def test_send_sms_unknown_provider(monkeypatch):
+    monkeypatch.setenv("SMS_PROVIDER", "unknown_provider")
+    success, code = send_sms("13800138000", "123456")
+    assert success is False
+    assert code == ""
+
+
+# ── aliyun_auth: _verify_sms_code_aliyun_auth ──
+
+
+def test_verify_sms_code_aliyun_auth_success(db_session, test_sms_code):
+    mock_response = MagicMock()
+    mock_response.body.code = "OK"
+    mock_response.body.success = True
+    mock_response.body.model.verify_result = "PASS"
+
+    with patch.dict(os.environ, {"SMS_PROVIDER": "aliyun_auth"}):
+        with patch(
+            "web.backend.services.sms._verify_sms_code_aliyun_auth",
+            return_value=True,
+        ):
+            result = verify_sms_code(
+                db_session, test_sms_code.phone, test_sms_code.code
+            )
     assert result is True
 
 
-def test_send_sms_prints_to_stdout(monkeypatch, capsys):
-    """Test that send_sms prints code to stdout in log mode"""
-    monkeypatch.setenv("SMS_PROVIDER", "log")
-
-    phone = "13800138000"
-    code = "123456"
-    send_sms(phone, code)
-
-    captured = capsys.readouterr()
-    assert phone in captured.out
-    assert code in captured.out
-
-
-def test_send_sms_returns_true_by_default(monkeypatch):
-    """Test that send_sms returns True by default (mock mode)"""
-    result = send_sms("13800138000", "123456")
+def test_verify_sms_code_aliyun_auth_routes_to_cloud(db_session, test_sms_code):
+    with patch.dict(os.environ, {"SMS_PROVIDER": "aliyun_auth"}):
+        with patch(
+            "web.backend.services.sms._verify_sms_code_aliyun_auth",
+            return_value=True,
+        ) as mock_verify:
+            result = verify_sms_code(
+                db_session, test_sms_code.phone, test_sms_code.code
+            )
+            mock_verify.assert_called_once_with(
+                db_session, test_sms_code.phone, test_sms_code.code
+            )
     assert result is True
+
+
+def test_verify_sms_code_aliyun_auth_failure(db_session, test_sms_code):
+    with patch.dict(os.environ, {"SMS_PROVIDER": "aliyun_auth"}):
+        with patch(
+            "web.backend.services.sms._verify_sms_code_aliyun_auth",
+            return_value=False,
+        ):
+            result = verify_sms_code(
+                db_session, test_sms_code.phone, test_sms_code.code
+            )
+    assert result is False
+
+
+def test_verify_sms_code_aliyun_auth_api_pass(db_session, test_sms_code):
+    mock_response_body = MagicMock()
+    mock_response_body.code = "OK"
+    mock_response_body.success = True
+    mock_response_body.model.verify_result = "PASS"
+
+    mock_response = MagicMock()
+    mock_response.body = mock_response_body
+
+    mock_client = MagicMock()
+    mock_client.check_sms_verify_code.return_value = mock_response
+
+    with patch.dict(
+        os.environ,
+        {
+            "SMS_PROVIDER": "aliyun_auth",
+            "SMS_ACCESS_KEY_ID": "test-key",
+            "SMS_ACCESS_KEY_SECRET": "test-secret",
+        },
+    ):
+        with patch(
+            "alibabacloud_dypnsapi20170525.client.Client", return_value=mock_client
+        ):
+            result = _verify_sms_code_aliyun_auth(
+                db_session, test_sms_code.phone, test_sms_code.code
+            )
+    assert result is True
+
+
+def test_verify_sms_code_aliyun_auth_api_fail(db_session, test_sms_code):
+    mock_response_body = MagicMock()
+    mock_response_body.code = "OK"
+    mock_response_body.success = True
+    mock_response_body.model.verify_result = "UNKNOWN"
+
+    mock_response = MagicMock()
+    mock_response.body = mock_response_body
+
+    mock_client = MagicMock()
+    mock_client.check_sms_verify_code.return_value = mock_response
+
+    with patch.dict(
+        os.environ,
+        {
+            "SMS_PROVIDER": "aliyun_auth",
+            "SMS_ACCESS_KEY_ID": "test-key",
+            "SMS_ACCESS_KEY_SECRET": "test-secret",
+        },
+    ):
+        with patch(
+            "alibabacloud_dypnsapi20170525.client.Client", return_value=mock_client
+        ):
+            result = _verify_sms_code_aliyun_auth(
+                db_session, test_sms_code.phone, test_sms_code.code
+            )
+    assert result is False
+
+
+def test_verify_sms_code_aliyun_auth_api_error(db_session, test_sms_code):
+    mock_response_body = MagicMock()
+    mock_response_body.code = "ISP.SERVICE_UNAVAILABLE"
+    mock_response_body.success = False
+    mock_response_body.message = "Service unavailable"
+
+    mock_response = MagicMock()
+    mock_response.body = mock_response_body
+
+    mock_client = MagicMock()
+    mock_client.check_sms_verify_code.return_value = mock_response
+
+    with patch.dict(
+        os.environ,
+        {
+            "SMS_PROVIDER": "aliyun_auth",
+            "SMS_ACCESS_KEY_ID": "test-key",
+            "SMS_ACCESS_KEY_SECRET": "test-secret",
+        },
+    ):
+        with patch(
+            "alibabacloud_dypnsapi20170525.client.Client", return_value=mock_client
+        ):
+            result = _verify_sms_code_aliyun_auth(
+                db_session, test_sms_code.phone, test_sms_code.code
+            )
+    assert result is False
+
+
+def test_verify_sms_code_aliyun_auth_missing_config(db_session, test_sms_code):
+    with patch.dict(
+        os.environ,
+        {
+            "SMS_PROVIDER": "aliyun_auth",
+            "SMS_ACCESS_KEY_ID": "",
+            "SMS_ACCESS_KEY_SECRET": "",
+        },
+    ):
+        result = _verify_sms_code_aliyun_auth(
+            db_session, test_sms_code.phone, test_sms_code.code
+        )
+    assert result is False
+
+
+def test_mark_local_code_used(db_session, test_sms_code):
+    assert test_sms_code.used is False
+    _mark_local_code_used(db_session, test_sms_code.phone)
+    db_session.refresh(test_sms_code)
+    assert test_sms_code.used is True
+
+
+def test_increment_local_attempt(db_session, test_sms_code):
+    assert test_sms_code.attempt_count == 0
+    _increment_local_attempt(db_session, test_sms_code.phone)
+    db_session.refresh(test_sms_code)
+    assert test_sms_code.attempt_count == 1
+
+
+def test_increment_local_attempt_locks_after_five(db_session, test_sms_code):
+    test_sms_code.attempt_count = 4
+    db_session.commit()
+
+    _increment_local_attempt(db_session, test_sms_code.phone)
+    db_session.refresh(test_sms_code)
+    assert test_sms_code.attempt_count == 5
+    assert test_sms_code.locked is True

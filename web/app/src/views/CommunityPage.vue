@@ -4,12 +4,11 @@ import { communityApi } from '@/api/community'
 import { useAuthStore } from '@/stores/auth'
 import { useGeolocation } from '@/composables/useGeolocation'
 import type { Post, Category, PostTag } from '@/types'
-import LoginModal from '@/components/common/LoginModal.vue'
 import CreatePostSheet from '@/components/community/CreatePostSheet.vue'
+import CityPicker from '@/components/community/CityPicker.vue'
 import FeedWaterfall from '@/components/community/FeedWaterfall.vue'
 
 const authStore = useAuthStore()
-const showLoginModal = ref(false)
 const showCreateSheet = ref(false)
 const loading = ref(false)
 const posts = ref<Post[]>([])
@@ -28,12 +27,12 @@ const tagSuggestions = ref<PostTag[]>([])
 const showSuggestions = ref(false)
 const tagSearchMode = ref(false)
 const showCityPicker = ref(false)
-const manualCity = ref('')
 const showSearch = ref(false)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 let suggestTimer: ReturnType<typeof setTimeout> | null = null
 
 const geo = useGeolocation()
+let previousCityForLocal: string | null = null
 
 let scrollObserver: IntersectionObserver | null = null
 
@@ -123,6 +122,7 @@ async function loadPosts(offset = 0, append = false) {
 let isInitialMount = true
 
 onMounted(async () => {
+  geo.preloadCity()
   loading.value = true
   try {
     const catRes = await communityApi.getCategories()
@@ -141,7 +141,7 @@ watch(loadMoreSentinel, () => {
   setupScrollObserver()
 })
 
-watch(activeFeedType, async (newType, oldType) => {
+watch(activeFeedType, async () => {
   if (isInitialMount) return
   loading.value = true
   try {
@@ -155,6 +155,22 @@ watch(activeFeedType, async (newType, oldType) => {
 
 watch(activeTag, async () => {
   if (isInitialMount) return
+  loading.value = true
+  try {
+    await loadPosts()
+  } catch {
+    // keep current posts
+  } finally {
+    loading.value = false
+  }
+})
+
+watch(geo.city, async (newCity) => {
+  if (isInitialMount) return
+  if (activeFeedType.value !== 'local') return
+  if (newCity === previousCityForLocal) return
+  previousCityForLocal = newCity
+  if (!newCity) return
   loading.value = true
   try {
     await loadPosts()
@@ -212,23 +228,17 @@ function clearSearch() {
   loadPosts().finally(() => { loading.value = false })
 }
 
-function handleTagClick(tagName: string) {
-  activeTag.value = tagName
-  searchQuery.value = ''
-  isSearching.value = false
-}
-
-function setManualCity() {
-  const city = manualCity.value.trim()
-  if (!city) return
+function handleCityPick(city: { name: string; lat: number; lng: number }, _province: string) {
   showCityPicker.value = false
-  geo.city.value = city
-  loadPosts()
+  geo.city.value = city.name
+  geo.lat.value = city.lat
+  geo.lng.value = city.lng
+  geo.setManualCity(city.name)
 }
 
 async function handleLikeClick(postId: number) {
   if (!authStore.isLoggedIn) {
-    showLoginModal.value = true
+    authStore.showLoginModal = true
     return
   }
   try {
@@ -243,21 +253,16 @@ async function handleLikeClick(postId: number) {
   }
 }
 
-async function handleBookmarkClick(postId: number) {
-  if (!authStore.isLoggedIn) {
-    showLoginModal.value = true
-    return
-  }
-  try {
-    const res = await communityApi.toggleBookmark(postId)
-    const post = posts.value.find(p => p.id === postId)
-    if (post) {
-      post.is_bookmarked = res.bookmarked
+function handleFollowChange(followed: boolean, userId: number) {
+  // Update is_followed on all posts by this author
+  posts.value.forEach(p => {
+    if (p.author.id === userId) {
+      p.author.is_followed = followed
     }
-  } catch (err) {
-    console.error('Failed to toggle bookmark:', err)
-  }
+  })
 }
+
+
 
 async function fetchTagSuggestions(query: string) {
   if (!query.trim()) {
@@ -308,85 +313,86 @@ function getFallbackPosts(): Post[] {
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto px-3 py-3 space-y-3">
-    <!-- Feed type tabs + search icon row -->
-    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+  <div class="max-w-2xl mx-auto px-4 py-3 space-y-3 sm:px-5 sm:py-4 sm:space-y-4">
+    <!-- Feed type tabs + search icon in one row -->
+    <div class="flex items-center gap-2 sm:gap-2.5 overflow-x-auto no-scrollbar pb-1">
       <button
-        v-for="ft in [{ key: 'follow', label: '关注' }, { key: 'recommend', label: '推荐' }, { key: 'local', label: '同城' }]"
+        v-for="ft in [{ key: 'follow', label: '关注' }, { key: 'recommend', label: '推荐' }]"
         :key="ft.key"
-        class="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap"
+        class="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap"
         :class="activeFeedType === ft.key && !activeTag
           ? 'bg-primary-500 text-white shadow-sm'
-          : 'bg-gray-100  text-gray-600  hover:bg-gray-200 dark:hover:bg-gray-700'"
+          : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 hover:border-primary-300 dark:hover:border-primary-700 hover:text-primary-600 dark:hover:text-primary-400'"
         @click="activeTag = null; activeFeedType = ft.key as any"
       >
         {{ ft.label }}
       </button>
-      <!-- Loading indicator for geolocation -->
-      <span v-if="activeFeedType === 'local' && geo.loading.value" class="text-xs text-gray-400  self-center ml-2">正在获取位置...</span>
+      <!-- Dynamic city tab -->
+      <button
+        class="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap flex items-center gap-1"
+        :class="activeFeedType === 'local' && !activeTag
+          ? 'bg-primary-500 text-white shadow-sm'
+          : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 hover:border-primary-300 dark:hover:border-primary-700 hover:text-primary-600 dark:hover:text-primary-400'"
+        @click="activeTag = null; if (activeFeedType === 'local' && geo.city.value) { showCityPicker = true } else { activeFeedType = 'local'; if (!geo.city.value) showCityPicker = true }"
+      >
+        <template v-if="geo.city.value">{{ geo.city.value }}</template>
+        <template v-else-if="geo.loading.value">定位中...</template>
+        <template v-else>同城</template>
+        <i v-if="geo.city.value" class="ri-arrow-down-s-line text-xs"></i>
+      </button>
       <!-- Active tag filter chip -->
       <button
         v-if="activeTag"
-        class="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-700"
+        class="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-700"
         @click="activeTag = null"
       >
         #{{ activeTag }} ✕
       </button>
-      <!-- Spacer to push search icon to right -->
-      <div class="flex-1 min-w-0"></div>
-      <!-- Search magnifier icon -->
+      <!-- Search icon — right next to tabs -->
       <button
-        class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-gray-400  hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all"
         @click="toggleSearch"
       >
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
+        <i class="ri-search-line text-lg"></i>
       </button>
     </div>
 
-    <!-- Search overlay (animated expand/collapse) -->
-    <div v-if="showSearch" class="relative transition-all duration-200">
-      <div class="flex items-center bg-gray-100  rounded-full px-4 py-2 gap-2">
-        <svg class="w-4 h-4 text-gray-400  flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
+    <!-- Search bar — expands below tabs when toggled -->
+    <div v-if="showSearch" class="relative animate-fade-in" style="animation-duration: 150ms;">
+      <div class="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-3.5 py-2.5 gap-2 focus-within:border-primary-300 dark:focus-within:border-primary-700 transition-colors">
+        <i class="ri-search-line text-gray-400 text-base flex-shrink-0"></i>
         <input
           ref="searchInputRef"
           v-model="searchQuery"
           type="text"
           placeholder="搜索病友分享或标签..."
-          class="flex-1 bg-transparent text-sm text-gray-700  placeholder-gray-400 dark:placeholder-gray-500 outline-none"
+          class="flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 outline-none min-w-0"
           @keydown.enter="handleSearch"
           @input="onSearchInput"
           @blur="onSearchBlur"
         />
         <button
           v-if="searchQuery"
-          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
           @click="clearSearch"
         >
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
+          <i class="ri-close-line text-lg"></i>
         </button>
       </div>
       <!-- Tag autocomplete dropdown -->
       <div
         v-if="showSuggestions"
-        class="absolute top-full left-0 right-0 mt-1 bg-white  rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
+        class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
       >
         <button
           v-for="tag in tagSuggestions"
           :key="tag.id"
-          class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700  hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
+          class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
           @mousedown.prevent="selectTagSuggestion(tag)"
         >
-          <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-          </svg>
+          <i class="ri-price-tag-3-line text-gray-400 text-xs flex-shrink-0"></i>
           <span>#{{ tag.name }}</span>
-          <span class="ml-auto text-[11px] text-gray-400 ">{{ tag.usage_count }} 篇</span>
+          <span class="ml-auto text-[11px] text-gray-400">{{ tag.usage_count }} 篇</span>
         </button>
       </div>
     </div>
@@ -394,7 +400,7 @@ function getFallbackPosts(): Post[] {
     <!-- Waterfall Feed -->
     <main class="min-w-0">
       <!-- Loading skeleton -->
-      <div v-if="loading" class="columns-2 sm:columns-3 lg:columns-4 gap-2.5">
+      <div v-if="loading" class="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div v-for="i in 6" :key="i" class="break-inside-avoid mb-2.5 rounded-xl overflow-hidden bg-white  animate-pulse">
           <div class="aspect-[3/4] bg-gray-200 "></div>
           <div class="px-2.5 pt-2 pb-2 space-y-2">
@@ -406,14 +412,15 @@ function getFallbackPosts(): Post[] {
 
       <!-- Empty state -->
       <div v-else-if="posts.length === 0" class="text-center py-16 space-y-3">
-        <template v-if="activeFeedType === 'local' && geo.error.value && !geo.loading.value">
-          <div class="text-4xl">📍</div>
-          <p class="text-gray-400  text-sm">{{ geo.error.value }}</p>
-          <button class="btn-primary text-sm" @click="showCityPicker = true">手动选择城市</button>
+        <template v-if="activeFeedType === 'local' && !geo.city.value">
+          <i class="ri-map-pin-line text-4xl text-gray-300"></i>
+          <p class="text-gray-400  text-sm">{{ geo.error.value || '请选择城市查看同城分享' }}</p>
+          <button class="btn-primary text-sm" @click="showCityPicker = true">选择城市</button>
         </template>
         <template v-else-if="activeFeedType === 'local' && geo.city.value">
-          <div class="text-4xl">🏙️</div>
+          <i class="ri-building-line text-4xl text-gray-300"></i>
           <p class="text-gray-400  text-sm">暂无 {{ geo.city.value }} 的同城分享</p>
+          <button class="btn-ghost text-sm" @click="showCityPicker = true">切换城市</button>
         </template>
         <template v-else>
           <div class="text-4xl">📝</div>
@@ -423,7 +430,7 @@ function getFallbackPosts(): Post[] {
       </div>
 
       <!-- Waterfall feed with type-aware cards -->
-      <FeedWaterfall v-else :posts="posts" @tag-click="handleTagClick" @like-click="handleLikeClick" @bookmark-click="handleBookmarkClick" />
+      <FeedWaterfall v-else :posts="posts" @like-click="handleLikeClick" @follow-change="handleFollowChange" />
 
       <!-- Load more sentinel -->
       <div v-if="hasMore" ref="loadMoreSentinel" class="text-center py-4">
@@ -437,7 +444,7 @@ function getFallbackPosts(): Post[] {
     <!-- Login prompt for non-logged-in users -->
     <div v-if="!authStore.isLoggedIn" class="card  p-5 text-center mt-4">
       <p class="text-gray-500  text-sm mb-3">登录后可以发布分享和评论</p>
-      <button class="btn-primary text-sm" @click="showLoginModal = true">立即登录</button>
+      <button class="btn-primary text-sm" @click="authStore.showLoginModal = true">立即登录</button>
     </div>
 
     <!-- Medical disclaimer -->
@@ -464,7 +471,7 @@ function getFallbackPosts(): Post[] {
     v-else
     class="fixed right-5 w-12 h-12 bg-primary-500 hover:bg-primary-600 text-white rounded-full shadow-lg flex items-center justify-center z-30 transition-all duration-200 hover:scale-110 active:scale-95"
     :style="{ bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }"
-    @click="showLoginModal = true"
+    @click="authStore.showLoginModal = true"
     data-track-id="community_fab_login"
   >
     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -474,28 +481,7 @@ function getFallbackPosts(): Post[] {
 
   <CreatePostSheet v-model="showCreateSheet" />
 
-  <LoginModal v-if="showLoginModal" @close="showLoginModal = false" />
-
-  <!-- Manual city picker modal -->
-  <Teleport to="body">
-    <div v-if="showCityPicker" class="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center" @click.self="showCityPicker = false">
-      <div class="bg-white  rounded-xl p-6 max-w-sm w-full mx-4">
-        <h3 class="text-lg font-semibold text-gray-900  mb-2">选择城市</h3>
-        <p class="text-sm text-gray-500  mb-4">输入你所在的城市名称，查看同城分享</p>
-        <input
-          v-model="manualCity"
-          type="text"
-          placeholder="例如：北京、上海、广州..."
-          class="w-full bg-gray-100  rounded-lg px-4 py-2.5 text-sm text-gray-700  placeholder-gray-400 dark:placeholder-gray-500 outline-none mb-4"
-          @keydown.enter="setManualCity"
-        />
-        <div class="flex gap-3 justify-end">
-          <button class="btn-ghost px-4 py-2" @click="showCityPicker = false">取消</button>
-          <button class="btn-primary px-4 py-2" :disabled="!manualCity.trim()" @click="setManualCity">确认</button>
-        </div>
-      </div>
-    </div>
-  </Teleport></template>
+  <CityPicker v-if="showCityPicker" @select="handleCityPick" @close="showCityPicker = false" /></template>
 
 <style scoped>
 .no-scrollbar::-webkit-scrollbar {

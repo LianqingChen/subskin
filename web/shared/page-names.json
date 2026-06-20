@@ -1,0 +1,53 @@
+{
+  "_comment": "⚠️ SINGLE SOURCE OF TRUTH for page/feature names. Update this file when any page or feature is renamed, and both frontend (page-names.ts) and backend (analytics.py) will follow. Do NOT hardcode page names elsewhere.",
+  "pages": {
+    "/": "AI助手",
+    "/chat": "AI助手",
+    "/tracker": "测评",
+    "/community": "发现",
+    "/encyclopedia": "小白百科",
+    "/wiki-content": "小白百科",
+    "/knowledge": "小白百科",
+    "/dashboard": "管理员",
+    "/profile": "个人中心",
+    "/privacy": "隐私政策",
+    "/terms": "服务条款"
+  },
+  "features": {
+    "ai_chat": "AI问答",
+    "vasi": "追踪评估",
+    "report_upload": "上传体检报告",
+    "post": "发帖",
+    "comment": "评论",
+    "like": "点赞",
+    "encyclopedia": "浏览百科"
+  },
+  "funnel_steps": {
+    "visit": "访问UV",
+    "register": "注册用户",
+    "login": "登录UV",
+    "feature_use": "使用功能UV"
+  },
+  "north_star": {
+    "label": "注册用户数",
+    "subtitle": "累计注册用户数"
+  },
+  "routes": {
+    "new_names": {
+      "/": "AI助手",
+      "/tracker": "测评",
+      "/community": "发现",
+      "/encyclopedia": "小白百科",
+      "/dashboard": "管理员",
+      "/profile": "个人中心"
+    },
+    "old_names_do_not_use": [
+      "白友社区",
+      "小白社区",
+      "小白手账",
+      "白白百科",
+      "驾驶舱",
+      "病情追踪"
+    ]
+  }
+}

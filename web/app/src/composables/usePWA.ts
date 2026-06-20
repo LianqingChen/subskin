@@ -320,7 +320,13 @@ export function usePWA() {
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload()
+        // Don't force-reload while the user is filling a form (e.g. login modal).
+        // Instead, set a flag and reload on next safe opportunity.
+        if (document.querySelector('input:focus, textarea:focus') || sessionStorage.getItem('loginModalOpen')) {
+          needRefresh.value = true
+        } else {
+          window.location.reload()
+        }
       })
     }
 

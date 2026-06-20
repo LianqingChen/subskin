@@ -2,6 +2,301 @@
 
 > This document provides coding agents with the context needed to work effectively in this repository.
 
+## 🚨 CRITICAL: Staging vs Production Deployment Workflow
+
+**This workflow is MANDATORY. Violations are zero-tolerance. Every agent working in this project MUST follow it.**
+
+---
+
+### 🔴 Zero-Tolerance Deployment Principles (3 Rules)
+
+These 3 rules are the foundation of SubSkin's deployment workflow. **Every agent — regardless of tool, model, or framework — MUST follow them.**
+
+**Rule 1: Sync Baseline — Staging = Production (except 4 intentional differences)**
+
+As of **2026-06-08**, staging and production are EXACTLY identical in code content. The ONLY intentional differences are:
+1. Nav bar color: staging = 深蓝 `bg-slate-800`, production = 白色 `bg-white`
+2. PWA app name: staging = "SubSkin [STAGING]", production = "SubSkin更懂你"
+3. version.json `env` field: staging = `"staging"`, production = `"production"`
+4. Update banner text: staging = "测试环境有新版本可用", production = "有新版本可用"
+
+**Everything else (功能、页面、组件、逻辑、API) is 100% identical.** This baseline is recorded in `DEPLOY_LOG.md` under "Environment Sync Baseline". Any future change must start from this synced state.
+
+**Rule 2: All Changes Must Go to Staging FIRST — Then Production After User Confirmation**
+
+- Every code change (frontend, backend, config) MUST be deployed to staging first
+- After staging deployment, tell the user: "已部署到测试环境" + list changes
+- **NEVER deploy to production without the user's explicit confirmation**
+- The user must test on staging (https://staging.subskin.cn) and then say "推送到正式环境" or "更新到正式环境"
+
+**Rule 3: "推送到正式环境" / "更新到正式环境" = FULL SYNC, Not Incremental**
+
+When the user says "推送到正式环境" or "更新到正式环境", it means:
+- **Find the last production deployment timestamp** (in `DEPLOY_LOG.md`)
+- **Collect ALL changes since that timestamp** — every staging build, every backend restart
+- **Deploy ALL of them to production as ONE batch** — not just the latest change
+- This is a **full sync** operation: staging → production = complete code alignment
+- After production deployment, rebuild staging from same source to ensure both environments remain identical
+
+**NEVER do selective/partial production deployments.** If 5 changes accumulated on staging, ALL 5 go to production together.
+
+---
+
+### Architecture Overview
+
+```
+                    ┌──────────────────────────────────────────┐
+                    │           Shared Backend (port 8000)     │
+                    │  FastAPI + SQLAlchemy (single instance)  │
+                    │  ┌────────────────────────────────────┐  │
+                    │  │  SQLite DB (single shared database) │  │
+                    │  └────────────────────────────────────┘  │
+                    └───────▲──────────────────────▲───────────┘
+                            │                      │
+                    /api/*  │              /api/*  │
+                            │                      │
+┌───────────────────────────┴──┐    ┌──────────────┴──────────────┐
+│  Staging Frontend            │    │  Production Frontend        │
+│  staging.subskin.cn          │    │  subskin.cn                 │
+│  /usr/share/nginx/html/      │    │  /usr/share/nginx/html/     │
+│    subskin-staging/          │    │    subskin/                 │
+│  Nav: 深蓝色 bg-slate-800   │    │  Nav: 白色 bg-white         │
+│  PWA: "SubSkin [STAGING]"   │    │  PWA: "SubSkin更懂你"       │
+│  __APP_ENV__ = 'staging'    │    │  __APP_ENV__ = 'production' │
+└──────────────────────────────┘    └─────────────────────────────┘
+```
+
+**⚠️ Critical implications of shared backend:**
+- Frontend-only changes (UI, CSS, pages) are SAFE to deploy independently
+- Backend changes (API, DB schema) affect BOTH environments simultaneously — there is no staging backend
+- Database migrations are IMMEDIATE and IRREVERSIBLE for all users
+- Any backend change MUST be treated with extra caution
+
+---
+
+### The Two Environments
+
+| Environment | URL | Frontend Build Command | Deploy Target |
+|-------------|-----|------------------------|---------------|
+| **Staging** | https://staging.subskin.cn | `npm run build` | `/usr/share/nginx/html/subskin-staging/` |
+| **Production** | https://subskin.cn | `npm run deploy:prod` | `/usr/share/nginx/html/subskin/` |
+
+**Shared between both:**
+- Backend: `uvicorn` on `127.0.0.1:8000` (single instance, single DB)
+- Nginx: `subskin.conf` (prod) + `subskin-staging.conf` (staging)
+- VitePress百科: Same `/encyclopedia/` content served to both
+
+---
+
+### Mandatory Workflow (NO EXCEPTIONS)
+
+#### ⚡ IMMEDIATE STAGING DEPLOY (ZERO-TOLERANCE)
+
+**After EVERY code change — no matter how small — the agent MUST immediately deploy to staging. Do NOT wait for the user to ask. Staging exists for rapid testing; every second of delay defeats its purpose.**
+
+| Change Type | Action | Command |
+|---|---|---|
+| **Frontend** (`.vue`, `.ts`, `.css`, `types`, `composables`, etc.) | Rebuild & deploy | `npm run build` in `/root/subskin/web/app` |
+| **Backend** (`.py`) | Restart uvicorn | `systemctl restart subskin-backend` |
+| **Both** | Do both | Build first, then restart |
+
+**Post-deploy checklist (MANDATORY):**
+- [ ] `cat /usr/share/nginx/html/subskin-staging/version.json` — verify `buildTime` updated
+- [ ] `curl -s http://127.0.0.1:8000/api/health` — verify backend healthy
+- [ ] Record changes in `DEPLOY_LOG.md`
+
+**Why this is non-negotiable:**
+- Staging is the ONLY way to verify changes before production
+- Delayed staging deploys create a false sense of "tested"
+- Testers must see changes within SECONDS of code completion
+- If you can't deploy to staging, you haven't finished the task
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  STAGE 1: DEVELOP & DEPLOY TO STAGING                                │
+│                                                                      │
+│  1. Make code changes                                                │
+│     - Frontend: /root/subskin/web/app/src/                          │
+│     - Backend:  /root/subskin/web/backend/                          │
+│  2. If backend changes exist:                                        │
+│     ⚠️  ALERT user: "后端修改会影响正式环境，请确认"                │
+│     - Backend changes go live IMMEDIATELY for all users              │
+│     - There is NO staging backend — backend = production             │
+│  3. Record each change in DEPLOY_LOG.md "Pending Changes"           │
+│  4. Run `npm run build` → deploys to staging.subskin.cn             │
+│  5. Tell user: "已部署到测试环境" + list pending changes            │
+│  6. Staging PWA auto-prompts testers to update                      │
+├──────────────────────────────────────────────────────────────────────┤
+│  STAGE 2: USER TESTING ON STAGING                                    │
+│                                                                      │
+│  7. User tests on https://staging.subskin.cn                         │
+│  8. If issues found → fix and re-deploy to staging (back to Stage 1)│
+│  9. If all OK → user explicitly says:                                │
+│     "推送到正式环境" / "更新到正式环境" / "deploy to prod"           │
+├──────────────────────────────────────────────────────────────────────┤
+│  STAGE 3: DEPLOY TO PRODUCTION (ONLY after Stage 2)                  │
+│                                                                      │
+│  10. Show user the FULL "Pending Changes" list from DEPLOY_LOG.md   │
+│  11. Get explicit confirmation for the complete change set           │
+│  12. Run `npm run deploy:prod` → deploys to subskin.cn             │
+│  13. Verify production deployment:                                   │
+│      - Check version.json buildTime matches                         │
+│      - Check key pages load correctly                               │
+│  14. Move ALL items from "Pending" → "Production History" in log    │
+│  15. Tell user: "已部署到正式环境" + list all changes pushed        │
+│  16. Production PWA auto-prompts all users to update                │
+├──────────────────────────────────────────────────────────────────────┤
+│  STAGE 4: POST-DEPLOY VERIFICATION                                   │
+│                                                                      │
+│  17. Verify production site is functional:                           │
+│      - https://subskin.cn loads correctly                           │
+│      - PWA update banner appears for existing users                  │
+│      - Key user flows work (login, AI chat, community, etc.)        │
+│  18. If critical issue found:                                        │
+│      - Assess severity (see Rollback section below)                 │
+│      - Fix on staging first → then emergency production deploy      │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Change Tracking via DEPLOY_LOG.md
+
+**Every code change MUST be recorded in `/root/subskin/DEPLOY_LOG.md`** before building.
+
+The file has three sections:
+
+1. **Pending Changes** — Changes deployed to staging but NOT yet to production. **Accumulates** across multiple staging deploys.
+2. **Production Deployment History** — Record of what was pushed to production, with buildTime reference.
+3. **Staging Deployment History** — Record of each staging build.
+
+**Rules:**
+
+| Action | What to do |
+|--------|-----------|
+| Deploy to staging | Add row(s) to "Pending Changes" with description + buildTime |
+| Multiple staging deploys | Keep ADDING to "Pending Changes" — don't remove previous entries |
+| Deploy to production | Move ALL pending items → "Production History" as ONE batch. Clear "Pending Changes" |
+| Hotfix to production | Same workflow — staging first, then prod. Record in log. |
+
+**Why this matters**: Multiple staging deploys may accumulate before a single production push. The log ensures NOTHING is forgotten or missed when pushing to production. The user must see the COMPLETE list of changes before approving.
+
+---
+
+### Update Notification Rules
+
+| Event | Staging Users | Production Users |
+|-------|--------------|-----------------|
+| Frontend deployed to staging | ✅ Auto-prompt: "测试环境有新版本可用" | ❌ No notification |
+| Frontend deployed to production | N/A | ✅ Auto-prompt: "有新版本可用" |
+| Backend restarted/changed | Immediate for all | Immediate for all (shared backend) |
+| Hotfix/emergency | Same workflow: staging → prod | Same workflow |
+
+**Key principle**: Staging updates are for testing. Production updates are for all users. These are SEPARATE events with SEPARATE notifications.
+
+---
+
+### Rollback & Emergency Procedures
+
+#### Frontend Rollback (Safe)
+
+If a production frontend deploy has critical issues:
+
+1. **Quick rollback**: Revert code changes → rebuild → `npm run deploy:prod`
+2. **Previous version**: The service worker's `clientsClaim: true` means the old version is gone once the new SW activates. Users who haven't refreshed may still be on the old version briefly.
+3. **PWA cache**: Some users may be on the old version for up to 30 seconds (version.json polling interval) before seeing the update banner.
+
+#### Backend Rollback (Dangerous)
+
+Since the backend is shared (no staging backend):
+
+1. **Database schema changes are IRREVERSIBLE** — columns added cannot be removed without data loss
+2. **API behavior changes affect all users immediately** — there's no gradual rollout
+3. **If a backend change breaks production**: Revert code → restart uvicorn → verify
+4. **Emergency restart**: `systemctl restart subskin-backend` or `pkill -f uvicorn && bash /root/subskin/web/backend/start.sh`
+
+#### Severity Assessment
+
+| Severity | Example | Action |
+|----------|---------|--------|
+| 🔴 P0 Critical | Site down, data loss, security breach | Emergency fix → staging → prod ASAP. Notify user immediately. |
+| 🟠 P1 High | Major feature broken, many users affected | Fix → staging → prod within hours. User approval required. |
+| 🟡 P2 Medium | Minor feature broken, workaround exists | Fix → staging → normal workflow. No rush. |
+| 🟢 P3 Low | Cosmetic issue, edge case | Fix → staging → normal workflow. Next production push. |
+
+---
+
+### Backend Change Protocol
+
+**Because there is NO staging backend, backend changes require EXTRA caution:**
+
+1. **Before making backend changes**: Tell user "⚠️ 后端修改会立即影响所有正式环境用户"
+2. **Database schema changes**: Must be additive only (add columns/tables, never remove or rename). Use migration scripts in `/root/subskin/web/backend/`.
+3. **API behavior changes**: Keep backward compatibility. New fields = OK. Removing/changing fields = breaking change.
+4. **Configuration changes**: Backend `.env` is shared. Any change affects both staging and production API responses.
+
+---
+
+### Pre-Deploy Checklist
+
+Before deploying to production, verify ALL of the following:
+
+```
+□ All changes recorded in DEPLOY_LOG.md
+□ Staging tested and confirmed by user
+□ `npm run type-check` passes (vue-tsc --noEmit)
+□ `npm run build` succeeds without errors
+□ version.json buildTime is updated
+□ Pending Changes list reviewed with user
+□ User has explicitly approved production deployment
+```
+
+---
+
+### ⛔ NEVER DO THIS (Zero Tolerance)
+
+- **NEVER** run `npm run deploy:prod` without user's explicit verbal confirmation
+- **NEVER** deploy to production before deploying to staging first
+- **NEVER** assume the user wants production deployment — even if it "seems obvious"
+- **NEVER** skip staging verification — every change must be tested on staging first
+- **NEVER** deploy staging and production in the same command or step
+- **NEVER** deploy to staging without recording the change in DEPLOY_LOG.md
+- **NEVER** push to production without reviewing the full "Pending Changes" list with the user
+- **NEVER** make destructive DB schema changes (drop column, rename table) — additive only
+- **NEVER** ignore backend change warnings — shared backend = immediate production impact
+
+### Build Configs
+
+| Config File | Environment | Output Dir | `__APP_ENV__` |
+|-------------|-------------|------------|---------------|
+| `vite.config.ts` | Staging (default) | `/usr/share/nginx/html/subskin-staging/` | `'staging'` |
+| `vite.config.staging.ts` | Staging (explicit) | `/usr/share/nginx/html/subskin-staging/` | `'staging'` |
+| `vite.config.prod.ts` | Production | `/usr/share/nginx/html/subskin/` | `'production'` |
+
+### How to Tell Staging from Production
+
+| Feature | Staging | Production |
+|---------|---------|------------|
+| Nav bar | Dark blue (`bg-slate-800`) | White (`bg-white`) |
+| PWA name | "SubSkin [STAGING]" | "SubSkin更懂你" |
+| PWA theme_color | `#1e293b` (slate — status bar) | `#26A69A` (teal — status bar) |
+| PWA background_color | `#ffffff` (white — same as prod) | `#ffffff` (white) |
+| version.json | `{"env":"staging"}` | `{"env":"production"}` |
+| `__APP_ENV__` | `'staging'` | `'production'` |
+
+## 🔧 Available Skills
+
+This project uses custom agent skills located in `.agents/skills/`. Load them via `skill` tool when the task domain matches:
+
+| Skill | Purpose | When to Use |
+|-------|---------|-------------|
+| `frontend-architect` | 前端架构审查与质量标准 | 任何前端代码审查、新功能、新页面、新组件、重构 |
+| `backend-architect` | 后端架构审查与质量标准 | 任何后端代码审查、新增API、服务层修改、Python代码 |
+| `brainstorming` | 需求探索与设计 | 创建功能、构建组件前 |
+| `planning-with-files` | 文件化任务规划 | 复杂多步骤任务 |
+
+**IMPORTANT**: Before any frontend work, load the `frontend-architect` skill to ensure compliance with project standards. Before any backend work, load the `backend-architect` skill to ensure compliance with project standards.
+
 ## Project Overview
 
 **SubSkin** is a vitiligo (白癜风) knowledge base project that leverages AI to bridge the gap between medical research and patients. The project aims to:
@@ -295,6 +590,7 @@ User privacy and data security are the lifeblood of SubSkin. A single data leak 
 6. **Right to be forgotten**: 用户请求删除账户时，必须在 30 天内彻底删除所有个人数据（L2-L4），仅保留匿名化统计数据。
 7. **HTTPS everywhere**: 所有 API 必须 HTTPS，所有前端资源 HTTPS。
 8. **Minimize data collection**: 只收集功能必需的数据，不收集「以后可能有用」的数据。
+9. **`privacy_mode` naming warning**: DB 列 `privacy_mode` 语义为 `True = 可被发现 (open)`，`False = 隐藏 (hidden)`——与字面含义相反。API 层已添加 `is_discoverable` 别名。新代码应优先使用 `is_discoverable`，避免因 "privacy mode" 的字面含义写出反逻辑。
 
 ### Data Handling
 - Respect robots.txt and rate limits
@@ -337,6 +633,48 @@ All new features and modifications MUST follow these principles to maintain a un
    - NEVER allow the AI to recommend features or routes that don't exist
    - NEVER reference community board names that don't match the actual DB categories in `web/backend/database/init_db.py`
 
+7. **Icon System — RemixIcon (MANDATORY)**: ALL icons across the project MUST use [RemixIcon](https://remixicon.com/) for visual consistency. NEVER use emoji characters (📱🔒📷 etc.) or inline SVGs for icons.
+   - **Package**: `remixicon` (CSS font approach, imported in `main.ts`)
+   - **Usage**: `<i class="ri-icon-name"></i>` (line variant) or `<i class="ri-icon-name-fill"></i>` (filled variant)
+   - **In data arrays**: Store the class string (e.g., `{ icon: 'ri-bar-chart-2-line', label: '小白手账' }`), render with `<i :class="item.icon"></i>`
+   - **Default to line variants** unless filled is explicitly needed for emphasis
+   - **Never mix**: Do NOT use emoji, Heroicons SVGs, or other icon systems alongside RemixIcon
+   - **Icon size**: Controlled by parent font-size or Tailwind classes (`text-sm`, `text-lg`, `text-2xl`, etc.)
+   - **Common mapping**:
+
+     | Concept | RemixIcon Class |
+     |---------|----------------|
+     | 手机/添加桌面 | `ri-smartphone-line` |
+     | 锁/隐私 | `ri-lock-line` |
+     | 相机/照片 | `ri-camera-line` |
+     | 通知 | `ri-notification-3-line` |
+     | 主题/调色 | `ri-palette-line` |
+     | 图表/追踪 | `ri-bar-chart-2-line` |
+     | 显微镜/体检 | `ri-microscope-line` |
+     | 团队/白友 | `ri-team-line` |
+     | 编辑 | `ri-edit-line` |
+     | 删除 | `ri-delete-bin-line` |
+     | 退出 | `ri-logout-box-r-line` |
+     | 刷新/更新 | `ri-refresh-line` |
+     | 提示/灯泡 | `ri-lightbulb-line` |
+     | 警告 | `ri-error-warning-line` |
+     | 设置 | `ri-settings-3-line` |
+     | 用户 | `ri-user-line` |
+     | 聊天/评论 | `ri-chat-3-line` |
+     | 文件/笔记 | `ri-file-edit-line` |
+     | 收藏/星 | `ri-star-line` |
+     | 密钥 | `ri-key-2-line` |
+     | 安全 | `ri-shield-keyhole-line` |
+     | 搜索 | `ri-search-line` |
+     | 图片 | `ri-image-line` |
+     | 文档 | `ri-file-text-line` |
+     | 公开/全球 | `ri-global-line` |
+     | 医学/胶囊 | `ri-capsule-line` |
+     | 文件夹 | `ri-folder-3-line` |
+     | 点赞/心 | `ri-heart-3-line` |
+     | 链接 | `ri-link` |
+     | 叶子/自然 | `ri-leaf-line` |
+
 ## Quick Reference
 
 | Task | Command |
@@ -348,3 +686,215 @@ All new features and modifications MUST follow these principles to maintain a un
 | Run tests | `pytest` |
 | Single test | `pytest tests/test_file.py::test_name` |
 | Run crawler | `scrapy crawl <spider_name>` |
+
+<!-- CODEGRAPH_START -->
+## CodeGraph
+
+This project has a CodeGraph MCP server (`codegraph_*` tools) configured. CodeGraph is a tree-sitter-parsed knowledge graph of every symbol, edge, and file. Reads are sub-millisecond and return structural information grep cannot.
+
+### When to prefer codegraph over native search
+
+Use codegraph for **structural** questions — what calls what, what would break, where is X defined, what is X's signature. Use native grep/read only for **literal text** queries (string contents, comments, log messages) or after you already have a specific file open.
+
+| Question | Tool |
+|---|---|
+| "Where is X defined?" / "Find symbol named X" | `codegraph_search` |
+| "What calls function Y?" | `codegraph_callers` |
+| "What does Y call?" | `codegraph_callees` |
+| "What would break if I changed Z?" | `codegraph_impact` |
+| "Show me Y's signature / source / docstring" | `codegraph_node` |
+| "Give me focused context for a task/area" | `codegraph_context` |
+| "Survey an unfamiliar module/topic" | `codegraph_explore` |
+| "What files exist under path/" | `codegraph_files` |
+| "Is the index healthy?" | `codegraph_status` |
+
+### ⚡ Auto-Sync After Code Changes (MANDATORY)
+
+**After EVERY batch of file edits, run `codegraph sync` before using ANY codegraph tool.** The MCP server's built-in file watcher has ~500ms debounce — not reliable during rapid agent edits. Explicit sync guarantees the index reflects your changes.
+
+```bash
+# Run after completing a logical unit of edits, before codegraph_* queries
+codegraph sync
+```
+
+**Workflow:**
+1. Make code edits (edit tool, write tool)
+2. **Immediately run `codegraph sync`** (sub-second for incremental changes)
+3. Now use `codegraph_search` / `codegraph_callers` / `codegraph_impact` with confidence
+
+**Anti-pattern:** Using `codegraph_impact` to check blast radius without syncing first → stale results, wrong conclusions.
+
+### Rules of thumb
+
+- **Sync first, query second.** Always `codegraph sync` after edits before using codegraph tools.
+- **Trust codegraph results.** They come from a full AST parse. Do NOT re-verify them with grep — that's slower, less accurate, and wastes context.
+- **Don't grep first** when looking up a symbol by name. `codegraph_search` is faster and returns kind + location + signature in one call.
+- **Don't chain `codegraph_search` + `codegraph_node`** when you just want context — `codegraph_context` is one call.
+- **`codegraph_explore` is the heavy hitter** for unfamiliar areas — it returns full source from all relevant files in one call, but is token-heavy. If your harness supports parallel subagents (e.g., Claude Code's Task tool), spawn one for explore-class questions to keep main session context clean.
+
+### If `.codegraph/` doesn't exist
+
+The MCP server returns "not initialized." Ask the user: *"I notice this project doesn't have CodeGraph initialized. Want me to run `codegraph init -i` to build the index?"*
+## Agent Governance & Cleanup Rules
+
+### Single Source of Truth
+
+**AGENTS.md is the ONE AND ONLY canonical instruction file for this project.**
+
+- `CLAUDE.md` is a pointer only — it redirects to AGENTS.md.
+- All other agent entry files (OPENCODE_INSTRUCTIONS.md, START_HERE.md, etc.) have been removed.
+- Any agent tool entering this project (Claude Code, OpenCode, Codex, Hermes, etc.) MUST read AGENTS.md first and treat it as authoritative.
+- If an agent tool creates its own instruction file, it MUST be a short pointer to AGENTS.md — never a competing copy.
+
+### Plan Directory
+
+**All implementation plans go in `hermes_plan/`** — one directory, one naming convention:
+
+- Filename format: `YYYY-MM-DD-description.md` (e.g., `2026-06-04-admin-dashboard.md`)
+- Do NOT create plans in `.hermes/plans/`, `.sisyphus/plans/`, `docs/plans/`, or any other location.
+- After a plan is executed and the task is complete, leave the plan file in place — it serves as project history.
+
+### Agent Artifact Cleanup
+
+Agent tools naturally create runtime state directories. These are gitignored but can accumulate disk waste. **Every agent task session MUST clean up after itself:**
+
+1. **Delete intermediate task files** when a task is complete (temporary delegation stubs, scratch files).
+2. **Agent state directories** (`.opencode/`, `.codegraph/`, `.claude/`, `.sisyphus/`, `.playwright-mcp/`, `.hermes/`) are gitignored but may grow large. Periodically prune stale session state, caches, and WAL files from these directories.
+3. **Logs in `logs/`** — keep only the last 7 days. Delete older `scheduler.log.YYYY-MM-DD` files.
+4. **Never commit** agent runtime state, browser snapshots, or session caches.
+
+### Cross-Agent Consistency Checklist
+
+Before declaring a task "done", verify:
+
+- [ ] All plan files are in `hermes_plan/` (not scattered across agent dotdirs)
+- [ ] No stale intermediate task files remain (check `.hermes/opencode_tasks/`, `.hermes/goals/`, `.sisyphus/drafts/`, etc.)
+- [ ] `.gitignore` covers any new agent tool's state directory
+- [ ] If a new agent tool was used, its entry file is a pointer to AGENTS.md, not a competing instruction set
+
+### Repository Sanity Baseline
+
+| Concern | Rule |
+|---------|------|
+| Agent instruction | AGENTS.md only. CLAUDE.md is a pointer. |
+| Plans | `hermes_plan/` only. Date-named. |
+| Agent state dirs | Gitignored. Prune stale session/cache/WAL periodically. |
+| Old logs | Delete >7 days old from `logs/`. |
+| Task stubs | Delete on completion. Don't accumulate. |
+
+<!-- CODEGRAPH_END -->
+
+
+## 🏗️ Three-Environment Architecture (UPDATED)
+
+> **This is the authoritative environment definition. ALL agents MUST read and follow this section.**
+
+### Environment Overview — THREE DISTINCT ENTITIES
+
+These three environments are **completely different applications/purposes**. They must NEVER be confused or cross-deployed.
+
+| # | Environment | URL | What It Is | Codebase | Deploy Target |
+|---|-------------|-----|------------|----------|---------------|
+| **1** | **Production** | https://subskin.cn / https://www.subskin.cn | **正式环境** — 面向所有用户的线上产品。只有经过测试确认无误的功能才能上线。 | `web/app/` | `/usr/share/nginx/html/subskin/` |
+| **2** | **Staging** | https://staging.subskin.cn | **测试环境** — 我们高频修改和验证的环境。新功能先部署到这里，确认没问题后由 LianqingChan 确认再同步到正式环境。 | `web/app/` | `/usr/share/nginx/html/subskin-staging/` |
+| **3** | **Admin** | https://admin.subskin.cn | **管理后台** — 独立模块，只有管理员可登录。**不存在测试/正式环境区分**，任何修改直接部署生效。 | `web/admin/` | `/usr/share/nginx/html/subskin-admin/` |
+
+**All three share the same backend** (`127.0.0.1:8000`, single SQLite DB).
+
+### ⛔ CRITICAL: Admin is a STANDALONE Application
+
+**Admin (`web/admin/`) is a COMPLETELY SEPARATE frontend project from the main app (`web/app/`).**
+
+| | Main App (`web/app/`) | Admin (`web/admin/`) |
+|---|---|---|
+| **Purpose** | User-facing app (production + staging) | Internal admin panel |
+| **Login** | User login flow | Admin-only login (`/#/login`) |
+| **UI Framework** | Custom components + PWA | NaiveUI + ECharts |
+| **Routing** | History mode | Hash mode (`/#/dashboard`) |
+| **PWA / Service Worker** | Yes | **No** — explicitly unregisters SW |
+| **Title** | "SubSkin更懂你" | "SubSkin 管理后台" |
+| **Environments** | Production + Staging | **Single** — no staging/prod split |
+
+**❌ NEVER deploy the main app (`web/app/`) to the admin directory.**
+**❌ NEVER deploy the admin app (`web/admin/`) to staging or production directories.**
+
+### Deployment Rules (ZERO TOLERANCE)
+
+#### Rule 1: Admin Panel → `web/admin/` build, deploy directly
+
+| Action | Command |
+|--------|---------|
+| Build & deploy admin | `cd /root/subskin/web/admin && npx vite build` |
+| Dev server | `cd /root/subskin/web/admin && npm run dev` (port 5174) |
+
+**Why:** The admin panel is a standalone SPA for internal operators. No staging exists. Every build goes directly to `/usr/share/nginx/html/subskin-admin/`.
+
+#### Rule 2: User-Facing Features → Staging FIRST, then Production
+
+| Step | Command |
+|------|---------|
+| 1. Deploy to staging | `cd /root/subskin/web/app && npm run build` → deploys to `/usr/share/nginx/html/subskin-staging/` |
+| 2. Test on staging | Visit `https://staging.subskin.cn` |
+| 3. User confirms | LianqingChan reviews and approves |
+| 4. Deploy to production | `cd /root/subskin/web/app && npm run deploy:prod` → deploys to `/usr/share/nginx/html/subskin/` |
+| 5. Notify users | Remind users to refresh/update |
+
+**Why:** User-facing changes must be verified on staging before reaching all users.
+
+#### Rule 3: Backend Changes → EXTREME CAUTION (shared backend!)
+
+| Action | Rule |
+|--------|------|
+| Backend Python code (API, services, models) | ⚠️ ALERT user first — changes affect ALL three environments immediately |
+| Database schema changes | Additive only (add columns/tables, never delete/rename) |
+| Config / .env changes | Affects all environments at once |
+
+#### Rule 4: NEVER Cross-Deploy — THREE STRIKES AND YOU'RE OUT
+
+| ❌ FORBIDDEN (and why) | ✅ CORRECT |
+|---|---|
+| Deploy `web/app/` build to `/usr/share/nginx/html/subskin-admin/` — admin is a different app! | Build admin from `web/admin/` with `npx vite build` |
+| Copy staging build to admin directory — different codebases! | Each environment has its own source and build process |
+| Copy admin build to production/staging — admin is not user-facing! | Keep admin and main app completely separate |
+| Deploy `web/app/` production build to staging | Use `npm run build` (staging config) for staging |
+
+### How to Identify Each Environment (Visual Cues)
+
+| | Production | Staging | Admin |
+|---|---|---|---|
+| **Page title** | "SubSkin更懂你" | "SubSkin更懂你" | **"SubSkin 管理后台"** |
+| **URL** | subskin.cn / www.subskin.cn | staging.subskin.cn | admin.subskin.cn |
+| **PWA** | Yes (teal theme) | Yes ("[STAGING]") | **No PWA** |
+| **Login page** | Main app login flow | Main app login flow | **`/#/login` — standalone admin login** |
+| **3D assets** | Yes (panda models) | Yes (panda models) | **No** — lightweight |
+| **Access** | All users | Internal testing | **Admin-only** |
+
+### Quick Reference — ALL Build Commands
+
+```bash
+# ── Admin Panel (admin.subskin.cn) ──
+# Standalone app in web/admin/ — NO staging/production split
+cd /root/subskin/web/admin
+npx vite build          # Build & deploy to /usr/share/nginx/html/subskin-admin/
+npm run dev             # Dev server on port 5174
+
+# ── Staging (staging.subskin.cn) ──
+# Test environment in web/app/
+cd /root/subskin/web/app
+npm run build           # Build & deploy to /usr/share/nginx/html/subskin-staging/
+
+# ── Production (subskin.cn) ──
+# Live user-facing site in web/app/
+cd /root/subskin/web/app
+npm run deploy:prod     # Build & deploy to /usr/share/nginx/html/subskin/
+```
+
+### Nginx Configuration (Server-Side Reference)
+
+| Config File | Server Name | Root Directory | SSL |
+|-------------|-------------|----------------|-----|
+| `/etc/nginx/conf.d/subskin.conf` | `subskin.cn`, `www.subskin.cn` | `/usr/share/nginx/html/subskin/` | Yes (443) |
+| `/etc/nginx/conf.d/subskin-staging.conf` | `staging.subskin.cn` | `/usr/share/nginx/html/subskin-staging/` | Yes (443) |
+| `/etc/nginx/conf.d/subskin-admin.conf` | `admin.subskin.cn` | `/usr/share/nginx/html/subskin-admin/` | Yes (443) |
+
+Repo templates are in `web/deploy/` — server configs may differ slightly. Server configs are the source of truth.

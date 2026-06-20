@@ -680,6 +680,8 @@ async def admin_label_image(
                 skin_mask_data=skin_mask_val,
                 confidence=ann_data.get("confidence"),
                 notes=ann_data.get("notes"),
+                tool_used=ann_data.get("tool_used"),
+                edit_duration_ms=ann_data.get("edit_duration_ms"),
             )
             db.add(annotation)
 
@@ -1895,3 +1897,206 @@ async def get_label_history(
             for log in logs
         ],
     }
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Training Dashboard & Active Learning Queue
+# ═══════════════════════════════════════════════════════════════════
+
+@router.get("/admin/training/dashboard")
+async def get_training_dashboard(
+    admin_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db),
+):
+    """训练数据管理面板 — 样本统计 + 模型版本"""
+    from web.backend.models.vasi import VasiTrainingSample, VasiModelVersion
+
+    total = db.query(VasiTrainingSample).filter(VasiTrainingSample.is_active == True).count()
+    train_count = db.query(VasiTrainingSample).filter(
+        VasiTrainingSample.is_active == True,
+        VasiTrainingSample.sample_source == "admin_labeling",
+    ).count()
+    val_count = max(0, int(train_count * 0.15))
+    test_count = max(0, int(train_count * 0.15))
+
+    # Count labeled but not yet synced
+    pending_sync = db.query(ImageLabel).filter(
+        ImageLabel.label_status == "labeled",
+        ImageLabel.training_eligible == True,
+    ).count()
+
+    # Get synced label IDs to subtract
+    synced_label_ids = {
+        s.admin_label_id for s in db.query(VasiTrainingSample.admin_label_id).filter(
+            VasiTrainingSample.admin_label_id.isnot(None)
+        ).all()
+    }
+    pending_sync = db.query(ImageLabel).filter(
+        ImageLabel.label_status == "labeled",
+        ImageLabel.training_eligible == True,
+        ~ImageLabel.id.in_(synced_label_ids) if synced_label_ids else True,
+    ).count()
+
+    # Model versions
+    model_versions = db.query(VasiModelVersion).order_by(
+        VasiModelVersion.created_at.desc()
+    ).limit(10).all()
+
+    return {
+        "total_samples": total,
+        "train_count": train_count,
+        "val_count": val_count,
+        "test_count": test_count,
+        "pending_sync": pending_sync,
+        "last_export_at": None,
+        "model_versions": [
+            {
+                "version_tag": mv.version_tag,
+                "metrics": json.loads(mv.metrics_json) if mv.metrics_json else {},
+                "sample_count": mv.sample_count,
+                "is_active": mv.is_active,
+                "created_at": _format_dt(mv.created_at),
+            }
+            for mv in model_versions
+        ],
+    }
+
+
+@router.post("/admin/training/sync-samples")
+async def sync_training_samples(
+    admin_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db),
+):
+    """同步已标注数据到 VasiTrainingSample 表"""
+    from web.backend.models.vasi import VasiTrainingSample
+
+    eligible_labels = db.query(ImageLabel).filter(
+        ImageLabel.label_status == "labeled",
+        ImageLabel.training_eligible == True,
+    ).all()
+
+    synced = 0
+    for label in eligible_labels:
+        # Check if already synced
+        existing = db.query(VasiTrainingSample).filter(
+            VasiTrainingSample.admin_label_id == label.id,
+        ).first()
+        if existing:
+            continue
+
+        # Get admin annotation masks
+        admin_ann = db.query(ImageLabelAnnotation).filter(
+            ImageLabelAnnotation.image_label_id == label.id,
+            ImageLabelAnnotation.source == "admin",
+        ).first()
+
+        sample = VasiTrainingSample(
+            image_hash=label.image_hash or f"label_{label.id}",
+            image_key=label.image_key or "",
+            body_site=label.admin_body_site or label.ai_body_site or "unknown",
+            sample_source="admin_labeling",
+            vitiligo_type=label.admin_vitiligo_type,
+            stage=label.admin_vitiligo_stage,
+            admin_mask_b64=admin_ann.mask_data if admin_ann else None,
+            admin_label_id=label.id,
+            quality_level="good" if admin_ann and admin_ann.mask_data else "acceptable",
+            is_active=True,
+        )
+        db.add(sample)
+        synced += 1
+
+    db.commit()
+    return {"synced": synced}
+
+
+@router.get("/admin/image-labels/queue")
+async def get_labeling_queue(
+    limit: int = Query(20, ge=1, le=100),
+    min_confidence: Optional[float] = Query(None, description="最低AI置信度阈值"),
+    admin_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db),
+):
+    """主动学习优先级队列 — 低置信度图片排前面"""
+    query = db.query(ImageLabel).filter(
+        ImageLabel.label_status == "pending",
+    )
+
+    if min_confidence is not None:
+        query = query.filter(
+            (ImageLabel.ai_confidence == None) | (ImageLabel.ai_confidence >= min_confidence)
+        )
+
+    labels = query.all()
+
+    # Compute priority on-the-fly
+    now = datetime.utcnow()
+    def compute_priority(label: ImageLabel) -> float:
+        score = 0.0
+        # Model uncertainty (higher = more uncertain)
+        if label.ai_confidence is not None:
+            score += (1.0 - label.ai_confidence) * 0.6
+        else:
+            score += 0.6  # No AI confidence = max uncertainty
+
+        # Age boost (older items get slight priority)
+        if label.created_at:
+            age_days = (now - label.created_at).total_seconds() / 86400.0
+            score += min(age_days * 0.02, 0.3)
+
+        return score
+
+    # Sort by priority (descending)
+    label_list = sorted(labels, key=compute_priority, reverse=True)
+
+    # Paginate
+    total = len(label_list)
+    items = label_list[:limit]
+
+    return {
+        "total": total,
+        "items": [_label_to_detail(item) for item in items],
+    }
+
+
+@router.post("/admin/labeling/sessions")
+async def start_work_session(
+    admin_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db),
+):
+    """开始打标工作会话"""
+    from web.backend.models.image_label import LabelingWorkSession
+
+    # End any open sessions
+    open_sessions = db.query(LabelingWorkSession).filter(
+        LabelingWorkSession.admin_user_id == admin_user.id,
+        LabelingWorkSession.ended_at == None,
+    ).all()
+    for s in open_sessions:
+        s.ended_at = datetime.utcnow()
+
+    session = LabelingWorkSession(admin_user_id=admin_user.id)
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+    return {"session_id": session.id, "started_at": _format_dt(session.started_at)}
+
+
+@router.put("/admin/labeling/sessions/{session_id}")
+async def end_work_session(
+    session_id: int,
+    admin_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db),
+):
+    """结束打标工作会话"""
+    from web.backend.models.image_label import LabelingWorkSession
+
+    session = db.query(LabelingWorkSession).filter(
+        LabelingWorkSession.id == session_id,
+        LabelingWorkSession.admin_user_id == admin_user.id,
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="会话不存在")
+
+    session.ended_at = datetime.utcnow()
+    db.commit()
+    return {"session_id": session.id, "ended_at": _format_dt(session.ended_at)}

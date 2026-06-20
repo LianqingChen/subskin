@@ -60,12 +60,11 @@ data/weekly/*
 !data/exports/.gitkeep
 !data/weekly/.gitkeep
 
-# Environment variables
+# Environment variables (strict: all .env files are excluded)
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+!.env.*.example
 
 # Database
 *.db
@@ -112,7 +111,30 @@ secrets.yaml
 *.pem
 *.key
 *.crt
+credentials.json
+service-account*.json
+.secrets.baseline
+
+# Node modules
+node_modules/
+
+# detect-secrets baseline
 
 # Documentation builds
 docs/_build/
 site/
+
+# ─────────────────────────────────────────────
+# Agent tool runtime artifacts (keep project clean)
+# Each agent tool gets its own state dir but
+# those should never be committed to git.
+# Only AGENTS.md and hermes_plan/ are shared.
+# ─────────────────────────────────────────────
+.opencode/
+.codegraph/
+.claude/
+.sisyphus/
+.playwright-mcp/
+
+# Hermes agent runtime state
+.hermes/

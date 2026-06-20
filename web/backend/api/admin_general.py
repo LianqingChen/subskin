@@ -209,3 +209,14 @@ async def system_logs(
         return {"service": service, "lines": proc.stdout.splitlines()}
     except Exception as e:
         return {"service": service, "error": str(e)}
+
+
+@router.post("/embed-batch")
+def embed_batch(admin_user: User = Depends(get_admin_user), db: Session = Depends(get_db)) -> dict:
+    """管理员手动触发增量向量化：对 embedding=NULL 的文档做批量向量化。"""
+    try:
+        from web.backend.services.rag import batch_embed_unembedded
+        result = batch_embed_unembedded(db)
+        return {"status": "ok", "result": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="向量化任务执行失败，请稍后重试")

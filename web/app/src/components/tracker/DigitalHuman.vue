@@ -103,33 +103,33 @@ function scheduleNext() {
 const waveBars = [{ delay: '0s', duration: '2.5s' }]
 
 const frontParts: BodyPart[] = [
-  {"id": "face", "label": "面部", "bodySite": "face", "hits": [{"cx": 700, "cy": 132, "rx": 60, "ry": 60}], "anchors": [{"x": 660, "y": 132}], "labelX": 60, "labelY": 120},
-  {"id": "right_hand", "label": "右手", "bodySite": "right_hand", "hits": [{"cx": 305, "cy": 140, "rx": 52, "ry": 50}], "anchors": [{"x": 335, "y": 140}], "labelX": 60, "labelY": 255},
-  {"id": "neck", "label": "脖子", "bodySite": "neck", "hits": [{"cx": 640, "cy": 218, "rx": 30, "ry": 22}], "anchors": [{"x": 612, "y": 218}], "labelX": 60, "labelY": 400},
-  {"id": "right_arm", "label": "右臂", "bodySite": "right_arm", "hits": [{"cx": 380, "cy": 320, "rx": 55, "ry": 90}], "anchors": [{"x": 365, "y": 300}], "labelX": 60, "labelY": 560},
-  {"id": "right_leg", "label": "右腿", "bodySite": "right_leg", "hits": [{"cx": 548, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 492, "y": 806}], "labelX": 60, "labelY": 780},
-  {"id": "right_foot", "label": "右脚", "bodySite": "right_foot", "hits": [{"cx": 546, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 484, "y": 1242}], "labelX": 60, "labelY": 1235},
-  {"id": "left_hand", "label": "左手", "bodySite": "left_hand", "hits": [{"cx": 756, "cy": 192, "rx": 52, "ry": 48}], "anchors": [{"x": 806, "y": 192}], "labelX": 1220, "labelY": 175},
-  {"id": "left_arm", "label": "左臂", "bodySite": "left_arm", "hits": [{"cx": 782, "cy": 282, "rx": 44, "ry": 112}], "anchors": [{"x": 824, "y": 282}], "labelX": 1220, "labelY": 295},
-  {"id": "abdomen", "label": "腹部", "bodySite": "abdomen", "hits": [{"cx": 640, "cy": 500, "rx": 95, "ry": 75}], "anchors": [{"x": 744, "y": 500}], "labelX": 1220, "labelY": 425},
-  {"id": "chest", "label": "胸部", "bodySite": "chest", "hits": [{"cx": 640, "cy": 380, "rx": 90, "ry": 50}], "anchors": [{"x": 742, "y": 380}], "labelX": 1220, "labelY": 555},
-  {"id": "left_leg", "label": "左腿", "bodySite": "left_leg", "hits": [{"cx": 732, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 788, "y": 806}], "labelX": 1220, "labelY": 800},
-  {"id": "left_foot", "label": "左脚", "bodySite": "left_foot", "hits": [{"cx": 734, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 796, "y": 1242}], "labelX": 1220, "labelY": 1235}
+  {"id": "face", "label": "面部", "bodySite": "face", "hits": [{"cx": 760, "cy": 132, "rx": 60, "ry": 60}], "anchors": [{"x": 720, "y": 132}], "labelX": 120, "labelY": 120},
+  {"id": "right_hand", "label": "右手", "bodySite": "right_hand", "hits": [{"cx": 365, "cy": 140, "rx": 52, "ry": 50}], "anchors": [{"x": 395, "y": 140}], "labelX": 120, "labelY": 255},
+  {"id": "neck", "label": "脖子", "bodySite": "neck", "hits": [{"cx": 700, "cy": 218, "rx": 30, "ry": 22}], "anchors": [{"x": 672, "y": 218}], "labelX": 120, "labelY": 400},
+  {"id": "right_arm", "label": "右臂", "bodySite": "right_arm", "hits": [{"cx": 440, "cy": 320, "rx": 55, "ry": 90}], "anchors": [{"x": 425, "y": 300}], "labelX": 120, "labelY": 560},
+  {"id": "right_leg", "label": "右腿", "bodySite": "right_leg", "hits": [{"cx": 608, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 552, "y": 806}], "labelX": 120, "labelY": 780},
+  {"id": "right_foot", "label": "右脚", "bodySite": "right_foot", "hits": [{"cx": 606, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 544, "y": 1242}], "labelX": 120, "labelY": 1235},
+  {"id": "left_hand", "label": "左手", "bodySite": "left_hand", "hits": [{"cx": 816, "cy": 192, "rx": 52, "ry": 48}], "anchors": [{"x": 866, "y": 192}], "labelX": 1280, "labelY": 175},
+  {"id": "left_arm", "label": "左臂", "bodySite": "left_arm", "hits": [{"cx": 842, "cy": 282, "rx": 44, "ry": 112}], "anchors": [{"x": 884, "y": 282}], "labelX": 1280, "labelY": 295},
+  {"id": "abdomen", "label": "腹部", "bodySite": "abdomen", "hits": [{"cx": 700, "cy": 500, "rx": 95, "ry": 75}], "anchors": [{"x": 804, "y": 500}], "labelX": 1280, "labelY": 425},
+  {"id": "chest", "label": "胸部", "bodySite": "chest", "hits": [{"cx": 700, "cy": 380, "rx": 90, "ry": 50}], "anchors": [{"x": 802, "y": 380}], "labelX": 1280, "labelY": 555},
+  {"id": "left_leg", "label": "左腿", "bodySite": "left_leg", "hits": [{"cx": 792, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 848, "y": 806}], "labelX": 1280, "labelY": 800},
+  {"id": "left_foot", "label": "左脚", "bodySite": "left_foot", "hits": [{"cx": 794, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 856, "y": 1242}], "labelX": 1280, "labelY": 1235}
 ]
 
 const backParts: BodyPart[] = [
-  {"id": "face", "label": "后脑", "bodySite": "face", "hits": [{"cx": 640, "cy": 132, "rx": 60, "ry": 60}], "anchors": [{"x": 600, "y": 132}], "labelX": 60, "labelY": 120},
-  {"id": "left_hand", "label": "左手", "bodySite": "left_hand", "hits": [{"cx": 305, "cy": 140, "rx": 52, "ry": 50}], "anchors": [{"x": 335, "y": 140}], "labelX": 60, "labelY": 255},
-  {"id": "neck", "label": "颈后", "bodySite": "neck", "hits": [{"cx": 640, "cy": 218, "rx": 30, "ry": 22}], "anchors": [{"x": 612, "y": 218}], "labelX": 60, "labelY": 400},
-  {"id": "left_arm", "label": "左臂", "bodySite": "left_arm", "hits": [{"cx": 380, "cy": 320, "rx": 55, "ry": 90}], "anchors": [{"x": 365, "y": 300}], "labelX": 60, "labelY": 560},
-  {"id": "left_leg", "label": "左腿", "bodySite": "left_leg", "hits": [{"cx": 548, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 492, "y": 806}], "labelX": 60, "labelY": 780},
-  {"id": "left_foot", "label": "左脚", "bodySite": "left_foot", "hits": [{"cx": 546, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 484, "y": 1242}], "labelX": 60, "labelY": 1235},
-  {"id": "right_hand", "label": "右手", "bodySite": "right_hand", "hits": [{"cx": 756, "cy": 192, "rx": 52, "ry": 48}], "anchors": [{"x": 806, "y": 192}], "labelX": 1220, "labelY": 175},
-  {"id": "right_arm", "label": "右臂", "bodySite": "right_arm", "hits": [{"cx": 782, "cy": 282, "rx": 44, "ry": 112}], "anchors": [{"x": 824, "y": 282}], "labelX": 1220, "labelY": 295},
-  {"id": "upper_back", "label": "上背部", "bodySite": "upper_back", "hits": [{"cx": 640, "cy": 410, "rx": 95, "ry": 60}], "anchors": [{"x": 744, "y": 410}], "labelX": 1220, "labelY": 425},
-  {"id": "lower_back", "label": "下背部", "bodySite": "lower_back", "hits": [{"cx": 640, "cy": 580, "rx": 90, "ry": 60}], "anchors": [{"x": 742, "y": 580}], "labelX": 1220, "labelY": 555},
-  {"id": "right_leg", "label": "右腿", "bodySite": "right_leg", "hits": [{"cx": 732, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 788, "y": 806}], "labelX": 1220, "labelY": 800},
-  {"id": "right_foot", "label": "右脚", "bodySite": "right_foot", "hits": [{"cx": 734, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 796, "y": 1242}], "labelX": 1220, "labelY": 1235}
+  {"id": "face", "label": "后脑", "bodySite": "face", "hits": [{"cx": 700, "cy": 132, "rx": 60, "ry": 60}], "anchors": [{"x": 660, "y": 132}], "labelX": 120, "labelY": 120},
+  {"id": "left_hand", "label": "左手", "bodySite": "left_hand", "hits": [{"cx": 365, "cy": 140, "rx": 52, "ry": 50}], "anchors": [{"x": 395, "y": 140}], "labelX": 120, "labelY": 255},
+  {"id": "neck", "label": "颈后", "bodySite": "neck", "hits": [{"cx": 700, "cy": 218, "rx": 30, "ry": 22}], "anchors": [{"x": 672, "y": 218}], "labelX": 120, "labelY": 400},
+  {"id": "left_arm", "label": "左臂", "bodySite": "left_arm", "hits": [{"cx": 440, "cy": 320, "rx": 55, "ry": 90}], "anchors": [{"x": 425, "y": 300}], "labelX": 120, "labelY": 560},
+  {"id": "left_leg", "label": "左腿", "bodySite": "left_leg", "hits": [{"cx": 608, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 552, "y": 806}], "labelX": 120, "labelY": 780},
+  {"id": "left_foot", "label": "左脚", "bodySite": "left_foot", "hits": [{"cx": 606, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 544, "y": 1242}], "labelX": 120, "labelY": 1235},
+  {"id": "right_hand", "label": "右手", "bodySite": "right_hand", "hits": [{"cx": 816, "cy": 192, "rx": 52, "ry": 48}], "anchors": [{"x": 866, "y": 192}], "labelX": 1280, "labelY": 175},
+  {"id": "right_arm", "label": "右臂", "bodySite": "right_arm", "hits": [{"cx": 842, "cy": 282, "rx": 44, "ry": 112}], "anchors": [{"x": 884, "y": 282}], "labelX": 1280, "labelY": 295},
+  {"id": "upper_back", "label": "上背部", "bodySite": "upper_back", "hits": [{"cx": 700, "cy": 410, "rx": 95, "ry": 60}], "anchors": [{"x": 804, "y": 410}], "labelX": 1280, "labelY": 425},
+  {"id": "lower_back", "label": "下背部", "bodySite": "lower_back", "hits": [{"cx": 700, "cy": 580, "rx": 90, "ry": 60}], "anchors": [{"x": 802, "y": 580}], "labelX": 1280, "labelY": 555},
+  {"id": "right_leg", "label": "右腿", "bodySite": "right_leg", "hits": [{"cx": 792, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 848, "y": 806}], "labelX": 1280, "labelY": 800},
+  {"id": "right_foot", "label": "右脚", "bodySite": "right_foot", "hits": [{"cx": 794, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 856, "y": 1242}], "labelX": 1280, "labelY": 1235}
 ]
 
 const visibleParts = computed(() => currentView.value === 'back' ? backParts : frontParts)
@@ -171,14 +171,14 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="relative w-full h-full min-h-[280px]">
+  <div class="relative w-full h-full min-h-[280px]" style="aspect-ratio: 1400 / 1500;">
     <div
       ref="imageAreaRef"
       class="relative w-full h-full"
       :style="{ touchAction: 'none' }"
       data-swipe-ignore
     >
-      <div class="w-full h-full p-6 sm:p-8">
+      <div class="w-full h-full">
         <img
           :src="butterflyMascot"
           alt="小金 - 身体部位参考图"
@@ -207,11 +207,11 @@ onUnmounted(() => {
       </div>
 
       <Transition name="parts-fade">
-        <div v-if="showPartsInternal" class="absolute inset-0 p-6 sm:p-8" :style="{ zIndex: 20, pointerEvents: 'none' }">
+        <div v-if="showPartsInternal" class="absolute inset-0" :style="{ zIndex: 20, pointerEvents: 'none' }">
           <svg
-            viewBox="0 0 1280 1280"
+            viewBox="0 0 1400 1500"
             class="w-full h-full"
-            :style="{ pointerEvents: 'auto' }"
+            :style="{ pointerEvents: 'auto', overflow: 'visible' }"
             preserveAspectRatio="xMidYMid meet"
           >
             <defs>
@@ -251,7 +251,7 @@ onUnmounted(() => {
                 <line
                   :x1="anc.x"
                   :y1="anc.y"
-                  :x2="part.labelX < 640 ? anc.x - 25 : anc.x + 25"
+                  :x2="part.labelX < 700 ? anc.x - 25 : anc.x + 25"
                   :y2="anc.y"
                   :stroke="activePart === part.bodySite ? '#ffffff' : '#26A69A'"
                   stroke-width="2"
@@ -261,9 +261,9 @@ onUnmounted(() => {
                   :opacity="activePart === part.bodySite ? 1 : 0.7"
                 />
                 <line
-                  :x1="part.labelX < 640 ? anc.x - 25 : anc.x + 25"
+                  :x1="part.labelX < 700 ? anc.x - 25 : anc.x + 25"
                   :y1="anc.y"
-                  :x2="part.labelX < 640 ? part.labelX + 30 : part.labelX - 30"
+                  :x2="part.labelX < 700 ? part.labelX + 30 : part.labelX - 30"
                   :y2="part.labelY"
                   :stroke="activePart === part.bodySite ? '#ffffff' : '#26A69A'"
                   stroke-width="2"
@@ -284,7 +284,7 @@ onUnmounted(() => {
               <text
                 :x="part.labelX"
                 :y="part.labelY"
-                :text-anchor="part.labelX < 640 ? 'end' : 'start'"
+                :text-anchor="part.labelX < 700 ? 'end' : 'start'"
                 :fill="activePart === part.bodySite ? '#ffffff' : '#26A69A'"
                 font-size="72"
                 font-family="system-ui, -apple-system, sans-serif"

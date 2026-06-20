@@ -19,6 +19,7 @@ from src.models.data_source import (
     PriorityLevel,
     DataSourceType,
     AccessMethod,
+    AuthorityTier,
 )
 
 
@@ -178,6 +179,7 @@ class DataSourceManager:
             'category': DataSourceCategory,
             'type': DataSourceType,
             'access_method': AccessMethod,
+            'authority_tier': AuthorityTier,
             'cost': {
                 'free': 'free',
                 'paid_subscription': 'paid_subscription',

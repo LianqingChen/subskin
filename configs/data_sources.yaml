@@ -1,68 +1,164 @@
 # 白癜风数据源分类配置文件
-# 基于 comprehensive research report (2026-03-28)
-# 优先级分类:
-#   priority_1: 立即采集 (核心数据源)
-#   priority_2: 次阶段采集 (补充数据源)  
-#   priority_3: 长期规划 (扩展数据源)
+# 基于 comprehensive research report (2026-04-29)
+# 
+# 采集优先级 (collection priority):  决定"什么时候爬"
+#   priority_1: 立即采集 (核心数据源 - 有API/免费)
+#   priority_2: 次阶段采集 (补充数据源)
+#   priority_3: 长期规划 (扩展数据源 - 付费/受限)
+#
+# 权威度分级 (authority tier):       决定"AI回答时信谁"
+#   S (黄金标准): 诊疗指南、监管批准 → RAG权重 ×1.5
+#   A (权威研究): 同行评审论文、核心期刊 → RAG权重 ×1.2
+#   B (前沿实证): 临床试验、基金会报告 → RAG权重 ×1.0
+#   C (参考补充): 预印本、专业媒体解读 → RAG权重 ×0.8
+#   D (社区经验): 患者社区、百科科普 → RAG权重 ×0.5
 
-# 数据源分类体系
 categories:
   - id: "english_research"
     name: "英文研究数据库"
     description: "国际生物医学研究文献数据库"
-    color: "#1e88e5"  # Blue
-    
+    color: "#1e88e5"
+
   - id: "chinese_research"
     name: "中文医学数据库"
     description: "中文医学研究文献数据库"
-    color: "#43a047"  # Green
-    
+    color: "#43a047"
+
+  - id: "genomic_database"
+    name: "生物信息与基因数据库"
+    description: "白癜风相关基因、蛋白、组学数据"
+    color: "#00acc1"
+
   - id: "patient_community"
     name: "患者教育与社区资源"
     description: "患者论坛、医患互动平台、医学科普"
-    color: "#ffb300"  # Amber
-    
+    color: "#ffb300"
+
   - id: "clinical_trials"
     name: "药物与临床试验数据"
     description: "临床试验注册、药物研发管线、监管信息"
-    color: "#e53935"  # Red
-    
+    color: "#e53935"
+
   - id: "guidelines"
     name: "诊疗指南与专家共识"
-    description: "临床诊疗指南、专家共识、治疗规范"
-    color: "#8e24aa"  # Purple
-    
+    description: "全球临床诊疗指南、专家共识、治疗规范"
+    color: "#8e24aa"
+
+  - id: "research_foundation"
+    name: "专业组织与研究基金会"
+    description: "白癜风专业研究机构、患者倡导组织、国际合作项目"
+    color: "#ff7043"
+
+  - id: "frontier_news"
+    name: "研究前沿动态"
+    description: "临床试验新闻、行业动态、前沿解读"
+    color: "#ab47bc"
+
   - id: "image_data"
     name: "医学图像数据库"
     description: "皮肤病图像数据集、深度学习资源"
-    color: "#00acc1"  # Cyan
+    color: "#78909c"
 
+# ============================================================
 # 数据源定义
+# ============================================================
 data_sources:
-  
-  # ========== 英文研究数据库 ==========
+
+  # ========== 英文研究数据库 (authority_tier: A, weight: 1.2) ==========
   - id: "pubmed"
     name: "PubMed / MEDLINE"
     category: "english_research"
     url: "https://pubmed.ncbi.nlm.nih.gov"
     type: "comprehensive_biomedical_literature"
     language: "en"
-    access_method: "api"  # E-utilities API
+    access_method: "api"
     cost: "free"
-    data_quality: 5  # 1-5 scale
+    data_quality: 5
+    authority_tier: "A"
+    authority_weight: 1.2
     priority: "priority_1"
     collection_method: "api_crawling"
     api_endpoint: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
-    rate_limit: 3  # req/s (free tier)
-    search_terms:
-      - "vitiligo[Title/Abstract]"
-      - "vitiligo therapy"
-      - "vitiligo treatment"
-      - "nonsegmental vitiligo"
-      - "segmental vitiligo"
-    estimated_volume: 15000  # papers
-    notes: "全球最具权威性的生物医学文献数据库，提供免费E-utilities API接口"
-    
+    rate_limit: 10
+    search_terms: ["vitiligo[Title/Abstract]", "vitiligo therapy", "vitiligo treatment", "nonsegmental vitiligo", "segmental vitiligo"]
+    estimated_volume: 15000
+    notes: "全球最具权威性的生物医学文献数据库。有NCBI_API_KEY时10 req/s"
+
+  - id: "pmc"
+    name: "PubMed Central (PMC)"
+    category: "english_research"
+    url: "https://www.ncbi.nlm.nih.gov/pmc/"
+    type: "comprehensive_biomedical_literature"
+    language: "en"
+    access_method: "api"
+    cost: "free"
+    data_quality: 5
+    authority_tier: "A"
+    authority_weight: 1.2
+    priority: "priority_1"
+    collection_method: "api_crawling"
+    api_endpoint: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
+    rate_limit: 10
+    search_terms: ["vitiligo"]
+    estimated_volume: 4000
+    notes: "PubMed全文开放获取子集，可获取论文完整内容。复用PubMed E-utilities API"
+
+  - id: "semantic_scholar"
+    name: "Semantic Scholar"
+    category: "english_research"
+    url: "https://api.semanticscholar.org"
+    type: "comprehensive_biomedical_literature"
+    language: "en"
+    access_method: "api"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "A"
+    authority_weight: 1.2
+    priority: "priority_1"
+    collection_method: "api_crawling"
+    api_endpoint: "https://api.semanticscholar.org/graph/v1/paper/search"
+    rate_limit: 1
+    search_terms: ["vitiligo", "vitiligo treatment", "JAK inhibitor vitiligo"]
+    estimated_volume: 8000
+    notes: "免费学术API，提供引用网络和影响力数据。速率限制较严格"
+
+  - id: "crossref"
+    name: "CrossRef"
+    category: "english_research"
+    url: "https://www.crossref.org"
+    type: "comprehensive_biomedical_literature"
+    language: "en"
+    access_method: "api"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "A"
+    authority_weight: 1.1
+    priority: "priority_1"
+    collection_method: "api_crawling"
+    api_endpoint: "https://api.crossref.org/works"
+    rate_limit: 50
+    search_terms: ["vitiligo"]
+    estimated_volume: 5000
+    notes: "全球DOI注册中心，免费API无需注册，可获取论文元数据和引用信息"
+
+  - id: "unpaywall"
+    name: "Unpaywall"
+    category: "english_research"
+    url: "https://unpaywall.org"
+    type: "comprehensive_biomedical_literature"
+    language: "en"
+    access_method: "api"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "C"
+    authority_weight: 0.8
+    priority: "priority_2"
+    collection_method: "api_crawling"
+    api_endpoint: "https://api.unpaywall.org/v2/"
+    rate_limit: 2
+    search_terms: []
+    notes: "Open Access全文定位工具，通过DOI查找论文免费全文版本"
+
   - id: "embase"
     name: "Embase"
     category: "english_research"
@@ -72,110 +168,114 @@ data_sources:
     access_method: "api"
     cost: "paid_subscription"
     data_quality: 5
+    authority_tier: "A"
+    authority_weight: 1.2
     priority: "priority_3"
     collection_method: "api_crawling"
-    search_terms:
-      - "vitiligo"
-      - "vitiligo/dt"  # 治疗限定
-      - "vitiligo/th"  # 治疗
-    notes: "Elsevier旗下医学数据库，在欧洲药物及临床试验文献收录方面具有优势"
-    
-  - id: "viti_var"
-    name: "VitiVar (Vitiligo Variant Database)"
+    search_terms: ["vitiligo", "vitiligo/dt", "vitiligo/th"]
+    notes: "Elsevier旗下，欧洲药物及临床试验文献收录优势。需机构订阅"
+
+  - id: "web_of_science"
+    name: "Web of Science"
     category: "english_research"
-    url: "https://vitivar.github.io"
-    type: "genetic_variant_database"
+    url: "https://www.webofscience.com"
+    type: "comprehensive_biomedical_literature"
     language: "en"
-    access_method: "web_download"
-    cost: "free"
-    data_quality: 4
-    priority: "priority_2"
-    collection_method: "web_scraping"
-    search_terms: []  # Direct browsing by gene name
-    estimated_volume: 500  # genes/variants
-    notes: "专门针对白癜风基因变异的位点特异性数据库，可直接下载CSV/JSON格式"
-    
-  - id: "vir_db"
-    name: "VIRdb (Vitiligo Gene and Protein Database)"
-    category: "english_research"
-    url: "https://www.virdb.org"
-    type: "gene_protein_database"
-    language: "en"
-    access_method: "web_api"
-    cost: "free"
-    data_quality: 4
+    access_method: "api"
+    cost: "paid_subscription"
+    data_quality: 5
+    authority_tier: "A"
+    authority_weight: 1.2
     priority: "priority_3"
     collection_method: "api_crawling"
-    notes: "提供白癜风相关基因和蛋白质的综合分析平台，包含通路富集和蛋白质互作网络"
-    
-  - id: "medrxiv"
-    name: "medRxiv / bioRxiv"
-    category: "english_research"
-    url: "https://www.medrxiv.org"
-    type: "preprint_server"
-    language: "en"
-    access_method: "web_api"
-    cost: "free"
-    data_quality: 3
-    priority: "priority_3"
-    collection_method: "web_scraping"
-    search_terms:
-      - "vitiligo"
-      - "vitiligo treatment"
-      - "JAK inhibitor vitiligo"
-    notes: "预印本平台提供最新研究成果的快速获取渠道，未经同行评审需谨慎使用"
-    
-  # ========== 中文医学数据库 ==========
+    search_terms: ["vitiligo"]
+    notes: "全球最权威引文数据库，需机构订阅。可追踪高被引论文"
+
+  # ========== 中文医学数据库 (authority_tier: A, weight: 1.2) ==========
   - id: "cnki"
     name: "中国知网 (CNKI)"
     category: "chinese_research"
     url: "https://www.cnki.net"
     type: "comprehensive_academic_literature"
     language: "zh"
-    access_method: "web_api"
+    access_method: "web_browsing"
     cost: "paid_subscription"
     data_quality: 4
+    authority_tier: "A"
+    authority_weight: 1.1
     priority: "priority_2"
     collection_method: "web_scraping"
-    search_terms:
-      - "白癜风"
-      - "白癜风治疗"
-      - "白癜风光疗"
-      - "JAK抑制剂 白癜风"
-    estimated_volume: 5000  # papers
-    notes: "中文世界最大的学术文献数据库，需通过机构IP访问或订阅"
-    
+    search_terms: ["白癜风", "白癜风治疗", "白癜风光疗", "JAK抑制剂 白癜风"]
+    estimated_volume: 5000
+    notes: "中文最大中文学术资源库，仅爬公开元数据(标题/摘要/作者/期刊)"
+
+  - id: "wanfang"
+    name: "万方数据知识服务平台"
+    category: "chinese_research"
+    url: "https://s.wanfangdata.com.cn"
+    type: "comprehensive_academic_literature"
+    language: "zh"
+    access_method: "web_browsing"
+    cost: "paid_subscription"
+    data_quality: 4
+    authority_tier: "A"
+    authority_weight: 1.1
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    search_terms: ["白癜风发病机制", "白癜风治疗靶点", "白癜风临床研究"]
+    estimated_volume: 3000
+    notes: "收录中文白癜风研究论文，仅爬公开元数据"
+
+  - id: "cqvip"
+    name: "维普中文科技期刊数据库"
+    category: "chinese_research"
+    url: "http://www.cqvip.com"
+    type: "comprehensive_academic_literature"
+    language: "zh"
+    access_method: "web_browsing"
+    cost: "paid_subscription"
+    data_quality: 4
+    authority_tier: "A"
+    authority_weight: 1.1
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    search_terms: ["白癜风临床", "他克莫司 白癜风", "中华皮肤科杂志 白癜风"]
+    estimated_volume: 200
+    notes: "收录中华皮肤科杂志、中国皮肤性病学杂志等重要期刊"
+
   - id: "sinomed"
     name: "中国生物医学文献服务系统 (SinoMed)"
     category: "chinese_research"
     url: "https://www.sinomed.ac.cn"
     type: "biomedical_literature"
     language: "zh"
-    access_method: "web_api"
+    access_method: "web_browsing"
     cost: "paid_subscription"
     data_quality: 5
+    authority_tier: "A"
+    authority_weight: 1.2
     priority: "priority_2"
     collection_method: "web_scraping"
-    search_terms:
-      - "白癜风[标题/摘要]"
-      - "vitiligo"
-    estimated_volume: 3000  # papers
-    notes: "中国医学科学院医学信息研究所开发，最专业的本土生物医学文献数据库"
-    
+    search_terms: ["白癜风[标题/摘要]", "vitiligo"]
+    estimated_volume: 3000
+    notes: "中国医学科学院开发，最专业的本土生物医学文献数据库"
+
   - id: "chinese_journal_dermatology"
-    name: "中华皮肤科杂志电子版"
+    name: "中华皮肤科杂志"
     category: "chinese_research"
-    url: "http://www.pifukezazhi.com"
+    url: "https://www.pifukezazhi.com"
     type: "medical_journal"
     language: "zh"
     access_method: "web_download"
     cost: "free"
     data_quality: 5
+    authority_tier: "A"
+    authority_weight: 1.2
     priority: "priority_1"
     collection_method: "web_scraping"
-    search_terms: []  # Browse by year/issue
-    notes: "中文皮肤科最高影响力期刊，白癜风诊疗共识和光疗指南均首发于此"
-    
+    search_terms: []
+    notes: "中文皮肤科最高影响力期刊。当前站点不可达，待恢复后采集"
+
   - id: "chinese_journal_leprosy"
     name: "中国麻风皮肤病杂志"
     category: "chinese_research"
@@ -185,66 +285,95 @@ data_sources:
     access_method: "web_download"
     cost: "free"
     data_quality: 4
+    authority_tier: "A"
+    authority_weight: 1.0
     priority: "priority_2"
     collection_method: "web_scraping"
-    search_terms:
-      - "308nm准分子激光"
-      - "白癜风外科治疗"
-    notes: "皮肤科专业期刊，白癜风光疗及外科治疗领域发表大量临床研究"
-    
-  # ========== 患者教育与社区资源 ==========
-  - id: "bbsls"
-    name: "白白手拉手论坛"
-    category: "patient_community"
-    url: "https://www.bbsls.net"
-    type: "patient_forum"
-    language: "zh"
-    access_method: "web_browsing"
+    search_terms: ["308nm准分子激光", "白癜风外科治疗"]
+    notes: "白癜风光疗及外科治疗领域大量临床研究"
+
+  # ========== 生物信息与基因数据库 (authority_tier: B, weight: 1.0) ==========
+  - id: "disgenet"
+    name: "DisGeNET"
+    category: "genomic_database"
+    url: "https://www.disgenet.org"
+    type: "genomic_database"
+    language: "en"
+    access_method: "api"
     cost: "free"
-    data_quality: 3
-    priority: "priority_1"
+    data_quality: 4
+    authority_tier: "B"
+    authority_weight: 1.0
+    priority: "priority_2"
+    collection_method: "api_crawling"
+    api_endpoint: "https://www.disgenet.org/api/"
+    search_terms: ["C0042900"]
+    estimated_volume: 200
+    notes: "基因-疾病关联数据库，含白癜风(CUI-C0042900)及亚型关联基因。需注册API key"
+
+  - id: "vir_db"
+    name: "VIRdb (白癜风信息专用数据库)"
+    category: "genomic_database"
+    url: "http://www.vitiligoinfores.com"
+    type: "genomic_database"
+    language: "en"
+    access_method: "web_download"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "B"
+    authority_weight: 1.0
+    priority: "priority_3"
     collection_method: "web_scraping"
-    estimated_volume: 50000  # posts
-    ethical_considerations:
-      - "仅采集公开可见内容"
-      - "去除个人身份信息(PII)"
-      - "尊重版权，合理使用"
-    notes: "中国最大的白癜风患者线上社区，活跃用户超10万人，获取患者真实治疗体验的唯一渠道"
-    
-  - id: "haodf"
-    name: "好大夫在线"
-    category: "patient_community"
-    url: "https://www.haodf.com"
-    type: "doctor_patient_platform"
-    language: "zh"
+    notes: "罕有的白癜风专属生物信息学数据库。站点当前不可达(000)，待恢复"
+
+  - id: "viti_var"
+    name: "VitiVar"
+    category: "genomic_database"
+    url: "https://vitivar.github.io"
+    type: "genetic_variant_database"
+    language: "en"
+    access_method: "web_download"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "B"
+    authority_weight: 1.0
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    estimated_volume: 500
+    notes: "白癜风基因变异位点特异性数据库，CSV/JSON格式"
+
+  - id: "omicsdi"
+    name: "OmicsDI"
+    category: "genomic_database"
+    url: "https://www.omicsdi.org"
+    type: "genomic_database"
+    language: "en"
+    access_method: "api"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "B"
+    authority_weight: 1.0
+    priority: "priority_2"
+    collection_method: "api_crawling"
+    search_terms: ["vitiligo"]
+    notes: "多组学数据整合平台，收录VIRdb相关数据集"
+
+  - id: "vitiligo_biobank"
+    name: "Vitiligo Biobank"
+    category: "genomic_database"
+    url: "https://scicrunch.org/resources/Any/search?q=SCR_003863"
+    type: "genomic_database"
+    language: "en"
     access_method: "web_browsing"
     cost: "free"
     data_quality: 4
-    priority: "priority_2"
+    authority_tier: "B"
+    authority_weight: 1.0
+    priority: "priority_3"
     collection_method: "web_scraping"
-    search_terms:
-      - "白癜风"
-      - "白癜风医生"
-      - "白癜风治疗"
-    estimated_volume: 1000  # Q&A records
-    notes: "中国最大的医患互动平台，汇聚超过90万认证医生，适合获取医生科普内容"
-    
-  - id: "msd_manual"
-    name: "默沙东诊疗手册 (大众版)"
-    category: "patient_community"
-    url: "https://www.msdmanuals.cn"
-    type: "medical_encyclopedia"
-    language: "zh"
-    access_method: "web_download"
-    cost: "free"
-    data_quality: 5
-    priority: "priority_2"
-    collection_method: "web_scraping"
-    search_terms:
-      - "白癜风"
-    notes: "全球最具影响力的医学参考手册之一，大众版以通俗语言解释疾病，适合患者教育"
-    
-  # ========== 药物与临床试验数据 ==========
+    notes: "非营利性生物样本库，11国合作网络。流行病学和遗传学研究资源"
+
+  # ========== 药物与临床试验数据 (authority_tier: B, weight: 1.0) ==========
   - id: "clinicaltrials_gov"
     name: "ClinicalTrials.gov"
     category: "clinical_trials"
@@ -254,16 +383,31 @@ data_sources:
     access_method: "api"
     cost: "free"
     data_quality: 5
+    authority_tier: "B"
+    authority_weight: 1.0
     priority: "priority_1"
     collection_method: "api_crawling"
     api_endpoint: "https://clinicaltrials.gov/api/v2/studies"
-    search_terms:
-      - "vitiligo"
-      - "vitiligo AND JAK inhibitor"
-      - "vitiligo AND ruxolitinib"
-    estimated_volume: 400  # trials
-    notes: "全球最大临床试验注册平台，白癜风相关临床试验超过400项，JAK抑制剂相关试验占据主导"
-    
+    search_terms: ["vitiligo", "vitiligo AND JAK inhibitor", "vitiligo AND ruxolitinib"]
+    estimated_volume: 400
+    notes: "全球最大临床试验注册平台，API v2可用(200 OK)。追踪新药研发管线的核心源"
+
+  - id: "eu_ctr"
+    name: "EU Clinical Trials Register"
+    category: "clinical_trials"
+    url: "https://www.clinicaltrialsregister.eu"
+    type: "clinical_trial_registry"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "B"
+    authority_weight: 1.0
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    search_terms: ["vitiligo"]
+    notes: "欧洲临床试验数据补充源"
+
   - id: "chictr"
     name: "中国临床试验注册中心 (ChiCTR)"
     category: "clinical_trials"
@@ -273,12 +417,29 @@ data_sources:
     access_method: "web_browsing"
     cost: "free"
     data_quality: 4
+    authority_tier: "B"
+    authority_weight: 1.0
     priority: "priority_2"
     collection_method: "web_scraping"
-    search_terms:
-      - "白癜风"
-    notes: "中国唯一的WHO一级注册平台，收录在中国大陆开展的临床试验，中医药治疗试验多在此注册"
-    
+    search_terms: ["白癜风"]
+    notes: "中国唯一WHO一级注册平台，中医药治疗试验多在此注册"
+
+  - id: "china_drug_trials"
+    name: "中国药物临床试验登记与信息公示平台"
+    category: "clinical_trials"
+    url: "http://www.chinadrugtrials.org.cn"
+    type: "clinical_trial_registry"
+    language: "zh"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "B"
+    authority_weight: 1.0
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    search_terms: ["白癜风"]
+    notes: "国内白癜风相关药物临床试验信息"
+
   - id: "fda"
     name: "FDA (美国食品药品监督管理局)"
     category: "clinical_trials"
@@ -288,16 +449,15 @@ data_sources:
     access_method: "web_browsing"
     cost: "free"
     data_quality: 5
+    authority_tier: "B"
+    authority_weight: 1.1
     priority: "priority_2"
     collection_method: "web_scraping"
-    search_terms:
-      - "vitiligo"
-      - "ruxolitinib"
-      - "Opzelura"
-    notes: "全球最具影响力的药物监管机构，2022年批准ruxolitinib(Opzelura)乳膏用于白癜风治疗"
-    
-  - id: "vr_foundation"
-    name: "Vitiligo Research Foundation - Drug Pipeline"
+    search_terms: ["vitiligo", "ruxolitinib", "Opzelura"]
+    notes: "2022年批准ruxolitinib(Opzelura)用于白癜风，监管审批的权威来源"
+
+  - id: "vr_foundation_pipeline"
+    name: "VR Foundation - Drug Pipeline"
     category: "clinical_trials"
     url: "https://vrfoundation.org"
     type: "drug_pipeline_tracking"
@@ -305,14 +465,14 @@ data_sources:
     access_method: "web_browsing"
     cost: "free"
     data_quality: 4
-    priority: "priority_3"
+    authority_tier: "B"
+    authority_weight: 1.0
+    priority: "priority_2"
     collection_method: "web_scraping"
-    search_terms:
-      - "drug pipeline"
-      - "treatment landscape"
-    notes: "专注于白癜风的国际患者和研究组织，定期发布药物研发管线分析报告"
-    
-  # ========== 诊疗指南与专家共识 ==========
+    search_terms: ["drug pipeline", "treatment landscape"]
+    notes: "定期发布白癜风药物研发管线分析报告"
+
+  # ========== 诊疗指南与专家共识 (authority_tier: S, weight: 1.5) ==========
   - id: "guideline_2024"
     name: "白癜风诊疗共识 (2024版)"
     category: "guidelines"
@@ -322,11 +482,13 @@ data_sources:
     access_method: "direct_download"
     cost: "free"
     data_quality: 5
+    authority_tier: "S"
+    authority_weight: 1.5
     priority: "priority_1"
     collection_method: "direct_download"
     file_format: "pdf"
-    notes: "当前中国白癜风临床实践的最高指导文件，知识库必须收录的核心文献"
-    
+    notes: "中国白癜风临床实践最高指导文件。RAG最高优先级引用"
+
   - id: "guideline_2025"
     name: "白癜风光疗指南 (2025版)"
     category: "guidelines"
@@ -336,14 +498,366 @@ data_sources:
     access_method: "direct_download"
     cost: "free"
     data_quality: 5
+    authority_tier: "S"
+    authority_weight: 1.5
     priority: "priority_1"
     collection_method: "direct_download"
     file_format: "pdf"
-    notes: "白癜风光疗(NB-UVB、308nm准分子激光、PUVA等)的专项指导文件"
-    
+    notes: "白癜风光疗(NB-UVB、308nm准分子激光、PUVA)专项指导文件"
+
+  - id: "nice_ta1140"
+    name: "NICE TA1140 (ruxolitinib)"
+    category: "guidelines"
+    url: "https://www.nice.org.uk/guidance/ta1140"
+    type: "clinical_guideline"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 5
+    authority_tier: "S"
+    authority_weight: 1.5
+    priority: "priority_1"
+    collection_method: "web_scraping"
+    notes: "2026年NICE最终指南——推荐ruxolitinib乳膏用于12岁以上非节段型白癜风。全球标志性政策文件"
+
+  - id: "medsci_guidelines"
+    name: "MedSci (梅斯医学) 白癜风指南专区"
+    category: "guidelines"
+    url: "https://www.medsci.cn/department/details?s_id=39&module=guider"
+    type: "clinical_guideline"
+    language: "zh"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "S"
+    authority_weight: 1.4
+    priority: "priority_1"
+    collection_method: "web_scraping"
+    notes: "汇集全球白癜风诊疗指南合集: 2026 NICE、2025加拿大共识、外科共识、儿童共识等"
+
+  # ========== 专业组织与研究基金会 (authority_tier: B, weight: 1.0) ==========
+  - id: "vr_foundation"
+    name: "VR Foundation (白癜风研究基金会)"
+    category: "research_foundation"
+    url: "https://vrfoundation.org"
+    type: "foundation_report"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "B"
+    authority_weight: 1.0
+    priority: "priority_1"
+    collection_method: "web_scraping"
+    search_terms: ["vitiligo research", "annual report", "Frontiers in Medicine"]
+    estimated_volume: 500
+    notes: "核心白癜风研究基金会。年度报告(Frontiers in Medicine专刊12篇论文/59位作者/18国)、播客。200 OK"
+
+  - id: "vitiligo_society"
+    name: "The Vitiligo Society"
+    category: "research_foundation"
+    url: "https://vitiligosociety.org"
+    type: "foundation_report"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "B"
+    authority_weight: 1.0
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    notes: "英国白癜风患者组织，追踪NICE指南更新和药物治疗进展。当前不可达(000)"
+
+  - id: "gvf"
+    name: "Global Vitiligo Foundation (GVF)"
+    category: "research_foundation"
+    url: "https://globalvitiligofoundation.org"
+    type: "foundation_report"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "B"
+    authority_weight: 1.0
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    notes: "发布行业合作动态、教育资源和活动信息。200 OK"
+
+  - id: "avrf"
+    name: "American Vitiligo Research Foundation (AVRF)"
+    category: "research_foundation"
+    url: "https://www.avrf.org"
+    type: "foundation_report"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 3
+    authority_tier: "C"
+    authority_weight: 0.8
+    priority: "priority_3"
+    collection_method: "web_scraping"
+    notes: "美国白癜风研究基金会，关注儿童及家庭患者教育。200 OK"
+
+  - id: "bad_virtual"
+    name: "BAD VIRTUAL-UK 注册研究"
+    category: "research_foundation"
+    url: "https://bad.org.uk"
+    type: "registry_study"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "B"
+    authority_weight: 1.0
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    notes: "英国皮肤科协会2025设立的真实世界研究项目。NIHR认可。VIRTUAL-GLOBAL网络一部分"
+
+  - id: "vis"
+    name: "Vitiligo International Society (VIS)"
+    category: "research_foundation"
+    url: "https://www.ilds.org"
+    type: "medical_society"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "B"
+    authority_weight: 1.0
+    priority: "priority_3"
+    collection_method: "web_scraping"
+    notes: "全球白癜风专家学术组织，参与Global Vitiligo Atlas (GLOVA)项目"
+
+  - id: "glova"
+    name: "Global Vitiligo Atlas (GLOVA)"
+    category: "research_foundation"
+    url: "https://www.ilds.org"
+    type: "global_initiative"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "B"
+    authority_weight: 1.0
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    notes: "2022启动的全球倡议: 流行病学地图集(2024)+ VIRTUAL国际注册+ INTERCEPT共识。ILDS/VIS/VIPOC三方合作"
+
+  - id: "nord"
+    name: "NORD (罕见病组织)"
+    category: "research_foundation"
+    url: "https://rarediseases.org"
+    type: "foundation_report"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 3
+    authority_tier: "C"
+    authority_weight: 0.8
+    priority: "priority_3"
+    collection_method: "web_scraping"
+    notes: "美国罕见病组织收录白癜风基金会和资源目录。403限制中"
+
+  - id: "broad_institute"
+    name: "Broad Institute"
+    category: "research_foundation"
+    url: "https://www.broadinstitute.org"
+    type: "foundation_report"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 5
+    authority_tier: "A"
+    authority_weight: 1.2
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    search_terms: ["vitiligo regulatory T cell", "autoimmune skin"]
+    notes: "发布白癜风免疫机制深度研究，如调节性T细胞失调荟萃分析"
+
+  # ========== 研究前沿动态 (authority_tier: C, weight: 0.8) ==========
+  - id: "clinical_trial_vanguard"
+    name: "Clinical Trial Vanguard"
+    category: "frontier_news"
+    url: "https://www.clinicaltrialvanguard.com"
+    type: "news_media"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 3
+    authority_tier: "C"
+    authority_weight: 0.8
+    priority: "priority_1"
+    collection_method: "web_scraping"
+    search_terms: ["vitiligo", "JAK inhibitor", "ruxolitinib", "afamelanotide"]
+    notes: "临床试验行业新闻。2026.4报道Clinuvel afamelanotide III期临床CUV107(300例)。200 OK"
+
+  - id: "dermatology_times"
+    name: "Dermatology Times"
+    category: "frontier_news"
+    url: "https://www.dermatologytimes.com"
+    type: "news_media"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 3
+    authority_tier: "C"
+    authority_weight: 0.8
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    search_terms: ["vitiligo", "AAD 2026", "upadacitinib"]
+    notes: "皮肤科专业新闻。AAD 2026报道upadacitinib III期48周数据。403限制中"
+
+  - id: "ebiotrade"
+    name: "生物通"
+    category: "frontier_news"
+    url: "https://www.ebiotrade.com"
+    type: "news_media"
+    language: "zh"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 3
+    authority_tier: "C"
+    authority_weight: 0.8
+    priority: "priority_1"
+    collection_method: "web_scraping"
+    search_terms: ["白癜风", "白癜风 研究", "白癜风 新药"]
+    notes: "发布白癜风领域最新研究中文解读。200 OK"
+
+  - id: "bioon"
+    name: "生物谷"
+    category: "frontier_news"
+    url: "https://www.bioon.com"
+    type: "news_media"
+    language: "zh"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 3
+    authority_tier: "C"
+    authority_weight: 0.8
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    search_terms: ["白癜风", "白癜风基因", "铁死亡 白癜风"]
+    notes: "白癜风基因集富集分析、铁死亡参与发病机制综述等中文解读"
+
+  - id: "dove_medical"
+    name: "Dove Medical Press"
+    category: "frontier_news"
+    url: "https://www.dovepress.com"
+    type: "news_media"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 3
+    authority_tier: "C"
+    authority_weight: 0.8
+    priority: "priority_3"
+    collection_method: "web_scraping"
+    search_terms: ["vitiligo breakthrough", "vitiligo systematic review"]
+    notes: "开放获取期刊。发布白癜风突破性治疗(2020-2025)系统性综述"
+
+  # ========== 患者教育与社区资源 (authority_tier: D, weight: 0.5) ==========
+  - id: "bbsls"
+    name: "白白手拉手论坛"
+    category: "patient_community"
+    url: "https://www.bbsls.net"
+    type: "patient_forum"
+    language: "zh"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 3
+    authority_tier: "D"
+    authority_weight: 0.5
+    priority: "priority_1"
+    collection_method: "web_scraping"
+    estimated_volume: 50000
+    ethical_considerations: ["仅采集公开可见内容", "去除个人身份信息(PII)", "尊重版权，合理使用"]
+    notes: "中国最大白癜风患者线上社区。获取真实治疗体验的唯一渠道。严格脱敏处理"
+
+  - id: "haodf"
+    name: "好大夫在线"
+    category: "patient_community"
+    url: "https://www.haodf.com"
+    type: "doctor_patient_platform"
+    language: "zh"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "D"
+    authority_weight: 0.5
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    search_terms: ["白癜风", "白癜风医生", "白癜风治疗"]
+    estimated_volume: 1000
+    notes: "中国最大医患互动平台，90万+认证医生。适合获取医生科普内容"
+
+  - id: "msd_manual"
+    name: "默沙东诊疗手册 (大众版)"
+    category: "patient_community"
+    url: "https://www.msdmanuals.cn"
+    type: "medical_encyclopedia"
+    language: "zh"
+    access_method: "web_download"
+    cost: "free"
+    data_quality: 5
+    authority_tier: "D"
+    authority_weight: 0.5
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    search_terms: ["白癜风"]
+    notes: "全球最具影响力的医学参考手册。大众版适合患者教育"
+
+  - id: "dxy"
+    name: "丁香园 (用药参考)"
+    category: "patient_community"
+    url: "https://drugs.dxy.cn"
+    type: "drug_encyclopedia"
+    language: "zh"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "D"
+    authority_weight: 0.5
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    search_terms: ["JAK抑制剂", "他克莫司", "鲁索利替尼"]
+    notes: "国内权威医药信息平台。白癜风治疗原则、药物信息和指南更新"
+
+  - id: "cma_science"
+    name: "中华医学会科普频道"
+    category: "patient_community"
+    url: "https://www.cma.org.cn"
+    type: "medical_encyclopedia"
+    language: "zh"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 4
+    authority_tier: "C"
+    authority_weight: 0.8
+    priority: "priority_1"
+    collection_method: "web_scraping"
+    search_terms: ["白癜风", "皮肤科"]
+    notes: "中华医学会官网科普频道。200 OK。已有CMA爬虫"
+
+  # ========== 预印本平台 ==========
+  - id: "medrxiv"
+    name: "medRxiv / bioRxiv"
+    category: "english_research"
+    url: "https://www.medrxiv.org"
+    type: "preprint_server"
+    language: "en"
+    access_method: "web_browsing"
+    cost: "free"
+    data_quality: 3
+    authority_tier: "C"
+    authority_weight: 0.8
+    priority: "priority_2"
+    collection_method: "web_scraping"
+    search_terms: ["vitiligo", "vitiligo treatment", "JAK inhibitor vitiligo"]
+    notes: "预印本平台，获取最新研究快速渠道。未经同行评审，标注提示"
+
   # ========== 医学图像数据库 ==========
   - id: "isic"
-    name: "ISIC (International Skin Imaging Collaboration) Archive"
+    name: "ISIC Archive"
     category: "image_data"
     url: "https://www.isic-archive.com"
     type: "skin_image_database"
@@ -351,16 +865,16 @@ data_sources:
     access_method: "api"
     cost: "free"
     data_quality: 4
+    authority_tier: "C"
+    authority_weight: 0.8
     priority: "priority_2"
     collection_method: "api_crawling"
-    search_terms:
-      - "vitiligo"
-      - "hypopigmentation"
-    estimated_volume: 1000  # images (estimated)
-    notes: "全球最大的皮肤病图像公开数据库，涵盖色素性疾病类别，适合计算机视觉模型预训练"
-    
+    search_terms: ["vitiligo", "hypopigmentation"]
+    estimated_volume: 1000
+    notes: "全球最大皮肤病图像公开数据库，适合计算机视觉模型预训练"
+
   - id: "github_vitiligo_cnn"
-    name: "GitHub开源项目 - Vitiligo Identification CNN"
+    name: "GitHub - Vitiligo Identification CNN"
     category: "image_data"
     url: "https://github.com/birajadash/vitiligo-identification-cnn"
     type: "open_source_code_dataset"
@@ -368,55 +882,101 @@ data_sources:
     access_method: "git_clone"
     cost: "free"
     data_quality: 3
+    authority_tier: "C"
+    authority_weight: 0.8
     priority: "priority_3"
     collection_method: "git_clone"
-    notes: "GitHub上的白癜风图像识别开源项目，包含预处理的数据集和训练代码"
+    notes: "GitHub白癜风图像识别开源项目，包含预处理数据集和训练代码"
 
+# ============================================================
+# 权威度权重映射表 (供RAG检索系统使用)
+# ============================================================
+authority_tiers:
+  S: { weight: 1.5, label: "黄金标准", description: "国际/国家级诊疗指南、监管批准文件", citation_template: "根据{S}" }
+  A: { weight: 1.2, label: "权威研究", description: "同行评审论文(PubMed/PMC/核心期刊)", citation_template: "一项发表在{S}的研究表明" }
+  B: { weight: 1.0, label: "前沿实证", description: "临床试验注册数据、基金会研究报告", citation_template: "据{S}注册的试验数据显示" }
+  C: { weight: 0.8, label: "参考补充", description: "预印本、专业媒体解读、医学科普平台", citation_template: "有报道指出{S}（尚未经同行评审）" }
+  D: { weight: 0.5, label: "社区经验", description: "患者社区、百科、非专业来源", citation_template: "有白友分享{S}（个人经验，仅供参考）" }
+
+# ============================================================
 # 数据源优先级分组
+# ============================================================
 priority_groups:
   priority_1:
     name: "立即采集 (核心数据源)"
-    description: "数据质量高、可获取性好、对知识库建设最关键的数据源"
+    description: "数据质量高、可获取性好(有API/免费)、对知识库建设最关键"
     data_sources:
       - "pubmed"
+      - "pmc"
+      - "semantic_scholar"
+      - "crossref"
       - "clinicaltrials_gov"
       - "bbsls"
+      - "cma_science"
       - "guideline_2024"
       - "guideline_2025"
+      - "nice_ta1140"
+      - "medsci_guidelines"
+      - "vr_foundation"
+      - "clinical_trial_vanguard"
+      - "ebiotrade"
       - "chinese_journal_dermatology"
-      
+
   priority_2:
     name: "次阶段采集 (补充数据源)"
-    description: "重要补充数据源，需订阅或采集难度较高"
+    description: "重要补充数据源，需API key注册或采集难度较高"
     data_sources:
+      - "unpaywall"
+      - "disgenet"
       - "viti_var"
-      - "cnki"
-      - "sinomed"
-      - "chinese_journal_leprosy"
+      - "omicsdi"
+      - "chictr"
+      - "china_drug_trials"
+      - "fda"
+      - "vr_foundation_pipeline"
+      - "vitiligo_society"
+      - "gvf"
+      - "bad_virtual"
+      - "glova"
+      - "broad_institute"
+      - "medrxiv"
+      - "dermatology_times"
+      - "bioon"
       - "haodf"
       - "msd_manual"
-      - "chictr"
-      - "fda"
+      - "dxy"
+      - "cnki"
+      - "wanfang"
+      - "cqvip"
+      - "sinomed"
+      - "chinese_journal_leprosy"
+      - "eu_ctr"
       - "isic"
-      
+
   priority_3:
     name: "长期规划 (扩展数据源)"
-    description: "扩展性数据源，采集难度高或数据量有限"
+    description: "付费/机构订阅、站点不可达、或数据量有限"
     data_sources:
       - "embase"
+      - "web_of_science"
       - "vir_db"
-      - "medrxiv"
-      - "vr_foundation"
+      - "vitiligo_biobank"
+      - "avrf"
+      - "vis"
+      - "nord"
+      - "dove_medical"
       - "github_vitiligo_cnn"
 
+# ============================================================
 # 采集策略配置
+# ============================================================
 collection_strategies:
   api_crawling:
     description: "通过官方API接口采集数据"
     recommended_tools: ["requests", "aiohttp", "Biopython"]
     rate_limiting: true
     caching: true
-    
+
   web_scraping:
     description: "通过网页爬虫采集数据"
     recommended_tools: ["scrapy", "selenium", "beautifulsoup4"]
@@ -425,47 +985,56 @@ collection_strategies:
       - "设置合理采集间隔(≥3秒/请求)"
       - "仅采集公开可见内容"
       - "尊重版权，标注数据来源"
-    
+
   direct_download:
     description: "直接下载PDF、CSV等文件"
     recommended_tools: ["requests", "wget"]
-    
+
   git_clone:
     description: "通过Git克隆代码仓库"
     recommended_tools: ["git"]
-    
+
   web_download:
     description: "通过网页下载文件"
     recommended_tools: ["requests", "selenium"]
 
+# ============================================================
 # 数据质量控制标准
+# ============================================================
 quality_standards:
   source_credibility:
     - "期刊影响因子评估"
     - "作者机构权威性"
     - "发表年份"
-    
+    - "来源权威度分级 (S > A > B > C > D)"
+
   content_validation:
     - "内容重复检测(基于标题/摘要相似度)"
     - "医学准确性验证(与权威指南交叉核对)"
     - "结构化程度评分(字段完整度)"
-    
+
   data_cleaning:
     - "去除HTML标签和格式"
     - "标准化日期格式"
     - "统一作者名称格式"
     - "提取和验证DOI/PMID"
-    
+
   privacy_protection:
     - "患者社区数据去除个人身份信息(PII)"
     - "匿名化处理敏感内容"
     - "遵守GDPR等数据保护法规"
 
+# ============================================================
 # 版本信息
+# ============================================================
 metadata:
-  version: "1.0.0"
+  version: "2.0.0"
   created_date: "2026-03-28"
-  last_updated: "2026-03-28"
-  based_on: "Comprehensive vitiligo data sources research report"
+  last_updated: "2026-04-29"
+  based_on: "Comprehensive vitiligo data sources research report v2"
+  total_sources: 45
+  total_categories: 9
+  sources_verified: true
+  verification_date: "2026-04-29"
   maintainer: "SubSkin Project Team"
   license: "MIT"

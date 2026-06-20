@@ -2,12 +2,15 @@
 Shared fixtures for backend service tests
 """
 
+import json
+
 from typing import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from web.backend.database.database import Base
 from web.backend.database.models import (
@@ -17,6 +20,7 @@ from web.backend.database.models import (
     Document,
     Conversation,
     Message,
+    UserCredential,
 )
 
 
@@ -25,7 +29,9 @@ def db_session() -> Generator[Session, None, None]:
     """Create an in-memory SQLite database session for testing"""
     # Create in-memory SQLite database
     engine = create_engine(
-        "sqlite:///:memory:", connect_args={"check_same_thread": False}
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -53,6 +59,27 @@ def test_user(db_session: Session) -> User:
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
+
+    db_session.add_all(
+        [
+            UserCredential(
+                user_id=user.id,
+                cred_type="email",
+                cred_id="test@example.com",
+                verified=True,
+            ),
+            UserCredential(
+                user_id=user.id,
+                cred_type="password",
+                cred_id=f"password:{user.id}",
+                verified=True,
+                credential_data=json.dumps(
+                    {"hashed_password": user.hashed_password}, ensure_ascii=False
+                ),
+            ),
+        ]
+    )
+    db_session.commit()
     return user
 
 
@@ -69,6 +96,27 @@ def test_admin_user(db_session: Session) -> User:
     db_session.add(admin)
     db_session.commit()
     db_session.refresh(admin)
+
+    db_session.add_all(
+        [
+            UserCredential(
+                user_id=admin.id,
+                cred_type="email",
+                cred_id="admin@example.com",
+                verified=True,
+            ),
+            UserCredential(
+                user_id=admin.id,
+                cred_type="password",
+                cred_id=f"password:{admin.id}",
+                verified=True,
+                credential_data=json.dumps(
+                    {"hashed_password": admin.hashed_password}, ensure_ascii=False
+                ),
+            ),
+        ]
+    )
+    db_session.commit()
     return admin
 
 

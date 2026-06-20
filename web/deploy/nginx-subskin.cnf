@@ -24,6 +24,12 @@ server {
         proxy_read_timeout 300s;  # RAG 回答可能比较慢
     }
 
+    # Service Worker & Workbox — 禁止缓存，确保浏览器始终请求最新版本
+    location ~* (sw\.js|workbox-[a-f0-9]+\.js)$ {
+        expires -1;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate";
+    }
+
     # 静态资源缓存
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 30d;

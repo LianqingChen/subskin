@@ -59,7 +59,7 @@ const badExamples = [
     <div class="mt-8 text-center">
       <button
         class="btn-primary px-8 py-3 text-base"
-        @click="router.push('/tracker?tab=tracker')"
+        @click="router.push({ name: 'assessment' })"
       >
         <i class="ri-camera-line mr-1"></i> 开始拍照
       </button>

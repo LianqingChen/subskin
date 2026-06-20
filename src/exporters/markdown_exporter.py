@@ -91,7 +91,7 @@ class MarkdownExporter:
 
         # Summary section (patient-friendly)
         if paper.summary:
-            sections.append("## 患者友好总结\n")
+            sections.append("## 白友易懂总结\n")
             sections.append(f"{paper.summary}\n")
 
         # Keywords and MeSH terms

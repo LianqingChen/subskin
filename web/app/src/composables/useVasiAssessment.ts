@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePrivacyStore } from '@/stores/privacy'
@@ -87,6 +87,7 @@ const toast = useToast()
   const aiContours = ref<ContourRegion[]>([])
   const editedContours = ref<ContourRegion[]>([])
   const showContourEditor = ref(false)
+  const highConfidence = ref(false)
   const isSubmittingContour = ref(false)
   const contourDiffResult = ref<{ match: boolean; avg_point_distance?: number; modified: boolean } | null>(null)
   const aiSkinLayerUrl = ref<string | null>(null)
@@ -136,11 +137,23 @@ const toast = useToast()
   const touchStartX = ref(0)
   const loadingMore = ref(false)
   const currentBodySiteFilter = ref<string | null>(null)
+  // Pagination (page-based)
+  const historyPage = ref(1)              // 1-based
+  const historyPageSize = ref(10)         // default 10
+  const historyTotal = ref(0)
+  const historyTotalPages = computed(() =>
+    historyPageSize.value > 0 ? Math.max(1, Math.ceil(historyTotal.value / historyPageSize.value)) : 1
+  )
 
   // ── Upload + Assessment ──
   function loadImagePreview(file: File) {
-    const url = URL.createObjectURL(file)
-    imagePreview.value = url
+    // Use FileReader for a self-contained data URL — more reliable than
+    // blob URLs which can silently become invalid if the browser revokes
+    // them after the upload request consumes the File.
+    const reader = new FileReader()
+    reader.onload = () => { imagePreview.value = reader.result as string }
+    reader.onerror = () => { imagePreview.value = null }
+    reader.readAsDataURL(file)
   }
 
   function ensureBodySiteSelected(): boolean {
@@ -234,6 +247,7 @@ const toast = useToast()
       suspectedLesions.value = data.suspected_lesions ?? null
       skinRegionRatio.value = data.skin_region_ratio ?? null
       visualFeatures.value = data.visual_features ?? null
+      highConfidence.value = ((data as any).confidence ?? 0) >= 0.8
       showContourEditor.value = true
     } catch (e: any) {
       const msg = e?.response?.data?.detail || e?.message || '评估提交失败，请稍后重试'
@@ -352,31 +366,64 @@ const toast = useToast()
   async function skipContourEdit() {
     if (!assessmentResult.value) return
     lastAssessment.value = assessmentResult.value
-    // Finalize the draft assessment
     const aid = lastAssessment.value.id
     showContourEditor.value = false
     uploadedImage.value = null; imagePreview.value = null; selectedBodySite.value = ''
     assessmentResult.value = null; aiContours.value = []; editedContours.value = []
     aiSkinLayerUrl.value = null; aiLesionLayerUrl.value = null
     assessmentSource.value = null; suspectedLesions.value = null; skinRegionRatio.value = null
+    visualFeatures.value = null
     preciseAssessmentDone.value = false; currentStep.value = 1
     if (aid) { try { await vasiApi.finalizeAssessment(aid) } catch {} }
     loadAssessmentHistory()
     toast.success(`评估成功！VASI评分: ${lastAssessment.value.vasiScore}`)
   }
 
+  async function cancelAssessment() {
+    if (!assessmentResult.value) return
+    const aid = assessmentResult.value.id
+    showContourEditor.value = false
+    lastAssessment.value = null
+    uploadedImage.value = null; imagePreview.value = null; selectedBodySite.value = ''
+    assessmentResult.value = null; aiContours.value = []; editedContours.value = []
+    aiSkinLayerUrl.value = null; aiLesionLayerUrl.value = null
+    assessmentSource.value = null; suspectedLesions.value = null; skinRegionRatio.value = null
+    visualFeatures.value = null
+    preciseAssessmentDone.value = false; currentStep.value = 1
+    if (aid) { try { await vasiApi.abandonAssessment(aid) } catch {} }
+    loadAssessmentHistory()
+    toast.show('已取消本次测评', 'info', 2000)
+  }
+
   // ── History ──
-  async function loadAssessmentHistory(reset = true, bodySite?: string) {
+  // Mode notes:
+  //  - Page-based (AssessmentSection): pass reset=true to load page 1, or
+  //    use goToHistoryPage / setHistoryPageSize. Always replaces the visible
+  //    window with the current page slice.
+  //  - Legacy "load more" (TrackerPage): keeps appending items via
+  //    loadMoreHistory(); preserves the original behavior.
+  async function loadAssessmentHistory(reset = true, bodySite?: string, mode: 'page' | 'append' = 'page') {
     if (!authStore.isLoggedIn) return
     if (reset) {
       loadingHistory.value = true
       historyOffset.value = 0
+      historyPage.value = 1
       currentBodySiteFilter.value = bodySite ?? null
     } else {
       loadingMore.value = true
     }
     try {
-      const res = await vasiApi.getHistory(20, reset ? 0 : historyOffset.value, currentBodySiteFilter.value || undefined)
+      let limit: number
+      let offset: number
+      if (mode === 'page') {
+        limit = historyPageSize.value
+        offset = reset ? 0 : (historyPage.value - 1) * historyPageSize.value
+      } else {
+        // legacy append mode
+        limit = 20
+        offset = reset ? 0 : historyOffset.value
+      }
+      const res = await vasiApi.getHistory(limit, offset, currentBodySiteFilter.value || undefined)
       const items = res.items.map((item: VasiHistoryItem) => ({
         id: item.id,
         date: item.assessment_date.split('T')[0],
@@ -386,13 +433,21 @@ const toast = useToast()
         stage: item.stage,
         classification: item.classification,
       }))
-      if (reset) {
+      if (mode === 'page') {
         recentAssessments.value = items
+        historyTotal.value = typeof res.total === 'number' ? res.total : items.length
+        historyHasMore.value = historyPage.value < historyTotalPages.value
+        historyOffset.value = offset + items.length
       } else {
-        recentAssessments.value.push(...items)
+        if (reset) {
+          recentAssessments.value = items
+        } else {
+          recentAssessments.value.push(...items)
+        }
+        historyTotal.value = typeof res.total === 'number' ? res.total : recentAssessments.value.length
+        historyHasMore.value = items.length === limit && recentAssessments.value.length < historyTotal.value
+        historyOffset.value = recentAssessments.value.length
       }
-      historyHasMore.value = items.length === 20
-      historyOffset.value = recentAssessments.value.length
       selectMode.value = false
       selectedIds.value.clear()
     } catch (err) {
@@ -404,8 +459,26 @@ const toast = useToast()
   }
 
   async function loadMoreHistory() {
+    // Legacy "load more" — kept for TrackerPage.
     if (loadingMore.value || !historyHasMore.value) return
-    await loadAssessmentHistory(false)
+    await loadAssessmentHistory(false, currentBodySiteFilter.value || undefined, 'append')
+  }
+
+  async function goToHistoryPage(page: number) {
+    const total = historyTotalPages.value
+    const next = Math.min(Math.max(1, Math.floor(page)), total)
+    if (next === historyPage.value && recentAssessments.value.length > 0) return
+    historyPage.value = next
+    await loadAssessmentHistory(false, currentBodySiteFilter.value || undefined, 'page')
+  }
+
+  async function setHistoryPageSize(size: number) {
+    const allowed = [10, 20, 50, 100]
+    const n = allowed.includes(size) ? size : 10
+    if (n === historyPageSize.value) return
+    historyPageSize.value = n
+    historyPage.value = 1
+    await loadAssessmentHistory(true, currentBodySiteFilter.value || undefined, 'page')
   }
 
   function toggleSelectMode() {
@@ -432,14 +505,23 @@ const toast = useToast()
     else if (deltaX > 30) swipedId.value = null
   }
 
+  async function refreshCurrentHistoryPage() {
+    if (recentAssessments.value.length === 0 && historyPage.value > 1) {
+      historyPage.value = Math.max(1, historyPage.value - 1)
+    }
+    await loadAssessmentHistory(false, currentBodySiteFilter.value || undefined, 'page')
+  }
+
   async function deleteSingle(id: number) {
     if (deletingIds.value.has(id)) return
     deletingIds.value.add(id)
     try {
       await vasiApi.deleteAssessment(id)
       recentAssessments.value = recentAssessments.value.filter(r => r.id !== id)
+      historyTotal.value = Math.max(0, historyTotal.value - 1)
       swipedId.value = null
       toast.success('已删除')
+      await refreshCurrentHistoryPage()
     } catch {
       toast.error('删除失败')
     } finally {
@@ -449,13 +531,16 @@ const toast = useToast()
 
   async function deleteSelected() {
     if (selectedIds.value.size === 0) return
+    const count = selectedIds.value.size
     deletingIds.value = new Set(selectedIds.value)
     try {
       await vasiApi.deleteAssessmentsBatch([...selectedIds.value])
       recentAssessments.value = recentAssessments.value.filter(r => !selectedIds.value.has(r.id))
-      toast.success(`已删除 ${selectedIds.value.size} 条记录`)
+      historyTotal.value = Math.max(0, historyTotal.value - count)
+      toast.success(`已删除 ${count} 条记录`)
       selectMode.value = false
       selectedIds.value.clear()
+      await refreshCurrentHistoryPage()
     } catch {
       toast.error('批量删除失败')
     } finally {
@@ -530,19 +615,21 @@ const toast = useToast()
   return {
     // State
     selectedBodySite, uploadedImage, imagePreview, isUploading, uploadStage,
-    assessmentResult, lastAssessment, aiContours, editedContours, showContourEditor,
+    assessmentResult, lastAssessment, aiContours, editedContours, showContourEditor, highConfidence,
     isSubmittingContour, contourDiffResult, preciseAvailable, isPreciseAssessing,
     preciseAssessmentDone, qualityResult, qualityChecking, qualityIgnored,
     aiSkinLayerUrl, aiLesionLayerUrl,
     assessmentSource, suspectedLesions, skinRegionRatio, visualFeatures,
     recentAssessments, loadingHistory, loadingMore, historyHasMore,
+    historyPage, historyPageSize, historyTotal, historyTotalPages,
     selectMode, selectedIds, swipedId, deletingIds, currentStep,
     hasReferenceCard,
     // Methods
     setBodySite, setHasReferenceCard,
     handleFileSelect, handleDrop, checkQuality, submitAssessment,
     removeImage, startPreciseAssessment, handleTwoLayerConfirm, handleContourConfirm, handleContourUpdate,
-    skipContourEdit, loadAssessmentHistory, loadMoreHistory,
+    skipContourEdit, cancelAssessment, loadAssessmentHistory, loadMoreHistory,
+    goToHistoryPage, setHistoryPageSize,
     toggleSelectMode, toggleSelect, isSwiped, onTouchStart, onTouchEnd,
     deleteSingle, deleteSelected, writeDiaryFromAssessment, createAssessmentDraft,
     privacyMask,

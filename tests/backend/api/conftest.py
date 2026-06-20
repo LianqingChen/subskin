@@ -1,5 +1,6 @@
 """Test fixtures for backend API tests"""
 
+import json
 from datetime import datetime, timedelta
 from typing import Generator
 
@@ -7,16 +8,19 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
 
 from web.backend.app.main import app
 from web.backend.database.database import Base, get_db
-from web.backend.database.models import User, Comment, Document
+from web.backend.database.models import User, Comment, Document, UserCredential
 
 
 # Test database (in-memory SQLite)
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
 test_engine = create_engine(
-    SQLALCHEMY_TEST_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
 )
 TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
@@ -67,6 +71,27 @@ def test_user(db_session: Session) -> User:
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
+
+    db_session.add_all(
+        [
+            UserCredential(
+                user_id=user.id,
+                cred_type="email",
+                cred_id="test@example.com",
+                verified=True,
+            ),
+            UserCredential(
+                user_id=user.id,
+                cred_type="password",
+                cred_id=f"password:{user.id}",
+                verified=True,
+                credential_data=json.dumps(
+                    {"hashed_password": user.hashed_password}, ensure_ascii=False
+                ),
+            ),
+        ]
+    )
+    db_session.commit()
     return user
 
 
@@ -87,6 +112,27 @@ def admin_user(db_session: Session) -> User:
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
+
+    db_session.add_all(
+        [
+            UserCredential(
+                user_id=user.id,
+                cred_type="email",
+                cred_id="admin@example.com",
+                verified=True,
+            ),
+            UserCredential(
+                user_id=user.id,
+                cred_type="password",
+                cred_id=f"password:{user.id}",
+                verified=True,
+                credential_data=json.dumps(
+                    {"hashed_password": user.hashed_password}, ensure_ascii=False
+                ),
+            ),
+        ]
+    )
+    db_session.commit()
     return user
 
 
@@ -127,36 +173,20 @@ def test_document(db_session: Session) -> Document:
 
 
 @pytest.fixture
-def auth_headers(client: TestClient, test_user: User) -> dict:
+def auth_headers(client: TestClient, test_user: User) -> dict[str, str]:
     """Get authentication headers for test user"""
-    from jose import jwt
-    import os
+    from web.backend.services.auth import create_access_token
 
-    # Create JWT token manually
-    SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
-    ALGORITHM = os.getenv("ALGORITHM", "HS256")
-    expires_delta = timedelta(minutes=30)
-    expire = datetime.utcnow() + expires_delta
-
-    payload = {"sub": test_user.username, "exp": expire.timestamp()}
-    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    token = create_access_token({"sub": test_user.username})
 
     return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture
-def admin_headers(client: TestClient, admin_user: User) -> dict:
+def admin_headers(client: TestClient, admin_user: User) -> dict[str, str]:
     """Get authentication headers for admin user"""
-    from jose import jwt
-    import os
+    from web.backend.services.auth import create_access_token
 
-    # Create JWT token manually
-    SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
-    ALGORITHM = os.getenv("ALGORITHM", "HS256")
-    expires_delta = timedelta(minutes=30)
-    expire = datetime.utcnow() + expires_delta
-
-    payload = {"sub": admin_user.username, "exp": expire.timestamp()}
-    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    token = create_access_token({"sub": admin_user.username})
 
     return {"Authorization": f"Bearer {token}"}
