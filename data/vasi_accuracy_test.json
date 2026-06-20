@@ -1,0 +1,191 @@
+[
+  {
+    "image": "1778935155_f19b02c6.jpg",
+    "total_seconds": 35.83,
+    "vasi_score": 12.3,
+    "formula_score_set": true,
+    "area_percentage": 37.1,
+    "contrast_adj_area": 37.1,
+    "body_site": "面部",
+    "source": "sam-vlm-guided",
+    "vlm_num_lesions": 5,
+    "sam_contours_count": 4,
+    "vlm_to_sam_yield_pct": 80.0,
+    "depig_method": "area-weighted per-lesion",
+    "depig_weighted": 0.73,
+    "score_source": "sam-area + weighted-depig formula",
+    "lesion_details": [
+      {
+        "label": "白斑1",
+        "depigmentation": 3,
+        "confidence": 0.98,
+        "contrast": 0.68,
+        "has_bbox": true,
+        "sam_area_pct": 6.2,
+        "contrast_factor": 1.0
+      },
+      {
+        "label": "白斑2",
+        "depigmentation": 2,
+        "confidence": 0.92,
+        "contrast": 0.55,
+        "has_bbox": true,
+        "sam_area_pct": 4.5,
+        "contrast_factor": 1.0
+      },
+      {
+        "label": "白斑3",
+        "depigmentation": 2,
+        "confidence": 0.91,
+        "contrast": 0.53,
+        "has_bbox": true,
+        "sam_area_pct": 25.1,
+        "contrast_factor": 1.0
+      },
+      {
+        "label": "白斑4",
+        "depigmentation": 3,
+        "confidence": 0.97,
+        "contrast": 0.72,
+        "has_bbox": true,
+        "sam_area_pct": 1.4,
+        "contrast_factor": 1.0
+      },
+      {
+        "label": "白斑5",
+        "depigmentation": 2,
+        "confidence": 0.88,
+        "contrast": 0.48,
+        "has_bbox": true,
+        "sam_area_pct": null,
+        "contrast_factor": null
+      }
+    ]
+  },
+  {
+    "image": "1778935240_0d0b5fbf.jpg",
+    "total_seconds": 32.47,
+    "vasi_score": 15.1,
+    "formula_score_set": true,
+    "area_percentage": 40.4,
+    "contrast_adj_area": 40.4,
+    "body_site": "面部",
+    "source": "sam-vlm-guided",
+    "vlm_num_lesions": 5,
+    "sam_contours_count": 3,
+    "vlm_to_sam_yield_pct": 60.0,
+    "depig_method": "area-weighted per-lesion",
+    "depig_weighted": 0.83,
+    "score_source": "sam-area + weighted-depig formula",
+    "lesion_details": [
+      {
+        "label": "白斑1",
+        "depigmentation": 3,
+        "confidence": 0.97,
+        "contrast": 0.78,
+        "has_bbox": true,
+        "sam_area_pct": 7.1,
+        "contrast_factor": 1.0
+      },
+      {
+        "label": "白斑2",
+        "depigmentation": 3,
+        "confidence": 0.96,
+        "contrast": 0.72,
+        "has_bbox": true,
+        "sam_area_pct": 12.0,
+        "contrast_factor": 1.0
+      },
+      {
+        "label": "白斑3",
+        "depigmentation": 2,
+        "confidence": 0.94,
+        "contrast": 0.65,
+        "has_bbox": true,
+        "sam_area_pct": 20.4,
+        "contrast_factor": 1.0
+      },
+      {
+        "label": "白斑4",
+        "depigmentation": 2,
+        "confidence": 0.93,
+        "contrast": 0.63,
+        "has_bbox": true,
+        "sam_area_pct": null,
+        "contrast_factor": null
+      },
+      {
+        "label": "白斑5",
+        "depigmentation": 2,
+        "confidence": 0.92,
+        "contrast": 0.58,
+        "has_bbox": true,
+        "sam_area_pct": null,
+        "contrast_factor": null
+      }
+    ]
+  },
+  {
+    "image": "1778935271_7c588906.jpg",
+    "total_seconds": 30.13,
+    "vasi_score": 12.8,
+    "formula_score_set": true,
+    "area_percentage": 33.0,
+    "contrast_adj_area": 33.0,
+    "body_site": "面部",
+    "source": "sam-vlm-guided",
+    "vlm_num_lesions": 5,
+    "sam_contours_count": 2,
+    "vlm_to_sam_yield_pct": 40.0,
+    "depig_method": "area-weighted per-lesion",
+    "depig_weighted": 0.86,
+    "score_source": "sam-area + weighted-depig formula",
+    "lesion_details": [
+      {
+        "label": "白斑1",
+        "depigmentation": 3,
+        "confidence": 0.98,
+        "contrast": 0.78,
+        "has_bbox": true,
+        "sam_area_pct": 19.5,
+        "contrast_factor": 1.0
+      },
+      {
+        "label": "白斑2",
+        "depigmentation": 2,
+        "confidence": 0.97,
+        "contrast": 0.65,
+        "has_bbox": true,
+        "sam_area_pct": 14.3,
+        "contrast_factor": 1.0
+      },
+      {
+        "label": "白斑3",
+        "depigmentation": 2,
+        "confidence": 0.96,
+        "contrast": 0.58,
+        "has_bbox": true,
+        "sam_area_pct": null,
+        "contrast_factor": null
+      },
+      {
+        "label": "白斑4",
+        "depigmentation": 2,
+        "confidence": 0.95,
+        "contrast": 0.55,
+        "has_bbox": true,
+        "sam_area_pct": null,
+        "contrast_factor": null
+      },
+      {
+        "label": "白斑5",
+        "depigmentation": 2,
+        "confidence": 0.94,
+        "contrast": 0.52,
+        "has_bbox": true,
+        "sam_area_pct": null,
+        "contrast_factor": null
+      }
+    ]
+  }
+]

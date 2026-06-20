@@ -1,0 +1,536 @@
+- generic [ref=e5]:
+  - complementary [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e9]: 
+        - generic [ref=e10]: SubSkin
+      - menu [ref=e11]:
+        - menuitem "数据监控" [ref=e12]:
+          - img [ref=e13] [cursor=pointer]:
+            - generic [ref=e14]: 
+          - text: 数据监控
+        - menuitem "内容生成" [ref=e15]:
+          - img [ref=e16] [cursor=pointer]:
+            - generic [ref=e17]: 
+          - text: 内容生成
+        - menuitem "风控管理" [ref=e18]:
+          - img [ref=e19] [cursor=pointer]:
+            - generic [ref=e20]: 
+          - text: 风控管理
+        - menuitem "用户管理" [ref=e21]:
+          - img [ref=e22] [cursor=pointer]:
+            - generic [ref=e23]: 
+          - text: 用户管理
+        - menuitem "LLM配置" [ref=e24]:
+          - img [ref=e25] [cursor=pointer]:
+            - generic [ref=e26]: 
+          - text: LLM配置
+        - menuitem "系统监控" [ref=e27]:
+          - img [ref=e28] [cursor=pointer]:
+            - generic [ref=e29]: 
+          - text: 系统监控
+    - img [ref=e32] [cursor=pointer]
+  - generic [ref=e36]:
+    - generic [ref=e37]:
+      - heading "SubSkin 管理后台" [level=2] [ref=e39]
+      - generic [ref=e41] [cursor=pointer]:
+        - generic [ref=e43]: A
+        - generic [ref=e44]: 管理员
+        - generic [ref=e45]: 
+    - generic [ref=e48]:
+      - generic [ref=e52]: 内容生成
+      - paragraph [ref=e53]: 管理 AI 生成内容的草稿、编辑与发布
+      - generic [ref=e54]:
+        - generic [ref=e57]:
+          - textbox "生成数量" [ref=e59]: "10"
+          - generic [ref=e60]:
+            - button [ref=e61] [cursor=pointer]:
+              - img [ref=e64]
+            - button [ref=e65] [cursor=pointer]:
+              - img [ref=e68]
+        - button " 生成内容" [ref=e70] [cursor=pointer]:
+          - generic [ref=e72]: 
+          - generic [ref=e73]: 生成内容
+        - separator [ref=e74]
+        - generic [ref=e77] [cursor=pointer]:
+          - generic:
+            - generic: 分类筛选
+          - img "loading" [ref=e78]:
+            - img [ref=e83]
+        - generic [ref=e87] [cursor=pointer]:
+          - generic:
+            - generic: 状态筛选
+          - img "loading" [ref=e88]:
+            - img [ref=e93]
+        - button " 刷新" [ref=e95] [cursor=pointer]:
+          - generic [ref=e97]: 
+          - generic [ref=e98]: 刷新
+      - generic [ref=e99]:
+        - generic [ref=e101] [cursor=pointer]: 全部
+        - generic [ref=e103] [cursor=pointer]: 治疗分享
+        - generic [ref=e105] [cursor=pointer]: 心理支持
+        - generic [ref=e107] [cursor=pointer]: 护肤经验
+        - generic [ref=e109] [cursor=pointer]: 日常饮食
+        - generic [ref=e111] [cursor=pointer]: 诊断咨询
+        - generic [ref=e113] [cursor=pointer]: 最新资讯
+        - generic [ref=e115] [cursor=pointer]: 其他
+        - generic [ref=e117] [cursor=pointer]: 白白日记
+        - generic [ref=e122]:
+          - table [ref=e124]:
+            - rowgroup [ref=e135]:
+              - row "ID 标题 分类 状态 城市 心情 标签 AI置信度 创建时间 操作" [ref=e136]:
+                - columnheader "ID" [ref=e137]:
+                  - generic [ref=e140]: ID
+                - columnheader "标题":
+                  - generic:
+                    - generic:
+                      - generic: 标题
+                - columnheader "分类" [ref=e141]:
+                  - generic [ref=e143]: 分类
+                - columnheader "状态" [ref=e144]:
+                  - generic [ref=e146]: 状态
+                - columnheader "城市" [ref=e147]:
+                  - generic [ref=e149]: 城市
+                - columnheader "心情" [ref=e150]:
+                  - generic [ref=e152]: 心情
+                - columnheader "标签" [ref=e153]:
+                  - generic [ref=e156]: 标签
+                - columnheader "AI置信度" [ref=e157]:
+                  - generic [ref=e159]: AI置信度
+                - columnheader "创建时间" [ref=e160]:
+                  - generic [ref=e162]: 创建时间
+                - columnheader "操作" [ref=e163]:
+                  - generic [ref=e165]: 操作
+          - table [ref=e166]:
+            - rowgroup [ref=e177]:
+              - row "1 白瘴风不是皮肤变脏，是免疫在‘误伤’ 治疗分享 草稿 成都 📖学习 科普, 白瘴风, 激光治疗, 皮肤健康, 自身免疫 85% 2026/05/18 01:21 编辑 发布 删除" [ref=e178]:
+                - cell "1" [ref=e179]:
+                  - generic [ref=e180]: "1"
+                - cell "白瘴风不是皮肤变脏，是免疫在‘误伤’":
+                  - generic: 白瘴风不是皮肤变脏，是免疫在‘误伤’
+                - cell "治疗分享" [ref=e181]
+                - cell "草稿" [ref=e182]:
+                  - generic [ref=e184]: 草稿
+                - cell "成都" [ref=e185]
+                - cell "📖学习" [ref=e186]
+                - cell "科普, 白瘴风, 激光治疗, 皮肤健康, 自身免疫" [ref=e187]:
+                  - generic [ref=e188]: 科普, 白瘴风, 激光治疗, 皮肤健康, 自身免疫
+                - cell "85%" [ref=e189]
+                - cell "2026/05/18 01:21" [ref=e190]
+                - cell "编辑 发布 删除" [ref=e191]:
+                  - button "编辑" [ref=e192] [cursor=pointer]:
+                    - generic [ref=e193]: 编辑
+                  - button "发布" [ref=e194] [cursor=pointer]:
+                    - generic [ref=e195]: 发布
+                  - button "删除" [ref=e196] [cursor=pointer]:
+                    - generic [ref=e197]: 删除
+              - row "2 白瘴风不是‘皮肤变白’那么简单 治疗分享 草稿 北京 💭求知 科普, 白瘴风, 白癜风, 皮肤健康, 自身免疫 85% 2026/05/18 01:21 编辑 发布 删除" [ref=e198]:
+                - cell "2" [ref=e199]:
+                  - generic [ref=e200]: "2"
+                - cell "白瘴风不是‘皮肤变白’那么简单":
+                  - generic: 白瘴风不是‘皮肤变白’那么简单
+                - cell "治疗分享" [ref=e201]
+                - cell "草稿" [ref=e202]:
+                  - generic [ref=e204]: 草稿
+                - cell "北京" [ref=e205]
+                - cell "💭求知" [ref=e206]
+                - cell "科普, 白瘴风, 白癜风, 皮肤健康, 自身免疫" [ref=e207]:
+                  - generic [ref=e208]: 科普, 白瘴风, 白癜风, 皮肤健康, 自身免疫
+                - cell "85%" [ref=e209]
+                - cell "2026/05/18 01:21" [ref=e210]
+                - cell "编辑 发布 删除" [ref=e211]:
+                  - button "编辑" [ref=e212] [cursor=pointer]:
+                    - generic [ref=e213]: 编辑
+                  - button "发布" [ref=e214] [cursor=pointer]:
+                    - generic [ref=e215]: 发布
+                  - button "删除" [ref=e216] [cursor=pointer]:
+                    - generic [ref=e217]: 删除
+              - row "3 白瘴风不是皮肤变脏，是免疫在‘误伤’ 治疗分享 草稿 成都 💭求知 白瘴风, 皮肤健康, 自身免疫, 光疗, 心理健康 85% 2026/05/18 01:21 编辑 发布 删除" [ref=e218]:
+                - cell "3" [ref=e219]:
+                  - generic [ref=e220]: "3"
+                - cell "白瘴风不是皮肤变脏，是免疫在‘误伤’":
+                  - generic: 白瘴风不是皮肤变脏，是免疫在‘误伤’
+                - cell "治疗分享" [ref=e221]
+                - cell "草稿" [ref=e222]:
+                  - generic [ref=e224]: 草稿
+                - cell "成都" [ref=e225]
+                - cell "💭求知" [ref=e226]
+                - cell "白瘴风, 皮肤健康, 自身免疫, 光疗, 心理健康" [ref=e227]:
+                  - generic [ref=e228]: 白瘴风, 皮肤健康, 自身免疫, 光疗, 心理健康
+                - cell "85%" [ref=e229]
+                - cell "2026/05/18 01:21" [ref=e230]
+                - cell "编辑 发布 删除" [ref=e231]:
+                  - button "编辑" [ref=e232] [cursor=pointer]:
+                    - generic [ref=e233]: 编辑
+                  - button "发布" [ref=e234] [cursor=pointer]:
+                    - generic [ref=e235]: 发布
+                  - button "删除" [ref=e236] [cursor=pointer]:
+                    - generic [ref=e237]: 删除
+              - row "4 白瘴风不是孤单的战斗 治疗分享 草稿 苏州 💭求知 白瘴风, 激光治疗, 自身免疫, 火针疗法, 新药研究 85% 2026/05/18 01:22 编辑 发布 删除" [ref=e238]:
+                - cell "4" [ref=e239]:
+                  - generic [ref=e240]: "4"
+                - cell "白瘴风不是孤单的战斗":
+                  - generic: 白瘴风不是孤单的战斗
+                - cell "治疗分享" [ref=e241]
+                - cell "草稿" [ref=e242]:
+                  - generic [ref=e244]: 草稿
+                - cell "苏州" [ref=e245]
+                - cell "💭求知" [ref=e246]
+                - cell "白瘴风, 激光治疗, 自身免疫, 火针疗法, 新药研究" [ref=e247]:
+                  - generic [ref=e248]: 白瘴风, 激光治疗, 自身免疫, 火针疗法, 新药研究
+                - cell "85%" [ref=e249]
+                - cell "2026/05/18 01:22" [ref=e250]
+                - cell "编辑 发布 删除" [ref=e251]:
+                  - button "编辑" [ref=e252] [cursor=pointer]:
+                    - generic [ref=e253]: 编辑
+                  - button "发布" [ref=e254] [cursor=pointer]:
+                    - generic [ref=e255]: 发布
+                  - button "删除" [ref=e256] [cursor=pointer]:
+                    - generic [ref=e257]: 删除
+              - row "5 你值得被温柔以待 心理支持 草稿 武汉 💪坚持中 规避心理, 情绪调节, 慢性病关怀, 心理健康, 白瘴风支持 85% 2026/05/18 01:22 编辑 发布 删除" [ref=e258]:
+                - cell "5" [ref=e259]:
+                  - generic [ref=e260]: "5"
+                - cell "你值得被温柔以待":
+                  - generic: 你值得被温柔以待
+                - cell "心理支持" [ref=e261]
+                - cell "草稿" [ref=e262]:
+                  - generic [ref=e264]: 草稿
+                - cell "武汉" [ref=e265]
+                - cell "💪坚持中" [ref=e266]
+                - cell "规避心理, 情绪调节, 慢性病关怀, 心理健康, 白瘴风支持" [ref=e267]:
+                  - generic [ref=e268]: 规避心理, 情绪调节, 慢性病关怀, 心理健康, 白瘴风支持
+                - cell "85%" [ref=e269]
+                - cell "2026/05/18 01:22" [ref=e270]
+                - cell "编辑 发布 删除" [ref=e271]:
+                  - button "编辑" [ref=e272] [cursor=pointer]:
+                    - generic [ref=e273]: 编辑
+                  - button "发布" [ref=e274] [cursor=pointer]:
+                    - generic [ref=e275]: 发布
+                  - button "删除" [ref=e276] [cursor=pointer]:
+                    - generic [ref=e277]: 删除
+              - row "6 你值得被温柔以待 心理支持 草稿 西安 💪坚持中 白瘴风, 免疫相关皮肤病, 自我关怀, 心理支持, 心理健康 85% 2026/05/18 01:22 编辑 发布 删除" [ref=e278]:
+                - cell "6" [ref=e279]:
+                  - generic [ref=e280]: "6"
+                - cell "你值得被温柔以待":
+                  - generic: 你值得被温柔以待
+                - cell "心理支持" [ref=e281]
+                - cell "草稿" [ref=e282]:
+                  - generic [ref=e284]: 草稿
+                - cell "西安" [ref=e285]
+                - cell "💪坚持中" [ref=e286]
+                - cell "白瘴风, 免疫相关皮肤病, 自我关怀, 心理支持, 心理健康" [ref=e287]:
+                  - generic [ref=e288]: 白瘴风, 免疫相关皮肤病, 自我关怀, 心理支持, 心理健康
+                - cell "85%" [ref=e289]
+                - cell "2026/05/18 01:22" [ref=e290]
+                - cell "编辑 发布 删除" [ref=e291]:
+                  - button "编辑" [ref=e292] [cursor=pointer]:
+                    - generic [ref=e293]: 编辑
+                  - button "发布" [ref=e294] [cursor=pointer]:
+                    - generic [ref=e295]: 发布
+                  - button "删除" [ref=e296] [cursor=pointer]:
+                    - generic [ref=e297]: 删除
+              - row "7 你值得被温柔以待 心理支持 草稿 杭州 💪坚持中 情绪管理, 白癜风, 身心健康, 情绪关怀, 心理支持 85% 2026/05/18 01:22 编辑 发布 删除" [ref=e298]:
+                - cell "7" [ref=e299]:
+                  - generic [ref=e300]: "7"
+                - cell "你值得被温柔以待":
+                  - generic: 你值得被温柔以待
+                - cell "心理支持" [ref=e301]
+                - cell "草稿" [ref=e302]:
+                  - generic [ref=e304]: 草稿
+                - cell "杭州" [ref=e305]
+                - cell "💪坚持中" [ref=e306]
+                - cell "情绪管理, 白癜风, 身心健康, 情绪关怀, 心理支持" [ref=e307]:
+                  - generic [ref=e308]: 情绪管理, 白癜风, 身心健康, 情绪关怀, 心理支持
+                - cell "85%" [ref=e309]
+                - cell "2026/05/18 01:22" [ref=e310]
+                - cell "编辑 发布 删除" [ref=e311]:
+                  - button "编辑" [ref=e312] [cursor=pointer]:
+                    - generic [ref=e313]: 编辑
+                  - button "发布" [ref=e314] [cursor=pointer]:
+                    - generic [ref=e315]: 发布
+                  - button "删除" [ref=e316] [cursor=pointer]:
+                    - generic [ref=e317]: 删除
+              - row "8 JAK1抑制剂upadacitinib拓展至白癜风治疗 最新资讯 草稿 苏州 📰关注 白癜风, upadacitinib, 自身免疫性皮肤病, 行业资讯, 最新动态 85% 2026/05/18 01:22 编辑 发布 删除" [ref=e318]:
+                - cell "8" [ref=e319]:
+                  - generic [ref=e320]: "8"
+                - cell "JAK1抑制剂upadacitinib拓展至白癜风治疗":
+                  - generic: JAK1抑制剂upadacitinib拓展至白癜风治疗
+                - cell "最新资讯" [ref=e321]
+                - cell "草稿" [ref=e322]:
+                  - generic [ref=e324]: 草稿
+                - cell "苏州" [ref=e325]
+                - cell "📰关注" [ref=e326]
+                - cell "白癜风, upadacitinib, 自身免疫性皮肤病, 行业资讯, 最新动态" [ref=e327]:
+                  - generic [ref=e328]: 白癜风, upadacitinib, 自身免疫性皮肤病, 行业资讯, 最新动态
+                - cell "85%" [ref=e329]
+                - cell "2026/05/18 01:22" [ref=e330]
+                - cell "编辑 发布 删除" [ref=e331]:
+                  - button "编辑" [ref=e332] [cursor=pointer]:
+                    - generic [ref=e333]: 编辑
+                  - button "发布" [ref=e334] [cursor=pointer]:
+                    - generic [ref=e335]: 发布
+                  - button "删除" [ref=e336] [cursor=pointer]:
+                    - generic [ref=e337]: 删除
+              - row "9 火针疗法治疗白癜风获临床验证 最新资讯 草稿 北京 ✨兴奋 白癜风, 医学前沿, 表观遗传, 动物模型, 火针疗法 85% 2026/05/18 01:22 编辑 发布 删除" [ref=e338]:
+                - cell "9" [ref=e339]:
+                  - generic [ref=e340]: "9"
+                - cell "火针疗法治疗白癜风获临床验证":
+                  - generic: 火针疗法治疗白癜风获临床验证
+                - cell "最新资讯" [ref=e341]
+                - cell "草稿" [ref=e342]:
+                  - generic [ref=e344]: 草稿
+                - cell "北京" [ref=e345]
+                - cell "✨兴奋" [ref=e346]
+                - cell "白癜风, 医学前沿, 表观遗传, 动物模型, 火针疗法" [ref=e347]:
+                  - generic [ref=e348]: 白癜风, 医学前沿, 表观遗传, 动物模型, 火针疗法
+                - cell "85%" [ref=e349]
+                - cell "2026/05/18 01:22" [ref=e350]
+                - cell "编辑 发布 删除" [ref=e351]:
+                  - button "编辑" [ref=e352] [cursor=pointer]:
+                    - generic [ref=e353]: 编辑
+                  - button "发布" [ref=e354] [cursor=pointer]:
+                    - generic [ref=e355]: 发布
+                  - button "删除" [ref=e356] [cursor=pointer]:
+                    - generic [ref=e357]: 删除
+              - row "10 今天想分享我的 vitiligo 日常 白白日记 草稿 天津 📸回忆 皮肤免疫, 肠道健康, vitiligo, 生活感悟, 日常护理 85% 2026/05/18 01:22 编辑 发布 删除" [ref=e358]:
+                - cell "10" [ref=e359]:
+                  - generic [ref=e360]: "10"
+                - cell "今天想分享我的 vitiligo 日常":
+                  - generic: 今天想分享我的 vitiligo 日常
+                - cell "白白日记" [ref=e361]
+                - cell "草稿" [ref=e362]:
+                  - generic [ref=e364]: 草稿
+                - cell "天津" [ref=e365]
+                - cell "📸回忆" [ref=e366]
+                - cell "皮肤免疫, 肠道健康, vitiligo, 生活感悟, 日常护理" [ref=e367]:
+                  - generic [ref=e368]: 皮肤免疫, 肠道健康, vitiligo, 生活感悟, 日常护理
+                - cell "85%" [ref=e369]
+                - cell "2026/05/18 01:22" [ref=e370]
+                - cell "编辑 发布 删除" [ref=e371]:
+                  - button "编辑" [ref=e372] [cursor=pointer]:
+                    - generic [ref=e373]: 编辑
+                  - button "发布" [ref=e374] [cursor=pointer]:
+                    - generic [ref=e375]: 发布
+                  - button "删除" [ref=e376] [cursor=pointer]:
+                    - generic [ref=e377]: 删除
+              - row "11 白瘴风不是皮肤变脏，是免疫在‘误伤’ 治疗分享 已发布 石家庄 📖学习 皮肤健康, JAK抑制剂, 免疫, 白瘴风, 免疑治疗 85% 2026/05/18 01:33 编辑 删除" [ref=e378]:
+                - cell "11" [ref=e379]:
+                  - generic [ref=e380]: "11"
+                - cell "白瘴风不是皮肤变脏，是免疫在‘误伤’":
+                  - generic: 白瘴风不是皮肤变脏，是免疫在‘误伤’
+                - cell "治疗分享" [ref=e381]
+                - cell "已发布" [ref=e382]:
+                  - generic [ref=e384]: 已发布
+                - cell "石家庄" [ref=e385]
+                - cell "📖学习" [ref=e386]
+                - cell "皮肤健康, JAK抑制剂, 免疫, 白瘴风, 免疑治疗" [ref=e387]:
+                  - generic [ref=e388]: 皮肤健康, JAK抑制剂, 免疫, 白瘴风, 免疑治疗
+                - cell "85%" [ref=e389]
+                - cell "2026/05/18 01:33" [ref=e390]
+                - cell "编辑 删除" [ref=e391]:
+                  - button "编辑" [ref=e392] [cursor=pointer]:
+                    - generic [ref=e393]: 编辑
+                  - button "删除" [ref=e394] [cursor=pointer]:
+                    - generic [ref=e395]: 删除
+              - row "12 白瘴风不只是皮肤问题 治疗分享 草稿 广州 📖学习 JAK抑制剂, 免疫, 药物治疗, 白瘴风, 免疑治疗 85% 2026/05/18 01:33 编辑 发布 删除" [ref=e396]:
+                - cell "12" [ref=e397]:
+                  - generic [ref=e398]: "12"
+                - cell "白瘴风不只是皮肤问题":
+                  - generic: 白瘴风不只是皮肤问题
+                - cell "治疗分享" [ref=e399]
+                - cell "草稿" [ref=e400]:
+                  - generic [ref=e402]: 草稿
+                - cell "广州" [ref=e403]
+                - cell "📖学习" [ref=e404]
+                - cell "JAK抑制剂, 免疫, 药物治疗, 白瘴风, 免疑治疗" [ref=e405]:
+                  - generic [ref=e406]: JAK抑制剂, 免疫, 药物治疗, 白瘴风, 免疑治疗
+                - cell "85%" [ref=e407]
+                - cell "2026/05/18 01:33" [ref=e408]
+                - cell "编辑 发布 删除" [ref=e409]:
+                  - button "编辑" [ref=e410] [cursor=pointer]:
+                    - generic [ref=e411]: 编辑
+                  - button "发布" [ref=e412] [cursor=pointer]:
+                    - generic [ref=e413]: 发布
+                  - button "删除" [ref=e414] [cursor=pointer]:
+                    - generic [ref=e415]: 删除
+              - row "13 你的肠道，正在悄悄影响白斑 治疗分享 草稿 成都 💭求知 氧化压力, 自身免疫, 光疗, 白瘴风, 免疑治疗 85% 2026/05/18 01:33 编辑 发布 删除" [ref=e416]:
+                - cell "13" [ref=e417]:
+                  - generic [ref=e418]: "13"
+                - cell "你的肠道，正在悄悄影响白斑":
+                  - generic: 你的肠道，正在悄悄影响白斑
+                - cell "治疗分享" [ref=e419]
+                - cell "草稿" [ref=e420]:
+                  - generic [ref=e422]: 草稿
+                - cell "成都" [ref=e423]
+                - cell "💭求知" [ref=e424]
+                - cell "氧化压力, 自身免疫, 光疗, 白瘴风, 免疑治疗" [ref=e425]:
+                  - generic [ref=e426]: 氧化压力, 自身免疫, 光疗, 白瘴风, 免疑治疗
+                - cell "85%" [ref=e427]
+                - cell "2026/05/18 01:33" [ref=e428]
+                - cell "编辑 发布 删除" [ref=e429]:
+                  - button "编辑" [ref=e430] [cursor=pointer]:
+                    - generic [ref=e431]: 编辑
+                  - button "发布" [ref=e432] [cursor=pointer]:
+                    - generic [ref=e433]: 发布
+                  - button "删除" [ref=e434] [cursor=pointer]:
+                    - generic [ref=e435]: 删除
+              - row "14 白瘴风，不只是皮肤的事 治疗分享 草稿 重庆 📖学习 药物治疗, 脑皮轴, 心理健康, 自身免疫, 白瘴风 85% 2026/05/18 01:34 编辑 发布 删除" [ref=e436]:
+                - cell "14" [ref=e437]:
+                  - generic [ref=e438]: "14"
+                - cell "白瘴风，不只是皮肤的事":
+                  - generic: 白瘴风，不只是皮肤的事
+                - cell "治疗分享" [ref=e439]
+                - cell "草稿" [ref=e440]:
+                  - generic [ref=e442]: 草稿
+                - cell "重庆" [ref=e443]
+                - cell "📖学习" [ref=e444]
+                - cell "药物治疗, 脑皮轴, 心理健康, 自身免疫, 白瘴风" [ref=e445]:
+                  - generic [ref=e446]: 药物治疗, 脑皮轴, 心理健康, 自身免疫, 白瘴风
+                - cell "85%" [ref=e447]
+                - cell "2026/05/18 01:34" [ref=e448]
+                - cell "编辑 发布 删除" [ref=e449]:
+                  - button "编辑" [ref=e450] [cursor=pointer]:
+                    - generic [ref=e451]: 编辑
+                  - button "发布" [ref=e452] [cursor=pointer]:
+                    - generic [ref=e453]: 发布
+                  - button "删除" [ref=e454] [cursor=pointer]:
+                    - generic [ref=e455]: 删除
+              - row "15 你的情绪，皮肤都记得 心理支持 草稿 苏州 🌟希望 社交支持, 脑皮肤轴, 白癜风心理, 情绪支持, 情绪管理 85% 2026/05/18 01:34 编辑 发布 删除" [ref=e456]:
+                - cell "15" [ref=e457]:
+                  - generic [ref=e458]: "15"
+                - cell "你的情绪，皮肤都记得":
+                  - generic: 你的情绪，皮肤都记得
+                - cell "心理支持" [ref=e459]
+                - cell "草稿" [ref=e460]:
+                  - generic [ref=e462]: 草稿
+                - cell "苏州" [ref=e463]
+                - cell "🌟希望" [ref=e464]
+                - cell "社交支持, 脑皮肤轴, 白癜风心理, 情绪支持, 情绪管理" [ref=e465]:
+                  - generic [ref=e466]: 社交支持, 脑皮肤轴, 白癜风心理, 情绪支持, 情绪管理
+                - cell "85%" [ref=e467]
+                - cell "2026/05/18 01:34" [ref=e468]
+                - cell "编辑 发布 删除" [ref=e469]:
+                  - button "编辑" [ref=e470] [cursor=pointer]:
+                    - generic [ref=e471]: 编辑
+                  - button "发布" [ref=e472] [cursor=pointer]:
+                    - generic [ref=e473]: 发布
+                  - button "删除" [ref=e474] [cursor=pointer]:
+                    - generic [ref=e475]: 删除
+              - row "16 你值得被温柔以待 心理支持 草稿 杭州 ❤️温暖 压力管理, 家庭关怀, 心理支持, 白瘴风, 自我关怀 85% 2026/05/18 01:34 编辑 发布 删除" [ref=e476]:
+                - cell "16" [ref=e477]:
+                  - generic [ref=e478]: "16"
+                - cell "你值得被温柔以待":
+                  - generic: 你值得被温柔以待
+                - cell "心理支持" [ref=e479]
+                - cell "草稿" [ref=e480]:
+                  - generic [ref=e482]: 草稿
+                - cell "杭州" [ref=e483]
+                - cell "❤️温暖" [ref=e484]
+                - cell "压力管理, 家庭关怀, 心理支持, 白瘴风, 自我关怀" [ref=e485]:
+                  - generic [ref=e486]: 压力管理, 家庭关怀, 心理支持, 白瘴风, 自我关怀
+                - cell "85%" [ref=e487]
+                - cell "2026/05/18 01:34" [ref=e488]
+                - cell "编辑 发布 删除" [ref=e489]:
+                  - button "编辑" [ref=e490] [cursor=pointer]:
+                    - generic [ref=e491]: 编辑
+                  - button "发布" [ref=e492] [cursor=pointer]:
+                    - generic [ref=e493]: 发布
+                  - button "删除" [ref=e494] [cursor=pointer]:
+                    - generic [ref=e495]: 删除
+              - row "17 你值得被温柔以待 心理支持 草稿 郑州 ❤️温暖 疾病认知, 自信心, 心理健康, 白瘴风, 自我关怀 85% 2026/05/18 01:34 编辑 发布 删除" [ref=e496]:
+                - cell "17" [ref=e497]:
+                  - generic [ref=e498]: "17"
+                - cell "你值得被温柔以待":
+                  - generic: 你值得被温柔以待
+                - cell "心理支持" [ref=e499]
+                - cell "草稿" [ref=e500]:
+                  - generic [ref=e502]: 草稿
+                - cell "郑州" [ref=e503]
+                - cell "❤️温暖" [ref=e504]
+                - cell "疾病认知, 自信心, 心理健康, 白瘴风, 自我关怀" [ref=e505]:
+                  - generic [ref=e506]: 疾病认知, 自信心, 心理健康, 白瘴风, 自我关怀
+                - cell "85%" [ref=e507]
+                - cell "2026/05/18 01:34" [ref=e508]
+                - cell "编辑 发布 删除" [ref=e509]:
+                  - button "编辑" [ref=e510] [cursor=pointer]:
+                    - generic [ref=e511]: 编辑
+                  - button "发布" [ref=e512] [cursor=pointer]:
+                    - generic [ref=e513]: 发布
+                  - button "删除" [ref=e514] [cursor=pointer]:
+                    - generic [ref=e515]: 删除
+              - row "18 白癜风研究揭示免疫机制新进展 最新资讯 草稿 重庆 🔬探索 JAK抑制剂, 免疫失调, 最新动态, 自身免疫, 色素脱失 85% 2026/05/18 01:34 编辑 发布 删除" [ref=e516]:
+                - cell "18" [ref=e517]:
+                  - generic [ref=e518]: "18"
+                - cell "白癜风研究揭示免疫机制新进展":
+                  - generic: 白癜风研究揭示免疫机制新进展
+                - cell "最新资讯" [ref=e519]
+                - cell "草稿" [ref=e520]:
+                  - generic [ref=e522]: 草稿
+                - cell "重庆" [ref=e523]
+                - cell "🔬探索" [ref=e524]
+                - cell "JAK抑制剂, 免疫失调, 最新动态, 自身免疫, 色素脱失" [ref=e525]:
+                  - generic [ref=e526]: JAK抑制剂, 免疫失调, 最新动态, 自身免疫, 色素脱失
+                - cell "85%" [ref=e527]
+                - cell "2026/05/18 01:34" [ref=e528]
+                - cell "编辑 发布 删除" [ref=e529]:
+                  - button "编辑" [ref=e530] [cursor=pointer]:
+                    - generic [ref=e531]: 编辑
+                  - button "发布" [ref=e532] [cursor=pointer]:
+                    - generic [ref=e533]: 发布
+                  - button "删除" [ref=e534] [cursor=pointer]:
+                    - generic [ref=e535]: 删除
+              - row "19 白癜风研究新进展：脑-皮轴、免疫治疗关联与代谢异常 最新资讯 草稿 石家庄 📰关注 免疫检查点抑制剂, 代谢综合征, 最新动态, 白癜风, 基金会活动 85% 2026/05/18 01:34 编辑 发布 删除" [ref=e536]:
+                - cell "19" [ref=e537]:
+                  - generic [ref=e538]: "19"
+                - cell "白癜风研究新进展：脑-皮轴、免疫治疗关联与代谢异常":
+                  - generic: 白癜风研究新进展：脑-皮轴、免疫治疗关联与代谢异常
+                - cell "最新资讯" [ref=e539]
+                - cell "草稿" [ref=e540]:
+                  - generic [ref=e542]: 草稿
+                - cell "石家庄" [ref=e543]
+                - cell "📰关注" [ref=e544]
+                - cell "免疫检查点抑制剂, 代谢综合征, 最新动态, 白癜风, 基金会活动" [ref=e545]:
+                  - generic [ref=e546]: 免疫检查点抑制剂, 代谢综合征, 最新动态, 白癜风, 基金会活动
+                - cell "85%" [ref=e547]
+                - cell "2026/05/18 01:34" [ref=e548]
+                - cell "编辑 发布 删除" [ref=e549]:
+                  - button "编辑" [ref=e550] [cursor=pointer]:
+                    - generic [ref=e551]: 编辑
+                  - button "发布" [ref=e552] [cursor=pointer]:
+                    - generic [ref=e553]: 发布
+                  - button "删除" [ref=e554] [cursor=pointer]:
+                    - generic [ref=e555]: 删除
+              - row "20 今天想分享我的 vitiligo 认知更新 白白日记 草稿 成都 📚记录 皮肤健康, 科学护肤, 每日分享, 自身免疫, 白癜风 85% 2026/05/18 01:35 编辑 发布 删除" [ref=e556]:
+                - cell "20" [ref=e557]:
+                  - generic [ref=e558]: "20"
+                - cell "今天想分享我的 vitiligo 认知更新":
+                  - generic: 今天想分享我的 vitiligo 认知更新
+                - cell "白白日记" [ref=e559]
+                - cell "草稿" [ref=e560]:
+                  - generic [ref=e562]: 草稿
+                - cell "成都" [ref=e563]
+                - cell "📚记录" [ref=e564]
+                - cell "皮肤健康, 科学护肤, 每日分享, 自身免疫, 白癜风" [ref=e565]:
+                  - generic [ref=e566]: 皮肤健康, 科学护肤, 每日分享, 自身免疫, 白癜风
+                - cell "85%" [ref=e567]
+                - cell "2026/05/18 01:35" [ref=e568]
+                - cell "编辑 发布 删除" [ref=e569]:
+                  - button "编辑" [ref=e570] [cursor=pointer]:
+                    - generic [ref=e571]: 编辑
+                  - button "发布" [ref=e572] [cursor=pointer]:
+                    - generic [ref=e573]: 发布
+                  - button "删除" [ref=e574] [cursor=pointer]:
+                    - generic [ref=e575]: 删除
+        - generic [ref=e583]:
+          - img [ref=e586]
+          - generic [ref=e588] [cursor=pointer]: "1"
+          - generic [ref=e589] [cursor=pointer]: "2"
+          - img [ref=e592] [cursor=pointer]
+          - generic [ref=e596] [cursor=pointer]:
+            - generic "20 / page" [ref=e597]:
+              - generic [ref=e598]: 20 / page
+            - img "loading" [ref=e599]:
+              - img [ref=e604]
+          - generic [ref=e606]:
+            - text: Goto
+            - textbox [ref=e610]: "1"

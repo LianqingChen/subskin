@@ -1,9 +1,10 @@
 {
-  "frequency": "daily",
-  "hour": 7,
+  "frequency": "weekly",
+  "hour": 3,
   "minute": 0,
   "enabled": true,
   "max_runtime_hours": 2.0,
   "notify_on_completion": true,
-  "notify_on_failure": true
+  "notify_on_failure": true,
+  "_comment": "每周日凌晨3:00统一爬取并增量向量化。改自原 daily 02:00（每天约消耗 7000+ embedding 调用）。仅对新增内容做 embedding，已入库的 source_url 直接跳过。"
 }

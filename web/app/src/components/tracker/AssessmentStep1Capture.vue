@@ -50,24 +50,54 @@ function openCamera() {
 }
 function onCameraCapture(f: File, m?: { hasReferenceCard?: boolean }) { emit('cameraCapture', f, m); showCamera.value = false }
 
-// Auto-scroll to the "开始AI分析" button (not just the card top) when image
-// is uploaded or body part selected — ensures the button is always visible
-// without requiring the user to manually scroll down.
+// Auto-scroll to the "开始AI分析" button when the photo is uploaded so the
+// user can see and tap it without manually scrolling. The tricky part is
+// timing: imagePreview is a base64 data URL set synchronously by FileReader,
+// but the <img> still needs to decode it before it occupies its final height.
+// If we measure layout too early (e.g. in the first nextTick), the <img> is
+// 0px tall and scrollTo lands above the button — leaving it off-screen.
+//
+// Strategy: pre-decode the data URL via an off-DOM Image, then wait two
+// animation frames + a nextTick so the v-if'd submit button is mounted and
+// the photo block has reached its final height before we measure & scroll.
+async function scrollToSubmitButton() {
+  // 1. Wait for the preview image to actually decode, so its layout height
+  //    is stable before we measure the submit button position.
+  if (props.imagePreview) {
+    try {
+      const probe = new Image()
+      probe.src = props.imagePreview
+      await probe.decode()
+    } catch {
+      // decode() can reject on some browsers/SVGs; fall through — we still
+      // wait for animation frames below as a timing fallback.
+    }
+  }
+  // 2. Two RAFs + nextTick guarantee the v-if'd submit button is mounted and
+  //    the browser has finished layout/paint with the decoded image.
+  await new Promise<void>((r) => requestAnimationFrame(() => r()))
+  await new Promise<void>((r) => requestAnimationFrame(() => r()))
+  await nextTick()
+
+  // 3. Prefer the submit button; fall back to the action card top.
+  const target = submitBtnRef.value || actionCardRef.value
+  if (!target) return
+  const mainEl = target.closest('main')
+  if (!mainEl) return
+  const scrollTarget =
+    target.getBoundingClientRect().top -
+    mainEl.getBoundingClientRect().top +
+    mainEl.scrollTop
+  mainEl.scrollTo({ top: Math.max(0, scrollTarget - 20), behavior: 'smooth' })
+}
+
 watch(
   () => [props.imagePreview, props.selectedBodySite],
   () => {
+    // Only auto-scroll once we have both a photo and a body part — that's
+    // when the "开始AI分析" button appears and needs to be revealed.
     if (props.imagePreview && props.selectedBodySite) {
-      nextTick(() => {
-        // Prioritize scrolling to the submit button itself; fall back to card.
-        const target = submitBtnRef.value || actionCardRef.value
-        if (target) {
-          const mainEl = target.closest('main')
-          if (mainEl) {
-            const scrollTarget = target.getBoundingClientRect().top - mainEl.getBoundingClientRect().top + mainEl.scrollTop
-            mainEl.scrollTo({ top: scrollTarget - 20, behavior: 'smooth' })
-          }
-        }
-      })
+      void scrollToSubmitButton()
     }
   },
 )

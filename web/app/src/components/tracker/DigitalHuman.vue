@@ -286,7 +286,7 @@ onUnmounted(() => {
                 :y="part.labelY"
                 :text-anchor="part.labelX < 700 ? 'end' : 'start'"
                 :fill="activePart === part.bodySite ? '#ffffff' : '#26A69A'"
-                font-size="72"
+                font-size="52"
                 font-family="system-ui, -apple-system, sans-serif"
                 font-weight="600"
                 class="select-none part-label cursor-pointer"

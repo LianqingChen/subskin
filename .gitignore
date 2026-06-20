@@ -51,14 +51,25 @@ Thumbs.db
 logs/
 
 # Data files
+# NOTE: data/ holds scraped papers, generated briefings, and USER UPLOADED
+# images (incl. medical photos — L3 private data). Only keep .gitkeep markers;
+# never commit actual data content. See AGENTS.md "User Privacy & Data Security".
 data/raw/*.json
 data/processed/*.json
 data/exports/*
 data/weekly/*
+data/fulltext/*
+data/briefings/*
+data/uploads/*
+data/vasi_diagnostic/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/exports/.gitkeep
 !data/weekly/.gitkeep
+!data/fulltext/.gitkeep
+!data/briefings/.gitkeep
+!data/uploads/.gitkeep
+!data/vasi_diagnostic/.gitkeep
 
 # Environment variables (strict: all .env files are excluded)
 .env
@@ -135,6 +146,7 @@ site/
 .claude/
 .sisyphus/
 .playwright-mcp/
+.superpowers/
 
 # Hermes agent runtime state
 .hermes/
