@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
+from sqlalchemy.exc import IntegrityError
 
 from web.backend.database.models import (
     CommunityCategory,
@@ -41,6 +42,24 @@ from web.backend.models.community import (
 class CommunityService:
     def __init__(self, db: Session):
         self.db = db
+
+    @staticmethod
+    def can_access_post(post: Optional[Post], user_id: Optional[int]) -> bool:
+        """Whether ``user_id`` may view/comment/like ``post``.
+
+        Owners always see their own posts (including private and blocked).
+        Others require the post to be public AND not blocked by moderation.
+        Returns False for missing posts.
+        """
+        if post is None:
+            return False
+        if user_id is not None and post.user_id == user_id:
+            return True
+        if bool(post.is_private):
+            return False
+        if getattr(post, "moderation_status", "normal") == "blocked":
+            return False
+        return True
 
     def get_categories(self) -> List[CommunityCategory]:
         return self.db.query(CommunityCategory).order_by(CommunityCategory.order).all()
@@ -149,7 +168,11 @@ class CommunityService:
                 return 0, [], None
             query = query.filter(Post.user_id == user_id, Post.is_private.is_(True))
         else:
+            # Public feed: exclude private posts and moderation-blocked posts.
+            # Owners viewing their own blocked posts is handled via the
+            # is_private=True branch above; the public feed never shows blocked.
             query = query.filter(Post.is_private.is_(False))
+            query = query.filter(Post.moderation_status != "blocked")
 
         if category_id:
             query = query.filter_by(category_id=category_id)
@@ -200,7 +223,7 @@ class CommunityService:
         post = self.db.query(Post).filter_by(id=post_id).first()
         if not post:
             return None
-        if post.is_private and post.user_id != user_id:
+        if not self.can_access_post(post, user_id):
             return None
         return post
 
@@ -322,6 +345,8 @@ class CommunityService:
         post = self.db.query(Post).filter_by(id=post_id).first()
         if not post:
             raise ValueError("帖子不存在")
+        if not self.can_access_post(post, user_id):
+            raise PermissionError("无权点赞该帖子")
 
         existing_like = (
             self.db.query(PostLike).filter_by(post_id=post_id, user_id=user_id).first()
@@ -335,7 +360,14 @@ class CommunityService:
             self.db.add(like)
             liked = True
 
-        self.db.commit()
+        try:
+            self.db.commit()
+        except IntegrityError:
+            # Race: another concurrent request inserted the same (post_id,
+            # user_id) between our check and commit. The unique constraint
+            # rejected the duplicate. Treat as already-liked and recompute.
+            self.db.rollback()
+            liked = True
         like_count = (
             self.db.query(func.count(PostLike.id)).filter_by(post_id=post_id).scalar()
         )
@@ -356,6 +388,8 @@ class CommunityService:
         post = self.db.query(Post).filter_by(id=post_id).first()
         if not post:
             raise ValueError("帖子不存在")
+        if not self.can_access_post(post, user_id):
+            raise PermissionError("无权评论该帖子")
 
         comment = PostComment(post_id=post_id, user_id=user_id, content=content)
         self.db.add(comment)
@@ -364,8 +398,12 @@ class CommunityService:
         return comment
 
     def get_post_comments(
-        self, post_id: int, limit: int = 50, offset: int = 0
+        self, post_id: int, limit: int = 50, offset: int = 0,
+        user_id: Optional[int] = None,
     ) -> Tuple[int, List[PostComment]]:
+        post = self.db.query(Post).filter_by(id=post_id).first()
+        if not post or not self.can_access_post(post, user_id):
+            return 0, []
         query = self.db.query(PostComment).filter_by(post_id=post_id)
         total = query.count()
         comments = (
@@ -380,15 +418,52 @@ class CommunityService:
             .scalar()
         )
 
+    # ── Upload validation constants ──
+    # The community upload endpoints previously accepted any Content-Type with
+    # no size or magic-byte check — a DoS vector (huge uploads) and a polyglot
+    # risk (malicious files served with a .jpg extension). These limits and
+    # signatures are enforced before the file is written to disk.
+    MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024   # 10 MB
+    MAX_FILE_UPLOAD_BYTES = 50 * 1024 * 1024    # 50 MB (audio/files)
+    ALLOWED_IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+    ALLOWED_FILE_EXTS = {".mp3", ".wav", ".m4a", ".aac", ".pdf", ".txt", ".doc", ".docx"}
+    _IMAGE_MAGIC = (
+        (b"\xff\xd8\xff", "image/jpeg"),
+        (b"\x89PNG\r\n\x1a\n", "image/png"),
+        (b"RIFF", "image/webp"),  # RIFF....WEBP
+        (b"GIF87a", "image/gif"),
+        (b"GIF89a", "image/gif"),
+    )
+
+    @classmethod
+    def _check_image_magic(cls, content: bytes) -> bool:
+        if not content:
+            return False
+        for sig, _kind in cls._IMAGE_MAGIC:
+            if content.startswith(sig):
+                if sig == b"RIFF":
+                    return len(content) >= 12 and content[8:12] == b"WEBP"
+                return True
+        return False
+
     def upload_image(self, user_id: int, filename: str, content: bytes) -> str:
         import hashlib
         from pathlib import Path
+
+        if len(content) > self.MAX_IMAGE_UPLOAD_BYTES:
+            raise ValueError(
+                f"图片过大，最大支持 {self.MAX_IMAGE_UPLOAD_BYTES // (1024 * 1024)}MB"
+            )
+        ext = (Path(filename).suffix or "").lower()
+        if ext not in self.ALLOWED_IMAGE_EXTS:
+            raise ValueError(f"不支持的图片格式，支持: {', '.join(sorted(self.ALLOWED_IMAGE_EXTS))}")
+        if not self._check_image_magic(content):
+            raise ValueError("图片内容与声明格式不符（magic byte 校验失败）")
 
         upload_dir = Path("data/uploads/community")
         upload_dir.mkdir(parents=True, exist_ok=True)
 
         file_hash = hashlib.sha256(content).hexdigest()[:16]
-        ext = Path(filename).suffix
         new_filename = f"{user_id}_{file_hash}{ext}"
         file_path = upload_dir / new_filename
 
@@ -403,11 +478,18 @@ class CommunityService:
         import hashlib
         from pathlib import Path
 
+        if len(content) > self.MAX_FILE_UPLOAD_BYTES:
+            raise ValueError(
+                f"文件过大，最大支持 {self.MAX_FILE_UPLOAD_BYTES // (1024 * 1024)}MB"
+            )
+        ext = (Path(filename).suffix or "").lower()
+        if ext not in self.ALLOWED_FILE_EXTS:
+            raise ValueError(f"不支持的文件格式，支持: {', '.join(sorted(self.ALLOWED_FILE_EXTS))}")
+
         upload_dir = Path(f"data/uploads/{subdir}")
         upload_dir.mkdir(parents=True, exist_ok=True)
 
         file_hash = hashlib.sha256(content).hexdigest()[:16]
-        ext = Path(filename).suffix
         new_filename = f"{user_id}_{file_hash}{ext}"
         file_path = upload_dir / new_filename
 
@@ -502,6 +584,15 @@ class CommunityService:
             raise ValueError("收藏夹不存在")
         if user_id and collection.user_id != user_id:
             raise ValueError("无权操作此收藏夹")
+        # Verify the post is accessible to this user before allowing it to be
+        # bookmarked. Without this, a user could add another user's private post
+        # to their own collection, and the private post's content would then
+        # leak via the collection's item listing.
+        post = self.db.query(Post).filter_by(id=post_id).first()
+        if not post:
+            raise ValueError("帖子不存在")
+        if not self.can_access_post(post, user_id):
+            raise PermissionError("无权收藏该帖子")
         existing = (
             self.db.query(CollectionItem)
             .filter_by(collection_id=collection_id, post_id=post_id)
@@ -623,8 +714,12 @@ class CommunityService:
         return version
 
     def get_post_versions(
-        self, post_id: int, limit: int = 20, offset: int = 0
+        self, post_id: int, limit: int = 20, offset: int = 0,
+        user_id: Optional[int] = None,
     ) -> Tuple[int, List[PostVersion]]:
+        post = self.db.query(Post).filter_by(id=post_id).first()
+        if not post or not self.can_access_post(post, user_id):
+            return 0, []
         query = self.db.query(PostVersion).filter_by(post_id=post_id)
         total = query.count()
         versions = (
@@ -810,3 +905,182 @@ class CommunityService:
             created_at=post.created_at,
             updated_at=post.updated_at,
         )
+
+    def posts_to_models(
+        self,
+        posts: List[Post],
+        user_id: Optional[int],
+        user_lat: Optional[float] = None,
+        user_lng: Optional[float] = None,
+    ) -> List[PostModel]:
+        """Batch-convert a list of Posts to PostModel with O(1) round-trips.
+
+        ``post_to_model`` issues 8–10 queries per post (like/comment counts,
+        is_liked/is_bookmarked, images, audios, attachments, tags, follow,
+        category count) → 160+ round-trips for a 20-post page. This method
+        pre-fetches every relation in a handful of bulk IN/group-by queries and
+        assembles the models in memory, collapsing the N+1 to ~8 queries total.
+        """
+        if not posts:
+            return []
+
+        post_ids = [p.id for p in posts]
+        author_ids = list({p.user_id for p in posts if p.user_id is not None})
+        category_ids = list({p.category_id for p in posts if p.category_id is not None})
+
+        # ── Bulk aggregates ──
+        like_counts = {
+            r[0]: r[1]
+            for r in self.db.query(PostLike.post_id, func.count(PostLike.id))
+            .filter(PostLike.post_id.in_(post_ids))
+            .group_by(PostLike.post_id).all()
+        }
+        comment_counts = {
+            r[0]: r[1]
+            for r in self.db.query(PostComment.post_id, func.count(PostComment.id))
+            .filter(PostComment.post_id.in_(post_ids))
+            .group_by(PostComment.post_id).all()
+        }
+        liked_post_ids = set()
+        if user_id:
+            liked_post_ids = {
+                r[0] for r in self.db.query(PostLike.post_id)
+                .filter(PostLike.post_id.in_(post_ids), PostLike.user_id == user_id).all()
+            }
+        bookmarked_post_ids = set()
+        if user_id:
+            bookmarked_post_ids = {
+                r[0] for r in self.db.query(Bookmark.post_id)
+                .filter(Bookmark.post_id.in_(post_ids), Bookmark.user_id == user_id).all()
+            }
+        followed_author_ids = set()
+        if user_id and author_ids:
+            followed_author_ids = {
+                r[0] for r in self.db.query(UserFollow.followee_id)
+                .filter(UserFollow.followee_id.in_(author_ids), UserFollow.follower_id == user_id).all()
+            }
+
+        # ── Bulk relations ──
+        all_images = (
+            self.db.query(PostImage)
+            .filter(PostImage.post_id.in_(post_ids))
+            .order_by(PostImage.post_id, PostImage.order).all()
+        )
+        images_by_post: dict = {}
+        for img in all_images:
+            images_by_post.setdefault(img.post_id, []).append(img)
+
+        all_audios = (
+            self.db.query(PostAudio)
+            .filter(PostAudio.post_id.in_(post_ids))
+            .order_by(PostAudio.post_id, PostAudio.order).all()
+        )
+        audios_by_post: dict = {}
+        for a in all_audios:
+            audios_by_post.setdefault(a.post_id, []).append(a)
+
+        all_attachments = (
+            self.db.query(PostAttachment)
+            .filter(PostAttachment.post_id.in_(post_ids))
+            .order_by(PostAttachment.post_id, PostAttachment.order).all()
+        )
+        attachments_by_post: dict = {}
+        for a in all_attachments:
+            attachments_by_post.setdefault(a.post_id, []).append(a)
+
+        all_post_tags = (
+            self.db.query(PostTag).filter(PostTag.post_id.in_(post_ids)).all()
+        )
+        tag_ids = list({pt.tag_id for pt in all_post_tags})
+        tags_by_id = {
+            t.id: t for t in (self.db.query(Tag).filter(Tag.id.in_(tag_ids)).all() if tag_ids else [])
+        }
+        tags_by_post: dict = {}
+        for pt in all_post_tags:
+            t = tags_by_id.get(pt.tag_id)
+            if t is not None:
+                tags_by_post.setdefault(pt.post_id, []).append(t)
+
+        # Category post counts (batched) — replaces per-category count query.
+        cat_counts = {
+            r[0]: r[1]
+            for r in self.db.query(Post.category_id, func.count(Post.id))
+            .filter(Post.category_id.in_(category_ids))
+            .group_by(Post.category_id).all()
+        } if category_ids else {}
+
+        models: List[PostModel] = []
+        for post in posts:
+            like_count = like_counts.get(post.id, 0)
+            comment_count = comment_counts.get(post.id, 0)
+            is_liked = post.id in liked_post_ids
+            is_bookmarked = post.id in bookmarked_post_ids
+            images = images_by_post.get(post.id, [])
+            audios = audios_by_post.get(post.id, [])
+            attachments = attachments_by_post.get(post.id, [])
+            tags = tags_by_post.get(post.id, [])
+
+            author = post.author
+            author_model = PostAuthor(
+                id=author.id,
+                username=author.username,
+                avatar=author.avatar_url,
+                is_doctor=getattr(author, "is_doctor", False),
+                is_verified=getattr(author, "real_name_verified", False),
+                is_followed=(author.id in followed_author_ids) if user_id else False,
+            ) if author else None
+
+            category_model = None
+            if post.category is not None:
+                category_model = CategoryModel(
+                    id=post.category.id,
+                    name=post.category.name,
+                    description=post.category.description,
+                    icon=post.category.icon,
+                    post_count=cat_counts.get(post.category.id, 0),
+                )
+
+            models.append(PostModel(
+                id=post.id,
+                title=post.title,
+                content=post.content,
+                content_json=post.content_json,
+                post_type=getattr(post, "post_type", None),
+                video_url=getattr(post, "video_url", None),
+                video_thumbnail=getattr(post, "video_thumbnail", None),
+                content_preview=getattr(post, "content_preview", None),
+                read_count=getattr(post, "read_count", 0),
+                category_id=post.category_id,
+                is_private=post.is_private,
+                draft_expires_at=getattr(post, "draft_expires_at", None),
+                diary_date=post.diary_date.isoformat() if post.diary_date else None,
+                mood=post.mood,
+                is_anonymous=False,
+                city=post.city,
+                latitude=getattr(post, "latitude", None),
+                longitude=getattr(post, "longitude", None),
+                distance=self.calc_distance(user_lat, user_lng, getattr(post, "latitude", None), getattr(post, "longitude", None)),
+                author=author_model,
+                category=category_model,
+                images=[
+                    PostImageModel(id=img.id, image_url=img.image_url, order=img.order)
+                    for img in images
+                ],
+                audios=[
+                    PostAudioModel(id=a.id, audio_url=a.audio_url, duration=a.duration, file_size=a.file_size, order=a.order)
+                    for a in audios
+                ],
+                attachments=[
+                    PostAttachmentModel(id=a.id, file_url=a.file_url, file_name=a.file_name, file_size=a.file_size, file_type=a.file_type, order=a.order)
+                    for a in attachments
+                ],
+                tags=[TagModel(id=t.id, name=t.name, usage_count=t.usage_count) for t in tags],
+                like_count=like_count,
+                comment_count=comment_count,
+                is_liked=is_liked,
+                is_bookmarked=is_bookmarked,
+                moderation_status=getattr(post, "moderation_status", "normal"),
+                created_at=post.created_at,
+                updated_at=post.updated_at,
+            ))
+        return models

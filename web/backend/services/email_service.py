@@ -16,6 +16,18 @@ from web.backend.database.models import EmailVerificationCode
 logger = logging.getLogger(__name__)
 
 
+def _mask_email(email: str) -> str:
+    """Mask an email for logging: li***@example.com."""
+    if not email or "@" not in email:
+        return "***"
+    local, domain = email.split("@", 1)
+    if len(local) <= 2:
+        masked_local = local[0] + "***" if local else "***"
+    else:
+        masked_local = local[:2] + "***"
+    return f"{masked_local}@{domain}"
+
+
 def _utcnow():
     return datetime.now(timezone.utc)
 
@@ -104,12 +116,12 @@ def verify_email_code(
 
     if record:
         if record.locked:
-            logger.warning("邮箱验证码已锁定，拒绝验证: email=%s", email)
+            logger.warning("邮箱验证码已锁定，拒绝验证: email=%s", _mask_email(email))
             return False
 
         record.used = True
         db.commit()
-        logger.info("邮箱验证码验证成功: email=%s", email)
+        logger.info("邮箱验证码验证成功: email=%s", _mask_email(email))
         return True
 
     active_code = (
@@ -127,7 +139,7 @@ def verify_email_code(
             active_code.locked = True
             logger.warning(
                 "邮箱验证码已锁定: email=%s, attempts=%d",
-                email,
+                _mask_email(email),
                 active_code.attempt_count,
             )
         db.commit()
@@ -139,7 +151,7 @@ def send_email_code(to_email: str, code: str, purpose: str = "login") -> bool:
     email_provider = os.getenv("EMAIL_PROVIDER", "log")
 
     if email_provider == "log":
-        logger.info("[EMAIL] %s 的验证码是: %s (用途: %s)", to_email, code, purpose)
+        logger.info("[EMAIL] %s 验证码(开发模式): %s (用途: %s)", _mask_email(to_email), code, purpose)
         return True
 
     if email_provider == "smtp":

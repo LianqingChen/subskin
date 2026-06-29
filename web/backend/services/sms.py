@@ -114,13 +114,13 @@ def _verify_sms_code_local(db: Session, phone: str, code: str) -> bool:
 
     if sms_code:
         if sms_code.locked:
-            logger.warning("SMS验证码已锁定，拒绝验证: phone=%s", phone)
+            logger.warning("SMS验证码已锁定，拒绝验证: phone=%s", _mask_phone(phone))
             return False
 
         sms_code.used = True
         db.commit()
         logger.info(
-            "SMS验证码验证成功: phone=%s, attempts=%d", phone, sms_code.attempt_count
+            "SMS验证码验证成功: phone=%s, attempts=%d", _mask_phone(phone), sms_code.attempt_count
         )
         return True
 
@@ -138,7 +138,7 @@ def _verify_sms_code_local(db: Session, phone: str, code: str) -> bool:
             active_code.locked = True
             logger.warning(
                 "SMS验证码已锁定: phone=%s, attempts=%d",
-                phone,
+                _mask_phone(phone),
                 active_code.attempt_count,
             )
         db.commit()
@@ -183,6 +183,13 @@ def _increment_local_attempt(db: Session, phone: str) -> None:
         db.commit()
 
 
+def _mask_phone(phone: str) -> str:
+    """Mask a phone number for logging: 138****1234."""
+    if not phone or len(phone) < 7:
+        return "***"
+    return f"{phone[:3]}****{phone[-4:]}"
+
+
 def send_sms(phone: str, code: str) -> tuple[bool, str]:
     """发送短信验证码
 
@@ -190,9 +197,14 @@ def send_sms(phone: str, code: str) -> tuple[bool, str]:
         (success, code_or_empty): 成功时返回验证码，失败时返回空字符串。
         aliyun_auth 模式下由阿里云管理验证码生命周期，返回本地生成的验证码（用于日志）。
     """
-    logger.info("[SMS] 手机号 %s 的验证码是: %s", phone, code)
-
+    # L4 OTP + L3 phone must never appear in production logs. Only the dev
+    # ``log`` provider records the code (and even then, the phone is masked).
     sms_provider = os.getenv("SMS_PROVIDER", "log")
+    if sms_provider == "log":
+        logger.info("[SMS] %s 验证码(开发模式): %s", _mask_phone(phone), code)
+    else:
+        logger.info("[SMS] 验证码已发送至 %s", _mask_phone(phone))
+
     if sms_provider == "log":
         return True, code
 
@@ -266,7 +278,7 @@ def _send_sms_aliyun_auth(phone: str, code: str) -> tuple[bool, str]:
         response = client.send_sms_verify_code(request)
 
         if response.body.code == "OK" and response.body.success:
-            logger.info("阿里云短信认证服务发送成功: phone=%s", phone)
+            logger.info("阿里云短信认证服务发送成功: phone=%s", _mask_phone(phone))
             return True, code
         else:
             logger.error(
@@ -326,7 +338,7 @@ def _send_sms_aliyun(phone: str, code: str) -> tuple[bool, str]:
         response = client.send_sms(request)
 
         if response.body.code == "OK":
-            logger.info("阿里云短信发送成功: %s", phone)
+            logger.info("阿里云短信发送成功: %s", _mask_phone(phone))
             return True, code
         else:
             logger.error(
@@ -378,7 +390,7 @@ def _send_sms_tencent(phone: str, code: str) -> tuple[bool, str]:
 
         status = response.SendStatusSet[0]
         if status.Code == "Ok":
-            logger.info("腾讯云短信发送成功: %s", phone)
+            logger.info("腾讯云短信发送成功: %s", _mask_phone(phone))
             return True, code
         else:
             logger.error("腾讯云短信发送失败: %s - %s", status.Code, status.Message)

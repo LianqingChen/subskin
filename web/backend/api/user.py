@@ -283,19 +283,15 @@ async def update_users_me(
             daemon=True,
         ).start()
 
-    if "phone" in updates:
-        phone = _normalize_optional_string(updates["phone"])
-        if phone and not re.match(r"^1[3-9]\d{9}$", phone):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="请输入有效的手机号"
-            )
-        _ensure_unique_user_field(db, current_user, "phone", phone, "手机号已被使用")
-        setattr(current_user, "phone", phone)
-
-    if "email" in updates:
-        email = _normalize_optional_string(updates["email"])
-        _ensure_unique_user_field(db, current_user, "email", email, "邮箱已被使用")
-        setattr(current_user, "email", email)
+    # Phone and email are L3 credentials and MUST NOT be changed via this
+    # endpoint — they require OTP verification through the dedicated bind
+    # endpoints (``/api/user/bind-phone``, ``/api/user/bind-email``) so that a
+    # compromised session cannot silently swap the recovery contact.
+    if "phone" in updates or "email" in updates:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="手机号/邮箱修改请使用「换绑手机号」「换绑邮箱」流程（需验证码校验）",
+        )
 
     if "patient_relation" in updates:
         relation = _normalize_optional_string(updates["patient_relation"])
@@ -461,13 +457,16 @@ def register_by_phone(data: UserCreateByPhone, db: Session = Depends(get_db)):
             detail="该手机号已注册，请直接登录",
         )
 
+    # Admin status is never auto-granted at registration time. Provision admins
+    # explicitly via create_admin.py / DB migration. ADMIN_PHONES env is only a
+    # read-only secondary gate on already-admin sessions (see services/admin_auth.py).
     user = DBUser(
         uid=generate_uid(data.phone, db),
         username=data.phone,
         phone=data.phone,
         hashed_password=get_password_hash(data.password) if data.password else None,
         is_active=True,
-        is_admin=data.phone in set(os.getenv("ADMIN_PHONES", "").split(",")) if os.getenv("ADMIN_PHONES") else False,
+        is_admin=False,
     )
     db.add(user)
     db.commit()
@@ -752,6 +751,14 @@ def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
     _upsert_password_credential(db, user, data.new_password)
     _sync_legacy_user_fields(db, user)
     db.commit()
+    # Revoke all existing refresh tokens so active sessions on other devices
+    # are forced to re-authenticate with the new password. (Access tokens are
+    # short-lived and will expire shortly; refresh tokens are the long-lived
+    # credential that must be invalidated here.)
+    try:
+        revoke_all_user_tokens(cast(int, cast(object, user.id)), db)
+    except Exception:
+        db.rollback()
     return {"detail": "密码重置成功"}
 
 
@@ -950,6 +957,19 @@ async def admin_list_users(
     total = query.count()
     users = query.order_by(DBUser.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
 
+    def _mask_phone(p: Optional[str]) -> Optional[str]:
+        if not p or len(p) < 7:
+            return p
+        return f"{p[:3]}****{p[-4:]}"
+
+    def _mask_email(e: Optional[str]) -> Optional[str]:
+        if not e or "@" not in e:
+            return e
+        local, domain = e.split("@", 1)
+        if len(local) <= 2:
+            return f"{local[0:1]}***@{domain}" if local else e
+        return f"{local[:2]}***@{domain}"
+
     return {
         "total": total,
         "page": page,
@@ -959,8 +979,10 @@ async def admin_list_users(
                 "id": u.id,
                 "uid": u.uid,
                 "username": u.username,
-                "email": u.email,
-                "phone": u.phone,
+                # L3 PII: mask in the bulk list. Use the reveal endpoint to
+                # view full contact info (audit-logged).
+                "email": _mask_email(u.email),
+                "phone": _mask_phone(u.phone),
                 "avatar_url": u.avatar_url,
                 "is_admin": u.is_admin,
                 "is_active": getattr(u, "is_active", True),
@@ -973,6 +995,38 @@ async def admin_list_users(
             }
             for u in users
         ],
+    }
+
+
+@admin_router.get("/users/{user_id}/contact")
+async def admin_reveal_user_contact(
+    user_id: int,
+    current_user: DBUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Reveal full phone/email for a user. Audit-logged to deter abuse."""
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="需要管理员权限")
+    target = db.query(DBUser).filter(DBUser.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    try:
+        AuditLogService.log(
+            db=db,
+            action="admin.reveal_contact",
+            actor_id=current_user.id,
+            target_type="user",
+            target_id=target.id,
+            details={"reason": "admin_contact_reveal"},
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+    return {
+        "id": target.id,
+        "username": target.username,
+        "email": target.email,
+        "phone": target.phone,
     }
 
 

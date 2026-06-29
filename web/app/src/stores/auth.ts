@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { authApi, type LoginResponse } from '@/api/auth'
 import { trackEvent } from '@/composables/useTracking'
+import { ensureFileToken, clearFileToken } from '@/utils/file-url'
 import type { User } from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -41,7 +42,22 @@ watch(showLoginModal, (val: boolean) => {
       } catch {
         setUser(null)
       }
+      // Refresh the short-lived file token in the background; file-url.ts
+      // falls back to the access token until this resolves.
+      void ensureFileToken().catch(() => {})
+      _startFileTokenRefresher()
     }
+  }
+
+  // Refresh the file token before it expires so long sessions keep using the
+  // scoped token instead of falling back to the long-lived access token.
+  let _fileTokenTimer: ReturnType<typeof setInterval> | null = null
+  function _startFileTokenRefresher() {
+    if (_fileTokenTimer || typeof window === 'undefined') return
+    _fileTokenTimer = setInterval(() => {
+      if (!token.value) return
+      void ensureFileToken().catch(() => {})
+    }, 4 * 60 * 1000) // refresh every 4 min (token TTL is 5 min)
   }
 
   function _saveTokens(loginData: LoginResponse) {
@@ -56,6 +72,10 @@ watch(showLoginModal, (val: boolean) => {
   async function _completeLogin(loginData: LoginResponse) {
     _saveTokens(loginData)
     await fetchUser()
+    // Prefetch a short-lived file token so file URLs use it instead of the
+    // long-lived access token. Errors are non-fatal; file-url.ts falls back.
+    void ensureFileToken().catch(() => {})
+    _startFileTokenRefresher()
   }
 
   async function loginByPhone(phone: string, code: string) {
@@ -187,12 +207,23 @@ watch(showLoginModal, (val: boolean) => {
     }
   }
 
-  function logout() {
+  async function logout() {
+    // Revoke refresh tokens server-side first (the request needs the auth
+    // header, which the apiClient reads from localStorage), then clear local
+    // state. Best-effort: a failed network call does not block local logout.
+    if (token.value) {
+      try {
+        await authApi.logout()
+      } catch {
+        // ignore — proceed with local logout
+      }
+    }
     token.value = null
     refreshToken.value = null
     setUser(null)
     localStorage.removeItem('subskin_token')
     localStorage.removeItem('subskin_refresh_token')
+    clearFileToken()
   }
 
   return {

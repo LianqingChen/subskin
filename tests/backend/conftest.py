@@ -2,6 +2,17 @@
 Shared fixtures for backend service tests
 """
 
+# Set test environment defaults BEFORE any backend module is imported.
+# web.backend.services.auth reads SECRET_KEY via os.environ["SECRET_KEY"] (no
+# default) at import time, so without these defaults importing auth-dependent
+# test modules raises KeyError. Tests that need different values can still
+# override via the set_test_env_vars fixture / monkeypatch.
+import os as _os
+
+_os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing")
+_os.environ.setdefault("ALGORITHM", "HS256")
+_os.environ.setdefault("SMS_PROVIDER", "log")
+
 import json
 
 from typing import Generator

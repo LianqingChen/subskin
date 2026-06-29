@@ -6,10 +6,13 @@ SubSkin Community Backend
 """
 
 import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 from dotenv import load_dotenv
 
 env_path = Path(__file__).resolve().parent.parent / ".env"
@@ -154,7 +157,10 @@ def ensure_vasi_assessment_columns() -> None:
         from web.backend.models.vasi import ensure_vasi_columns
         ensure_vasi_columns()
     except Exception:
-        pass
+        # Previously swallowed silently — a missing table/column then caused
+        # downstream API crashes or silent data loss with no log trail. Log at
+        # ERROR so operators can diagnose missing-schema issues from logs.
+        logger.exception("ensure_vasi_columns failed — VASI schema may be incomplete")
 
 
 ensure_vasi_assessment_columns()
@@ -165,7 +171,7 @@ def ensure_image_label_tables_on_startup() -> None:
         from web.backend.models.image_label import ensure_image_label_columns
         ensure_image_label_columns()
     except Exception:
-        pass
+        logger.exception("ensure_image_label_columns failed — image_label schema may be incomplete")
 
 
 ensure_image_label_tables_on_startup()
@@ -176,7 +182,7 @@ def ensure_feedback_tables_on_startup() -> None:
         from web.backend.models.vasi import ensure_feedback_columns
         ensure_feedback_columns()
     except Exception:
-        pass
+        logger.exception("ensure_feedback_columns failed — feedback schema may be incomplete")
 
 
 ensure_feedback_tables_on_startup()

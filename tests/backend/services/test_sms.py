@@ -4,7 +4,7 @@ Tests for SMS service
 
 import os
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -13,7 +13,6 @@ from web.backend.services.sms import (
     create_sms_code,
     verify_sms_code,
     send_sms,
-    _verify_sms_code_aliyun_auth,
     _mark_local_code_used,
     _increment_local_attempt,
 )
@@ -192,141 +191,36 @@ def test_send_sms_unknown_provider(monkeypatch):
     assert code == ""
 
 
-# ── aliyun_auth: _verify_sms_code_aliyun_auth ──
+# ── aliyun_auth provider: verification is provider-agnostic (always local) ──
+# The real verify_sms_code always uses local DB verification regardless of
+# SMS_PROVIDER — aliyun_auth only changes the *send* path (verification codes
+# are locally generated and stored). These tests confirm that provider selection
+# does not change the verification behavior.
 
 
-def test_verify_sms_code_aliyun_auth_success(db_session, test_sms_code):
-    mock_response = MagicMock()
-    mock_response.body.code = "OK"
-    mock_response.body.success = True
-    mock_response.body.model.verify_result = "PASS"
-
+def test_verify_sms_code_aliyun_auth_uses_local_verification(db_session, test_sms_code):
+    """aliyun_auth provider must still verify against the local DB."""
     with patch.dict(os.environ, {"SMS_PROVIDER": "aliyun_auth"}):
-        with patch(
-            "web.backend.services.sms._verify_sms_code_aliyun_auth",
-            return_value=True,
-        ):
-            result = verify_sms_code(
-                db_session, test_sms_code.phone, test_sms_code.code
-            )
+        result = verify_sms_code(
+            db_session, test_sms_code.phone, test_sms_code.code
+        )
     assert result is True
+    db_session.refresh(test_sms_code)
+    assert test_sms_code.used is True
 
 
-def test_verify_sms_code_aliyun_auth_routes_to_cloud(db_session, test_sms_code):
+def test_verify_sms_code_aliyun_auth_rejects_wrong_code(db_session, test_sms_code):
     with patch.dict(os.environ, {"SMS_PROVIDER": "aliyun_auth"}):
-        with patch(
-            "web.backend.services.sms._verify_sms_code_aliyun_auth",
-            return_value=True,
-        ) as mock_verify:
-            result = verify_sms_code(
-                db_session, test_sms_code.phone, test_sms_code.code
-            )
-            mock_verify.assert_called_once_with(
-                db_session, test_sms_code.phone, test_sms_code.code
-            )
-    assert result is True
-
-
-def test_verify_sms_code_aliyun_auth_failure(db_session, test_sms_code):
-    with patch.dict(os.environ, {"SMS_PROVIDER": "aliyun_auth"}):
-        with patch(
-            "web.backend.services.sms._verify_sms_code_aliyun_auth",
-            return_value=False,
-        ):
-            result = verify_sms_code(
-                db_session, test_sms_code.phone, test_sms_code.code
-            )
+        result = verify_sms_code(
+            db_session, test_sms_code.phone, "wrong_code"
+        )
     assert result is False
 
 
-def test_verify_sms_code_aliyun_auth_api_pass(db_session, test_sms_code):
-    mock_response_body = MagicMock()
-    mock_response_body.code = "OK"
-    mock_response_body.success = True
-    mock_response_body.model.verify_result = "PASS"
-
-    mock_response = MagicMock()
-    mock_response.body = mock_response_body
-
-    mock_client = MagicMock()
-    mock_client.check_sms_verify_code.return_value = mock_response
-
-    with patch.dict(
-        os.environ,
-        {
-            "SMS_PROVIDER": "aliyun_auth",
-            "SMS_ACCESS_KEY_ID": "test-key",
-            "SMS_ACCESS_KEY_SECRET": "test-secret",
-        },
-    ):
-        with patch(
-            "alibabacloud_dypnsapi20170525.client.Client", return_value=mock_client
-        ):
-            result = _verify_sms_code_aliyun_auth(
-                db_session, test_sms_code.phone, test_sms_code.code
-            )
-    assert result is True
-
-
-def test_verify_sms_code_aliyun_auth_api_fail(db_session, test_sms_code):
-    mock_response_body = MagicMock()
-    mock_response_body.code = "OK"
-    mock_response_body.success = True
-    mock_response_body.model.verify_result = "UNKNOWN"
-
-    mock_response = MagicMock()
-    mock_response.body = mock_response_body
-
-    mock_client = MagicMock()
-    mock_client.check_sms_verify_code.return_value = mock_response
-
-    with patch.dict(
-        os.environ,
-        {
-            "SMS_PROVIDER": "aliyun_auth",
-            "SMS_ACCESS_KEY_ID": "test-key",
-            "SMS_ACCESS_KEY_SECRET": "test-secret",
-        },
-    ):
-        with patch(
-            "alibabacloud_dypnsapi20170525.client.Client", return_value=mock_client
-        ):
-            result = _verify_sms_code_aliyun_auth(
-                db_session, test_sms_code.phone, test_sms_code.code
-            )
-    assert result is False
-
-
-def test_verify_sms_code_aliyun_auth_api_error(db_session, test_sms_code):
-    mock_response_body = MagicMock()
-    mock_response_body.code = "ISP.SERVICE_UNAVAILABLE"
-    mock_response_body.success = False
-    mock_response_body.message = "Service unavailable"
-
-    mock_response = MagicMock()
-    mock_response.body = mock_response_body
-
-    mock_client = MagicMock()
-    mock_client.check_sms_verify_code.return_value = mock_response
-
-    with patch.dict(
-        os.environ,
-        {
-            "SMS_PROVIDER": "aliyun_auth",
-            "SMS_ACCESS_KEY_ID": "test-key",
-            "SMS_ACCESS_KEY_SECRET": "test-secret",
-        },
-    ):
-        with patch(
-            "alibabacloud_dypnsapi20170525.client.Client", return_value=mock_client
-        ):
-            result = _verify_sms_code_aliyun_auth(
-                db_session, test_sms_code.phone, test_sms_code.code
-            )
-    assert result is False
-
-
-def test_verify_sms_code_aliyun_auth_missing_config(db_session, test_sms_code):
+def test_verify_sms_code_aliyun_auth_missing_config_still_verifies_locally(
+    db_session, test_sms_code
+):
+    # Even with missing aliyun config, verification is local and must succeed.
     with patch.dict(
         os.environ,
         {
@@ -335,10 +229,10 @@ def test_verify_sms_code_aliyun_auth_missing_config(db_session, test_sms_code):
             "SMS_ACCESS_KEY_SECRET": "",
         },
     ):
-        result = _verify_sms_code_aliyun_auth(
+        result = verify_sms_code(
             db_session, test_sms_code.phone, test_sms_code.code
         )
-    assert result is False
+    assert result is True
 
 
 def test_mark_local_code_used(db_session, test_sms_code):

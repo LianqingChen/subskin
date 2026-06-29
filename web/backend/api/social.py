@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from web.backend.database.database import get_db
 from web.backend.database.models import User, UserFollow, UserBlock, UserReport
 from web.backend.services.auth import auth, get_current_user_optional
+from web.backend.services.audit import AuditLogService
 from web.backend.api.notifications import create_notification
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,18 @@ async def follow_user(
     follow = UserFollow(followee_id=user_id, follower_id=current_user.id)
     db.add(follow)
     db.commit()
+    try:
+        AuditLogService.log(
+            db=db,
+            action="social.follow",
+            actor_id=current_user.id,
+            target_type="user",
+            target_id=user_id,
+            details={"scope": "public"},
+            revokeable=True,
+        )
+    except Exception:
+        logger.warning("Failed to log follow audit: user=%s -> %s", current_user.id, user_id, exc_info=True)
     try:
         create_notification(
             db,

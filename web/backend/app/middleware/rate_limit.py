@@ -30,6 +30,10 @@ class RateLimiter:
 read_limiter = RateLimiter(max_requests=60, window_seconds=60)
 # 社区写接口: 10次/分钟/用户 (or IP fallback)
 write_limiter = RateLimiter(max_requests=10, window_seconds=60)
+# RAG chat 接口: 20次/分钟/用户 — logged-in users had no limit, which made the
+# LLM-backed chat endpoints a cost/DoS abuse vector (guests were already capped
+# at 5/day, but any logged-in account could fire unlimited streaming requests).
+chat_limiter = RateLimiter(max_requests=20, window_seconds=60)
 
 
 class ReadRateLimit:
@@ -59,6 +63,25 @@ class WriteRateLimit:
                 detail="操作过于频繁，请稍后再试",
             )
         write_limiter.hit(key)
+
+
+class ChatRateLimit:
+    """FastAPI dependency: rate-limit RAG chat by user ID (fallback to IP).
+
+    Logged-in chat endpoints stream LLM responses, so each request carries real
+    model cost. Keying by user_id (rather than IP) prevents a single user from
+    rotating IPs to bypass the limit while still rate-limiting anonymous IPs.
+    """
+
+    async def __call__(self, request: Request) -> None:
+        user_id = getattr(request.state, "user_id", None)
+        key = f"chat:user:{user_id}" if user_id else f"chat:ip:{request.client.host if request.client else 'unknown'}"
+        if not chat_limiter.is_allowed(key):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="提问过于频繁，请稍后再试",
+            )
+        chat_limiter.hit(key)
 
 
 async def limit_write_for_user(request: Request, user_id: Optional[int]) -> None:

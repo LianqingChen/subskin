@@ -5,7 +5,7 @@ VASI评估API
 import logging
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -24,6 +24,21 @@ from web.backend.api.models import (
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+def _require_evolution_service(obj, name: str):
+    """Guard for disabled self-evolving factories.
+
+    The vasi_* factories return ``None`` when the self-evolving stack is disabled
+    (2026-06-13). Admin endpoints that depend on them must surface a clear 503
+    instead of raising ``AttributeError`` on ``None.method()``.
+    """
+    if obj is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"{name} 已禁用（自进化模块暂未启用，数据不足）",
+        )
+    return obj
 
 
 @router.post("/assess", response_model=VASIAssessmentResponse)
@@ -148,6 +163,43 @@ async def create_assessment(
         raise HTTPException(status_code=500, detail="服务暂时不可用，请稍后重试")
 
 
+@router.post("/assess/{assessment_id}/finalize")
+async def finalize_assessment(
+    assessment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """确认草稿评估，将状态从 draft 改为 active。
+
+    Draft assessments never appear in history/trend until finalized. The frontend
+    must call this when the user accepts the AI result; otherwise the draft is
+    considered abandoned and cleaned up later.
+    """
+    service = VASIService(db)
+    ok = service.finalize_assessment(assessment_id, current_user.id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="评估记录不存在或无权访问")
+    return {"success": True, "assessment_id": assessment_id, "status": "active"}
+
+
+@router.post("/assess/{assessment_id}/abandon")
+async def abandon_assessment(
+    assessment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """放弃草稿评估，标记为 abandoned。
+
+    Abandoned assessments are excluded from history and trend. Call this when the
+    user discards a draft or starts a new assessment without confirming the prior.
+    """
+    service = VASIService(db)
+    ok = service.abandon_assessment(assessment_id, current_user.id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="评估记录不存在或无权访问")
+    return {"success": True, "assessment_id": assessment_id, "status": "abandoned"}
+
+
 @router.get("/history", response_model=VASIHistoryResponse)
 async def get_history(
     limit: int = 10,
@@ -219,6 +271,10 @@ async def get_assessment(
     contours = []
     skin_layer_data_url = None
     lesion_layer_data_url = None
+    suspected_lesions = None
+    reference_objects = None
+    skin_fitzpatrick = None
+    assessment_source = getattr(assessment, "assessment_source", None)
     if assessment.details:
         try:
             import json as _json
@@ -226,6 +282,21 @@ async def get_assessment(
             contours = details_data.get("contours", [])
             skin_layer_data_url = details_data.get("skin_layer_data_url")
             lesion_layer_data_url = details_data.get("lesion_layer_data_url")
+        except (Exception,):
+            pass
+    # Mirror the create endpoint: pull suspected_lesions / reference_objects /
+    # skin_fitzpatrick / assessment_source from raw_api_response so the detail
+    # page and re-edit flow have the same metadata the create response returns.
+    if assessment.raw_api_response:
+        try:
+            import json as _json
+            raw = _json.loads(assessment.raw_api_response)
+            suspected_lesions = raw.get("suspected_lesions")
+            reference_objects = raw.get("reference_objects")
+            skin_region = raw.get("skin_region", {})
+            skin_fitzpatrick = skin_region.get("fitzpatrick_type")
+            if not assessment_source:
+                assessment_source = raw.get("source")
         except (Exception,):
             pass
     if assessment.user_contours:
@@ -259,6 +330,10 @@ async def get_assessment(
         contours=contours,
         skin_layer_data_url=skin_layer_data_url,
         lesion_layer_data_url=lesion_layer_data_url,
+        suspected_lesions=suspected_lesions,
+        reference_objects=reference_objects,
+        skin_fitzpatrick=skin_fitzpatrick,
+        assessment_source=assessment_source,
         visual_features=visual_features,
         assessment_date=assessment.assessment_date.isoformat()
         if assessment.assessment_date
@@ -433,8 +508,21 @@ async def delete_assessment(
 
 
 @router.post("/check-photo-quality")
-async def check_photo_quality(image: UploadFile = File(...)):
+async def check_photo_quality(
+    image: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    # Require authentication — this endpoint runs the quality checker on a
+    # user-uploaded photo. Without auth it is an unauthenticated CPU/IO sink
+    # (anyone can POST arbitrary images). Also enforce a size cap to prevent
+    # oversized uploads from exhausting memory.
+    MAX_PHOTO_BYTES = 20 * 1024 * 1024  # 20 MB
     image_bytes = await image.read()
+    if len(image_bytes) > MAX_PHOTO_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"图片过大（{len(image_bytes)} 字节），请上传小于 {MAX_PHOTO_BYTES // (1024 * 1024)}MB 的图片",
+        )
     from web.backend.services.vasi_quality import vasi_quality_checker
 
     quality = vasi_quality_checker.check_all(image_bytes)
@@ -582,7 +670,7 @@ async def submit_contour_correction(
     # Phase 1: Record feedback signal and export training sample
     try:
         from web.backend.services.vasi_feedback import get_feedback_collector
-        collector = get_feedback_collector(db)
+        collector = _require_evolution_service(get_feedback_collector(db), "feedback_collector")
         user_mask = request.lesion_mask_image or request.mask_image
         collector.record_explicit_correction(
             assessment_id=assessment_id,
@@ -926,7 +1014,7 @@ async def submit_feedback_rating(
         raise HTTPException(status_code=404, detail="评估记录不存在")
 
     from web.backend.services.vasi_feedback import get_feedback_collector
-    collector = get_feedback_collector(db)
+    collector = _require_evolution_service(get_feedback_collector(db), "feedback_collector")
     collector.record_explicit_rating(
         assessment_id=assessment_id,
         user_id=current_user.id,
@@ -951,7 +1039,7 @@ async def record_stay_duration(
         raise HTTPException(status_code=404, detail="评估记录不存在")
 
     from web.backend.services.vasi_feedback import get_feedback_collector
-    collector = get_feedback_collector(db)
+    collector = _require_evolution_service(get_feedback_collector(db), "feedback_collector")
     collector.record_implicit_stay(
         assessment_id=assessment_id,
         user_id=current_user.id,
@@ -973,7 +1061,7 @@ async def record_share(
         raise HTTPException(status_code=404, detail="评估记录不存在")
 
     from web.backend.services.vasi_feedback import get_feedback_collector
-    collector = get_feedback_collector(db)
+    collector = _require_evolution_service(get_feedback_collector(db), "feedback_collector")
     collector.record_implicit_share(assessment_id, current_user.id)
     return {"status": "ok"}
 
@@ -991,7 +1079,7 @@ async def get_feedback_prompt(
         raise HTTPException(status_code=404, detail="评估记录不存在")
 
     from web.backend.services.vasi_feedback import get_feedback_collector
-    collector = get_feedback_collector(db)
+    collector = _require_evolution_service(get_feedback_collector(db), "feedback_collector")
     prompt = collector.should_request_feedback(assessment_id)
     return {
         "should_ask": prompt.should_ask,
@@ -1017,7 +1105,7 @@ async def submit_active_query_response(
         raise HTTPException(status_code=404, detail="评估记录不存在")
 
     from web.backend.services.vasi_feedback import get_feedback_collector
-    collector = get_feedback_collector(db)
+    collector = _require_evolution_service(get_feedback_collector(db), "feedback_collector")
     collector.record_active_query_response(
         assessment_id=assessment_id,
         user_id=current_user.id,
@@ -1037,7 +1125,7 @@ async def get_feedback_stats(
 ):
     """管理员查看反馈统计数据"""
     from web.backend.services.vasi_feedback import get_feedback_collector
-    collector = get_feedback_collector(db)
+    collector = _require_evolution_service(get_feedback_collector(db), "feedback_collector")
     stats = collector.get_feedback_stats(days=days)
     return stats
 
@@ -1053,7 +1141,7 @@ async def list_training_samples(
 ):
     """管理员查看训练样本列表"""
     from web.backend.services.vasi_feedback import get_feedback_collector
-    collector = get_feedback_collector(db)
+    collector = _require_evolution_service(get_feedback_collector(db), "feedback_collector")
     samples = collector.export_training_samples(
         body_site=body_site,
         quality_level=quality_level,
@@ -1093,8 +1181,8 @@ async def get_evolution_status(
     from web.backend.services.vasi_feedback import get_feedback_collector
     from web.backend.services.vasi_prompt_evolver import get_prompt_evolver
 
-    collector = get_feedback_collector(db)
-    evolver = get_prompt_evolver(db)
+    collector = _require_evolution_service(get_feedback_collector(db), "feedback_collector")
+    evolver = _require_evolution_service(get_prompt_evolver(db), "prompt_evolver")
 
     feedback_stats = collector.get_feedback_stats(days=30)
     should_evolve, new_samples = evolver.should_evolve()
@@ -1121,8 +1209,8 @@ async def trigger_evolution(
     from web.backend.services.vasi_feedback import get_feedback_collector
     from web.backend.services.vasi_prompt_evolver import get_prompt_evolver
 
-    collector = get_feedback_collector(db)
-    evolver = get_prompt_evolver(db)
+    collector = _require_evolution_service(get_feedback_collector(db), "feedback_collector")
+    evolver = _require_evolution_service(get_prompt_evolver(db), "prompt_evolver")
 
     # 收集所有可用样本
     samples = collector.export_training_samples(min_dice=0.4, limit=50)
@@ -1176,7 +1264,7 @@ async def rollback_evolution(
     """回滚到上一个 Prompt 版本"""
     from web.backend.services.vasi_prompt_evolver import get_prompt_evolver
 
-    evolver = get_prompt_evolver(db)
+    evolver = _require_evolution_service(get_prompt_evolver(db), "prompt_evolver")
     success = evolver.rollback()
 
     if not success:
@@ -1198,7 +1286,7 @@ async def get_evolution_history(
     """获取 Prompt 进化历史"""
     from web.backend.services.vasi_prompt_evolver import get_prompt_evolver
 
-    evolver = get_prompt_evolver(db)
+    evolver = _require_evolution_service(get_prompt_evolver(db), "prompt_evolver")
     history = evolver.get_evolution_history(limit=limit)
     return {"versions": history}
 
@@ -1214,7 +1302,7 @@ async def get_current_metrics(
 ):
     """获取当前生产环境指标"""
     from web.backend.services.vasi_evaluator import get_evaluator
-    evaluator = get_evaluator(db)
+    evaluator = _require_evolution_service(get_evaluator(db), "evaluator")
     metrics = evaluator.get_current_metrics(days=days)
     return metrics.to_dict()
 
@@ -1227,7 +1315,7 @@ async def get_stratified_metrics(
 ):
     """获取分层指标（按部位、肤色、质量）"""
     from web.backend.services.vasi_evaluator import get_evaluator
-    evaluator = get_evaluator(db)
+    evaluator = _require_evolution_service(get_evaluator(db), "evaluator")
     return evaluator.get_stratified_metrics(days=days)
 
 
@@ -1239,7 +1327,7 @@ async def get_metrics_trend(
 ):
     """获取指标趋势"""
     from web.backend.services.vasi_evaluator import get_evaluator
-    evaluator = get_evaluator(db)
+    evaluator = _require_evolution_service(get_evaluator(db), "evaluator")
     return {"trend": evaluator.get_metrics_trend(days=days)}
 
 
@@ -1249,7 +1337,7 @@ async def get_param_optimizer_stats(
 ):
     """获取参数优化器统计"""
     from web.backend.services.vasi_param_optimizer import get_param_optimizer
-    opt = get_param_optimizer()
+    opt = _require_evolution_service(get_param_optimizer(), "param_optimizer")
     return {
         "optimizer_stats": opt.get_all_stats(),
         "presets": opt.get_preset_params(),
@@ -1266,7 +1354,7 @@ async def get_evolution_status_v2(
 ):
     """获取完整进化状态（Phase 5 统一入口）"""
     from web.backend.services.vasi_evolution import get_orchestrator
-    orch = get_orchestrator(db)
+    orch = _require_evolution_service(get_orchestrator(db), "evolution_orchestrator")
     status = orch.get_status()
     return {
         "feedback": status.feedback_stats,
@@ -1293,7 +1381,7 @@ async def run_evolution(
         raise HTTPException(status_code=400, detail="strategy must be: prompt, params, auto, full")
 
     from web.backend.services.vasi_evolution import get_orchestrator
-    orch = get_orchestrator(db)
+    orch = _require_evolution_service(get_orchestrator(db), "evolution_orchestrator")
     result = await orch.evolve(strategy=strategy)
     return result.to_dict()
 
@@ -1305,7 +1393,7 @@ async def rollback_evolution_v2(
 ):
     """回滚到上一个版本（Phase 5 统一入口）"""
     from web.backend.services.vasi_evolution import get_orchestrator
-    orch = get_orchestrator(db)
+    orch = _require_evolution_service(get_orchestrator(db), "evolution_orchestrator")
     result = await orch.rollback()
     return result
 
@@ -1319,7 +1407,7 @@ async def export_training_dataset(
 ):
     """导出训练数据集（用于 nnU-Net 训练）"""
     from web.backend.services.vasi_evolution import get_orchestrator
-    orch = get_orchestrator(db)
+    orch = _require_evolution_service(get_orchestrator(db), "evolution_orchestrator")
     data = orch.export_training_dataset(min_dice=min_dice, limit=limit)
     return {
         "total": len(data),

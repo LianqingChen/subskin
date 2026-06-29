@@ -62,27 +62,27 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/wiki-content/, /^\/version\.json/],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Never cache authenticated/sensitive API responses or user uploads.
+        // NetworkFirst previously cached /api/(community|user|vasi|medical-reports)
+        // and CacheFirst cached /uploads/ for 7 days — on a shared device, after
+        // logout the previous user's L3 data (病灶照片、报告、社区帖) remained in
+        // the SW cache and was retrievable by the next user. NetworkOnly + no
+        // cache for these paths ensures every request goes to the network and
+        // nothing sensitive is stored in the SW cache.
         runtimeCaching: [
           {
             urlPattern: /^https?:\/\/.*\/version\.json/i,
             handler: 'NetworkOnly',
           },
           {
-            urlPattern: /^https?:\/\/.*\/api\/(community|user|vasi|medical-reports)\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 5 },
-              networkTimeoutSeconds: 5,
-            },
+            // All API calls: network-only, never cached.
+            urlPattern: /^https?:\/\/.*\/api\/.*/i,
+            handler: 'NetworkOnly',
           },
           {
+            // User uploads (病灶照片、报告、社区图片等 L3 数据): never cache.
             urlPattern: /^https?:\/\/.*\/uploads\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'uploads-cache',
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 },
-            },
+            handler: 'NetworkOnly',
           },
         ],
       },

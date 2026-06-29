@@ -45,7 +45,7 @@ export const communityApi = {
     return data
   },
 
-  async getPosts(params?: { category_id?: number; tag?: string; post_type?: string; feed_type?: string; limit?: number; offset?: number }): Promise<PostListResponse> {
+  async getPosts(params?: { category_id?: number; tag?: string; post_type?: string; feed_type?: string; limit?: number; offset?: number; after?: string | null }): Promise<PostListResponse> {
     const { data } = await apiClient.get('/community/posts', { params })
     return data
   },
@@ -57,8 +57,8 @@ export const communityApi = {
 
   // ── Diary ──
 
-  async getMyDiaries(limit = 20, offset = 0): Promise<PostListResponse> {
-    const { data } = await apiClient.get('/community/my-diaries', { params: { limit, offset } })
+  async getMyDiaries(limit = 20, offset = 0, after?: string | null): Promise<PostListResponse> {
+    const { data } = await apiClient.get('/community/my-diaries', { params: { limit, offset, after } })
     return data
   },
 

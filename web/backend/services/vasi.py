@@ -30,6 +30,28 @@ class VASIAssessmentError(Exception):
     pass
 
 
+# ── Image magic-byte signatures ──
+# Verifies the actual bytes of an uploaded image match its declared type, so a
+# polyglot or malicious file renamed to .jpg is rejected before reaching VLM/SAM.
+_IMAGE_MAGIC = (
+    (b"\xff\xd8\xff", "image/jpeg"),         # JPEG (SOI + marker)
+    (b"\x89PNG\r\n\x1a\n", "image/png"),     # PNG
+    (b"RIFF", "image/webp"),                 # WebP (RIFF....WEBP)
+)
+
+
+def _has_valid_image_magic(data: bytes) -> bool:
+    if not data:
+        return False
+    for sig, _kind in _IMAGE_MAGIC:
+        if data.startswith(sig):
+            # WebP needs the WEBP chunk at offset 8
+            if sig == b"RIFF":
+                return len(data) >= 12 and data[8:12] == b"WEBP"
+            return True
+    return False
+
+
 class VASIService:
     """VASI评估服务
 
@@ -278,7 +300,13 @@ class VASIService:
         Returns:
             tuple: (总数, 评估记录列表)
         """
-        query = self.db.query(VASIAssessment).filter(VASIAssessment.user_id == user_id, VASIAssessment.status != "abandoned")
+        # History should only contain finalized (active) assessments — drafts
+        # and abandoned assessments do not represent confirmed clinical state
+        # and would pollute the history list / trend chart.
+        query = self.db.query(VASIAssessment).filter(
+            VASIAssessment.user_id == user_id,
+            VASIAssessment.status == "active",
+        )
 
         # 筛选条件：body_site 可能是前端传来的英文 key，需要翻译成中文 label
         if body_site:
@@ -364,39 +392,48 @@ class VASIService:
     def delete_assessments_batch(self, assessment_ids: List[int], user_id: int) -> int:
         from web.backend.models.image_label import ImageLabel
 
+        # Only operate on assessments actually owned by this user. Without this
+        # scope check, a caller could pass another user's assessment_id and, when
+        # an ImageLabel row already exists for it, flip is_user_deleted on
+        # another user's label metadata (cross-user IDOR).
+        owned = {
+            a.id: a
+            for a in self.db.query(VASIAssessment)
+            .filter(VASIAssessment.id.in_(assessment_ids), VASIAssessment.user_id == user_id)
+            .all()
+        }
+
         for aid in assessment_ids:
+            if aid not in owned:
+                # Not owned by this user — skip to prevent cross-user mutation.
+                continue
+            assessment = owned[aid]
             link = self.db.query(ImageLabel).filter(
                 ImageLabel.assessment_id == aid,
             ).first()
             if link:
                 link.is_user_deleted = True
             else:
-                assessment = (
-                    self.db.query(VASIAssessment)
-                    .filter(VASIAssessment.id == aid, VASIAssessment.user_id == user_id)
-                    .first()
+                link = ImageLabel(
+                    assessment_id=aid,
+                    original_user_id=user_id,
+                    image_url=assessment.image_url,
+                    image_key=assessment.image_key,
+                    image_hash=assessment.image_hash,
+                    ai_body_site=assessment.body_site,
+                    ai_vitiligo_type=assessment.classification,
+                    ai_vitiligo_stage=assessment.stage,
+                    ai_area_percentage=assessment.final_area_percentage or assessment.area_percentage,
+                    ai_vasi_score=assessment.final_vasi_score or assessment.vasi_score,
+                    ai_confidence=assessment.confidence,
+                    ai_details=assessment.details,
+                    is_user_deleted=True,
                 )
-                if assessment:
-                    link = ImageLabel(
-                        assessment_id=aid,
-                        original_user_id=user_id,
-                        image_url=assessment.image_url,
-                        image_key=assessment.image_key,
-                        image_hash=assessment.image_hash,
-                        ai_body_site=assessment.body_site,
-                        ai_vitiligo_type=assessment.classification,
-                        ai_vitiligo_stage=assessment.stage,
-                        ai_area_percentage=assessment.final_area_percentage or assessment.area_percentage,
-                        ai_vasi_score=assessment.final_vasi_score or assessment.vasi_score,
-                        ai_confidence=assessment.confidence,
-                        ai_details=assessment.details,
-                        is_user_deleted=True,
-                    )
-                    self.db.add(link)
+                self.db.add(link)
 
         deleted = (
             self.db.query(VASIAssessment)
-            .filter(VASIAssessment.id.in_(assessment_ids), VASIAssessment.user_id == user_id)
+            .filter(VASIAssessment.id.in_(list(owned.keys())), VASIAssessment.user_id == user_id)
             .delete(synchronize_session=False)
         )
         self.db.commit()
@@ -424,6 +461,10 @@ class VASIService:
             VASIAssessment.user_id == user_id,
             VASIAssessment.assessment_date >= start_date,
             VASIAssessment.assessment_date <= end_date,
+            # Trend must reflect confirmed clinical state only — exclude drafts
+            # and abandoned assessments so the curve isn't distorted by
+            # unconfirmed or discarded evaluations.
+            VASIAssessment.status == "active",
         )
 
         if body_site:
@@ -449,19 +490,23 @@ class VASIService:
                 },
             }
 
+        # Prefer final_vasi_score (user-corrected) when present, else raw vasi_score.
+        def _score(a):
+            return a.final_vasi_score if a.final_vasi_score is not None else a.vasi_score
+
         # 构建趋势数据
         data = [
             {
                 "date": a.assessment_date.isoformat(),
-                "vasi_score": a.vasi_score,
+                "vasi_score": _score(a),
                 "stage": a.stage,
             }
             for a in assessments
         ]
 
         # 计算趋势总结
-        first_score = assessments[0].vasi_score
-        last_score = assessments[-1].vasi_score
+        first_score = _score(assessments[0])
+        last_score = _score(assessments[-1])
         change = last_score - first_score
 
         if first_score > 0:
@@ -510,6 +555,15 @@ class VASIService:
                 f"不支持的图片格式，支持: {', '.join(self.ALLOWED_IMAGE_TYPES)}"
             )
 
+        # Magic-byte verification: Content-Type can be spoofed, so verify the
+        # actual file signature to reject polyglot / mis-labeled uploads before
+        # they reach the VLM/SAM pipeline. WebP is accepted here too even though
+        # ALLOWED_IMAGE_TYPES is JPEG/PNG-focused, because the VLM path supports it.
+        if not _has_valid_image_magic(image_file):
+            raise VASIAssessmentError(
+                "图片内容与声明格式不符（magic byte 校验失败），请上传真实的 JPG/PNG/WebP 图片"
+            )
+
         # 验证身体部位
         if body_site not in self.VALID_BODY_SITES:
             supported = ", ".join(sorted(set(self.BODY_SITE_LABELS.values())))
@@ -526,7 +580,6 @@ class VASIService:
         file_hash = hashlib.md5(image_file).hexdigest()
         timestamp = int(time.time())
         ext = Path(filename).suffix or ".jpg"
-        image_key = f"vasi/{user_id}/{timestamp}_{file_hash[:8]}{ext}"
 
         upload_dir = Path("data/uploads/vasi")
         upload_dir.mkdir(parents=True, exist_ok=True)
@@ -536,6 +589,12 @@ class VASIService:
         file_path.write_bytes(image_file)
 
         image_url = f"/api/files/serve/vasi/{stored_name}"
+        # image_key MUST match the actual on-disk relative path so downstream
+        # RL/training pipelines can locate the file. Previously this used a
+        # {user_id}/{timestamp}_{file_hash[:8]} key that never corresponded to a
+        # real file, so RL training could never load the image. The hash is
+        # preserved as a separate field for dedup/audit.
+        image_key = f"vasi/{stored_name}"
 
         return image_url, image_key
 
@@ -559,6 +618,14 @@ class VASIService:
                 "suggestions": quality.suggestions,
                 "blur_score": quality.blur_score,
             }
+            # Reject poor-quality photos up front: return structured quality
+            # feedback with improvement suggestions instead of running AI on
+            # an unusable image (which previously fabricated low-confidence
+            # scores or wasted LLM/VLM budget). The caller/UI must surface the
+            # suggestions; no clinical score is persisted for poor photos.
+            if quality.overall == "poor":
+                logger.info("VASI quality reject (overall=poor, blur=%.1f)", quality.blur_score)
+                return self._quality_reject_response(quality)
 
         processed_image = image_file
         if self.preprocessor and self.preprocessor.available:
@@ -577,6 +644,7 @@ class VASIService:
         lesion_centers: Optional[List[List[float]]] = None
         lesion_sizes: Optional[List[float]] = None
         lesion_bboxes: Optional[List[List[float]]] = None
+        lesion_edge_points: Optional[List[List[List[float]]]] = None
         depigmentation_level = None
         if vlm_result:
             depigmentation_level = vlm_result.get("depigmentation_level")
@@ -612,11 +680,16 @@ class VASIService:
                     filtered_count, verified_count, len(lesions), raw_lesion_count,
                 )
 
-            # ── Bbox size sanity check: reject overly broad bboxes (>25% of image) ──
+            # ── Bbox size sanity check: reject overly broad bboxes ──
             # VLM sometimes produces region-level (not lesion-level) bboxes.
-            # A bbox >25% of the image area is almost certainly too broad —
-            # even a large vitiligo patch on a face photo rarely exceeds 25%.
-            MAX_BBOX_PCT = 25.0
+            # Threshold is body-site-adaptive: small body parts (face/hands/feet/
+            # neck) legitimately have lesions <25% of a close-up, but trunk/back/
+            # legs/arms close-ups and generalized vitiligo can legitimately fill a
+            # much larger fraction — a flat 25% there would drop real large patches.
+            SMALL_SITE_MAX_BBOX_PCT = 25.0
+            LARGE_SITE_MAX_BBOX_PCT = 45.0
+            _small_sites = {"面部", "颈部", "手部", "左手", "右手", "足部", "左脚", "右脚", "其他"}
+            MAX_BBOX_PCT = SMALL_SITE_MAX_BBOX_PCT if body_site in _small_sites else LARGE_SITE_MAX_BBOX_PCT
             raw_lesions = lesions
             lesions = []
             for l in raw_lesions:
@@ -637,6 +710,12 @@ class VASIService:
                     "Bbox sanity: dropped %d/%d oversized lesions",
                     len(raw_lesions) - len(lesions), len(raw_lesions),
                 )
+
+            # Write the filtered lesion list back into vlm_result so downstream
+            # enrichment (per-lesion depig/contrast/confidence matching) uses the
+            # SAME filtered set that guided SAM — otherwise metadata is matched
+            # against unfiltered lesions and the weighted VASI score is wrong.
+            vlm_result["suspected_lesions"] = lesions
 
             if lesions:
                 lesion_centers = [
@@ -659,6 +738,21 @@ class VASIService:
                         if valid and bbox[2] > bbox[0] and bbox[3] > bbox[1]:
                             lesion_bboxes.append([float(v) for v in bbox])
 
+                # Rebuild lesion_edge_points aligned with lesion_centers (same
+                # filter: center present) so SAM can index them in lockstep.
+                # Each entry is a list of [x,y] boundary points (possibly empty).
+                lesion_edge_points = []
+                for l in lesions:
+                    if not (l.get("center") and len(l["center"]) == 2):
+                        continue
+                    pts: List[List[float]] = []
+                    for pt in (l.get("edge_points") or []):
+                        if (isinstance(pt, (list, tuple)) and len(pt) == 2
+                                and isinstance(pt[0], (int, float))
+                                and isinstance(pt[1], (int, float))):
+                            pts.append([float(pt[0]), float(pt[1])])
+                    lesion_edge_points.append(pts)
+
             # Per-lesion metadata for adaptive SAM (contrast, confidence, depig)
             lesion_metas: Optional[List[Dict[str, Any]]] = None
             if lesions:
@@ -676,10 +770,11 @@ class VASIService:
         has_guidance = bool(skin_bbox or lesion_centers)
         if has_guidance:
             bbox_count = len(lesion_bboxes) if lesion_bboxes else 0
+            edge_count = sum(1 for pts in (lesion_edge_points or []) if pts)
             is_vlm_ensemble = bool(vlm_result.get("_ensemble")) if vlm_result else False
             logger.info(
-                "Using VLM-guided SAM: skin_bbox=%s, lesion_centers=%d, lesion_bboxes=%d, ensemble=%s",
-                skin_bbox, len(lesion_centers) if lesion_centers else 0, bbox_count, is_vlm_ensemble,
+                "Using VLM-guided SAM: skin_bbox=%s, lesion_centers=%d, lesion_bboxes=%d, lesion_edge_pts=%d, ensemble=%s",
+                skin_bbox, len(lesion_centers) if lesion_centers else 0, bbox_count, edge_count, is_vlm_ensemble,
             )
             seg_result = await asyncio.to_thread(
                 segment_vitiligo_guided,
@@ -688,6 +783,7 @@ class VASIService:
                 lesion_bboxes if lesion_bboxes else None,
                 lesion_metas if lesion_metas else None,
                 is_vlm_ensemble,
+                lesion_edge_points if lesion_edge_points else None,
             )
         else:
             logger.info("No VLM guidance available, using auto SAM")
@@ -847,9 +943,12 @@ class VASIService:
                 vlm_result["area_percentage"] = raw_area
                 vlm_result["area_percentage_contrast_adjusted"] = round(contrast_adjusted_area, 1)
 
-                # Recompute VASI score from SAM-measured area + area-weighted depigmentation
+                # Recompute VASI score from SAM-measured area + area-weighted depigmentation.
+                # Use the user-submitted body_site (the method parameter) for BSA weighting —
+                # the VLM-returned body_site can drift (e.g. default "hands"), which would
+                # mis-weight region area (face 4.5% vs legs 18%).
                 try:
-                    body_site = vlm_result.get("body_site", "hands")
+                    body_site = vlm_result.get("body_site") or body_site
                     formula_score = compute_vasi_v2(
                         body_site=body_site,
                         area_pct_in_region=raw_area,
@@ -886,11 +985,13 @@ class VASIService:
 
         # Step 5: VLM failed but SAM succeeded → construct result from SAM
         if seg_contours:
-            # Use VASI formula with conservative defaults
+            # Use VASI formula with conservative defaults.
+            # Use the user-submitted body_site (method param) rather than a
+            # hardcoded "hands" so BSA region weighting is correct.
             try:
                 depig = float(depigmentation_level) / 3.0 if depigmentation_level else 0.67
                 formula_score = compute_vasi_v2(
-                    body_site="hands",
+                    body_site=body_site,
                     area_pct_in_region=seg_area if seg_area else 0,
                     depigmentation_level=depig,
                 )
@@ -970,50 +1071,16 @@ class VASIService:
         }
 
     def _mock_result(self) -> Dict[str, Any]:
-        """Generate mock VASI data when all AI services are unavailable."""
-        import random
+        """Fail closed when all AI services are unavailable.
 
-        mock_vasi_score = round(random.uniform(10, 60), 1)
-        mock_area_percentage = round(random.uniform(5, 30), 1)
-
-        if mock_vasi_score < 20:
-            mock_stage = "好转"
-        elif mock_vasi_score < 40:
-            mock_stage = "稳定"
-        else:
-            mock_stage = "扩散"
-
-        return {
-            "vasi_score": mock_vasi_score,
-            "depigmentation_level": 0.8,
-            "area_percentage": mock_area_percentage,
-            "classification": "非节段型",
-            "stage": mock_stage,
-            "contours": [
-                {
-                    "label": "白斑1",
-                    "polygon": [
-                        [0.3, 0.2], [0.5, 0.15], [0.65, 0.25],
-                        [0.7, 0.45], [0.6, 0.6], [0.4, 0.65],
-                        [0.25, 0.5], [0.2, 0.35],
-                    ],
-                    "area_percent": mock_area_percentage,
-                }
-            ],
-            "visual_features": {
-                "visibility": {"level": "visible", "description": "照片中可见色素减退区域，与周围正常皮肤有一定色差"},
-                "color": {"level": "milky_white", "description": "呈现乳白色调，色素脱失程度中等"},
-                "border": {"level": "partial", "description": "白斑边界部分清晰，部分区域边缘模糊"},
-                "shape": {"description": "呈不规则形，可见散在分布的小片状白斑"},
-                "surface": {"texture": "smooth", "description": "白斑区域表面光滑，未见明显鳞屑或萎缩"},
-                "distribution": {"pattern": "localized", "description": "白斑局限于照片所示区域，呈局部散在分布"},
-                "similarity_note": "需与白色糠疹、花斑癣、炎症后色素减退等鉴别，建议皮肤科确诊。",
-                "recommendation": "建议皮肤科就诊"
-            },
-            "details": {"detected_areas": 1, "confidence": 0.75, "description": "mock数据-请手动调整轮廓"},
-            "raw_response": {"mock": True, "timestamp": datetime.utcnow().isoformat()},
-            "source": "mock",
-        }
+        Previously this returned random VASI scores (10–60) and area percentages
+        (5–30), which were persisted as real clinical assessments. That risks
+        users trusting fabricated scores. We now raise so the caller surfaces a
+        clear error and no assessment row is created.
+        """
+        raise VASIAssessmentError(
+            "AI 评估服务暂时不可用，无法生成评估结果。请稍后重试或使用「手动勾勒」模式自行标注白斑区域。"
+        )
 
     async def _call_vision_model(self, image_file: bytes, body_site: str = "面部") -> Optional[Dict[str, Any]]:
         """调用百炼 DashScope 视觉大模型进行白斑图像分析
@@ -1057,43 +1124,80 @@ class VASIService:
                 logger.info("Using evolved prompt (%d chars)", len(prompt))
             except Exception as e:
                 logger.warning("Prompt evolver unavailable, using static prompt: %s", e)
-                prompt = """你是一位皮肤科AI助手，请分析这张皮肤照片中的白斑（白癜风）特征。
+                prompt = """你是一位资深皮肤科AI助手，请精确分析这张皮肤照片中的白斑（白癜风）特征。
 
 重要：你不是医生，不能医疗诊断。用"观察到""可见"等客观措辞。
 
-【你需要输出的5个核心字段】
-1. suspected_lesions: 疑似白斑列表，每项包含:
+【皮肤背景评估（先做这步）】
+1. 观察照片中暴露的皮肤区域，估计整体肤色深浅（Fitzpatrick分型 I-VI：I最白易灼伤、VI最深不易灼伤）。
+2. 白斑的"脱色"永远是相对于周围正常皮肤而言——必须先认准正常皮肤基线，再判断哪里更白。
+
+【色素脱失等级量化标准（contrast_to_skin 据此判定）】
+- 0级(无)：正常肤色，无色素脱失。对比度 < 0.10
+- 1级(轻度)：轻度色素减退，隐约可见淡白色。对比度 0.10-0.20
+- 2级(中度)：明显色素减退，呈乳白色。对比度 0.20-0.40
+- 3级(重度)：几乎完全色素脱失，呈瓷白色或纯白色。对比度 > 0.40
+contrast_to_skin = 白斑区与紧邻正常皮肤的明度差比值，范围0-1。
+
+【必须区分的非白斑区域（重要，勿误判）】
+- 照片高光/反光/过曝区域：呈镜面白，多在皮肤凸起处，边界常与光照方向一致，不是独立色斑。
+- 疤痕、白化痣、花斑癣、炎症后色素减退：颜色/质地与白癜风不同，谨慎区分。
+- 参考卡、衣物、背景：非皮肤区域，一律排除。
+- 分散的白斑碎片必须各自独立标注，不要合并成一个大块。
+
+【边缘识别要求（本次重点）】
+- bbox 必须紧贴白斑真实边界，不要留大边距，也不要切掉边缘。
+- edge_points 给出3-8个沿白斑轮廓分布的边界关键点，覆盖最外凸、最内凹处，用于精修不规则边缘。
+- 边缘清晰(diffuse边界)的白斑：edge_points 沿可见色素过渡带外缘取点。
+- 边缘模糊(diffuse边界)的白斑：edge_points 沿主观可辨的最外圈脱色带取点。
+
+【你需要输出的核心字段】
+1. skin_region: 皮肤区域
+   - bbox: [x1, y1, x2, y2] 照片中皮肤区域的归一化包围盒 (0-1)
+   - fitzpatrick: 估计分型 "I"-"VI"
+2. suspected_lesions: 疑似白斑列表，每项包含:
    - center: [x, y] 白斑几何中心 (0-1归一化坐标)
+   - bbox: [x1, y1, x2, y2] 紧贴白斑边界的归一化包围盒 (0-1)
+   - edge_points: [[x,y], ...] 3-8个沿白斑轮廓的归一化边界关键点 (0-1)
    - estimated_size_percent: 占照片面积百分比 (数字)
    - depigmentation_level: 1(轻度) / 2(中度) / 3(重度)
-   - contrast_to_skin: 与周围正常皮肤的对比度 0-1
+   - contrast_to_skin: 与周围正常皮肤的对比度 0-1 (按上述量化标准)
+   - boundary_type: clear(清晰) / diffuse(模糊弥散) / mixed(混合)
    - confidence: 该处为白斑的置信度 0-1
-
-2. visual_features: 视觉特征概述
-   - visibility: 可见度 (visible/faint/subtle)
-   - color: 颜色 (pale_white/milky_white/porcelain_white/pure_white)
-   - border: 边缘 (clear/partial/unclear)
-   - distribution: 分布 (localized/segmental/bilateral/generalized/scattered)
+3. visual_features: 视觉特征概述
+   - visibility: {"level": visible/faint/subtle, "description": "..."}
+   - color: {"level": pale_white/milky_white/porcelain_white/pure_white, "description": "..."}
+   - border: {"level": clear/partial/unclear, "description": "..."}
+   - shape: {"pattern": round/oval/irregular/linear, "description": "..."}
+   - surface: {"texture": smooth/scaly/atrophic, "description": "..."}
+   - distribution: {"pattern": localized/segmental/bilateral/generalized/scattered, "description": "..."}
    - similarity_note: 一句总结 (20字以内)
    - recommendation: 建议 (如"建议皮肤科就诊")
-
-3. classification: 分型 (节段型/非节段型/混合型/未确定)
-4. stage: 阶段 (进展期/稳定期/好转期)
-5. overall_depigmentation: 整体脱色程度 1-3
+4. classification: 分型 (节段型/非节段型/混合型/未确定)
+5. stage: 阶段 (进展期/稳定期/好转期)
+6. overall_depigmentation: 整体脱色程度 1-3
+7. confidence: 本次整体分析置信度 0-1
 
 【输出要求】
-- 只返回JSON，不要任何其他文字
-- 坐标归一化到0-1 (左上角0,0 右下角1,1)
-- 如果没有白斑特征: suspected_lesions=[] 且 overall_depigmentation=0
-- 温和提醒：bbox字段已不再需要，只需center坐标即可
+- 只返回JSON，不要任何其他文字、不要markdown代码块。
+- 所有坐标归一化到0-1 (左上角0,0 右下角1,1)。
+- bbox/edge_points/center 必须互不矛盾：edge_points 应落在 bbox 内部或边缘，center 应在 bbox 内部。
+- 如果没有白斑特征: suspected_lesions=[] 且 overall_depigmentation=0。
 
 返回JSON格式:
 {
+  "skin_region": {
+    "bbox": [0.10, 0.10, 0.90, 0.90],
+    "fitzpatrick": "III"
+  },
   "suspected_lesions": [{
     "center": [0.35, 0.42],
+    "bbox": [0.28, 0.35, 0.42, 0.49],
+    "edge_points": [[0.30, 0.40], [0.35, 0.36], [0.41, 0.42], [0.38, 0.48], [0.30, 0.47]],
     "estimated_size_percent": 8.0,
     "depigmentation_level": 2,
     "contrast_to_skin": 0.35,
+    "boundary_type": "clear",
     "confidence": 0.85
   }],
   "visual_features": {
@@ -1119,6 +1223,13 @@ class VASIService:
                 len(image_file),
             )
 
+            # VLM sampling parameters — tunable via env for lesion-edge precision.
+            # Edge/boundary localization benefits from near-deterministic sampling,
+            # and multi-lesion large images need headroom beyond 4k tokens.
+            vlm_temperature = float(os.getenv("VASI_VLM_TEMPERATURE", "0.0"))
+            vlm_max_tokens = int(os.getenv("VASI_VLM_MAX_TOKENS", "8192"))
+            vlm_timeout = int(os.getenv("VASI_VLM_TIMEOUT", "120"))
+
             response = client.chat.completions.create(
                 model=vision_model,
                 messages=[
@@ -1135,9 +1246,9 @@ class VASIService:
                         ],
                     }
                 ],
-                temperature=0.1,
-                max_tokens=4096,
-                timeout=90,
+                temperature=vlm_temperature,
+                max_tokens=vlm_max_tokens,
+                timeout=vlm_timeout,
             )
 
             content = (response.choices[0].message.content or "").strip()
@@ -1384,11 +1495,18 @@ class VASIService:
         lesions2 = result2.get("suspected_lesions", [])
 
         if not lesions1 or not lesions2:
-            logger.info("VLM ensemble: one call found 0 lesions, returning intersection (0)")
-            result1["suspected_lesions"] = []
-            result1["lesion_bboxes"] = []
-            result1["_ensemble"] = True
-            return result1
+            # Union fallback: if one ensemble call found 0 lesions, do NOT force
+            # the intersection to empty (that would be a false negative). Use the
+            # non-empty call's lesions, flagged so callers know ensemble didn't
+            # intersect. Only when BOTH find 0 do we legitimately return [].
+            non_empty = result1 if lesions1 and not lesions2 else (result2 if lesions2 and not lesions1 else result1)
+            logger.info(
+                "VLM ensemble: one call found 0 lesions (n1=%d, n2=%d), using union fallback",
+                len(lesions1), len(lesions2),
+            )
+            non_empty["_ensemble"] = True
+            non_empty["_ensemble_fallback"] = "single_nonempty"
+            return non_empty
 
         # Intersect: keep lesions where bbox IoU > 0.3 with some lesion in other call
         IOU_THRESHOLD = 0.2

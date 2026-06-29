@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from web.backend.database.database import get_db
 from web.backend.database.models import Post, User
 from web.backend.services.auth import auth
+from web.backend.services.audit import AuditLogService
 from web.backend.services.im_service import ImService
 
 router = APIRouter(prefix="/api/im/share", tags=["IM分享"])
@@ -39,6 +40,18 @@ async def share_post(
                 "thumbnail": post.cover_image_url if hasattr(post, 'cover_image_url') else None,
             },
         )
+        try:
+            AuditLogService.log(
+                db=db,
+                action="community.share_post",
+                actor_id=current_user.id,
+                target_type="post",
+                target_id=post.id,
+                details={"conversation_id": req.conversation_id},
+                revokeable=True,
+            )
+        except Exception:
+            pass
         return service._serialize_message(msg)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

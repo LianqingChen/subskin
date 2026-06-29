@@ -2,10 +2,8 @@
 Tests for comment API endpoints
 """
 
-from unittest.mock import patch
 from datetime import datetime
 
-import pytest
 from fastapi import status
 
 
@@ -32,15 +30,18 @@ class TestListComments:
         assert isinstance(data, list)
         assert len(data) == 0
 
-    @patch("web.backend.api.comment.get_comments_by_page")
-    def test_get_comments_only_approved(self, mock_get_comments, client, db_session):
-        """Test only approved comments are returned"""
+    def test_get_comments_only_approved(self, client, db_session):
+        """Test only approved comments are returned
+
+        Exercises the real service layer (get_comments_by_page) which filters
+        ``approved == True``; no service patch so the db query actually runs.
+        """
         from web.backend.database.models import Comment, User
 
         user = User(
             username="user2",
             email="user2@example.com",
-            hashed_password="hash",
+            hashed_password="hash",  # pragma: allowlist secret
             is_active=True,
             is_admin=False,
             created_at=datetime.utcnow(),
@@ -51,7 +52,7 @@ class TestListComments:
 
         approved_comment = Comment(
             content="Approved comment",
-            page_path="/test-page-2",
+            page_path="test-page-2",
             user_id=user.id,
             approved=True,
             created_at=datetime.utcnow(),
@@ -59,7 +60,7 @@ class TestListComments:
         )
         pending_comment = Comment(
             content="Pending comment",
-            page_path="/test-page-2",
+            page_path="test-page-2",
             user_id=user.id,
             approved=False,
             created_at=datetime.utcnow(),

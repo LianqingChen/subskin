@@ -1,33 +1,14 @@
-from typing import Any, cast
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from web.backend.database.database import get_db
 from web.backend.database.models import User
+from web.backend.services.admin_auth import get_admin_user
 from web.backend.services.analytics import AnalyticsService
-from web.backend.services.auth import get_current_user
 
 router = APIRouter()
-
-ADMIN_PHONE_ALLOWLIST = {"15810004327", "17319030290", "15978713663", "18790010679"}
-
-
-async def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
-    is_admin = cast(bool, getattr(current_user, "is_admin", False))
-    phone = getattr(current_user, "phone", None)
-    if not is_admin and phone not in ADMIN_PHONE_ALLOWLIST:
-        raise HTTPException(status_code=403, detail="需要管理员权限")
-    if not is_admin and phone in ADMIN_PHONE_ALLOWLIST:
-        current_user.is_admin = True
-        from web.backend.database.database import SessionLocal
-        with SessionLocal() as db:
-            db_user = db.query(User).filter(User.id == current_user.id).first()
-            if db_user and not db_user.is_admin:
-                db_user.is_admin = True
-                db.commit()
-        current_user.is_admin = True
-    return current_user
 
 
 @router.get("/overview")

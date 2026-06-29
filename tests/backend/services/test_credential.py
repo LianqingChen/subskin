@@ -6,6 +6,7 @@ from typing import cast
 import pytest
 from fastapi import HTTPException
 
+from web.backend.exceptions import CredentialConflictError
 from web.backend.database.models import UserCredential
 from web.backend.services.auth import get_password_hash
 from web.backend.services.credential import (
@@ -44,21 +45,22 @@ def test_bind_credential_rejects_taken_identifier(
     )
     db_session.commit()
 
-    with pytest.raises(HTTPException) as exc_info:
+    # bind_credential raises a domain CredentialConflictError (the API layer
+    # converts it to HTTP 400). The service contract is the domain exception,
+    # not HTTPException directly.
+    with pytest.raises(CredentialConflictError) as exc_info:
         bind_credential(db_session, test_user.id, "phone", "13800138000")
 
-    assert exc_info.value.status_code == 400
-    assert exc_info.value.detail == "该手机号已绑定其他账号"
+    assert "已绑定其他账号" in str(exc_info.value)
 
 
 def test_bind_credential_rejects_duplicate_type_for_same_user(db_session, test_user):
     bind_credential(db_session, test_user.id, "phone", "13800138000")
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(CredentialConflictError) as exc_info:
         bind_credential(db_session, test_user.id, "phone", "13900139000")
 
-    assert exc_info.value.status_code == 400
-    assert exc_info.value.detail == "您已绑定手机号"
+    assert "您已绑定" in str(exc_info.value)
 
 
 def test_unbind_credential_rejects_last_login_method(db_session, test_user):

@@ -150,3 +150,22 @@ site/
 
 # Hermes agent runtime state
 .hermes/
+
+# ─────────────────────────────────────────────
+# Large model / 3D binaries — must not bloat git
+# (download at deploy time or use Git LFS instead)
+# ─────────────────────────────────────────────
+*.pth
+*.glb
+*.gltf
+*.onnx
+*.safetensors
+
+# ─────────────────────────────────────────────
+# Backup / scratch file extensions — never commit
+# ─────────────────────────────────────────────
+*.bak
+*.bak.*
+*.full
+*.simple
+*.orig

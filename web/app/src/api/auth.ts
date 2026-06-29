@@ -157,6 +157,14 @@ export const authApi = {
     return data as { status: string; message: string }
   },
 
+  // Short-lived, file-serving-only token — used by file-url.ts instead of the
+  // long-lived access token so leaked URLs/referrer only expose a token that
+  // grants file reads and expires within minutes.
+  async getFileAccessToken(): Promise<{ token: string; expires_in: number }> {
+    const { data } = await apiClient.get('/files/access-token')
+    return data as { token: string; expires_in: number }
+  },
+
   // User info
   async getMe(token: string) {
     const { data } = await apiClient.get('/users/me', {

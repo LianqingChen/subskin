@@ -37,6 +37,10 @@ class TestFileServing:
         uploads_dir.mkdir(parents=True, exist_ok=True)
         file_path = uploads_dir / "report.txt"
         file_path.write_text("hello", encoding="utf-8")
+        # Temp files require a sidecar .meta naming the owner.
+        (uploads_dir / "report.txt.meta").write_text(
+            str(test_user.id), encoding="utf-8"
+        )
 
         response = client.get(
             "/api/files/serve/temp/report.txt",
@@ -45,6 +49,22 @@ class TestFileServing:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.content == b"hello"
+
+    def test_serve_temp_file_rejects_non_owner(
+        self, client, test_user, monkeypatch, tmp_path
+    ):
+        monkeypatch.chdir(tmp_path)
+        uploads_dir = tmp_path / "data" / "uploads" / "temp"
+        uploads_dir.mkdir(parents=True, exist_ok=True)
+        (uploads_dir / "victim.txt").write_text("secret", encoding="utf-8")
+        (uploads_dir / "victim.txt.meta").write_text("999999", encoding="utf-8")
+
+        response = client.get(
+            "/api/files/serve/temp/victim.txt",
+            headers=_make_access_headers(test_user.username),
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 class TestTempCleanup:
@@ -80,10 +100,16 @@ class TestCorsConfiguration:
     def test_cors_uses_specific_default_origins(self):
         options = _get_cors_options()
 
+        # Origins cover all three environments (production, staging, admin) plus
+        # the local dev servers. Update both here and app/main.py when origins
+        # change.
         assert options["allow_origins"] == [
             "https://subskin.cn",
             "https://www.subskin.cn",
+            "https://admin.subskin.cn",
+            "https://staging.subskin.cn",
             "http://localhost:5173",
             "http://localhost:3000",
+            "http://localhost:5174",  # admin dev server
         ]
         assert options["allow_credentials"] is True

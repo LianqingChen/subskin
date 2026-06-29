@@ -107,9 +107,16 @@ async def get_target_audit_trail(
     current_user: User = Depends(auth),
     db: Session = Depends(get_db),
 ):
+    # Non-admins only see their own actions on the target (prevents enumerating
+    # other users' audit trails by naming a target they can see).
+    actor_filter = None if bool(getattr(current_user, "is_admin", False)) else current_user.id
     service = AuditLogService(db)
     total, logs = service.get_log_by_target(
-        target_type=target_type, target_id=target_id, limit=limit, offset=offset
+        target_type=target_type,
+        target_id=target_id,
+        limit=limit,
+        offset=offset,
+        actor_user_id=actor_filter,
     )
     return AuditLogListResponse(
         total=total, items=[_log_to_response(log) for log in logs]

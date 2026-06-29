@@ -106,7 +106,7 @@ def test_create_comment_saves_to_db(db_session, test_user):
     db_comment = db_session.query(Comment).filter(Comment.id == result.id).first()
     assert db_comment is not None
     assert db_comment.content == "Test comment"
-    assert db_comment.approdi is False
+    assert db_comment.approved is False
 
 
 def test_create_comment_user_username(db_session, test_user):

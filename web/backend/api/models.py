@@ -37,6 +37,8 @@ class VASIAssessmentResponse(BaseModel):
     assessment_source: Optional[str] = Field(None, description="AI识别来源: vlm-guided / auto-sam / mock")
     suspected_lesions: Optional[List[Dict[str, Any]]] = Field(None, description="VLM检测到的疑似白斑列表")
     skin_region_ratio: Optional[float] = Field(None, description="皮肤区域占图片百分比")
+    reference_objects: Optional[List[Dict[str, Any]]] = Field(None, description="VLM检测到的参照物（用于尺寸估计）")
+    skin_fitzpatrick: Optional[Any] = Field(None, description="Fitzpatrick 肤色分型（VLM 推断）")
     # Phase A — 白斑视觉特征分析（非诊断性观察描述）
     visual_features: Optional[Dict[str, Any]] = Field(None, description="6维视觉特征分析结果")
 

@@ -69,9 +69,11 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
-  if (!to.meta.public && !authStore.isLoggedIn) {
+  // Admin SPA is admin-only: a logged-in non-admin must not access any route
+  // (even if they reuse a main-app token). Redirect to login with a notice.
+  if (!to.meta.public && (!authStore.isLoggedIn || !authStore.user?.is_admin)) {
     next('/login')
-  } else if (to.path === '/login' && authStore.isLoggedIn) {
+  } else if (to.path === '/login' && authStore.isLoggedIn && authStore.user?.is_admin) {
     next('/')
   } else {
     next()

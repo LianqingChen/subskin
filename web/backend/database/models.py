@@ -391,6 +391,13 @@ class PostLike(Base):
     """帖子点赞"""
 
     __tablename__ = "post_likes"
+    __table_args__ = (
+        # Prevent double-like races: Bookmark and Follow already have analogous
+        # unique constraints. Without this, two concurrent toggle_like requests
+        # can both INSERT, producing duplicate (post_id, user_id) rows and
+        # inflating like counts.
+        UniqueConstraint("post_id", "user_id", name="uq_post_like_post_user"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     post_id = Column(Integer, ForeignKey("posts.id"), nullable=False, index=True)

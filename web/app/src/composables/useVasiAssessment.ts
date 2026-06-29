@@ -282,6 +282,14 @@ const toast = useToast()
     if (!uploadedImage.value || !selectedBodySite.value) return
     isPreciseAssessing.value = true
     try {
+      // Abandon any existing draft assessment before starting a new precise
+      // run. Otherwise repeated precise attempts leave orphaned draft rows
+      // (status=draft) that never get finalized or abandoned, polluting the
+      // assessments table and potentially history/trend.
+      if (assessmentResult.value?.id) {
+        try { await vasiApi.abandonAssessment(assessmentResult.value.id) } catch { /* best-effort */ }
+        assessmentResult.value = null
+      }
       const data = await vasiApi.assess(uploadedImage.value, selectedBodySite.value, 'precise', {
         hasReferenceCard: hasReferenceCard.value,
       })

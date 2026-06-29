@@ -310,6 +310,7 @@ class TestPromoteTempUpload:
 
 
 class TestAskQuestionStream:
+    @patch("web.backend.api.rag._temp_upload_dir")
     @patch("web.backend.api.rag._generate_diary_draft")
     @patch("web.backend.api.rag._interpret_report")
     @patch("web.backend.api.rag._extract_document_text")
@@ -322,16 +323,24 @@ class TestAskQuestionStream:
         mock_extract_document_text,
         mock_interpret_report,
         mock_generate_diary_draft,
+        mock_temp_upload_dir,
         client,
         test_user,
-        monkeypatch,
         tmp_path,
     ):
-        monkeypatch.chdir(tmp_path)
         headers = _make_access_headers(test_user.username)
         temp_dir = tmp_path / "data" / "uploads" / "temp"
         temp_dir.mkdir(parents=True)
         (temp_dir / "tmp_report123.txt").write_text("TSH 5.2", encoding="utf-8")
+        # Temp attachments require a sidecar .meta naming the owner.
+        (temp_dir / "tmp_report123.txt.meta").write_text(
+            str(test_user.id), encoding="utf-8"
+        )
+        # Patch _temp_upload_dir to return the explicit temp dir so the endpoint
+        # finds the attachment regardless of the worker thread's cwd (the
+        # endpoint uses Path("data/uploads/temp") which is cwd-relative and
+        # unreliable under TestClient's threadpool).
+        mock_temp_upload_dir.return_value = temp_dir
 
         mock_doc = MagicMock(
             title="参考文档",
@@ -356,7 +365,7 @@ class TestAskQuestionStream:
                 }
             ],
             "recommendations": ["1-3个月内复查甲状腺功能。"],
-            "disclaimer": "⚠️ 以上解读由AI生成，仅供参考，不构成医疗诊断。请咨询医生获取专业意见。",
+            "disclaimer": "以上解读由AI生成，仅供参考，不构成医疗诊断。请咨询医生获取专业意见。",
         }
         mock_generate_diary_draft.return_value = {
             "type": "diary",
@@ -379,7 +388,7 @@ class TestAskQuestionStream:
         assert {
             "type": "thinking",
             "stage": "reading_document",
-            "message": "📄 正在解读文档...",
+            "message": "正在解读文档...",
         } in events
         assert any(
             event["type"] == "action_card"
@@ -419,6 +428,10 @@ class TestAskQuestionStream:
         temp_dir = tmp_path / "data" / "uploads" / "temp"
         temp_dir.mkdir(parents=True)
         (temp_dir / "tmp_image123.jpg").write_bytes(b"fake-image")
+        # Temp attachments require a sidecar .meta naming the owner.
+        (temp_dir / "tmp_image123.jpg.meta").write_text(
+            str(test_user.id), encoding="utf-8"
+        )
 
         mock_doc = MagicMock(
             title="参考文档",

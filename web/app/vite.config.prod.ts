@@ -62,21 +62,15 @@ export default defineConfig({
             handler: 'NetworkOnly',
           },
           {
-            urlPattern: /^https?:\/\/.*\/api\/(community|user|vasi|medical-reports)\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 5 },
-              networkTimeoutSeconds: 5,
-            },
+            // All API calls: network-only, never cached (L3 data leakage on
+            // shared devices — see vite.config.ts for rationale).
+            urlPattern: /^https?:\/\/.*\/api\/.*/i,
+            handler: 'NetworkOnly',
           },
           {
+            // User uploads (L3): never cache.
             urlPattern: /^https?:\/\/.*\/uploads\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'uploads-cache',
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 },
-            },
+            handler: 'NetworkOnly',
           },
         ],
       },

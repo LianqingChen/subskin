@@ -9,18 +9,42 @@ from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.orm import Session
 
 from web.backend.database.database import get_db
-from web.backend.database.models import MedicalReport, MedicalReportFile, User
+from web.backend.database.models import (
+    MedicalReport,
+    MedicalReportFile,
+    Post,
+    PostImage,
+    User,
+)
+from web.backend.models.image_label import ImageLabel
+from web.backend.models.vasi import VASIAssessment
 from web.backend.services.auth import (
     auth,
     create_access_token,
+    create_file_access_token,
     get_current_user_optional,
     get_user_from_access_token,
+    verify_file_access_token,
 )
 from web.backend.services.temp_cleanup import cleanup_temp_uploads
 
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+@router.get("/access-token")
+async def issue_file_access_token(current_user: User = Depends(auth)):
+    """Mint a short-lived, file-serving-only token.
+
+    The frontend should request this once per session and use it in file URLs
+    (``?access_token=<file_token>``) instead of the long-lived API access token,
+    so that leaked URLs/referrer/logs only expose a token that grants file reads
+    and expires within minutes.
+    """
+    username = cast(str, cast(object, current_user.username))
+    token = create_file_access_token(username)
+    return {"token": token, "expires_in": 300}
 
 
 def _uploads_dir() -> Path:
@@ -53,6 +77,11 @@ def _authenticate_file_request(
         return current_user
 
     if access_token:
+        # Prefer the short-lived, file-scoped token; fall back to a full access
+        # token for backward compatibility with older clients.
+        token_user = verify_file_access_token(access_token, db)
+        if token_user is not None:
+            return token_user
         token_user = get_user_from_access_token(access_token, db)
         if token_user is not None:
             return token_user
@@ -65,7 +94,131 @@ def _authenticate_file_request(
 
 
 def _is_public_path(file_path: str) -> bool:
-    return file_path.startswith("community/")
+    # Deprecated: community uploads are no longer treated as world-readable.
+    # Kept for backward compatibility but always returns False.
+    return False
+
+
+def _parse_owner_id_from_filename(stored_name: str) -> Optional[int]:
+    """Extract user_id from filenames of the form ``{user_id}_{hash}{ext}``."""
+    base = stored_name.rsplit("/", 1)[-1]
+    stem = base.rsplit(".", 1)[0]
+    if "_" not in stem:
+        return None
+    prefix = stem.split("_", 1)[0]
+    try:
+        return int(prefix)
+    except ValueError:
+        return None
+
+
+def _community_image_is_public(db: Session, file_path: str) -> bool:
+    """True if the community image is referenced by a public, non-blocked post."""
+    filename = file_path.rsplit("/", 1)[-1]
+    rows = (
+        db.query(PostImage)
+        .filter(PostImage.image_url.like(f"%{filename}"))
+        .all()
+    )
+    for img in rows:
+        post = img.post
+        if post is None:
+            continue
+        if not bool(post.is_private) and post.moderation_status != "blocked":
+            return True
+    return False
+
+
+def _assert_path_ownership(file_path: str, user: User, db: Session) -> None:
+    """Verify ``user`` may access an uploaded file under ``data/uploads/{file_path}``.
+
+    L3 medical / lesion / IM files require ownership; community images are allowed
+    when the viewer owns them or they belong to a public, non-blocked post; avatars
+    are public-facing and only require an authenticated session.
+    """
+    parts = file_path.split("/", 1)
+    bucket = parts[0] if parts else ""
+    rest = parts[1] if len(parts) > 1 else ""
+
+    # Avatars are displayed on public profiles/community cards → any logged-in user.
+    if bucket == "avatar":
+        return
+
+    if bucket == "community":
+        owner_id = _parse_owner_id_from_filename(rest)
+        if owner_id is not None and owner_id == user.id:
+            return
+        if _community_image_is_public(db, file_path):
+            return
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="无权访问该文件"
+        )
+
+    if bucket == "reports":
+        owner_id = _parse_owner_id_from_filename(rest)
+        if owner_id is not None and owner_id == user.id:
+            return
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="无权访问该文件"
+        )
+
+    if bucket == "files":
+        owner_id = _parse_owner_id_from_filename(rest)
+        if owner_id is not None and owner_id == user.id:
+            return
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="无权访问该文件"
+        )
+
+    if bucket == "im":
+        uid_str = rest.split("/", 1)[0] if "/" in rest else ""
+        try:
+            uid = int(uid_str)
+        except ValueError:
+            uid = None
+        if uid == user.id:
+            return
+        owner_id = _parse_owner_id_from_filename(rest)
+        if owner_id is not None and owner_id == user.id:
+            return
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="无权访问该文件"
+        )
+
+    if bucket == "temp":
+        meta_file = _uploads_dir() / file_path
+        meta_path = meta_file.with_name(f"{meta_file.name}.meta")
+        if meta_path.exists():
+            owner_id = meta_path.read_text(encoding="utf-8").strip()
+            if owner_id == str(user.id):
+                return
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="无权访问该文件"
+        )
+
+    if bucket == "vasi":
+        image_url = f"/api/files/serve/vasi/{rest}"
+        assessment = (
+            db.query(VASIAssessment)
+            .filter(VASIAssessment.image_url == image_url)
+            .first()
+        )
+        if assessment and assessment.user_id == user.id:
+            return
+        # Admin-uploaded training images (ImageLabel) — admin can view.
+        label = (
+            db.query(ImageLabel).filter(ImageLabel.image_url == image_url).first()
+        )
+        if label and bool(getattr(user, "is_admin", False)):
+            return
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="无权访问该文件"
+        )
+
+    # Any other bucket (e.g. pages is handled elsewhere) — deny by default.
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN, detail="无权访问该文件"
+    )
 
 
 def _resolve_upload_path_from_url(file_url: str) -> Path:
@@ -158,7 +311,8 @@ async def serve_file(
             )
 
     if not _is_public_path(file_path):
-        _ = _authenticate_file_request(access_token, current_user, db)
+        user = _authenticate_file_request(access_token, current_user, db)
+        _assert_path_ownership(file_path, user, db)
     requested_path = _resolve_requested_file(file_path)
     # Force attachment for PDFs (browsers like WeChat can't render them inline);
     # images and other formats use their natural content-type for inline viewing.

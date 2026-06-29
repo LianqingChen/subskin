@@ -1,5 +1,15 @@
 """Test fixtures for backend API tests"""
 
+# Set test environment defaults BEFORE any backend module is imported.
+# web.backend.app.main and web.backend.services.auth read SECRET_KEY at import
+# time (no default), so without this the API test collection raises KeyError.
+import os as _os
+
+_os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing")
+_os.environ.setdefault("ALGORITHM", "HS256")
+_os.environ.setdefault("SMS_PROVIDER", "log")
+_os.environ.setdefault("RAG_USE_VECTOR", "false")
+
 import json
 from datetime import datetime, timedelta
 from typing import Generator
@@ -141,7 +151,7 @@ def test_comment(db_session: Session, test_user: User) -> Comment:
     """Create a test comment"""
     comment = Comment(
         content="Test comment content",
-        page_path="/test-page",
+        page_path="test-page",
         user_id=test_user.id,
         approved=True,
         created_at=datetime.utcnow(),

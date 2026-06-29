@@ -691,6 +691,7 @@ def segment_vitiligo_guided(
     lesion_bboxes: Optional[List[List[float]]] = None,
     lesion_metas: Optional[List[Dict[str, Any]]] = None,
     is_ensemble: bool = False,
+    lesion_edge_points: Optional[List[List[List[float]]]] = None,
 ) -> Dict[str, Any]:
     """VLM-guided SAM segmentation: use VLM's semantic understanding to
     guide SAM with box/point prompts instead of color heuristics.
@@ -709,6 +710,9 @@ def segment_vitiligo_guided(
         is_ensemble: True when lesions come from VLM consensus (two calls).
             Enables more aggressive low-contrast retry because consensus lesions
             are higher quality (fewer false positives).
+        lesion_edge_points: [[[x,y], ...], ...] VLM's per-lesion boundary
+            keypoints (normalized 0-1). Used as additional positive SAM prompts
+            alongside the box, to refine irregular lesion edges.
     """
     result: Dict[str, Any] = {
         "success": False,
@@ -910,19 +914,57 @@ def segment_vitiligo_guided(
                     bx2 = max(0, min(bx2, crop_w))
                     by2 = max(0, min(by2, crop_h))
                     if bx2 > bx1 + 5 and by2 > by1 + 5:
+                        # Collect VLM edge_points that fall inside the box as
+                        # extra positive prompts — they steer SAM toward the
+                        # true (often irregular) lesion boundary instead of the
+                        # rectangular box. Points outside the box/ crop are dropped.
+                        edge_pos: List[List[int]] = []
+                        if lesion_edge_points and i < len(lesion_edge_points):
+                            for ep in lesion_edge_points[i] or []:
+                                if not (isinstance(ep, (list, tuple)) and len(ep) == 2):
+                                    continue
+                                epx = max(0.0, min(1.0, float(ep[0]))) * w - crop_x1
+                                epy = max(0.0, min(1.0, float(ep[1]))) * h - crop_y1
+                                epx_i, epy_i = int(round(epx)), int(round(epy))
+                                if 0 <= epx_i < crop_w and 0 <= epy_i < crop_h:
+                                    edge_pos.append([epx_i, epy_i])
+
                         try:
-                            masks, scores, _ = predictor.predict(
-                                box=np.array([[bx1, by1, bx2, by2]]),
-                                multimask_output=True,
-                            )
+                            if edge_pos:
+                                # Combine box + positive edge points.
+                                # SAM expects point_coords as [N,2] (x,y) and
+                                # matching labels (1=positive). Dedup to avoid
+                                # redundant prompts skewing the mask.
+                                seen = set()
+                                unique_pos: List[List[int]] = []
+                                for p in edge_pos:
+                                    key = (p[0], p[1])
+                                    if key not in seen:
+                                        seen.add(key)
+                                        unique_pos.append(p)
+                                point_coords = np.array(unique_pos, dtype=np.float32)
+                                point_labels = np.ones(len(unique_pos), dtype=np.int32)
+                                masks, scores, _ = predictor.predict(
+                                    box=np.array([[bx1, by1, bx2, by2]]),
+                                    point_coords=point_coords,
+                                    point_labels=point_labels,
+                                    multimask_output=True,
+                                )
+                                ep_note = f"+{len(unique_pos)}edge"
+                            else:
+                                masks, scores, _ = predictor.predict(
+                                    box=np.array([[bx1, by1, bx2, by2]]),
+                                    multimask_output=True,
+                                )
+                                ep_note = ""
                             best_idx = int(np.argmax(scores))
                             mask_crop = np.asarray(masks[best_idx]).astype(bool)
                             score = float(scores[best_idx])
-                            prompt_type = f"vlm-bbox[{bx1},{by1},{bx2},{by2}]"
+                            prompt_type = f"vlm-bbox[{bx1},{by1},{bx2},{by2}]{ep_note}"
                             logger.debug(
-                                "Lesion %d VLM direct bbox: [%.2f,%.2f,%.2f,%.2f] → crop %dx%d score=%.3f",
+                                "Lesion %d VLM direct bbox: [%.2f,%.2f,%.2f,%.2f] → crop %dx%d score=%.3f%s",
                                 i + 1, vlm_bbox[0], vlm_bbox[1], vlm_bbox[2], vlm_bbox[3],
-                                bx2 - bx1, by2 - by1, score,
+                                bx2 - bx1, by2 - by1, score, ep_note,
                             )
                         except Exception as e:
                             logger.warning("Lesion %d VLM bbox prompt failed: %s", i + 1, e)

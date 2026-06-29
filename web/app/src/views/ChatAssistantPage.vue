@@ -116,6 +116,12 @@ function matchScore(input: string, question: string): number {
 function setMode(m: Mode) {
   if (mode.value === m) return
   mode.value = m
+  // Reset the conversation when switching between knowledge (chat) and
+  // counseling modes. Both previously shared the same conversationId, so a
+  // counseling session inherited the knowledge mode's medical context (and
+  // vice-versa), producing off-mode answers. A fresh conversationId + cleared
+  // messages keeps each mode's context self-contained.
+  chatStore.clearChat()
 }
 
 function onInputFocus() {

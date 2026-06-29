@@ -57,12 +57,31 @@ async def chat_websocket_endpoint(websocket: WebSocket, token: str):
                 await websocket.send_json({"type": "pong"})
             elif event.get("type") == "read":
                 from web.backend.database.database import SessionLocal
-                from web.backend.database.models import ImMessageRead
+                from web.backend.database.models import (
+                    ImMessage,
+                    ImMessageRead,
+                    ImConversationMember,
+                )
                 from datetime import datetime, timezone
 
                 db = SessionLocal()
                 try:
                     for mid in event.get("message_ids", []):
+                        # Verify the user is a member of the message's
+                        # conversation before recording a read receipt.
+                        msg = db.query(ImMessage).filter(ImMessage.id == mid).first()
+                        if msg is None:
+                            continue
+                        is_member = (
+                            db.query(ImConversationMember)
+                            .filter(
+                                ImConversationMember.conversation_id == msg.conversation_id,
+                                ImConversationMember.user_id == user.id,
+                            )
+                            .first()
+                        )
+                        if not is_member:
+                            continue
                         existing = (
                             db.query(ImMessageRead)
                             .filter(

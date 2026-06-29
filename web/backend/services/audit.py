@@ -71,12 +71,65 @@ class AuditLogService:
         target_id: int,
         limit: int = 20,
         offset: int = 0,
+        actor_user_id: Optional[int] = None,
     ) -> Tuple[int, List[AuditLog]]:
+        """Audit trail for a target.
+
+        When ``actor_user_id`` is supplied, only logs authored by that user are
+        returned — this prevents a requester from enumerating other users'
+        actions on a target they can name (audit target IDOR). Pass ``None`` to
+        return all logs (admin-only at the API layer).
+        """
         query = self.db.query(AuditLog).filter_by(
             target_type=target_type, target_id=target_id
         )
+        if actor_user_id is not None:
+            query = query.filter(AuditLog.user_id == actor_user_id)
         total = query.count()
         logs = (
             query.order_by(desc(AuditLog.created_at)).offset(offset).limit(limit).all()
         )
         return total, logs
+
+    @classmethod
+    def log(
+        cls,
+        db: Session,
+        action: str,
+        actor_id: int,
+        target_type: str,
+        target_id: Optional[object] = None,
+        details: Optional[dict] = None,
+        scope: str = "public",
+        revokeable: bool = True,
+        ip_address: Optional[str] = None,
+    ) -> AuditLog:
+        """Convenience classmethod used by admin endpoints.
+
+        Maps the ``actor_id``/``details`` kwargs (used at call sites) onto the
+        ``create_log`` instance-method signature (``user_id``/``detail``).
+        """
+        import json as _json
+
+        tid: Optional[int] = None
+        if target_id is not None:
+            try:
+                tid = int(target_id)
+            except (TypeError, ValueError):
+                tid = None
+        detail_str: Optional[str] = None
+        if details is not None:
+            try:
+                detail_str = _json.dumps(details, ensure_ascii=False)
+            except (TypeError, ValueError):
+                detail_str = None
+        return cls(db).create_log(
+            user_id=actor_id,
+            action=action,
+            target_type=target_type,
+            target_id=tid,
+            scope=scope,
+            detail=detail_str,
+            revokeable=revokeable,
+            ip_address=ip_address,
+        )

@@ -45,6 +45,7 @@ from web.backend.services.rag import (
     answer_question_stream,
     is_site_feature_question,
     is_vitiligo_related,
+    is_crisis_message,
     search_documents,
 )
 from web.backend.services.auth import auth
@@ -157,24 +158,109 @@ def _increment_guest_usage(db: Session, fingerprint: str) -> int:
     return usage.question_count
 
 
+def _refund_guest_usage(db: Session, fingerprint: str) -> None:
+    """Refund one guest question count (clamped at 0).
+
+    Called when a guest stream fails before producing a useful answer, so the
+    user's daily quota is not consumed by an error. Best-effort: any DB failure
+    is swallowed so it never masks the original error.
+    """
+    try:
+        today = _today_str()
+        usage = (
+            db.query(GuestUsage)
+            .filter(GuestUsage.client_fingerprint == fingerprint)
+            .filter(GuestUsage.date == today)
+            .first()
+        )
+        if usage and usage.question_count > 0:
+            usage.question_count -= 1
+            db.commit()
+    except Exception:
+        db.rollback()
+
+
+def _assert_conversation_ownership(
+    db: Session, conversation_id: Optional[str], user_id: Optional[int]
+) -> None:
+    """Ensure ``user_id`` may append to ``conversation_id``.
+
+    Prevents cross-user reads/injections: a logged-in user may only use a
+    conversation whose owner is themselves (or an unclaimed guest conversation,
+    which is adopted on first logged-in use). Guests are blocked from any
+    conversation already claimed by a user.
+    """
+    if not conversation_id:
+        return
+    conv = (
+        db.query(Conversation)
+        .filter(Conversation.conversation_id == conversation_id)
+        .first()
+    )
+    if conv is None:
+        return  # created later with the correct user_id
+    # Soft-deleted conversations must not be readable or appendable — otherwise
+    # a user (or a leaked conversation_id) could continue reading/injecting into
+    # a conversation the user explicitly deleted.
+    if getattr(conv, "is_deleted", False):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="该会话已被删除",
+        )
+    owner = conv.user_id
+    if owner is None:
+        if user_id is not None:
+            conv.user_id = user_id
+            db.commit()
+        return
+    if user_id is None or owner != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权访问该会话",
+        )
+
+
+def _enforce_chat_rate_limit(user_id: Optional[int]) -> None:
+    """Per-user rate limit for logged-in chat endpoints.
+
+    Guests are rate-limited via the daily GUEST_DAILY_LIMIT quota; logged-in
+    users previously had no limit, making the LLM-backed endpoints a cost/DoS
+    abuse vector. Keyed by user_id (falls back to a shared anonymous bucket).
+    """
+    from web.backend.app.middleware.rate_limit import chat_limiter
+
+    key = f"chat:user:{user_id}" if user_id else "chat:anon"
+    if not chat_limiter.is_allowed(key):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="提问过于频繁，请稍后再试",
+        )
+    chat_limiter.hit(key)
+
+
 @router.post("/ask", response_model=QuestionResponse)
 def ask_question(
     request: QuestionRequest,
     db: Session = Depends(get_db),
     current_user: DBUser = Depends(auth),
 ):
-    """已登录用户提问，无次数限制"""
+    """已登录用户提问（按用户限速，防止 LLM 成本滥用）"""
     if len(request.question) > LOGGED_IN_MAX_QUESTION_LENGTH:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"问题长度不能超过{LOGGED_IN_MAX_QUESTION_LENGTH}个字符",
         )
 
+    user_id = current_user.id if current_user else None
+    _assert_conversation_ownership(db, request.conversation_id, user_id)
+    # Per-user chat rate limit (guests are separately capped by daily quota).
+    _enforce_chat_rate_limit(user_id)
+
     return answer_question(
         db=db,
         question=request.question,
         conversation_id=request.conversation_id,
-        user_id=current_user.id if current_user else None,
+        user_id=user_id,
         mode=request.mode,
     )
 
@@ -200,7 +286,15 @@ def ask_question_public(
         )
 
     # 1. 话题相关性校验（网站功能问题也放行，只有完全不相关的才拒绝）
-    if not is_vitiligo_related(question) and not is_site_feature_question(question):
+    # Crisis / suicidal-ideation messages bypass the vitiligo-only topic gate.
+    # A guest typing "我不想活了" must reach the assistant so it can respond
+    # with support resources — blocking it with a 400 "off-topic" is a safety
+    # regression.
+    if (
+        not is_crisis_message(question)
+        and not is_vitiligo_related(question)
+        and not is_site_feature_question(question)
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="抱歉，当前AI助手专注于白癜风及皮肤健康相关问题。如有其他问题，建议咨询相关领域的专业人士。",
@@ -436,6 +530,7 @@ def confirm_action(
 def ask_question_stream(
     request: QuestionRequestWithAttachments,
     current_user: DBUser = Depends(auth),
+    db: Session = Depends(get_db),
 ):
     if len(request.question) > LOGGED_IN_MAX_QUESTION_LENGTH:
         raise HTTPException(
@@ -443,6 +538,8 @@ def ask_question_stream(
             detail=f"问题长度不能超过{LOGGED_IN_MAX_QUESTION_LENGTH}个字符",
         )
     user_id = current_user.id if current_user else None
+    _assert_conversation_ownership(db, request.conversation_id, user_id)
+    _enforce_chat_rate_limit(user_id)
     db = SessionLocal()
     try:
         return StreamingResponse(
@@ -478,7 +575,15 @@ def ask_question_public_stream(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"访客问题长度不能超过{GUEST_MAX_QUESTION_LENGTH}个字符，登录后可提问更长的内容",
         )
-    if not is_vitiligo_related(question) and not is_site_feature_question(question):
+    # Crisis / suicidal-ideation messages bypass the vitiligo-only topic gate.
+    # A guest typing "我不想活了" must reach the assistant so it can respond
+    # with support resources — blocking it with a 400 "off-topic" is a safety
+    # regression.
+    if (
+        not is_crisis_message(question)
+        and not is_vitiligo_related(question)
+        and not is_site_feature_question(question)
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="抱歉，当前AI助手专注于白癜风及皮肤健康相关问题。如有其他问题，建议咨询相关领域的专业人士。",
@@ -506,6 +611,7 @@ def ask_question_public_stream(
                 is_guest=True,
                 remaining_quota=remaining,
                 mode=request.mode,
+                guest_fingerprint=fingerprint,
             ),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
@@ -527,6 +633,7 @@ def _stream_rag_response(
     is_guest: bool,
     remaining_quota: Optional[int] = None,
     mode: Optional[str] = None,
+    guest_fingerprint: Optional[str] = None,
 ):
     def event(data: dict) -> str:
         return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
@@ -570,6 +677,35 @@ def _stream_rag_response(
                     continue
 
                 filepath = matches[0]
+
+                # Owner check: temp files carry a sidecar .meta with owner_id.
+                # Logged-in users may only analyze their own temp uploads; guests
+                # are blocked from attachment analysis entirely.
+                if is_guest:
+                    yield event(
+                        {
+                            "type": "error",
+                            "message": "访客暂不支持附件分析，请登录后使用。",
+                        }
+                    )
+                    continue
+                meta_path = _temp_upload_meta_path(filepath)
+                if meta_path.exists():
+                    owner_id = meta_path.read_text(encoding="utf-8").strip()
+                    if owner_id != str(user_id):
+                        logger.warning(
+                            "Rejected temp attachment access by user %s: %s",
+                            user_id,
+                            filepath.name,
+                        )
+                        continue
+                else:
+                    logger.warning(
+                        "Temp attachment without metadata rejected: %s",
+                        filepath.name,
+                    )
+                    continue
+
                 suffix = filepath.suffix.lower()
 
                 if suffix in {".jpg", ".jpeg", ".png", ".webp"}:
@@ -705,6 +841,15 @@ def _stream_rag_response(
         if is_guest:
             done_data["is_guest"] = True
         yield event(done_data)
+    except Exception:
+        # Stream failed before completing the answer. For guest users the daily
+        # quota was incremented up-front; refund it so an error doesn't burn a
+        # guest's limited free attempts. Logged for diagnosis, then re-raised so
+        # the client still sees the failure.
+        logger.exception("RAG stream failed before completion")
+        if is_guest and guest_fingerprint:
+            _refund_guest_usage(db, guest_fingerprint)
+        raise
     finally:
         db.close()
 
@@ -764,7 +909,7 @@ def get_conversation_messages(
         )
         .first()
     )
-    if not conv:
+    if not conv or getattr(conv, "is_deleted", False):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="对话不存在")
     messages = (
         db.query(Message)

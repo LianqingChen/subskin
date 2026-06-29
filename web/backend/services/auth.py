@@ -22,6 +22,10 @@ ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 ADMIN_TOKEN_EXPIRE_DAYS = int(os.getenv("ADMIN_TOKEN_EXPIRE_DAYS", "365"))  # 管理员token几乎永不过期
+# Short-lived, file-serving-only token: scoped to ``scope="files"`` and never
+# accepted by general API endpoints. Limits the blast radius of a leaked URL
+# token (logs/referrer) to file reads, and expires within minutes.
+FILE_TOKEN_EXPIRE_MINUTES = int(os.getenv("FILE_TOKEN_EXPIRE_MINUTES", "5"))
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -50,6 +54,43 @@ def create_access_token(
         expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire, "type": "access", "is_admin": is_admin})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def create_file_access_token(username: str) -> str:
+    """Mint a short-lived, file-serving-only token for ``username``.
+
+    Distinct from the general access token: ``type="file"`` and
+    ``scope="files"``. The file-serving endpoint accepts this token (preferred)
+    or a full access token for backward compatibility. File tokens never grant
+    API access outside ``/api/files``.
+    """
+    expire = datetime.now(timezone.utc) + timedelta(minutes=FILE_TOKEN_EXPIRE_MINUTES)
+    to_encode = {
+        "sub": username,
+        "type": "file",
+        "scope": "files",
+        "exp": expire,
+    }
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def verify_file_access_token(token: str, db: Session) -> Optional[User]:
+    """Verify a file-scoped token and return the user (active, non-banned)."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "file" or payload.get("scope") != "files":
+            return None
+        username = payload.get("sub")
+        if not isinstance(username, str):
+            return None
+    except JWTError:
+        return None
+    user = db.query(User).filter(User.username == username).first()
+    if user is None or not bool(getattr(user, "is_active", False)):
+        return None
+    if getattr(user, "user_status", "normal") == "banned":
+        return None
+    return user
 
 
 def create_refresh_token(data: dict[str, Any], db: Session, is_admin: bool = False) -> str:
@@ -145,7 +186,19 @@ def get_user_from_access_token(token: str, db: Session) -> Optional[User]:
     except JWTError:
         return None
 
-    return db.query(User).filter(User.username == username).first()
+    user = db.query(User).filter(User.username == username).first()
+    # Inactive accounts cannot authenticate; banned accounts are rejected at the
+    # ``get_current_user`` layer with a specific message so the frontend can
+    # surface the ban reason rather than a generic 401.
+    if user is not None and not bool(getattr(user, "is_active", False)):
+        return None
+    return user
+
+
+def _banned_exception(user: User) -> HTTPException:
+    reason = getattr(user, "ban_reason", None) or ""
+    detail = "账号已被封禁" + (f"：{reason}" if reason else "")
+    return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
 
 async def get_current_user(
@@ -162,6 +215,8 @@ async def get_current_user(
     user = get_user_from_access_token(token, db)
     if user is None:
         raise credentials_exception
+    if getattr(user, "user_status", "normal") == "banned":
+        raise _banned_exception(user)
     return user
 
 
@@ -175,6 +230,7 @@ async def get_current_user_optional(
     try:
         return await get_current_user(token=token, db=db)
     except HTTPException:
+        # Banned / invalid / inactive → treat as anonymous on optional endpoints.
         return None
 
 
@@ -190,6 +246,8 @@ async def get_required_user(
     user = get_user_from_access_token(token, db)
     if user is None:
         raise credentials_exception
+    if getattr(user, "user_status", "normal") == "banned":
+        raise _banned_exception(user)
     return user
 
 
@@ -203,11 +261,19 @@ def verify_token_ws(token: str):
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("sub")
-        if not user_id:
+        subject = payload.get("sub")
+        token_type = payload.get("type", "access")
+        if not subject or token_type != "access":
             return None
         db = SessionLocal()
-        user = db.query(WsUser).filter(WsUser.id == int(user_id)).first()
+        # Access tokens use the username as ``sub``; fall back to numeric id for
+        # any legacy tokens that may still carry an integer subject.
+        user = db.query(WsUser).filter(WsUser.username == str(subject)).first()
+        if user is None:
+            try:
+                user = db.query(WsUser).filter(WsUser.id == int(subject)).first()
+            except (TypeError, ValueError):
+                user = None
         db.close()
         if user and user.is_active and user.user_status != "banned":
             return user

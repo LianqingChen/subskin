@@ -13,27 +13,10 @@ from sqlalchemy.orm import Session
 
 from web.backend.database.database import get_db
 from web.backend.database.models import User
-from web.backend.services.auth import get_current_user
+from web.backend.services.admin_auth import get_admin_user
+from web.backend.services.audit import AuditLogService
 
 router = APIRouter(prefix="/api/admin", tags=["管理员-综合"])
-
-ADMIN_PHONE_ALLOWLIST = {"15810004327", "17319030290", "15978713663", "18790010679"}
-
-
-async def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
-    is_admin = getattr(current_user, "is_admin", False)
-    phone = getattr(current_user, "phone", None)
-    if not is_admin and phone not in ADMIN_PHONE_ALLOWLIST:
-        raise HTTPException(status_code=403, detail="需要管理员权限")
-    if not is_admin and phone in ADMIN_PHONE_ALLOWLIST:
-        from web.backend.database.database import SessionLocal
-        with SessionLocal() as db:
-            db_user = db.query(User).filter(User.id == current_user.id).first()
-            if db_user and not db_user.is_admin:
-                db_user.is_admin = True
-                db.commit()
-        current_user.is_admin = True
-    return current_user
 
 
 # ── content generation ─────────────────────────────────────────────
@@ -153,15 +136,36 @@ async def system_service_action(
     service_name: str,
     action: str = "restart",
     admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
 ):
-    """控制服务：start / stop / restart"""
-    _ = admin
-    valid_actions = {"start", "stop", "restart"}
+    """控制服务：start / restart.
+
+    ``stop`` is intentionally excluded — a stopped nginx/backend takes the whole
+    site (prod + staging) offline with no UI to recover, and an admin session
+    compromise would let an attacker halt the service permanently. ``restart``
+    covers recovery needs safely.
+    """
+    valid_actions = {"start", "restart"}
     allowed_services = {"subskin-backend", "subskin-scheduler", "nginx"}
     if action not in valid_actions:
         raise HTTPException(status_code=400, detail=f"无效操作，只支持: {', '.join(valid_actions)}")
     if service_name not in allowed_services:
         raise HTTPException(status_code=400, detail=f"不支持的服务，只允许: {', '.join(allowed_services)}")
+    # Audit the service control action — site-level operations must leave a
+    # trail tying the action to the admin who initiated it.
+    try:
+        AuditLogService.log(
+            db=db,
+            action="admin_service_action",
+            actor_id=int(admin.id),
+            target_type="system_service",
+            target_id=service_name,
+            details={"action": action},
+            scope="private",
+            revokeable=False,
+        )
+    except Exception:
+        pass
     try:
         proc = subprocess.run(
             ["systemctl", action, service_name],

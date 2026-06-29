@@ -208,9 +208,9 @@ async def create_post(
     if current_user.user_status == "banned":
         raise HTTPException(status_code=403, detail="账号已被封禁，无法发布内容")
     if current_user.user_status == "muted" and current_user.muted_until:
-        from datetime import timezone as _tz
-        if current_user.muted_until.replace(tzinfo=_tz.utc) > datetime.now(_tz.utc):
-            remaining = current_user.muted_until.replace(tzinfo=_tz.utc) - datetime.now(_tz.utc)
+        from datetime import datetime as _dt, timezone as _tz
+        if current_user.muted_until.replace(tzinfo=_tz.utc) > _dt.now(_tz.utc):
+            remaining = current_user.muted_until.replace(tzinfo=_tz.utc) - _dt.now(_tz.utc)
             hours = int(remaining.total_seconds() / 3600)
             raise HTTPException(status_code=403, detail=f"账号已被禁言，剩余{hours}小时")
 
@@ -316,7 +316,10 @@ async def list_posts(
             is_private=is_private,
             after=after,
         )
-    items = [_post_to_model(post, user_id, db, user_lat=user_lat, user_lng=user_lng) for post in posts]
+    # Batched conversion avoids the N+1 per-post relation queries that
+    # _post_to_model triggers (8–10 queries × N posts).
+    service = CommunityService(db)
+    items = service.posts_to_models(posts, user_id, user_lat=user_lat, user_lng=user_lng)
     if user_id is None:
         items = [i for i in items if i.moderation_status != "blocked"]
     elif not (current_user and current_user.is_admin):
@@ -336,6 +339,12 @@ async def get_my_diaries(
         db.query(PostORM)
         .filter(PostORM.user_id == current_user.id)
     )
+    # "my-diaries" should return only the user's private diary entries, not
+    # every post they've made (public community posts belong in the regular
+    # profile/feed listings). A diary is a private post (optionally with a
+    # diary_date). Exclude blocked/soft-deleted entries.
+    query = query.filter(PostORM.is_private == True)  # noqa: E712
+    query = query.filter(PostORM.moderation_status != "blocked")
     if after:
         cursor = decode_cursor(after)
         if cursor:
@@ -351,7 +360,9 @@ async def get_my_diaries(
     if has_more:
         posts = posts[:min(limit, 50)]
     next_cursor = encode_cursor_from_post(posts[-1]) if has_more and posts else None
-    items = [_post_to_model(post, current_user.id, db) for post in posts]
+    # Batched conversion to avoid N+1 per-post relation queries.
+    service = CommunityService(db)
+    items = service.posts_to_models(posts, current_user.id)
     return PostListResponse(total=total, items=items, next_cursor=next_cursor)
 
 
@@ -461,6 +472,18 @@ async def toggle_like(
         )
         from web.backend.database.models import Post as DBPost
         post = db.query(DBPost).filter(DBPost.id == post_id).first()
+        try:
+            AuditLogService.log(
+                db=db,
+                action="community.like" if liked else "community.unlike",
+                actor_id=current_user.id,
+                target_type="post",
+                target_id=post_id,
+                details={"like_count": like_count},
+                revokeable=True,
+            )
+        except Exception:
+            pass
         if post and liked and post.user_id != current_user.id:
             create_notification(
                 db,
@@ -472,6 +495,8 @@ async def toggle_like(
                 ref_id=post_id,
             )
         return LikeResponse(liked=liked, like_count=like_count)
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -500,6 +525,8 @@ async def add_comment(
             user_id=current_user.id,
             content=comment_data.content,
         )
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     import threading
@@ -538,11 +565,13 @@ async def list_comments(
     post_id: int,
     limit: int = 50,
     offset: int = 0,
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
     service = CommunityService(db)
+    user_id = current_user.id if current_user else None
     total, comments = service.get_post_comments(
-        post_id=post_id, limit=limit, offset=offset
+        post_id=post_id, limit=limit, offset=offset, user_id=user_id
     )
     items = [_comment_to_model(comment) for comment in comments]
     return PostCommentListResponse(total=total, items=items)
@@ -583,6 +612,8 @@ async def upload_image(
             content=content,
         )
         return ImageUploadResponse(image_url=image_url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("图片上传失败: %s", str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="上传失败，请稍后重试")
@@ -608,6 +639,8 @@ async def upload_audio(
             duration=0,
             file_size=len(content),
         )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("音频上传失败: %s", str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="上传失败，请稍后重试")
@@ -634,6 +667,8 @@ async def upload_file(
             file_size=len(content),
             file_type=file.content_type or "",
         )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("文件上传失败: %s", str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="上传失败，请稍后重试")
@@ -741,12 +776,23 @@ async def list_collections(
 
 
 @router.get("/collections/{collection_id}", response_model=CollectionResponse)
-async def get_collection(collection_id: int, db: Session = Depends(get_db)):
+async def get_collection(
+    collection_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
     from web.backend.database.models import Collection
 
     collection = db.query(Collection).filter_by(id=collection_id).first()
     if not collection:
         raise HTTPException(status_code=404, detail="收藏夹不存在")
+    # Collection metadata (name/description/slug) is private unless the owner
+    # has explicitly shared it. Only the owner (or anyone via a public
+    # share_slug) may view it — otherwise private collection names can be
+    # enumerated by any caller, leaking L2 metadata.
+    is_owner = current_user is not None and collection.user_id == current_user.id
+    if not collection.is_public and not is_owner:
+        raise HTTPException(status_code=403, detail="无权查看此收藏夹")
     item_count = (
         db.query(func.count()).filter_by(collection_id=collection.id).scalar() or 0
     )
@@ -1022,10 +1068,16 @@ async def list_bookmarks(
 
 @router.get("/posts/{post_id}/versions", response_model=PostVersionListResponse)
 async def get_post_versions(
-    post_id: int, limit: int = 20, offset: int = 0, db: Session = Depends(get_db)
+    post_id: int,
+    limit: int = 20,
+    offset: int = 0,
+    current_user: User = Depends(auth),
+    db: Session = Depends(get_db),
 ):
     svc = CommunityService(db)
-    total, versions = svc.get_post_versions(post_id=post_id, limit=limit, offset=offset)
+    total, versions = svc.get_post_versions(
+        post_id=post_id, limit=limit, offset=offset, user_id=current_user.id
+    )
     items = []
     for v in versions:
         items.append(

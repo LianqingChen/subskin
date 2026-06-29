@@ -15,7 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const isLoggedIn = computed(() => !!token.value)
 
-async function login(username: string, password: string) {
+  async function login(username: string, password: string) {
     const formData = new URLSearchParams()
     formData.append('username', username)
     formData.append('password', password)
@@ -25,7 +25,13 @@ async function login(username: string, password: string) {
     const accessToken = res.data.access_token
     token.value = accessToken
     localStorage.setItem('admin_token', accessToken)
-    await fetchUser()
+    const me = await fetchUser()
+    // Reject non-admins explicitly so the login form can surface a clear
+    // message instead of silently bouncing via the router guard.
+    if (!me?.is_admin) {
+      logout()
+      throw new Error('该账号没有管理员权限')
+    }
     return true
   }
 

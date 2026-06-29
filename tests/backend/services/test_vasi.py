@@ -10,6 +10,19 @@ import pytest
 from web.backend.services.vasi import VASIService, VASIAssessmentError
 from web.backend.database.models import User
 
+# Minimal valid JPEG magic-byte prefix (SOI + marker). The service now verifies
+# magic bytes (not just Content-Type) to reject spoofed/polyglot uploads, so
+# tests that feed fake image bytes must prefix them with a real signature to
+# pass validation. Padding is added per-test to satisfy size requirements.
+_JPEG_MAGIC = b"\xff\xd8\xff"
+
+
+def _jpeg(size: int) -> bytes:
+    """Return a byte string of exactly ``size`` bytes with a valid JPEG prefix."""
+    if size <= len(_JPEG_MAGIC):
+        return _JPEG_MAGIC[:size]
+    return _JPEG_MAGIC + b"x" * (size - len(_JPEG_MAGIC))
+
 
 @pytest.fixture
 def vasi_service(db_session):
@@ -21,13 +34,13 @@ def test_validate_input_valid_image(vasi_service):
     """Test _validate_input with valid inputs"""
     # Should not raise exception
     vasi_service._validate_input(
-        image_file=b"fake_image_data" * 100, body_site="面部", image_type="image/jpeg"
+        image_file=_jpeg(1500), body_site="面部", image_type="image/jpeg"
     )
 
 
 def test_validate_input_image_too_large(vasi_service):
     """Test _validate_input rejects oversized image"""
-    oversized_image = b"x" * (vasi_service.MAX_IMAGE_SIZE + 1)
+    oversized_image = _jpeg(vasi_service.MAX_IMAGE_SIZE + 1)
 
     with pytest.raises(VASIAssessmentError) as exc_info:
         vasi_service._validate_input(
@@ -41,7 +54,7 @@ def test_validate_input_invalid_image_type(vasi_service):
     """Test _validate_input rejects unsupported image type"""
     with pytest.raises(VASIAssessmentError) as exc_info:
         vasi_service._validate_input(
-            image_file=b"fake_image", body_site="面部", image_type="image/gif"
+            image_file=_jpeg(100), body_site="面部", image_type="image/gif"
         )
 
     assert "不支持的图片格式" in str(exc_info.value)
@@ -51,7 +64,7 @@ def test_validate_input_invalid_body_site(vasi_service):
     """Test _validate_input rejects invalid body site"""
     with pytest.raises(VASIAssessmentError) as exc_info:
         vasi_service._validate_input(
-            image_file=b"fake_image", body_site="invalid_site", image_type="image/jpeg"
+            image_file=_jpeg(100), body_site="invalid_site", image_type="image/jpeg"
         )
 
     assert "无效的身体部位" in str(exc_info.value)
@@ -59,17 +72,19 @@ def test_validate_input_invalid_body_site(vasi_service):
 
 def test_validate_input_valid_body_sites(vasi_service):
     """Test _validate_input accepts all valid body sites"""
-    valid_sites = ["面部", "颈部", "躯干", "上肢", "下肢", "其他"]
+    # Use sites that actually exist in VASIService.VALID_BODY_SITES. Note
+    # "躯干" is NOT a supported key — the trunk is split into 胸部/腹部/背部.
+    valid_sites = ["面部", "颈部", "腹部", "上肢", "下肢", "其他"]
 
     for site in valid_sites:
         vasi_service._validate_input(
-            image_file=b"fake_image", body_site=site, image_type="image/jpeg"
+            image_file=_jpeg(100), body_site=site, image_type="image/jpeg"
         )
 
 
 def test_validate_input_edge_case_exact_max_size(vasi_service):
     """Test _validate_input accepts image at max size limit"""
-    exact_size_image = b"x" * vasi_service.MAX_IMAGE_SIZE
+    exact_size_image = _jpeg(vasi_service.MAX_IMAGE_SIZE)
 
     vasi_service._validate_input(
         image_file=exact_size_image, body_site="面部", image_type="image/jpeg"
@@ -104,7 +119,7 @@ async def test_assess_vasi_creates_record(vasi_service, test_user):
 
             assessment = await vasi_service.assess_vasi(
                 user_id=test_user.id,
-                image_file=b"test_image",
+                image_file=_jpeg(200),
                 body_site="面部",
                 image_type="image/jpeg",
                 image_filename="test.jpg",
@@ -137,7 +152,7 @@ async def test_assess_vasi_calls_upload(vasi_service, test_user):
 
             await vasi_service.assess_vasi(
                 user_id=test_user.id,
-                image_file=b"test_image",
+                image_file=_jpeg(200),
                 body_site="面部",
                 image_type="image/jpeg",
                 image_filename="test.jpg",
@@ -149,6 +164,7 @@ async def test_assess_vasi_calls_upload(vasi_service, test_user):
 @pytest.mark.asyncio
 async def test_assess_vasi_calls_api(vasi_service, test_user):
     """Test that assess_vasi calls VASI API"""
+    image_bytes = _jpeg(200)
     with patch.object(
         vasi_service, "_upload_image", new_callable=AsyncMock
     ) as mock_upload:
@@ -166,13 +182,15 @@ async def test_assess_vasi_calls_api(vasi_service, test_user):
 
             await vasi_service.assess_vasi(
                 user_id=test_user.id,
-                image_file=b"test_image",
+                image_file=image_bytes,
                 body_site="面部",
                 image_type="image/jpeg",
                 image_filename="test.jpg",
             )
 
-            mock_api.assert_called_once_with(b"test_image")
+            # _call_vasi_api is invoked as (image_file, precision, body_site);
+            # assert_called_once_with needs the full arg tuple.
+            mock_api.assert_called_once_with(image_bytes, "quick", "面部")
 
 
 def test_get_user_history_empty(vasi_service, test_user):
@@ -185,10 +203,8 @@ def test_get_user_history_empty(vasi_service, test_user):
 
 def test_get_user_history_with_data(vasi_service, test_user, db_session):
     """Test get_user_history returns user assessments"""
-    from web.backend.database.models import VASIAssessment
+    from web.backend.models.vasi import VASIAssessment
     import json
-
-    from web.backend.database.models import VASIAssessment
 
     assessment1 = VASIAssessment(
         user_id=test_user.id,
@@ -227,7 +243,7 @@ def test_get_user_history_with_data(vasi_service, test_user, db_session):
 
 def test_get_user_history_filters_by_body_site(vasi_service, test_user, db_session):
     """Test get_user_history filters by body site"""
-    from web.backend.database.models import VASIAssessment
+    from web.backend.models.vasi import VASIAssessment
     import json
 
     assessment_face = VASIAssessment(
@@ -267,7 +283,7 @@ def test_get_user_history_filters_by_body_site(vasi_service, test_user, db_sessi
 
 def test_get_user_history_pagination(vasi_service, test_user, db_session):
     """Test get_user_history pagination"""
-    from web.backend.database.models import VASIAssessment
+    from web.backend.models.vasi import VASIAssessment
     import json
 
     for i in range(5):
@@ -299,7 +315,7 @@ def test_get_user_history_pagination(vasi_service, test_user, db_session):
 
 def test_get_user_history_date_filter(vasi_service, test_user, db_session):
     """Test get_user_history date filtering"""
-    from web.backend.database.models import VASIAssessment
+    from web.backend.models.vasi import VASIAssessment
     import json
 
     now = datetime.utcnow()
@@ -345,7 +361,7 @@ def test_get_user_history_date_filter(vasi_service, test_user, db_session):
 
 def test_get_assessment_by_id_valid(vasi_service, test_user, db_session):
     """Test get_assessment_by_id returns correct assessment"""
-    from web.backend.database.models import VASIAssessment
+    from web.backend.models.vasi import VASIAssessment
     import json
 
     assessment = VASIAssessment(
@@ -371,7 +387,7 @@ def test_get_assessment_by_id_valid(vasi_service, test_user, db_session):
 
 def test_get_assessment_by_id_wrong_user(vasi_service, test_user, db_session):
     """Test get_assessment_by_id returns None for wrong user"""
-    from web.backend.database.models import VASIAssessment
+    from web.backend.models.vasi import VASIAssessment
     import json
 
     assessment = VASIAssessment(
@@ -414,7 +430,7 @@ def test_get_trend_data_empty(vasi_service, test_user):
 
 def test_get_trend_data_with_assessments(vasi_service, test_user, db_session):
     """Test get_trend_data calculates trend correctly"""
-    from web.backend.database.models import VASIAssessment
+    from web.backend.models.vasi import VASIAssessment
     import json
 
     now = datetime.utcnow()
@@ -461,7 +477,7 @@ def test_get_trend_data_with_assessments(vasi_service, test_user, db_session):
 
 def test_get_trend_data_trend_calculation(vasi_service, test_user, db_session):
     """Test get_trend_data trend classification"""
-    from web.backend.database.models import VASIAssessment
+    from web.backend.models.vasi import VASIAssessment
     import json
 
     now = datetime.utcnow()

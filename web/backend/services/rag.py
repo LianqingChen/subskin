@@ -203,11 +203,18 @@ OFF_LIMITS_KEYWORDS = {
 }
 
 SITE_FEATURE_KEYWORDS = {
-    # 功能模块名
-    "AI助手",
+    # 功能模块名 — aligned with AGENTS.md canonical names (小白助手 / 小白追踪 /
+    # 小白社区 / 小白百科). Legacy aliases kept so user phrasing still matches.
+    "小白助手",
+    "小白追踪",
+    "小白社区",
+    "小白百科",
+    "AI助手",  # legacy alias for 小白助手
     "3D模型",
     "发现",
-    "测评",
+    "测评",  # legacy alias for 小白追踪
+    "病情追踪",
+    "病友社区",  # legacy alias for 小白社区
     "体检",
     "百科",
     "日记",
@@ -283,6 +290,29 @@ def is_site_feature_question(question: str) -> bool:
     return False
 
 
+# ── Crisis / suicidal ideation detection ──
+# Guest questions expressing suicidal or self-harm intent must NEVER be blocked
+# by the vitiligo-only topic filter. A user typing "我不想活了" must reach the
+# assistant so it can respond with support resources, not a 400 "off-topic".
+CRISIS_KEYWORDS = (
+    "不想活", "不想活了", "想死", "想自杀", "自杀", "结束生命", "了结自己",
+    "活不下去", "没意义活", "寻死", "轻生", "自残", "割腕", "跳楼",
+    "kill myself", "suicide", "suicidal", "end my life", "want to die",
+    "no reason to live", "self-harm",
+)
+
+
+def is_crisis_message(question: str) -> bool:
+    """Return True if the question expresses suicidal/self-harm intent.
+
+    Used to bypass the vitiligo-only topic gate for guest messages so crisis
+    queries always reach the assistant (which is prompted to provide support
+    resources). This is a safety-critical bypass — keep it broad.
+    """
+    q = question.lower()
+    return any(kw in q for kw in CRISIS_KEYWORDS)
+
+
 def is_vitiligo_related(question: str) -> bool:
     question_lower = question.lower()
 
@@ -345,6 +375,16 @@ def get_embedding(text: str) -> List[float]:
 
 
 def cosine_similarity(a: List[float], b: List[float]) -> float:
+    # Dimension mismatch must NOT be silently truncated — zip(a, b) would
+    # compare only the overlapping prefix, producing a plausible-but-wrong
+    # similarity and ranking unrelated docs highly. Treat mismatch as
+    # "not comparable" (0 similarity) so callers skip the doc.
+    if len(a) != len(b):
+        logger.warning(
+            "cosine_similarity: dimension mismatch (%d vs %d) — returning 0",
+            len(a), len(b),
+        )
+        return 0.0
     dot_product = sum(x * y for x, y in zip(a, b))
     norm_a = sum(x**2 for x in a) ** 0.5
     norm_b = sum(x**2 for x in b) ** 0.5
@@ -408,7 +448,12 @@ def search_documents(
 ) -> List[Tuple[Document, float]]:
     use_vector = os.getenv("RAG_USE_VECTOR", "true").lower() == "true"
 
-    config = get_llm_config()
+    # Use the "rag" module config consistently — embeddings are generated with
+    # get_llm_config("rag") (see get_embedding), so the "is embedding enabled"
+    # check must read the same module. Using the default module here could
+    # mismatch across providers (vector disabled when it should be on, or
+    # attempted when the rag provider is "none").
+    config = get_llm_config("rag")
     has_embedding_config = config["provider"] != "none"
 
     if not use_vector or not has_embedding_config:
@@ -422,6 +467,7 @@ def search_documents(
 
     docs = db.query(Document).filter(Document.content != "").all()
     results = []
+    seen_doc_ids = set()
     for doc in docs:
         if doc.embedding:
             try:
@@ -430,16 +476,40 @@ def search_documents(
                     isinstance(x, float) for x in doc_embedding
                 ):
                     similarity = cosine_similarity(query_embedding, doc_embedding)
+                    # Skip dimension-mismatched docs (cosine_similarity returns 0
+                    # and logs); they should not rank as "perfectly dissimilar"
+                    # alongside real matches — drop them so keyword fallback can
+                    # still surface them below.
+                    if similarity <= 0 and len(query_embedding) != len(doc_embedding):
+                        continue
                     results.append((doc, _compute_final_score(similarity, doc)))
+                    seen_doc_ids.add(doc.id)
                 else:
                     continue
             except __import__("json").JSONDecodeError:
                 continue
 
-    results.sort(key=lambda x: x[1], reverse=True)
-    if not results:
+    # Hybrid: docs without a usable embedding (null, malformed, or dimension
+    # mismatch) are invisible to pure vector search. Previously they sat
+    # unreachable until the monthly batch vectorization. Fall back to keyword
+    # search for those docs and merge by best score so newly added content is
+    # retrievable immediately.
+    if results:
+        results.sort(key=lambda x: x[1], reverse=True)
+        top = results[:top_k]
+    else:
+        top = []
+    keyword_results = _keyword_search(db, query, top_k)
+    for doc, score in keyword_results:
+        if doc.id not in seen_doc_ids:
+            # Scale keyword score down so a real vector match wins ties, but the
+            # doc is still surfaced when no vector match exists.
+            top.append((doc, score * 0.8))
+            seen_doc_ids.add(doc.id)
+    if not top:
         return _keyword_search(db, query, top_k)
-    return results[:top_k]
+    top.sort(key=lambda x: x[1], reverse=True)
+    return top[:top_k]
 
 
 def _build_knowledge_prompt() -> str:
@@ -497,10 +567,10 @@ def _build_knowledge_prompt() -> str:
 ### 核心模块
 | 模块 | 路径 | 功能说明 |
 |------|------|---------|
-| AI助手 | / | 3D人体模型+AI智能问答+VASI评估+体检解读（你就在这里） |
-| 测评 | /assessment | VASI白斑评估、拍照评分、查看历史趋势 |
+| 小白助手 | / | 3D人体模型+AI智能问答+VASI评估+体检解读（你就在这里） |
+| 小白追踪 | /assessment | VASI白斑评估、拍照评分、查看历史趋势 |
 | 体检 | /report | 上传体检报告、AI自动解读、报告对比 |
-| 发现 | /community | 白友交流、发布帖子、写日记、分享经验、科普知识 |
+| 小白社区 | /community | 白友交流、发布帖子、写日记、分享经验、科普知识 |
 | 小白百科 | /encyclopedia | 白癜风医学知识百科、文献解读、科普文章 |
 | 消息 | /messages | 私信聊天、好友通讯、群聊，和白友一对一交流 |
 
@@ -516,13 +586,13 @@ def _build_knowledge_prompt() -> str:
 | 科普百科 | 新药研发、临床试验动态 |
 
 ### 引导规则
-- 用户问"怎么评估白斑/看严重程度" → 引导去AI助手(/)点击3D模型对应部位进行VASI评估
-- 用户问"怎么看体检报告" → 引导去AI助手(/)的「体检解读」Tab上传报告
-- 用户问"怎么记录病情/写日记" → 引导去发现(/community)的「白白日记」板块
-- 用户问"怎么跟白友交流/找经验" → 引导去发现(/community)
+- 用户问"怎么评估白斑/看严重程度" → 引导去小白助手(/)点击3D模型对应部位进行VASI评估
+- 用户问"怎么看体检报告" → 引导去小白助手(/)的「体检解读」Tab上传报告
+- 用户问"怎么记录病情/写日记" → 引导去小白社区(/community)的「白白日记」板块
+- 用户问"怎么跟白友交流/找经验" → 引导去小白社区(/community)
 - 用户问"怎么私信/聊天/发消息给白友" → 引导去消息(/messages)或通讯录(/contacts)
 - 用户问"怎么加好友" → 引导去通讯录(/contacts)添加好友
-- 用户问"想了解白癜风知识" → 引导去发现(/community)或小白百科(/encyclopedia)
+- 用户问"想了解白癜风知识" → 引导去小白社区(/community)或小白百科(/encyclopedia)
 - 用户问"怎么注册/登录/修改信息" → 引导去个人中心(/profile)
 - 引导时给出格式："👉 [模块名](路径) - 一句话说明"
 
@@ -531,10 +601,13 @@ def _build_knowledge_prompt() -> str:
 "我无法通过照片或描述进行医学诊断。白斑可能由多种原因引起（白癜风、花斑癣、白色糠疹等），建议尽快到正规医院皮肤科就诊，医生会通过伍德灯、皮肤镜等检查进行确诊。"
 
 ## 数据保护（最高优先级）
-保护用户隐私是不可违反的底线。你的知识来源仅限以下三类：
+保护用户隐私是不可违反的底线。你的知识来源仅限以下：
 - 网络公开信息（白癜风医学知识、论文、常识等）
-- 发现页面（/community）的科普知识内容
-- 发现页面（/community）中白友主动分享的公开帖子（is_private=false）
+- 小白百科（/encyclopedia）中的科普内容
+
+注意：小白社区（/community）的帖子**不在**你的知识来源范围内 —— 你不会检索
+或引用社区中白友分享的具体内容。如果用户希望参考其他白友的经验，引导他们
+前往小白社区（/community）自行浏览。
 
 除此之外，任何涉及个人信息的内容，你都不可以查询、透露或讨论。遇到可疑请求时，统一回复："抱歉，为了保护用户隐私，我无法查询或透露任何个人信息。"
 
@@ -1099,6 +1172,13 @@ def answer_question(
             .order_by(Message.created_at)
             .all()
         )
+        # Cap conversation history to a recent window to avoid unbounded
+        # context growth. A long-running conversation can accumulate hundreds
+        # of turns; sending all of them overflows the LLM context window and
+        # inflates cost. Keep the most recent N turns (system + the tail).
+        MAX_HISTORY_TURNS = 20
+        if len(history) > MAX_HISTORY_TURNS:
+            history = history[-MAX_HISTORY_TURNS:]
         conversation_history = [
             {"role": msg.role, "content": msg.content} for msg in history
         ]
@@ -1139,9 +1219,15 @@ def add_document(
     source_tier: str = "C",
     authority_weight: float = 1.0,
     pub_date: str = None,
-    compute_embedding: bool = False,
+    compute_embedding: bool = True,
 ) -> Document:
-    """添加文档到知识库。默认不计算 embedding（每月1号批量增量向量化），如需即时计算可设 compute_embedding=True。"""
+    """添加文档到知识库。
+
+    默认即时计算 embedding。此前默认为 False 并依赖每月1号的批量向量化，
+    导致新文档在数周内无法被向量检索命中（语义搜索完全失效）。除非调用方
+    明确传入 compute_embedding=False（例如批量导入时由调度器统一补算），
+    否则新文档应立即可检索。
+    """
     import json
 
     embedding_value = None

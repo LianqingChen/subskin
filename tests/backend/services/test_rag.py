@@ -20,7 +20,7 @@ def test_detect_report_type_recognizes_supported_reports():
 
 def test_interpret_report_returns_structured_fallback_when_llm_unavailable():
     with patch(
-        "web.backend.services.rag._get_llm_config", return_value={"provider": "none"}
+        "web.backend.services.rag.get_llm_config", return_value={"provider": "none"}
     ):
         result = _interpret_report("TSH 5.2 uIU/mL", "帮我看看甲状腺报告")
 
@@ -30,7 +30,7 @@ def test_interpret_report_returns_structured_fallback_when_llm_unavailable():
         "summary": "AI服务未配置，暂时无法自动解读报告。建议结合原始报告中的异常箭头、参考范围和医生意见综合判断。",
         "key_findings": [],
         "recommendations": ["若报告存在异常箭头或超出参考范围，请咨询医生进一步判断。"],
-        "disclaimer": "⚠️ 以上解读由AI生成，仅供参考，不构成医疗诊断。请咨询医生获取专业意见。",
+        "disclaimer": "以上解读由AI生成，仅供参考，不构成医疗诊断。请咨询医生获取专业意见。",
     }
 
 
@@ -50,7 +50,7 @@ def test_interpret_report_parses_structured_llm_json():
             }
         ],
         "recommendations": ["1-3个月内复查甲状腺功能。"],
-        "disclaimer": "⚠️ 以上解读由AI生成，仅供参考，不构成医疗诊断。请咨询医生获取专业意见。",
+        "disclaimer": "以上解读由AI生成，仅供参考，不构成医疗诊断。请咨询医生获取专业意见。",
     }
     mock_client = MagicMock()
     mock_client.chat.completions.create.return_value = SimpleNamespace(
@@ -63,10 +63,10 @@ def test_interpret_report_parses_structured_llm_json():
 
     with (
         patch(
-            "web.backend.services.rag._get_llm_config",
+            "web.backend.services.rag.get_llm_config",
             return_value={
                 "provider": "dashscope",
-                "api_key": "test-key",
+                "api_key": "test-key",  # pragma: allowlist secret
                 "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
                 "chat_model": "qwen-plus",
             },

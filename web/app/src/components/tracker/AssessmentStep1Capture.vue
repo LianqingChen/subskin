@@ -8,7 +8,7 @@
  *
  * 背景: #F5F7FA（与其他页面一致）
  */
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { PART_LABELS } from '@/constants/bodySites'
 import DigitalHuman from '@/components/tracker/DigitalHuman.vue'
 import BodyPartCamera from '@/components/tracker/BodyPartCamera.vue'
@@ -50,56 +50,39 @@ function openCamera() {
 }
 function onCameraCapture(f: File, m?: { hasReferenceCard?: boolean }) { emit('cameraCapture', f, m); showCamera.value = false }
 
-// Auto-scroll to the "开始AI分析" button when the photo is uploaded so the
-// user can see and tap it without manually scrolling. The tricky part is
-// timing: imagePreview is a base64 data URL set synchronously by FileReader,
-// but the <img> still needs to decode it before it occupies its final height.
-// If we measure layout too early (e.g. in the first nextTick), the <img> is
-// 0px tall and scrollTo lands above the button — leaving it off-screen.
+// Auto-scroll to the "开始AI分析" button after the user uploads a photo so
+// they can see and tap it without manually scrolling.
 //
-// Strategy: pre-decode the data URL via an off-DOM Image, then wait two
-// animation frames + a nextTick so the v-if'd submit button is mounted and
-// the photo block has reached its final height before we measure & scroll.
+// The watch uses flush:'post' so the v-if'd submit button is already in the
+// DOM when the callback runs. We still pre-decode the image to ensure the
+// photo preview has reached its final height before we scroll — otherwise the
+// button's position would shift once the image finishes decoding.
 async function scrollToSubmitButton() {
-  // 1. Wait for the preview image to actually decode, so its layout height
-  //    is stable before we measure the submit button position.
+  // 1. Pre-decode so the <img> block has its final height before scrollIntoView.
   if (props.imagePreview) {
     try {
       const probe = new Image()
       probe.src = props.imagePreview
       await probe.decode()
-    } catch {
-      // decode() can reject on some browsers/SVGs; fall through — we still
-      // wait for animation frames below as a timing fallback.
-    }
+    } catch { /* fall through */ }
   }
-  // 2. Two RAFs + nextTick guarantee the v-if'd submit button is mounted and
-  //    the browser has finished layout/paint with the decoded image.
-  await new Promise<void>((r) => requestAnimationFrame(() => r()))
-  await new Promise<void>((r) => requestAnimationFrame(() => r()))
-  await nextTick()
+  // 2. One RAF lets the browser recalculate layout with the decoded image.
+  await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
 
-  // 3. Prefer the submit button; fall back to the action card top.
+  // 3. scrollIntoView handles scroll-container detection automatically.
   const target = submitBtnRef.value || actionCardRef.value
   if (!target) return
-  const mainEl = target.closest('main')
-  if (!mainEl) return
-  const scrollTarget =
-    target.getBoundingClientRect().top -
-    mainEl.getBoundingClientRect().top +
-    mainEl.scrollTop
-  mainEl.scrollTo({ top: Math.max(0, scrollTarget - 20), behavior: 'smooth' })
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
 watch(
   () => [props.imagePreview, props.selectedBodySite],
   () => {
-    // Only auto-scroll once we have both a photo and a body part — that's
-    // when the "开始AI分析" button appears and needs to be revealed.
     if (props.imagePreview && props.selectedBodySite) {
       void scrollToSubmitButton()
     }
   },
+  { flush: 'post' },
 )
 </script>
 

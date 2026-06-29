@@ -36,13 +36,24 @@ def _load_page_names() -> dict[str, str]:
 PAGE_NAME_MAP = _load_page_names()
 
 
-# Phone numbers belonging to test / internal accounts — excluded from all metrics
-# Admin accounts are NOT listed here — they are real users and count towards metrics
-EXCLUDED_PHONES = frozenset({
+# Phone numbers belonging to test / internal accounts — excluded from all metrics.
+# Synthetic test numbers only (the 13800138000 / 1371111xxxx range are reserved test
+# numbers). Real operator numbers are NOT listed here. Override via EXCLUDED_PHONES env.
+DEFAULT_EXCLUDED_PHONES = frozenset({
     "13711113333", "13711114444",
     "15899998888", "15899997777", "15899996666",
     "13800138000", "13900139001",
 })
+
+
+def _load_excluded_phones() -> frozenset:
+    raw = os.environ.get("EXCLUDED_PHONES", "").strip()
+    if not raw:
+        return DEFAULT_EXCLUDED_PHONES
+    return frozenset(part.strip() for part in raw.split(",") if part.strip())
+
+
+EXCLUDED_PHONES = _load_excluded_phones()
 
 FEATURE_USE_ELEMENT_IDS = (
     "tracker_btn_assess",
@@ -85,6 +96,7 @@ class AnalyticsService:
             .filter(
                 or_(
                     User.is_test == True,  # noqa: E712
+                    User.is_admin == True,  # noqa: E712 — admin traffic isn't real user traffic
                     User.phone.in_(EXCLUDED_PHONES),
                 ),
                 User.uid.isnot(None),
@@ -94,14 +106,31 @@ class AnalyticsService:
         return {r.uid for r in uid_rows if r.uid}
 
     def _excluded_uid_filter(self):
+        # Preserve anonymous events (uid IS NULL): SQL ``uid NOT IN (set)``
+        # evaluates to NULL for NULL uids, which filters them out. Anonymous
+        # visitors are real traffic and must remain counted in UV/journey
+        # analytics, so explicitly keep NULL uids when the exclusion set is
+        # non-empty.
         if self._excluded_uids:
-            return ~UserEvent.uid.in_(self._excluded_uids)
+            return or_(
+                UserEvent.uid.is_(None),
+                ~UserEvent.uid.in_(self._excluded_uids),
+            )
         return True  # type: ignore[return-value]
 
     def _real_user_filter(self):
+        # Count real users only: exclude test accounts, admin accounts, and
+        # phones in the exclusion allowlist. Keep users whose phone is NULL but
+        # who have an email or uid — ``~phone.in_(set)`` evaluates to NULL for
+        # NULL phones and would otherwise drop legitimate email-only / guest
+        # users from total_users / new_users_today.
         return (
             User.is_test == False,  # noqa: E712
-            ~User.phone.in_(EXCLUDED_PHONES),
+            User.is_admin == False,  # noqa: E712
+            or_(
+                User.phone.is_(None),
+                ~User.phone.in_(EXCLUDED_PHONES),
+            ),
         )
 
     def _uv_query(self):

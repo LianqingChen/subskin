@@ -15,7 +15,11 @@ const posts = ref<Post[]>([])
 const totalPosts = ref(0)
 const pageSize = 20
 const loadingMore = ref(false)
-const hasMore = computed(() => posts.value.length < totalPosts.value)
+// Cursor-based pagination: the backend returns next_cursor, which we echo back
+// as `after` on the next page. This is stable under inserts/deletes (offset-
+// based pagination skips/duplicates items when the feed changes between pages).
+const nextCursor = ref<string | null>(null)
+const hasMore = computed(() => !!nextCursor.value || posts.value.length < totalPosts.value)
 const loadMoreSentinel = ref<HTMLElement | null>(null)
 const categories = ref<Category[]>([])
 const publicPostsLoaded = ref(0)
@@ -69,9 +73,19 @@ function mergePosts(...lists: Post[][]): Post[] {
 
 
 async function loadPosts(offset = 0, append = false) {
-  const params: { limit: number; offset: number; feed_type?: string; tag?: string; city?: string } = {
+  const params: { limit: number; offset: number; feed_type?: string; tag?: string; city?: string; after?: string | null } = {
     limit: pageSize,
     offset,
+  }
+  // Use the cursor for append (load-more) requests; the initial load resets
+  // the cursor so a fresh feed starts from the top.
+  if (append && nextCursor.value) {
+    params.after = nextCursor.value
+    // offset is retained for the recommendation-service fallback path but the
+    // cursor takes precedence server-side when present.
+    params.offset = offset
+  } else if (!append) {
+    nextCursor.value = null
   }
 
   // 映射前端标签到后端 feed_type
@@ -101,9 +115,11 @@ async function loadPosts(offset = 0, append = false) {
 
   const [postRes, diaryRes] = await Promise.all([
     communityApi.getPosts(params),
-    shouldLoadMyDiaries ? communityApi.getMyDiaries(pageSize, 0) : Promise.resolve({ total: 0, items: [] as Post[] }),
+    shouldLoadMyDiaries ? communityApi.getMyDiaries(pageSize, 0) : Promise.resolve({ total: 0, items: [] as Post[], next_cursor: null }),
   ])
 
+  // Track the cursor returned by the backend for the next load-more page.
+  nextCursor.value = postRes.next_cursor ?? null
   publicPostsLoaded.value = offset + postRes.items.length
 
   const mergedPosts = append

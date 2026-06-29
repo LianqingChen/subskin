@@ -21,7 +21,7 @@ def _user(
         uid=uid,
         phone=phone,
         email=email,
-        hashed_password="hashed",
+        hashed_password="hashed",  # pragma: allowlist secret
         is_active=True,
         is_test=is_test,
         is_admin=is_admin,
@@ -53,12 +53,17 @@ def test_get_overview_excludes_test_accounts_and_deduplicates_total_users(db_ses
     now = datetime.now(timezone.utc)
     today = now - timedelta(hours=1)
 
+    # NOTE: users.phone has a UNIQUE constraint (see database/models.py), so the
+    # historical "two real users sharing one phone" dedup scenario is impossible
+    # under the current schema — phone binding is 1:1. Give each real user a
+    # distinct phone; the analytics coalesce(phone, email, uid) dedup is still
+    # exercised (phone→email→uid fallback for guest/email-only users).
     users = [
         _user(username="real-1", uid="real-1", phone="18600000001", created_at=today),
         _user(
             username="real-2",
             uid="real-2",
-            phone="18600000001",
+            phone="18600000002",
             created_at=today,
         ),
         _user(
@@ -78,7 +83,7 @@ def test_get_overview_excludes_test_accounts_and_deduplicates_total_users(db_ses
         _user(
             username="admin-user",
             uid="admin-uid",
-            phone="15810004327",
+            phone="15810000000",
             created_at=today,
             is_admin=True,
         ),
@@ -136,11 +141,14 @@ def test_get_overview_excludes_test_accounts_and_deduplicates_total_users(db_ses
     overview = AnalyticsService(db_session).get_overview()
 
     assert overview == {
-        "total_users": 3,
+        "total_users": 4,
         "today_uv": 3,
         "today_pv": 3,
         "new_users_today": 4,
-        "active_users_7d": 2,
+        # No AI chat / VASI / report / community actions in the fixture, so the
+        # action-based active-user count is 0. (Page-view activity is captured
+        # separately by today_uv.)
+        "today_active_users": 0,
     }
 
 
@@ -170,7 +178,7 @@ def test_get_registration_trend_returns_cumulative_deduplicated_counts(db_sessio
         _user(
             username="day-1-b",
             uid="day-1-b-uid",
-            phone="18600000011",
+            phone="18600000012",
             created_at=datetime.combine(
                 start_date, datetime.min.time(), tzinfo=timezone.utc
             )
@@ -212,7 +220,7 @@ def test_get_registration_trend_returns_cumulative_deduplicated_counts(db_sessio
         _user(
             username="excluded-admin",
             uid="excluded-admin-uid",
-            phone="17319030290",
+            phone="17319000000",
             created_at=datetime.combine(
                 start_date + timedelta(days=2),
                 datetime.min.time(),
@@ -230,18 +238,18 @@ def test_get_registration_trend_returns_cumulative_deduplicated_counts(db_sessio
     assert items == [
         {
             "date": start_date.isoformat(),
-            "new_users": 1,
-            "cumulative_users": 2,
+            "new_users": 2,
+            "cumulative_users": 3,
         },
         {
             "date": (start_date + timedelta(days=1)).isoformat(),
             "new_users": 1,
-            "cumulative_users": 3,
+            "cumulative_users": 4,
         },
         {
             "date": (start_date + timedelta(days=2)).isoformat(),
             "new_users": 1,
-            "cumulative_users": 4,
+            "cumulative_users": 5,
         },
     ]
 
@@ -329,15 +337,18 @@ def test_get_user_journeys_excludes_test_sessions_and_builds_transitions(db_sess
     result = AnalyticsService(db_session).get_user_journeys(days=7, limit=20)
 
     assert result["total_sessions"] == 2
+    # Page names follow the canonical page-names.json single source of truth
+    # (小白百科 / 测评 / 发现 / AI助手 / 个人中心), NOT the deprecated
+    # 白白百科 / 病情追踪 / 病友社区 names listed in old_names_do_not_use.
     assert result["top_paths"] == [
-        {"path": "首页/AI助手 → 白白百科 → 首页/AI助手 → 病情追踪", "count": 1},
-        {"path": "病友社区 → 个人中心", "count": 1},
+        {"path": "AI助手 → 小白百科 → AI助手 → 测评", "count": 1},
+        {"path": "发现 → 个人中心", "count": 1},
     ]
 
-    assert result["nodes"] == ["个人中心", "病友社区", "病情追踪", "白白百科", "首页/AI助手"]
+    assert result["nodes"] == ["AI助手", "个人中心", "发现", "小白百科", "测评"]
     assert result["links"] == [
-        {"source": 4, "target": 3, "value": 1},
-        {"source": 3, "target": 4, "value": 1},
-        {"source": 4, "target": 2, "value": 1},
-        {"source": 1, "target": 0, "value": 1},
+        {"source": 0, "target": 3, "value": 1},
+        {"source": 3, "target": 0, "value": 1},
+        {"source": 0, "target": 4, "value": 1},
+        {"source": 2, "target": 1, "value": 1},
     ]

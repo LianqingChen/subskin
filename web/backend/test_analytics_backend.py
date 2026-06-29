@@ -50,7 +50,7 @@ def test_token_response_model_supports_user_is_admin():
             "uid": "u_1",
             "username": "admin-user",
             "email": "admin@example.com",
-            "phone": "15810004327",
+            "phone": "15810000000",
             "avatar_url": None,
             "patient_relation": None,
             "wechat_id": None,

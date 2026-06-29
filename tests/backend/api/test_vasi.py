@@ -328,7 +328,13 @@ class TestGetTrend:
             "body_site": "面部",
             "period": {},
             "data": [],
-            "summary": {},
+            "summary": {
+                "first_score": None,
+                "last_score": None,
+                "change": None,
+                "change_percent": None,
+                "trend": "无数据",
+            },
         }
 
         response = client.get("/api/vasi/trend?body_site=面部", headers=auth_headers)
@@ -338,12 +344,18 @@ class TestGetTrend:
     @patch("web.backend.api.vasi.VASIService")
     def test_get_trend_custom_days(self, mock_service, client, test_user, auth_headers):
         """Test getting trend with custom days parameter"""
-        mock_service_instance = mock.return_value
+        mock_service_instance = mock_service.return_value
         mock_service_instance.get_trend_data.return_value = {
             "body_site": "全部",
             "period": {},
             "data": [],
-            "summary": {},
+            "summary": {
+                "first_score": None,
+                "last_score": None,
+                "change": None,
+                "change_percent": None,
+                "trend": "无数据",
+            },
         }
 
         response = client.get("/api/vasi/trend?days=60", headers=auth_headers)
@@ -357,12 +369,18 @@ class TestGetTrend:
         self, mock_service, client, test_user, auth_headers
     ):
         """Test trend days are clamped to 365 max"""
-        mock_service_instance = mock.return_value
+        mock_service_instance = mock_service.return_value
         mock_service_instance.get_trend_data.return_value = {
             "body_site": "全部",
             "period": {},
             "data": [],
-            "summary": {},
+            "summary": {
+                "first_score": None,
+                "last_score": None,
+                "change": None,
+                "change_percent": None,
+                "trend": "无数据",
+            },
         }
 
         response = client.get("/api/vasi/trend?days=500", headers=auth_headers)
@@ -376,12 +394,18 @@ class TestGetTrend:
         self, mock_service, client, test_user, auth_headers
     ):
         """Test trend days are clamped to 1 minimum"""
-        mock_service_instance = mock.return_value
+        mock_service_instance = mock_service.return_value
         mock_service_instance.get_trend_data.return_value = {
             "body_site": "全部",
             "period": {},
             "data": [],
-            "summary": {},
+            "summary": {
+                "first_score": None,
+                "last_score": None,
+                "change": None,
+                "change_percent": None,
+                "trend": "无数据",
+            },
         }
 
         response = client.get("/api/vasi/trend?days=0", headers=auth_headers)

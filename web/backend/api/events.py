@@ -4,10 +4,11 @@ import json
 import logging
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from web.backend.app.middleware.rate_limit import ReadRateLimit
 from web.backend.database.database import get_db
 from web.backend.database.models import User, UserEvent
 from web.backend.services.auth import get_current_user_optional
@@ -15,6 +16,12 @@ from web.backend.utils.redact import mask_ip
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Hard cap on batch size — pydantic max_length=50 allowed 50 events/request
+# with no rate limit, so a single client could write 50*N rows unbounded and
+# blow up the shared SQLite DB. Keep 50 (client batches) but enforce a per-IP
+# rate limit via ReadRateLimit so the write rate is bounded.
+MAX_BATCH_EVENTS = 50
 
 
 class TrackEvent(BaseModel):
@@ -27,7 +34,7 @@ class TrackEvent(BaseModel):
 
 
 class TrackBatch(BaseModel):
-    events: list[TrackEvent] = Field(..., max_length=50)
+    events: list[TrackEvent] = Field(..., max_length=MAX_BATCH_EVENTS)
 
 
 @router.post("/track")
@@ -36,6 +43,7 @@ async def track_event(
     request: Request,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_optional),
+    _rate: None = Depends(ReadRateLimit()),
 ):
     uid = current_user.uid if current_user else None
     client_fingerprint = request.headers.get("X-Client-Fingerprint")
@@ -65,7 +73,16 @@ async def track_batch(
     request: Request,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_optional),
+    _rate: None = Depends(ReadRateLimit()),
 ):
+    # Defensive: even though pydantic caps at MAX_BATCH_EVENTS, reject any
+    # oversized payload explicitly so a malformed request can't attempt a
+    # huge bulk insert.
+    if len(data.events) > MAX_BATCH_EVENTS:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"单次最多 {MAX_BATCH_EVENTS} 条事件",
+        )
     uid = current_user.uid if current_user else None
     client_fingerprint = request.headers.get("X-Client-Fingerprint")
     ip_address = mask_ip(request.client.host) if request.client else None
