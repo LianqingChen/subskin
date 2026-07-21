@@ -118,21 +118,21 @@ def _extract_source_info(item: Dict[str, Any]) -> Dict[str, Any]:
     source = {}
     if "pmid" in item:
         source["type"] = "pubmed"
-        source["title"] = item.get("title", "")
-        source["abstract"] = item.get("abstract", "")[:500]
-        source["authors"] = item.get("authors", [])
+        source["title"] = item.get("title") or ""
+        source["abstract"] = (item.get("abstract") or "")[:500]
+        source["authors"] = item.get("authors") or []
         source["url"] = f"https://pubmed.ncbi.nlm.nih.gov/{item['pmid']}/"
-        source["date"] = item.get("pubdate", "")
+        source["date"] = item.get("pubdate") or ""
     elif "doi" in item and "title" in item:
         source["type"] = "crossref"
-        source["title"] = item.get("title", "")
-        source["abstract"] = item.get("abstract", "")[:500]
+        source["title"] = item.get("title") or ""
+        source["abstract"] = (item.get("abstract") or "")[:500]
         source["url"] = f"https://doi.org/{item['doi']}"
-        source["date"] = item.get("published", "")
+        source["date"] = item.get("published") or ""
     elif "news_title" in item or ("title" in item and "source" in item):
         source["type"] = "foundation"
-        source["title"] = item.get("title", item.get("news_title", ""))
-        source["abstract"] = item.get("content", item.get("summary", ""))[:500]
+        source["title"] = item.get("title") or item.get("news_title") or ""
+        source["abstract"] = (item.get("content") or item.get("summary") or "")[:500]
         source["url"] = item.get("url", "")
         source["date"] = item.get("date", "")
     else:
