@@ -123,6 +123,33 @@
       />
     </n-card>
 
+    <!-- 知识库向量化 -->
+    <n-card title="知识库向量化 (Embedding)" style="margin-top: 24px" :bordered="false" class="table-card">
+      <template #header-extra>
+        <n-tag size="small" type="warning">手动触发</n-tag>
+      </template>
+      <n-space vertical :size="12">
+        <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+          对 embedding 为空的文献文档执行增量向量化。此任务已从自动调度改为手动触发，点击按钮开始执行。
+        </p>
+        <n-space align="center">
+          <n-button
+            type="primary"
+            :loading="embedLoading"
+            :disabled="embedLoading"
+            @click="handleTriggerEmbed"
+          >
+            <template #icon><i class="ri-database-2-line" /></template>
+            {{ embedLoading ? '向量化执行中...' : '触发文献向量化' }}
+          </n-button>
+          <n-tag v-if="embedResult" size="small" :type="embedResult.failed_count > 0 ? 'warning' : 'success'">
+            成功 {{ embedResult.embedded_count }} / 失败 {{ embedResult.failed_count }} / 总计 {{ embedResult.total }}
+          </n-tag>
+        </n-space>
+        <p v-if="embedError" style="color: #ef4444; font-size: 12px; margin: 0;">{{ embedError }}</p>
+      </n-space>
+    </n-card>
+
     <!-- 日志查看 -->
     <n-card title="日志查看" style="margin-top: 24px" :bordered="false" class="log-card">
       <template #header-extra>
@@ -238,6 +265,11 @@ const logText = ref('')
 const logService = ref('subskin-backend')
 const logLines = ref(50)
 const lastRefreshText = ref('')
+
+// ── Embedding 手动触发 ──
+const embedLoading = ref(false)
+const embedResult = ref<{ embedded_count: number; failed_count: number; total: number } | null>(null)
+const embedError = ref('')
 
 const logServiceOptions = [
   { label: 'subskin-backend', value: 'subskin-backend' },
@@ -389,6 +421,36 @@ async function executeServiceAction(service: ServiceItem, action: string) {
   } finally {
     service.actionLoading = false
   }
+}
+
+// ── Embedding 触发 ──
+async function handleTriggerEmbed() {
+  dialog.warning({
+    title: '确认触发向量化',
+    content: '将对所有 embedding 为空的文献执行向量化，可能耗时较长（取决于文档数量）。确定继续？',
+    positiveText: '确认执行',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      embedLoading.value = true
+      embedResult.value = null
+      embedError.value = ''
+      try {
+        const { data } = await request.post('/admin/embed-batch')
+        if (data.status === 'ok') {
+          embedResult.value = data.result
+          message.success(`向量化完成：成功 ${data.result.embedded_count}，失败 ${data.result.failed_count}`)
+        } else {
+          embedError.value = '向量化任务返回异常状态'
+          message.error('向量化任务执行异常')
+        }
+      } catch (err: any) {
+        embedError.value = err?.response?.data?.detail || '向量化请求失败，请稍后重试'
+        message.error(embedError.value)
+      } finally {
+        embedLoading.value = false
+      }
+    },
+  })
 }
 
 // ── API ──

@@ -1042,6 +1042,7 @@ class UpdateScheduler:
                         source_tier=tier,
                         authority_weight=weight,
                         pub_date=pub_date,
+                        compute_embedding=False,  # 改为手动触发向量化，不再自动 embedding
                     )
                     total_imported += 1
                     # 更新内存指纹，防止同一次运行内同 url/title 在不同 JSON 中重复
