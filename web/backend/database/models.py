@@ -246,8 +246,8 @@ class Comment(Base):
     page_path = Column(String, index=True, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     approved = Column(Boolean, default=False)  # 需要审核
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
     author = relationship("User", back_populates="comments")
 
@@ -267,8 +267,8 @@ class Document(Base):
     authority_weight = Column(Float, default=1.0, nullable=True)
     pub_date = Column(String, nullable=True)
     embedding = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
 
 class Conversation(Base):
@@ -280,8 +280,8 @@ class Conversation(Base):
     conversation_id = Column(String, unique=True, index=True, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     is_deleted = Column(Boolean, default=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
 
 class Message(Base):
@@ -293,7 +293,7 @@ class Message(Base):
     conversation_id = Column(String, index=True, nullable=False)
     role = Column(String, nullable=False)  # user/assistant
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
 
 class CommunityCategory(Base):
@@ -306,7 +306,7 @@ class CommunityCategory(Base):
     description = Column(Text, nullable=True)
     icon = Column(String, nullable=True)
     order = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
 
 class Post(Base):
@@ -332,14 +332,15 @@ class Post(Base):
     is_private = Column(Boolean, default=False, index=True)
     draft_expires_at = Column(DateTime, nullable=True, index=True)
     diary_date = Column(Date, nullable=True, index=True)
+    diary_type = Column(String(20), nullable=True, index=True)  # medication/phototherapy/mood/diet/general
     mood = Column(String, nullable=True)  # 心情标签: 💪坚持中 / 😔低落 / 🎉好转 / 🤔疑问
     is_anonymous = Column(Boolean, default=False)  # 匿名发布
     moderation_status = Column(String(20), default="normal", nullable=False, index=True)  # normal/flagged/blocked/approved
     city = Column(String(100), nullable=True, index=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
     author = relationship("User", backref="posts")
     category = relationship("CommunityCategory", backref="posts")
@@ -382,7 +383,7 @@ class PostImage(Base):
     post_id = Column(Integer, ForeignKey("posts.id"), nullable=False, index=True)
     image_url = Column(String, nullable=False)
     order = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
     post = relationship("Post", back_populates="images")
 
@@ -402,7 +403,7 @@ class PostLike(Base):
     id = Column(Integer, primary_key=True, index=True)
     post_id = Column(Integer, ForeignKey("posts.id"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
     post = relationship("Post", back_populates="likes")
     user = relationship("User", backref="post_likes")
@@ -417,8 +418,8 @@ class PostComment(Base):
     post_id = Column(Integer, ForeignKey("posts.id"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
     post = relationship("Post", back_populates="comments")
     author = relationship("User", backref="post_comments")
@@ -432,7 +433,7 @@ class Tag(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, unique=True, index=True)
     usage_count = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
 
 class PostTag(Base):
@@ -458,7 +459,7 @@ class PostAudio(Base):
     duration = Column(Integer, default=0)
     file_size = Column(Integer, default=0)
     order = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
     post = relationship("Post", back_populates="audios")
 
@@ -475,7 +476,7 @@ class PostAttachment(Base):
     file_size = Column(Integer, default=0)
     file_type = Column(String, default="")
     order = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
     post = relationship("Post", back_populates="attachments")
 
@@ -1055,7 +1056,11 @@ class ImMessageModeration(Base):
 
 
 class Notification(Base):
-    """用户通知"""
+    """用户通知 (DEPRECATED: 请使用 UserNotification)
+    
+    此模型已被 UserNotification 替代，保留仅为兼容旧数据库表。
+    新代码应使用 UserNotification (user_notifications 表)。
+    """
 
     __tablename__ = "notifications"
 
@@ -1099,8 +1104,95 @@ class AdminGeneratedPost(Base):
     published_post_id = Column(Integer, ForeignKey("posts.id"), nullable=True)
     published_at = Column(DateTime, nullable=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)  # admin user id
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
     category = relationship("CommunityCategory", backref="generated_posts")
     published_post = relationship("Post", backref="generated_from")
+
+
+# ── 用药提醒 ──
+
+
+class MedicationReminder(Base):
+    """用药提醒"""
+
+    __tablename__ = "medication_reminders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    medication_name = Column(String(100), nullable=False)  # 药品名称
+    dosage = Column(String(100), nullable=True)  # 剂量
+    frequency = Column(String(50), nullable=False)  # daily/twice_daily/weekly/custom
+    reminder_times = Column(Text, nullable=True)  # JSON array of times ["08:00", "20:00"]
+    reminder_days = Column(Text, nullable=True)  # JSON array of days [1,2,3,4,5,6,7] (1=Monday)
+    notes = Column(Text, nullable=True)  # 备注
+    is_active = Column(Boolean, default=True, index=True)
+    push_subscription_id = Column(Integer, nullable=True)  # 关联的推送订阅
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    user = relationship("User", backref="medication_reminders")
+
+
+class PushSubscription(Base):
+    """Web Push 订阅"""
+
+    __tablename__ = "push_subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    endpoint = Column(String(500), nullable=False, unique=True)
+    p256dh_key = Column(String(200), nullable=False)
+    auth_key = Column(String(100), nullable=False)
+    user_agent = Column(String(500), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=_utcnow)
+
+    user = relationship("User", backref="push_subscriptions")
+
+
+# ── 医生认证 ──
+
+
+class DoctorVerification(Base):
+    """医生认证申请"""
+
+    __tablename__ = "doctor_verifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    real_name = Column(String(50), nullable=False)  # 真实姓名
+    hospital = Column(String(100), nullable=False)  # 医院
+    department = Column(String(100), nullable=True)  # 科室
+    title = Column(String(50), nullable=True)  # 职称 (主任医师/副主任医师/主治医师/住院医师)
+    license_number = Column(String(50), nullable=True)  # 执业医师资格证号
+    specialty = Column(String(200), nullable=True)  # 擅长领域
+    proof_images = Column(Text, nullable=True)  # JSON array of proof image URLs
+    status = Column(String(20), default="pending", index=True)  # pending/approved/rejected
+    review_note = Column(Text, nullable=True)  # 审核备注
+    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)  # 审核人
+    reviewed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    user = relationship("User", foreign_keys=[user_id], backref="doctor_verifications")
+    reviewer = relationship("User", foreign_keys=[reviewed_by])
+
+
+class DoctorInvitation(Base):
+    """医生邀请码"""
+
+    __tablename__ = "doctor_invitations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(20), unique=True, nullable=False, index=True)  # 邀请码
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)  # 创建人 (admin)
+    used_by = Column(Integer, ForeignKey("users.id"), nullable=True)  # 使用人
+    used_at = Column(DateTime, nullable=True)
+    expires_at = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=_utcnow)
+
+    creator = relationship("User", foreign_keys=[created_by], backref="created_invitations")
+    user = relationship("User", foreign_keys=[used_by], backref="used_invitation")

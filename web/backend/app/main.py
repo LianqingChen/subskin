@@ -53,6 +53,8 @@ from web.backend.api import (
     admin_general,
     content_generation_admin,
     image_label,
+    medication,
+    doctor,
 )
 from web.backend.api.files import router as files_router
 from web.backend.database.database import Base, engine
@@ -190,11 +192,14 @@ ensure_feedback_tables_on_startup()
 uploads_dir = Path("data/uploads")
 uploads_dir.mkdir(parents=True, exist_ok=True)
 
-DEFAULT_ALLOWED_ORIGINS = [
+PRODUCTION_ORIGINS = [
     "https://subskin.cn",
     "https://www.subskin.cn",
     "https://admin.subskin.cn",
     "https://staging.subskin.cn",
+]
+
+DEV_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
     "http://localhost:5174",  # admin dev server
@@ -202,12 +207,18 @@ DEFAULT_ALLOWED_ORIGINS = [
 
 
 def get_allowed_origins() -> list[str]:
+    # Explicit env override takes precedence
     raw_origins = os.getenv("ALLOWED_ORIGINS", "")
-    if not raw_origins.strip():
-        return DEFAULT_ALLOWED_ORIGINS
+    if raw_origins.strip():
+        origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+        if origins:
+            return origins
 
-    origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
-    return origins or DEFAULT_ALLOWED_ORIGINS
+    # Include localhost origins only in development (APP_ENV != production)
+    app_env = os.getenv("APP_ENV", "development").lower()
+    if app_env == "production":
+        return PRODUCTION_ORIGINS
+    return PRODUCTION_ORIGINS + DEV_ORIGINS
 
 
 _temp_cleanup_task: Optional[asyncio.Task[None]] = None
@@ -287,6 +298,8 @@ app.include_router(
 app.include_router(files_router, prefix="/api/files", tags=["文件"])
 app.include_router(audit.router, prefix="/api/audit", tags=["审计日志"])
 app.include_router(patient_profile.router, prefix="/api", tags=["白友档案"])
+app.include_router(medication.router, prefix="/api/medication", tags=["用药提醒"])
+app.include_router(doctor.router, prefix="/api/doctor", tags=["医生认证"])
 app.include_router(wechat.router, prefix="/api/wechat", tags=["微信"])
 app.include_router(encyclopedia.router, tags=["小白百科"])
 app.include_router(moderation.router, tags=["内容审核"])
@@ -302,6 +315,14 @@ app.include_router(llm_config_admin.router)
 app.include_router(admin_general.router)
 app.include_router(content_generation_admin.router)
 app.include_router(image_label.router, prefix="/api/vasi", tags=["图片打标管理"])
+
+# 初始化监控 (Sentry + Prometheus)
+from web.backend.services.monitoring import init_sentry, PrometheusMiddleware
+init_sentry(app)
+if os.getenv("PROMETHEUS_ENABLED", "false").lower() == "true":
+    app.add_middleware(PrometheusMiddleware, enabled=True)
+    from web.backend.services.monitoring import setup_prometheus_endpoint
+    setup_prometheus_endpoint(app)
 
 # 初始化 LLM 模块配置
 from web.backend.services.llm_config_service import LLMConfigService

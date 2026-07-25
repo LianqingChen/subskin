@@ -283,24 +283,31 @@ function teardownScrollChain() {
 
     <!-- Logo + toggle (idle only) -->
     <div v-if="!hasMessages" class="flex-shrink-0 max-w-6xl mx-auto w-full px-4">
-      <div class="flex flex-col items-center pt-8 pb-6 md:pt-16 md:pb-8">
-        <div class="flex items-center gap-2.5 mb-5 md:mb-6">
-          <img src="/subskin_logo.png" alt="SubSkin" class="w-10 h-10 md:w-12 md:h-12" />
-          <span class="text-xl md:text-2xl font-semibold text-gray-800 tracking-tight">SubSkin 更懂你</span>
+      <div class="flex flex-col items-center pt-12 pb-6 md:pt-20 md:pb-10">
+        <!-- Branding -->
+        <div class="relative mb-8">
+          <div class="absolute inset-0 rounded-full bg-primary-400/20 blur-2xl scale-150"></div>
+          <div class="relative w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/25">
+            <i class="ri-robot-3-line text-white text-3xl md:text-4xl"></i>
+          </div>
         </div>
-        <div class="flex w-full bg-gray-100/80 rounded-full p-0.5">
+        <h1 class="text-lg md:text-xl font-semibold text-gray-800 tracking-tight mb-1">SubSkin AI 助手</h1>
+        <p class="text-xs text-gray-400 mb-6">基于 2000+ 篇白癜风文献的智能问答</p>
+
+        <!-- Mode toggle -->
+        <div class="flex w-full max-w-xs bg-gray-100/80 rounded-full p-0.5">
           <button type="button" @click="setMode('chat')"
-            class="flex-1 py-2.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1.5"
+            class="flex-1 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1.5"
             :class="mode === 'chat' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
-            <i class="ri-flashlight-line text-current mr-1.5"></i> 智能问答
+            <i class="ri-flashlight-line text-current"></i> 智能问答
           </button>
           <button type="button" @click="setMode('counseling')"
-            class="flex-1 py-2.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1.5"
+            class="flex-1 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1.5"
             :class="mode === 'counseling' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
-            <i class="ri-heart-3-line text-current mr-1.5"></i> 知心陪伴
+            <i class="ri-heart-3-line text-current"></i> 知心陪伴
           </button>
         </div>
-        <p class="text-xs text-gray-400 mt-3">{{ modeHint }}</p>
+        <p class="text-[11px] text-gray-400 mt-3">{{ modeHint }}</p>
       </div>
     </div>
 

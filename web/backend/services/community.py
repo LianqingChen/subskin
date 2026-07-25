@@ -75,6 +75,7 @@ class CommunityService:
         tag_names: Optional[List[str]] = None,
         is_private: bool = False,
         diary_date: Optional[str] = None,
+        diary_type: Optional[str] = None,
         mood: Optional[str] = None,
         is_anonymous: bool = False,
         post_type: Optional[str] = None,
@@ -122,6 +123,8 @@ class CommunityService:
                 post.diary_date = datetime.strptime(diary_date, "%Y-%m-%d").date()
             except ValueError:
                 post.diary_date = None
+        if diary_type:
+            post.diary_type = diary_type
         self.db.add(post)
         self.db.commit()
         self.db.refresh(post)
@@ -238,6 +241,7 @@ class CommunityService:
         tag_names: Optional[List[str]] = None,
         is_private: Optional[bool] = None,
         diary_date: Optional[str] = None,
+        diary_type: Optional[str] = None,
         mood: Optional[str] = None,
         is_anonymous: Optional[bool] = None,
         post_type: Optional[str] = None,
@@ -287,6 +291,8 @@ class CommunityService:
                 post.diary_date = datetime.strptime(diary_date, "%Y-%m-%d").date()
             except ValueError:
                 post.diary_date = None
+        if diary_type is not None:
+            post.diary_type = diary_type
         if city is not None:
             post.city = city
         if tag_names is not None:
@@ -852,6 +858,7 @@ class CommunityService:
             is_private=post.is_private,
             draft_expires_at=getattr(post, "draft_expires_at", None),
             diary_date=post.diary_date.isoformat() if post.diary_date else None,
+            diary_type=getattr(post, "diary_type", None),
             mood=post.mood,
             is_anonymous=False,
             city=post.city,
@@ -1054,6 +1061,7 @@ class CommunityService:
                 is_private=post.is_private,
                 draft_expires_at=getattr(post, "draft_expires_at", None),
                 diary_date=post.diary_date.isoformat() if post.diary_date else None,
+                diary_type=getattr(post, "diary_type", None),
                 mood=post.mood,
                 is_anonymous=False,
                 city=post.city,

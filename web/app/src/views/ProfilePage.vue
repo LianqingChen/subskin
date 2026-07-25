@@ -11,71 +11,13 @@ import { usePWA } from '@/composables/usePWA'
 import { useAuthStore } from '@/stores/auth'
 import { usePrivacyStore } from '@/stores/privacy'
 import { toProtectedFileUrl } from '@/utils/file-url'
-import { computed, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import PrivacyModal from '@/components/profile/PrivacyModal.vue'
 import PhotoModal from '@/components/profile/PhotoModal.vue'
 import NotificationModal from '@/components/profile/NotificationModal.vue'
 import InstallModal from '@/components/profile/InstallModal.vue'
-
-const CURRENT_YEAR = new Date().getFullYear()
-const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 1919 }, (_, i) => CURRENT_YEAR - i)
-const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1)
-
-const birthDateParts = reactive({ year: '' as string | number, month: '' as string | number, day: '' as string | number })
-const diagnosisDateParts = reactive({ year: '' as string | number, month: '' as string | number, day: '' as string | number })
-
-function getDaysInMonth(year: string | number, month: string | number): number {
-  const y = Number(year)
-  const m = Number(month)
-  if (!y || !m) return 31
-  return new Date(y, m, 0).getDate()
-}
-
-const birthDayOptions = computed(() => {
-  const days = getDaysInMonth(birthDateParts.year, birthDateParts.month)
-  return Array.from({ length: days }, (_, i) => i + 1)
-})
-
-const diagnosisDayOptions = computed(() => {
-  const days = getDaysInMonth(diagnosisDateParts.year, diagnosisDateParts.month)
-  return Array.from({ length: days }, (_, i) => i + 1)
-})
-
-function datePartsToString(parts: { year: string | number; month: string | number; day: string | number }): string {
-  const y = Number(parts.year)
-  const m = Number(parts.month)
-  const d = Number(parts.day)
-  if (!y || !m || !d) return ''
-  return `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-}
-
-function stringToDateParts(dateStr: string): { year: string | number; month: string | number; day: string | number } {
-  if (!dateStr) return { year: '', month: '', day: '' }
-  const [y, m, d] = dateStr.split('-').map(Number)
-  return { year: y || '', month: m || '', day: d || '' }
-}
-
-watch([() => birthDateParts.year, () => birthDateParts.month, () => birthDateParts.day], () => {
-  const newVal = datePartsToString(birthDateParts)
-  if (newVal !== patientProfileForm.birth_date) {
-    patientProfileForm.birth_date = newVal
-  }
-  const maxDay = getDaysInMonth(birthDateParts.year, birthDateParts.month)
-  if (Number(birthDateParts.day) > maxDay) {
-    birthDateParts.day = maxDay
-  }
-})
-
-watch([() => diagnosisDateParts.year, () => diagnosisDateParts.month, () => diagnosisDateParts.day], () => {
-  const newVal = datePartsToString(diagnosisDateParts)
-  if (newVal !== patientProfileForm.diagnosis_date) {
-    patientProfileForm.diagnosis_date = newVal
-  }
-  const maxDay = getDaysInMonth(diagnosisDateParts.year, diagnosisDateParts.month)
-  if (Number(diagnosisDateParts.day) > maxDay) {
-    diagnosisDateParts.day = maxDay
-  }
-})
+import SecurityModal from '@/components/profile/SecurityModal.vue'
+import PatientProfileSection from '@/components/profile/PatientProfileSection.vue'
 
 const PATIENT_RELATION_OPTIONS = [
   { value: '本人', label: '我是白友' },
@@ -124,26 +66,17 @@ const showPrivacyModal = ref(false)
 const showPhotoModal = ref(false)
 const showNotificationModal = ref(false)
 const showInstallModal = ref(false)
-const showProfileFormModal = ref(false)
 const showSecurityModal = ref(false)
 const isSavingProfile = ref(false)
-const isSavingPatientProfile = ref(false)
 const isUploadingAvatar = ref(false)
 const isLoadingTracking = ref(false)
 const isLoadingCredentials = ref(false)
-const isSavingSecurity = ref(false)
 const avatarInput = ref<HTMLInputElement | null>(null)
 const securityDialogMode = ref<'bind-phone' | 'bind-email' | 'set-password' | 'reset-password'>('bind-phone')
-const securityErrorMessage = ref('')
-const securityCountdown = ref(0)
-
-let securityCountdownTimer: ReturnType<typeof setInterval> | null = null
 
 const profiles = ref<PatientProfile[]>([])
 const credentials = ref<CredentialInfo[]>([])
 const moduleDefaults = reactive<ModuleDefaults>({ tracker_profile_id: null, report_profile_id: null, diary_profile_id: null })
-const editingProfile = ref<PatientProfile | null>(null)
-const patientProfileForm = reactive({ name: '', relationship: '本人', gender: '', birth_date: '', diagnosis_date: '', vitiligo_type: '', notes: '' })
 
 const profileForm = reactive({
   username: '',
@@ -182,15 +115,6 @@ function debouncedNicknameCheck() {
   nicknameCheckStatus.value = 'idle'
   nicknameCheckTimer = setTimeout(checkNicknameAvailability, 500)
 }
-
-const securityForm = reactive({
-  phone: '',
-  email: '',
-  code: '',
-  password: '',
-  confirmPassword: '',
-  resetMethod: 'phone' as 'phone' | 'email',
-})
 
 const trackingSummary = reactive({
   assessmentCount: '-',
@@ -238,20 +162,6 @@ const hasPasswordCredential = computed(() => Boolean(passwordCredential.value))
 const bindableCredentialCount = computed(
   () => credentials.value.filter((item) => item.cred_type === 'phone' || item.cred_type === 'email').length,
 )
-const resettableCredentials = computed(() => {
-  return credentials.value.filter(
-    (item): item is CredentialInfo & { cred_type: 'phone' | 'email' } => {
-      return item.cred_type === 'phone' || item.cred_type === 'email'
-    },
-  )
-})
-const selectedResetCredential = computed(() => {
-  return (
-    resettableCredentials.value.find((item) => item.cred_type === securityForm.resetMethod) ??
-    resettableCredentials.value[0] ??
-    null
-  )
-})
 const privacyModeEnabled = computed({
   get: () => !privacyStore.privacyMode,
   set: async (enabled: boolean) => {
@@ -291,23 +201,6 @@ watch(
   { immediate: true },
 )
 
-watch(
-  resettableCredentials,
-  (items) => {
-    if (!items.length) return
-    if (!items.some((item) => item.cred_type === securityForm.resetMethod)) {
-      securityForm.resetMethod = items[0].cred_type
-    }
-  },
-  { immediate: true },
-)
-
-onUnmounted(() => {
-  if (securityCountdownTimer) {
-    clearInterval(securityCountdownTimer)
-  }
-})
-
 function getErrorDetail(error: unknown, fallback = '操作失败，请稍后重试') {
   if (isAxiosError<{ detail?: string }>(error)) {
     return error.response?.data?.detail || fallback
@@ -315,40 +208,13 @@ function getErrorDetail(error: unknown, fallback = '操作失败，请稍后重�
   return fallback
 }
 
-function startSecurityCountdown(seconds = 60) {
-  securityCountdown.value = seconds
-  if (securityCountdownTimer) {
-    clearInterval(securityCountdownTimer)
-  }
-  securityCountdownTimer = setInterval(() => {
-    securityCountdown.value -= 1
-    if (securityCountdown.value <= 0 && securityCountdownTimer) {
-      clearInterval(securityCountdownTimer)
-      securityCountdownTimer = null
-    }
-  }, 1000)
-}
-
-function resetSecurityForm() {
-  securityErrorMessage.value = ''
-  securityForm.phone = ''
-  securityForm.email = ''
-  securityForm.code = ''
-  securityForm.password = ''
-  securityForm.confirmPassword = ''
-  securityForm.resetMethod = resettableCredentials.value[0]?.cred_type ?? 'phone'
-}
-
 function openSecurityModal(mode: 'bind-phone' | 'bind-email' | 'set-password' | 'reset-password') {
   securityDialogMode.value = mode
-  resetSecurityForm()
   showSecurityModal.value = true
 }
 
-function closeSecurityModal() {
-  if (isSavingSecurity.value) return
-  showSecurityModal.value = false
-  securityErrorMessage.value = ''
+async function onSecurityUpdated() {
+  await Promise.all([loadCredentials(), authStore.fetchUser()])
 }
 
 function resetTrackingSummary() {
@@ -465,7 +331,6 @@ async function loadCredentials() {
   }
 
   isLoadingCredentials.value = true
-  securityErrorMessage.value = ''
   try {
     credentials.value = await authStore.getCredentials()
   } catch (error) {
@@ -522,185 +387,6 @@ async function unbindCredential(credential: CredentialInfo) {
     toast.success(`${getCredentialLabel(credential)}已解绑`)
   } catch (error) {
     toast.error(getErrorDetail(error, '解绑失败，请稍后重试'))
-  }
-}
-
-async function sendSecurityCode() {
-  securityErrorMessage.value = ''
-
-  try {
-    if (securityDialogMode.value === 'bind-phone') {
-      if (!/^1[3-9]\d{9}$/.test(securityForm.phone.trim())) {
-        securityErrorMessage.value = '请输入有效的手机号'
-        return
-      }
-      await authStore.sendSmsCode(securityForm.phone.trim())
-    } else if (securityDialogMode.value === 'bind-email') {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(securityForm.email.trim())) {
-        securityErrorMessage.value = '请输入有效的邮箱地址'
-        return
-      }
-      await authStore.sendEmailCode(securityForm.email.trim(), 'bind')
-    } else if (securityDialogMode.value === 'reset-password') {
-      if (!selectedResetCredential.value) {
-        securityErrorMessage.value = '请先绑定手机号或邮箱'
-        return
-      }
-      if (selectedResetCredential.value.cred_type === 'phone') {
-        await authStore.sendSmsCode(selectedResetCredential.value.cred_id)
-      } else {
-        await authStore.sendEmailCode(selectedResetCredential.value.cred_id, 'reset')
-      }
-    }
-
-    startSecurityCountdown()
-    toast.success('验证码已发送，请注意查收')
-  } catch (error) {
-    securityErrorMessage.value = getErrorDetail(error, '验证码发送失败，请稍后重试')
-  }
-}
-
-async function submitSecurityAction() {
-  securityErrorMessage.value = ''
-
-  if (securityDialogMode.value === 'set-password' || securityDialogMode.value === 'reset-password') {
-    if (securityForm.password.trim().length < 6) {
-      securityErrorMessage.value = '密码至少6个字符'
-      return
-    }
-    if (securityForm.password !== securityForm.confirmPassword) {
-      securityErrorMessage.value = '两次输入的密码不一致'
-      return
-    }
-  }
-
-  isSavingSecurity.value = true
-  try {
-    if (securityDialogMode.value === 'bind-phone') {
-      if (!/^1[3-9]\d{9}$/.test(securityForm.phone.trim())) {
-        securityErrorMessage.value = '请输入有效的手机号'
-        return
-      }
-      if (securityForm.code.trim().length < 6) {
-        securityErrorMessage.value = '请输入6位验证码'
-        return
-      }
-      await authStore.bindPhone(securityForm.phone.trim(), securityForm.code.trim())
-      toast.success('手机号绑定成功')
-      await Promise.all([loadCredentials(), authStore.fetchUser()])
-    } else if (securityDialogMode.value === 'bind-email') {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(securityForm.email.trim())) {
-        securityErrorMessage.value = '请输入有效的邮箱地址'
-        return
-      }
-      if (securityForm.code.trim().length < 6) {
-        securityErrorMessage.value = '请输入6位验证码'
-        return
-      }
-      await authStore.bindEmail(securityForm.email.trim(), securityForm.code.trim())
-      toast.success('邮箱绑定成功')
-      await Promise.all([loadCredentials(), authStore.fetchUser()])
-    } else if (securityDialogMode.value === 'set-password') {
-      await authStore.setPassword(securityForm.password.trim())
-      toast.success(hasPasswordCredential.value ? '密码已更新' : '密码设置成功')
-      await loadCredentials()
-    } else {
-      if (!selectedResetCredential.value) {
-        securityErrorMessage.value = '请先绑定手机号或邮箱'
-        return
-      }
-      if (securityForm.code.trim().length < 6) {
-        securityErrorMessage.value = '请输入6位验证码'
-        return
-      }
-      await authStore.resetPassword(
-        selectedResetCredential.value.cred_id,
-        selectedResetCredential.value.cred_type,
-        securityForm.code.trim(),
-        securityForm.password.trim(),
-      )
-      toast.success('密码已重置')
-      await loadCredentials()
-    }
-
-    closeSecurityModal()
-  } catch (error) {
-    securityErrorMessage.value = getErrorDetail(error, '操作失败，请稍后重试')
-  } finally {
-    isSavingSecurity.value = false
-  }
-}
-
-function openAddProfileModal() {
-  editingProfile.value = null
-  Object.assign(patientProfileForm, { name: '', relationship: '本人', gender: '', birth_date: '', diagnosis_date: '', vitiligo_type: '', notes: '' })
-  Object.assign(birthDateParts, { year: '', month: '', day: '' })
-  Object.assign(diagnosisDateParts, { year: '', month: '', day: '' })
-  showProfileFormModal.value = true
-}
-
-function openEditProfileModal(profile: PatientProfile) {
-  editingProfile.value = profile
-  Object.assign(patientProfileForm, {
-    name: profile.name,
-    relationship: profile.relationship,
-    gender: profile.gender || '',
-    birth_date: profile.birth_date || '',
-    diagnosis_date: profile.diagnosis_date || '',
-    vitiligo_type: profile.vitiligo_type || '',
-    notes: profile.notes || ''
-  })
-  Object.assign(birthDateParts, stringToDateParts(profile.birth_date || ''))
-  Object.assign(diagnosisDateParts, stringToDateParts(profile.diagnosis_date || ''))
-  showProfileFormModal.value = true
-}
-
-async function saveProfileForm() {
-  if (!patientProfileForm.name.trim()) {
-    toast.warning('请输入姓名')
-    return
-  }
-  if (!patientProfileForm.relationship) {
-    toast.warning('请选择与白友关系')
-    return
-  }
-
-  isSavingPatientProfile.value = true
-  try {
-    const data = {
-      name: patientProfileForm.name.trim(),
-      relationship: patientProfileForm.relationship,
-      gender: patientProfileForm.gender || null,
-      birth_date: patientProfileForm.birth_date || null,
-      diagnosis_date: patientProfileForm.diagnosis_date || null,
-      vitiligo_type: patientProfileForm.vitiligo_type || null,
-      notes: patientProfileForm.notes || null
-    }
-
-    if (editingProfile.value) {
-      await patientProfileApi.update(editingProfile.value.id, data)
-      toast.success('白友档案已更新')
-    } else {
-      await patientProfileApi.create(data)
-      toast.success('白友档案已添加')
-    }
-    showProfileFormModal.value = false
-    await loadProfiles()
-  } catch (error: any) {
-    toast.error(error.response?.data?.detail || '保存失败，请稍后重试')
-  } finally {
-    isSavingPatientProfile.value = false
-  }
-}
-
-async function deleteProfile(profile: PatientProfile) {
-  if (!confirm(`确定要删除白友档案 "${profile.name}" 吗？`)) return
-  try {
-    await patientProfileApi.delete(profile.id)
-    toast.success('白友档案已删除')
-    await loadProfiles()
-  } catch (error: any) {
-    toast.error(error.response?.data?.detail || '删除失败，请稍后重试')
   }
 }
 
@@ -964,63 +650,12 @@ async function handleAvatarChange(event: Event) {
     </template>
 
     <div v-if="isLoggedIn" class="space-y-3">
-      <div class="card p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="font-medium text-gray-900"><i class="ri-team-line"></i> 白友档案</h3>
-          <button class="btn-ghost text-sm" @click="openAddProfileModal">+ 添加</button>
-        </div>
-        <!-- Profile list -->
-        <div v-if="profiles.length === 0" class="text-sm text-gray-400 text-center py-4">暂无档案</div>
-        <div v-else class="space-y-2">
-          <div v-for="profile in profiles" :key="profile.id" class="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-sm font-medium text-primary-700 dark:text-primary-300">
-                {{ profile.name.charAt(0) }}
-              </div>
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="text-sm font-medium text-gray-900">{{ profile.name }}</span>
-                  <span v-if="profile.is_self" class="text-xs bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 px-1.5 py-0.5 rounded">本人</span>
-                  <span v-else class="text-xs bg-gray-100   text-gray-600 px-1.5 py-0.5 rounded">{{ profile.relationship }}</span>
-                </div>
-                <div class="text-xs text-gray-400 mt-0.5">
-                  <span v-if="profile.vitiligo_type">{{ profile.vitiligo_type }}</span>
-                  <span v-if="profile.diagnosis_date"> · 确诊 {{ profile.diagnosis_date }}</span>
-                </div>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <button class="text-gray-400 hover:text-primary-600" @click="openEditProfileModal(profile)"><i class="ri-edit-line"></i></button>
-              <button v-if="!profile.is_self" class="text-gray-400 hover:text-red-500" @click="deleteProfile(profile)"><i class="ri-delete-bin-line"></i></button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Module defaults -->
-        <div v-if="profiles.length > 1" class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
-          <h4 class="text-sm font-medium text-gray-700 mb-2">默认档案</h4>
-          <div class="space-y-2">
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-gray-600 ">测评</span>
-              <select v-model="moduleDefaults.tracker_profile_id" class="text-sm border rounded px-2 py-1 bg-white" @change="saveModuleDefaults">
-                <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
-              </select>
-            </div>
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-gray-600 ">体检解读</span>
-              <select v-model="moduleDefaults.report_profile_id" class="text-sm border rounded px-2 py-1 bg-white" @change="saveModuleDefaults">
-                <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
-              </select>
-            </div>
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-gray-600 ">白白日记</span>
-              <select v-model="moduleDefaults.diary_profile_id" class="text-sm border rounded px-2 py-1 bg-white" @change="saveModuleDefaults">
-                <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PatientProfileSection
+        :profiles="profiles"
+        :module-defaults="moduleDefaults"
+        @refresh="loadProfiles"
+        @save-defaults="saveModuleDefaults"
+      />
 
       <div class="card p-4">
         <div class="flex items-center justify-between gap-3 mb-3">
@@ -1334,348 +969,14 @@ placeholder="请输入昵称"
 <PhotoModal v-model="showPhotoModal" />
 <NotificationModal v-model="showNotificationModal" />
 <InstallModal v-model="showInstallModal" :can-install="hasDeferredPrompt" @install="installApp().then(ok => { if (ok) showInstallModal = false })" @force-reset="forceResetAndReload" />
-  <Teleport to="body">
-    <div
-      v-if="showProfileFormModal"
-      class="fixed inset-0 bg-black/50 z-[100] flex items-end md:items-center justify-center"
-      @click.self="showProfileFormModal = false"
-    >
-      <div class="bg-white w-full max-w-md rounded-t-2xl md:rounded-xl shadow-xl overflow-hidden mx-0 md:mx-4 max-h-[90dvh] overflow-y-auto">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 class="text-lg font-semibold text-gray-900">{{ editingProfile ? '编辑白友' : '添加白友' }}</h2>
-          <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl" @click="showProfileFormModal = false">&times;</button>
-        </div>
 
-        <div class="p-6 space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">姓名 <span class="text-red-500">*</span></label>
-            <input
-              v-model="patientProfileForm.name"
-              type="text"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900"
-              placeholder="请输入姓名"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">与白友关系 <span class="text-red-500">*</span></label>
-            <select
-              v-model="patientProfileForm.relationship"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900 disabled:opacity-50"
-              :disabled="editingProfile?.is_self"
-            >
-              <option value="本人">本人</option>
-              <option value="父母">父母</option>
-              <option value="孩子">孩子</option>
-              <option value="伴侣">伴侣</option>
-              <option value="朋友">朋友</option>
-              <option value="其他">其他</option>
-            </select>
-          </div>
-
-          <div class="grid gap-3 md:grid-cols-2">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">性别</label>
-              <select
-                v-model="patientProfileForm.gender"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900"
-              >
-                <option value="">未设置</option>
-                <option value="男">男</option>
-                <option value="女">女</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">白癜风类型</label>
-              <select
-                v-model="patientProfileForm.vitiligo_type"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900"
-              >
-                <option value="">未确定</option>
-                <option value="寻常型">寻常型</option>
-                <option value="节段型">节段型</option>
-                <option value="混合型">混合型</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="space-y-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">出生日期</label>
-              <div class="grid grid-cols-3 gap-2">
-                <select
-                  v-model="birthDateParts.year"
-                  class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900 text-sm"
-                >
-                  <option value="">年</option>
-                  <option v-for="y in YEAR_OPTIONS" :key="y" :value="y">{{ y }}</option>
-                </select>
-                <select
-                  v-model="birthDateParts.month"
-                  class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900 text-sm"
-                >
-                  <option value="">月</option>
-                  <option v-for="m in MONTH_OPTIONS" :key="m" :value="m">{{ m }}月</option>
-                </select>
-                <select
-                  v-model="birthDateParts.day"
-                  class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900 text-sm"
-                >
-                  <option value="">日</option>
-                  <option v-for="d in birthDayOptions" :key="d" :value="d">{{ d }}日</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">确诊日期</label>
-              <div class="grid grid-cols-3 gap-2">
-                <select
-                  v-model="diagnosisDateParts.year"
-                  class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900 text-sm"
-                >
-                  <option value="">年</option>
-                  <option v-for="y in YEAR_OPTIONS" :key="y" :value="y">{{ y }}</option>
-                </select>
-                <select
-                  v-model="diagnosisDateParts.month"
-                  class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900 text-sm"
-                >
-                  <option value="">月</option>
-                  <option v-for="m in MONTH_OPTIONS" :key="m" :value="m">{{ m }}月</option>
-                </select>
-                <select
-                  v-model="diagnosisDateParts.day"
-                  class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900 text-sm"
-                >
-                  <option value="">日</option>
-                  <option v-for="d in diagnosisDayOptions" :key="d" :value="d">{{ d }}日</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
-            <textarea
-              v-model="patientProfileForm.notes"
-              rows="3"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900 resize-none"
-              placeholder="添加一些备注信息..."
-            ></textarea>
-          </div>
-
-          <div class="flex flex-wrap gap-2 pt-2">
-            <button
-              type="button"
-              class="btn-primary"
-              :disabled="isSavingPatientProfile"
-              @click="saveProfileForm"
-            >
-              {{ isSavingPatientProfile ? '保存中...' : '保存' }}
-            </button>
-            <button
-              type="button"
-              class="btn-ghost"
-              :disabled="isSavingPatientProfile"
-              @click="showProfileFormModal = false"
-            >
-              取消
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </Teleport>
-
-  <Teleport to="body">
-    <div
-      v-if="showSecurityModal"
-      class="fixed inset-0 bg-black/50 z-[100] flex items-end md:items-center justify-center"
-      @click.self="closeSecurityModal"
-    >
-      <div class="bg-white w-full max-w-md rounded-t-2xl md:rounded-xl shadow-xl overflow-hidden mx-0 md:mx-4 max-h-[90dvh] overflow-y-auto">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 class="text-lg font-semibold text-gray-900">
-            {{
-              securityDialogMode === 'bind-phone'
-                ? '绑定手机号'
-                : securityDialogMode === 'bind-email'
-                  ? '绑定邮箱'
-                  : securityDialogMode === 'set-password'
-                    ? '设置密码'
-                    : '修改密码'
-            }}
-          </h2>
-          <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl" @click="closeSecurityModal">&times;</button>
-        </div>
-
-        <div class="p-6 space-y-4">
-          <div
-            v-if="securityErrorMessage"
-            class="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300"
-          >
-            {{ securityErrorMessage }}
-          </div>
-
-          <template v-if="securityDialogMode === 'bind-phone'">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">手机号</label>
-              <input
-                v-model="securityForm.phone"
-                type="tel"
-                maxlength="11"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900"
-                placeholder="请输入手机号"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">验证码</label>
-              <div class="flex gap-3">
-                <input
-                  v-model="securityForm.code"
-                  type="text"
-                  maxlength="6"
-                  inputmode="numeric"
-                  class="flex-1 min-h-[44px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900"
-                  placeholder="6位验证码"
-                />
-                <button
-                  type="button"
-                  class="min-h-[44px] rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-gray-200"
-                  :disabled="securityCountdown > 0 || isSavingSecurity"
-                  @click="sendSecurityCode"
-                >
-                  {{ securityCountdown > 0 ? `${securityCountdown}s` : '发送验证码' }}
-                </button>
-              </div>
-            </div>
-          </template>
-
-          <template v-else-if="securityDialogMode === 'bind-email'">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
-              <input
-                v-model="securityForm.email"
-                type="email"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900"
-                placeholder="请输入邮箱地址"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">验证码</label>
-              <div class="flex gap-3">
-                <input
-                  v-model="securityForm.code"
-                  type="text"
-                  maxlength="6"
-                  inputmode="numeric"
-                  class="flex-1 min-h-[44px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900"
-                  placeholder="6位验证码"
-                />
-                <button
-                  type="button"
-                  class="min-h-[44px] rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-gray-200"
-                  :disabled="securityCountdown > 0 || isSavingSecurity"
-                  @click="sendSecurityCode"
-                >
-                  {{ securityCountdown > 0 ? `${securityCountdown}s` : '发送验证码' }}
-                </button>
-              </div>
-            </div>
-          </template>
-
-          <template v-else>
-            <div v-if="securityDialogMode === 'reset-password'" class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">找回方式</label>
-                <div class="flex gap-2 rounded-lg bg-gray-100 p-1">
-                  <button
-                    v-for="credential in resettableCredentials"
-                    :key="credential.id"
-                    type="button"
-                    class="flex-1 rounded-md px-3 py-2.5 text-sm font-medium transition-colors"
-                    :class="securityForm.resetMethod === credential.cred_type
-                      ? 'bg-white text-primary-600 shadow-sm dark:text-primary-600'
-                      : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-100'"
-                    @click="securityForm.resetMethod = credential.cred_type"
-                  >
-                    {{ credential.cred_type === 'phone' ? '手机号' : '邮箱' }}
-                  </button>
-                </div>
-              </div>
-
-              <div class="rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-600">
-                <p>验证码将发送至：{{ selectedResetCredential ? getCredentialDisplay(selectedResetCredential) : '暂无可用凭证' }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">验证码</label>
-                <div class="flex gap-3">
-                  <input
-                    v-model="securityForm.code"
-                    type="text"
-                    maxlength="6"
-                    inputmode="numeric"
-                    class="flex-1 min-h-[44px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900"
-                    placeholder="6位验证码"
-                  />
-                  <button
-                    type="button"
-                    class="min-h-[44px] rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-gray-200"
-                    :disabled="securityCountdown > 0 || isSavingSecurity || !selectedResetCredential"
-                    @click="sendSecurityCode"
-                  >
-                    {{ securityCountdown > 0 ? `${securityCountdown}s` : '发送验证码' }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">{{ securityDialogMode === 'reset-password' ? '新密码' : '密码' }}</label>
-              <input
-                v-model="securityForm.password"
-                type="password"
-                maxlength="128"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900"
-                placeholder="至少6位字符"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">确认密码</label>
-              <input
-                v-model="securityForm.confirmPassword"
-                type="password"
-                maxlength="128"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900"
-                placeholder="请再次输入密码"
-              />
-            </div>
-          </template>
-
-          <div class="flex flex-wrap gap-2 pt-2">
-            <button
-              type="button"
-              class="btn-primary min-h-[44px]"
-              :disabled="isSavingSecurity || (securityDialogMode === 'reset-password' && resettableCredentials.length === 0)"
-              @click="submitSecurityAction"
-            >
-              {{ isSavingSecurity ? '提交中...' : '确认' }}
-            </button>
-            <button
-              type="button"
-              class="btn-ghost min-h-[44px]"
-              :disabled="isSavingSecurity"
-              @click="closeSecurityModal"
-            >
-              取消
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-   </Teleport>
+  <SecurityModal
+    :visible="showSecurityModal"
+    :mode="securityDialogMode"
+    :credentials="credentials"
+    @close="showSecurityModal = false"
+    @updated="onSecurityUpdated"
+  />
   </div>
 </template>
 

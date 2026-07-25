@@ -160,6 +160,7 @@ export interface Post {
   tags: PostTag[]
   is_private: boolean
   diary_date: string | null
+  diary_type: string | null
   mood: string | null
   is_anonymous: boolean
   city?: string | null
@@ -236,6 +237,7 @@ export interface PostCreateRequest {
   tag_names?: string[]
   is_private?: boolean
   diary_date?: string
+  diary_type?: string
   mood?: string
   is_anonymous?: boolean
   city?: string | null
@@ -252,6 +254,7 @@ export interface PostUpdateRequest {
   tag_names?: string[]
   is_private?: boolean
   diary_date?: string
+  diary_type?: string
   mood?: string
   is_anonymous?: boolean
   images?: string[]

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { communityApi } from '@/api/community'
 import { useAuthStore } from '@/stores/auth'
 import { useGeolocation } from '@/composables/useGeolocation'
@@ -7,13 +8,17 @@ import type { Post, Category, PostTag } from '@/types'
 import CreatePostSheet from '@/components/community/CreatePostSheet.vue'
 import CityPicker from '@/components/community/CityPicker.vue'
 import FeedWaterfall from '@/components/community/FeedWaterfall.vue'
+import DiaryCalendar from '@/components/community/DiaryCalendar.vue'
+import type { DiaryCalendarEntry } from '@/api/community'
 
 const authStore = useAuthStore()
+const router = useRouter()
 const showCreateSheet = ref(false)
 const loading = ref(false)
 const posts = ref<Post[]>([])
 const totalPosts = ref(0)
 const pageSize = 20
+const MAX_RENDERED_POSTS = 150 // Cap DOM nodes for performance
 const loadingMore = ref(false)
 // Cursor-based pagination: the backend returns next_cursor, which we echo back
 // as `after` on the next page. This is stable under inserts/deletes (offset-
@@ -32,6 +37,7 @@ const showSuggestions = ref(false)
 const tagSearchMode = ref(false)
 const showCityPicker = ref(false)
 const showSearch = ref(false)
+const showDiaryCalendar = ref(false)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 let suggestTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -126,7 +132,7 @@ async function loadPosts(offset = 0, append = false) {
     ? mergePosts(posts.value, postRes.items)
     : mergePosts(postRes.items, diaryRes.items)
 
-  posts.value = mergedPosts
+  posts.value = mergedPosts.slice(0, MAX_RENDERED_POSTS)
 
   const privateDiaryCount = offset === 0
     ? diaryRes.items.filter(post => post.is_private).length
@@ -326,6 +332,11 @@ function toggleSearch() {
 function getFallbackPosts(): Post[] {
   return []
 }
+
+function onDiaryEntrySelect(entry: DiaryCalendarEntry) {
+  showDiaryCalendar.value = false
+  router.push(`/community/${entry.id}`)
+}
 </script>
 
 <template>
@@ -370,6 +381,15 @@ function getFallbackPosts(): Post[] {
         @click="toggleSearch"
       >
         <i class="ri-search-line text-lg"></i>
+      </button>
+      <!-- Diary calendar button -->
+      <button
+        v-if="authStore.isLoggedIn"
+        class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-all"
+        @click="showDiaryCalendar = true"
+        title="治疗日记日历"
+      >
+        <i class="ri-calendar-2-line text-lg"></i>
       </button>
     </div>
 
@@ -497,7 +517,10 @@ function getFallbackPosts(): Post[] {
 
   <CreatePostSheet v-model="showCreateSheet" />
 
-  <CityPicker v-if="showCityPicker" @select="handleCityPick" @close="showCityPicker = false" /></template>
+  <CityPicker v-if="showCityPicker" @select="handleCityPick" @close="showCityPicker = false" />
+
+  <DiaryCalendar :visible="showDiaryCalendar" @close="showDiaryCalendar = false" @select-entry="onDiaryEntrySelect" />
+</template>
 
 <style scoped>
 .no-scrollbar::-webkit-scrollbar {

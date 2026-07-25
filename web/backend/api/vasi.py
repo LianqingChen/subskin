@@ -685,7 +685,7 @@ async def submit_contour_correction(
     try:
         dice_score = diff.get("dice_score", 0)
         if dice_score > 0:
-            from web.backend.services.vasi_rl_optimizer import get_rl_learner
+            from web.backend.experiments.vasi_rl_optimizer import get_rl_learner
 
             # Load image bytes from stored file
             image_bytes = None
@@ -1179,7 +1179,7 @@ async def get_evolution_status(
 ):
     """获取自我进化状态"""
     from web.backend.services.vasi_feedback import get_feedback_collector
-    from web.backend.services.vasi_prompt_evolver import get_prompt_evolver
+    from web.backend.experiments.vasi_prompt_evolver import get_prompt_evolver
 
     collector = _require_evolution_service(get_feedback_collector(db), "feedback_collector")
     evolver = _require_evolution_service(get_prompt_evolver(db), "prompt_evolver")
@@ -1207,7 +1207,7 @@ async def trigger_evolution(
 ):
     """手动触发 Prompt 进化"""
     from web.backend.services.vasi_feedback import get_feedback_collector
-    from web.backend.services.vasi_prompt_evolver import get_prompt_evolver
+    from web.backend.experiments.vasi_prompt_evolver import get_prompt_evolver
 
     collector = _require_evolution_service(get_feedback_collector(db), "feedback_collector")
     evolver = _require_evolution_service(get_prompt_evolver(db), "prompt_evolver")
@@ -1262,7 +1262,7 @@ async def rollback_evolution(
     db: Session = Depends(get_db),
 ):
     """回滚到上一个 Prompt 版本"""
-    from web.backend.services.vasi_prompt_evolver import get_prompt_evolver
+    from web.backend.experiments.vasi_prompt_evolver import get_prompt_evolver
 
     evolver = _require_evolution_service(get_prompt_evolver(db), "prompt_evolver")
     success = evolver.rollback()
@@ -1284,7 +1284,7 @@ async def get_evolution_history(
     db: Session = Depends(get_db),
 ):
     """获取 Prompt 进化历史"""
-    from web.backend.services.vasi_prompt_evolver import get_prompt_evolver
+    from web.backend.experiments.vasi_prompt_evolver import get_prompt_evolver
 
     evolver = _require_evolution_service(get_prompt_evolver(db), "prompt_evolver")
     history = evolver.get_evolution_history(limit=limit)
@@ -1353,7 +1353,7 @@ async def get_evolution_status_v2(
     db: Session = Depends(get_db),
 ):
     """获取完整进化状态（Phase 5 统一入口）"""
-    from web.backend.services.vasi_evolution import get_orchestrator
+    from web.backend.experiments.vasi_evolution import get_orchestrator
     orch = _require_evolution_service(get_orchestrator(db), "evolution_orchestrator")
     status = orch.get_status()
     return {
@@ -1380,7 +1380,7 @@ async def run_evolution(
     if strategy not in ("prompt", "params", "auto", "full"):
         raise HTTPException(status_code=400, detail="strategy must be: prompt, params, auto, full")
 
-    from web.backend.services.vasi_evolution import get_orchestrator
+    from web.backend.experiments.vasi_evolution import get_orchestrator
     orch = _require_evolution_service(get_orchestrator(db), "evolution_orchestrator")
     result = await orch.evolve(strategy=strategy)
     return result.to_dict()
@@ -1392,7 +1392,7 @@ async def rollback_evolution_v2(
     db: Session = Depends(get_db),
 ):
     """回滚到上一个版本（Phase 5 统一入口）"""
-    from web.backend.services.vasi_evolution import get_orchestrator
+    from web.backend.experiments.vasi_evolution import get_orchestrator
     orch = _require_evolution_service(get_orchestrator(db), "evolution_orchestrator")
     result = await orch.rollback()
     return result
@@ -1406,7 +1406,7 @@ async def export_training_dataset(
     db: Session = Depends(get_db),
 ):
     """导出训练数据集（用于 nnU-Net 训练）"""
-    from web.backend.services.vasi_evolution import get_orchestrator
+    from web.backend.experiments.vasi_evolution import get_orchestrator
     orch = _require_evolution_service(get_orchestrator(db), "evolution_orchestrator")
     data = orch.export_training_dataset(min_dice=min_dice, limit=limit)
     return {

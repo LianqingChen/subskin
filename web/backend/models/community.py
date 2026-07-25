@@ -80,6 +80,7 @@ class PostBase(BaseModel):
     category_id: int = Field(..., description="分类ID")
     is_private: bool = Field(False, description="是否私密（日记默认私密）")
     diary_date: Optional[str] = Field(None, description="日记日期(YYYY-MM-DD)")
+    diary_type: Optional[str] = Field(None, description="日记类型: medication/phototherapy/mood/diet/general")
     mood: Optional[str] = Field(None, description="心情标签: 💪坚持中/😔低落/🎉好转/🤔疑问")
     is_anonymous: bool = Field(False, description="是否匿名发布")
     city: Optional[str] = Field(None, description="发布时所在城市")
@@ -101,6 +102,7 @@ class PostUpdate(BaseModel):
     tag_names: Optional[List[str]] = Field(None, description="标签名称列表")
     is_private: Optional[bool] = Field(None, description="是否私密")
     diary_date: Optional[str] = Field(None, description="日记日期(YYYY-MM-DD)")
+    diary_type: Optional[str] = Field(None, description="日记类型: medication/phototherapy/mood/diet/general")
     mood: Optional[str] = Field(None, description="心情标签")
     is_anonymous: Optional[bool] = Field(None, description="是否匿名")
     city: Optional[str] = Field(None, description="发布时所在城市")
@@ -132,6 +134,7 @@ class Post(PostBase):
     is_private: bool = False
     draft_expires_at: Optional[datetime] = None
     diary_date: Optional[str] = None
+    diary_type: Optional[str] = None
     mood: Optional[str] = None
     is_anonymous: bool = False
     latitude: Optional[float] = None

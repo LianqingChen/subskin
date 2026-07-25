@@ -1118,7 +1118,7 @@ class VASIService:
 
             # Phase 2: Dynamic prompt with few-shot examples from user corrections
             try:
-                from web.backend.services.vasi_prompt_evolver import get_prompt_evolver
+                from web.backend.experiments.vasi_prompt_evolver import get_prompt_evolver
                 evolver = get_prompt_evolver(self.db)
                 prompt = evolver.get_current_prompt()
                 logger.info("Using evolved prompt (%d chars)", len(prompt))

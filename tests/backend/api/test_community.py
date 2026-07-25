@@ -279,3 +279,79 @@ class TestCommunityUserStats:
             "bookmark_count": 1,
             "comment_count": 1,
         }
+
+
+class TestDiaryType:
+    """Tests for diary_type field and calendar endpoint."""
+
+    def test_create_diary_with_type(self, client, db_session, test_user):
+        diary, _ = _seed_categories(db_session)
+        auth_headers = _auth_headers_for(test_user.username)
+
+        response = client.post(
+            "/api/community/posts",
+            json={
+                "title": "用药记录",
+                "content": "<p>今天开始用他克莫司</p>",
+                "category_id": diary.id,
+                "is_private": True,
+                "diary_date": "2026-07-20",
+                "diary_type": "medication",
+            },
+            headers=auth_headers,
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["diary_type"] == "medication"
+        assert data["diary_date"] == "2026-07-20"
+
+    def test_diary_calendar_endpoint(self, client, db_session, test_user):
+        diary, _ = _seed_categories(db_session)
+        auth_headers = _auth_headers_for(test_user.username)
+
+        # Create diary entries for July 2026
+        for day, dtype in [(15, "medication"), (16, "phototherapy"), (20, "mood")]:
+            client.post(
+                "/api/community/posts",
+                json={
+                    "title": f"日记 {day}",
+                    "content": f"<p>内容 {day}</p>",
+                    "category_id": diary.id,
+                    "is_private": True,
+                    "diary_date": f"2026-07-{day:02d}",
+                    "diary_type": dtype,
+                },
+                headers=auth_headers,
+            )
+
+        # Get calendar for July 2026
+        response = client.get(
+            "/api/community/diary-calendar?year=2026&month=7",
+            headers=auth_headers,
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["year"] == 2026
+        assert data["month"] == 7
+        assert "2026-07-15" in data["entries"]
+        assert "2026-07-16" in data["entries"]
+        assert "2026-07-20" in data["entries"]
+        assert data["entries"]["2026-07-15"][0]["diary_type"] == "medication"
+
+    def test_diary_calendar_empty_month(self, client, db_session, test_user):
+        auth_headers = _auth_headers_for(test_user.username)
+
+        response = client.get(
+            "/api/community/diary-calendar?year=2025&month=1",
+            headers=auth_headers,
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["entries"] == {}
+
+    def test_diary_calendar_requires_auth(self, client, db_session):
+        response = client.get("/api/community/diary-calendar?year=2026&month=7")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED

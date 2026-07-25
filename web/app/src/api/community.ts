@@ -26,6 +26,19 @@ export interface CommunityUserStats {
   comment_count: number
 }
 
+export interface DiaryCalendarEntry {
+  id: number
+  title: string
+  diary_type: string | null
+  mood: string | null
+}
+
+export interface DiaryCalendarResponse {
+  year: number
+  month: number
+  entries: Record<string, DiaryCalendarEntry[]>
+}
+
 export interface PublicProfile {
   id: number
   username: string
@@ -59,6 +72,11 @@ export const communityApi = {
 
   async getMyDiaries(limit = 20, offset = 0, after?: string | null): Promise<PostListResponse> {
     const { data } = await apiClient.get('/community/my-diaries', { params: { limit, offset, after } })
+    return data
+  },
+
+  async getDiaryCalendar(year: number, month: number): Promise<DiaryCalendarResponse> {
+    const { data } = await apiClient.get('/community/diary-calendar', { params: { year, month } })
     return data
   },
 

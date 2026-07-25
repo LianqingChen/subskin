@@ -100,21 +100,21 @@ function onGeneratePoster() {
       </router-link>
 
       <nav class="hidden md:flex items-center gap-1">
-        <router-link to="/" class="nav-link" active-class="nv-disabled" exact-active-class="nv-disabled" :class="{ 'router-link-active': isNavActive('/') }" data-track-id="header_nav_AI助手">
+        <router-link to="/" class="nav-link" active-class="nv-disabled" exact-active-class="nv-disabled" :class="{ 'router-link-active': isNavActive('/') }" data-track-id="header_nav_问答">
           <i class="ri-robot-3-line nav-icon-svg"></i>
-          AI助手
+          问答
         </router-link>
         <router-link to="/assessment" class="nav-link" active-class="nv-disabled" exact-active-class="nv-disabled" :class="{ 'router-link-active': isNavActive('/assessment') }" data-track-id="header_nav_测评">
           <i class="ri-focus-3-line nav-icon-svg"></i>
           测评
         </router-link>
-        <router-link to="/report" class="nav-link" active-class="nv-disabled" exact-active-class="nv-disabled" :class="{ 'router-link-active': isNavActive('/report') }" data-track-id="header_nav_体检">
+        <router-link to="/report" class="nav-link" active-class="nv-disabled" exact-active-class="nv-disabled" :class="{ 'router-link-active': isNavActive('/report') }" data-track-id="header_nav_报告">
           <i class="ri-heart-pulse-line nav-icon-svg"></i>
-          体检
+          报告
         </router-link>
-        <router-link to="/community" class="nav-link" active-class="nv-disabled" exact-active-class="nv-disabled" :class="{ 'router-link-active': isNavActive('/community') }" data-track-id="header_nav_发现">
+        <router-link to="/community" class="nav-link" active-class="nv-disabled" exact-active-class="nv-disabled" :class="{ 'router-link-active': isNavActive('/community') }" data-track-id="header_nav_白友圈">
           <i class="ri-compass-3-line nav-icon-svg"></i>
-          发现
+          白友圈
         </router-link>
         <router-link to="/profile" class="nav-link" active-class="nv-disabled" exact-active-class="nv-disabled" :class="{ 'router-link-active': isNavActive('/profile') }" data-track-id="header_nav_我的">
           <i class="ri-user-3-line nav-icon-svg"></i>

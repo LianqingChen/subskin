@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { vasiApi } from '@/api/vasi'
-import type { VasiAssessmentResponse } from '@/api/vasi'
+import type { VasiAssessmentResponse, VasiHistoryItem } from '@/api/vasi'
 import { PART_LABELS } from '@/constants/bodySites'
 import { usePrivacyStore } from '@/stores/privacy'
 import BeforeAfterSlider from '@/components/tracker/BeforeAfterSlider.vue'
@@ -16,6 +16,8 @@ const loading = ref(true)
 const errorMsg = ref('')
 const before = ref<VasiAssessmentResponse | null>(null)
 const after = ref<VasiAssessmentResponse | null>(null)
+const sameSiteMatch = ref<VasiHistoryItem | null>(null)
+const showMatchSuggestion = ref(false)
 
 const ids = computed(() => {
   const raw = (route.query.ids as string) || ''
@@ -44,11 +46,37 @@ async function load() {
       before.value = b
       after.value = a
     }
+    // Auto same-site matching: if different body sites, find a match
+    if (before.value.body_site !== after.value.body_site) {
+      await findSameSiteMatch(after.value.body_site, after.value.id)
+    }
   } catch {
     errorMsg.value = '加载评估记录失败'
   } finally {
     loading.value = false
   }
+}
+
+async function findSameSiteMatch(bodySite: string, excludeId: number) {
+  try {
+    const history = await vasiApi.getHistory(10, 0, bodySite)
+    // Find the most recent assessment of the same body site (excluding current)
+    const match = history.items.find(item => item.id !== excludeId)
+    if (match) {
+      sameSiteMatch.value = match
+      showMatchSuggestion.value = true
+    }
+  } catch {
+    // Silently fail - suggestion is optional
+  }
+}
+
+function applySameSiteMatch() {
+  if (!sameSiteMatch.value || !after.value) return
+  // Replace 'before' with the same-site match
+  router.replace({ name: 'vasi-compare', query: { ids: `${sameSiteMatch.value.id},${after.value.id}` } })
+  showMatchSuggestion.value = false
+  load()
 }
 
 const dateDiffText = computed(() => {
@@ -123,6 +151,26 @@ onMounted(load)
       </div>
 
       <template v-else-if="before && after">
+        <!-- Same-site match suggestion -->
+        <div v-if="showMatchSuggestion && sameSiteMatch" class="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+          <div class="flex items-start gap-3">
+            <i class="ri-lightbulb-line text-amber-500 text-lg mt-0.5"></i>
+            <div class="flex-1">
+              <p class="text-sm text-amber-800 dark:text-amber-200">
+                检测到两次评估部位不同。发现同部位「{{ PART_LABELS[sameSiteMatch.body_site] || sameSiteMatch.body_site }}」的历史记录，是否切换为同部位对比？
+              </p>
+              <div class="flex gap-2 mt-2">
+                <button @click="applySameSiteMatch" class="px-3 py-1.5 text-xs font-medium bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">
+                  切换同部位对比
+                </button>
+                <button @click="showMatchSuggestion = false" class="px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800/30 rounded-lg transition-colors">
+                  保持当前
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="flex flex-col lg:flex-row gap-6 lg:items-start">
           <div class="w-full lg:w-1/2 flex flex-col gap-3">
             <BeforeAfterSlider

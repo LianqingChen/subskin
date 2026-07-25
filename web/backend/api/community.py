@@ -231,6 +231,7 @@ async def create_post(
         tag_names=post_data.tag_names,
         is_private=post_data.is_private,
         diary_date=post_data.diary_date,
+        diary_type=post_data.diary_type,
         mood=post_data.mood,
         is_anonymous=False,  # Anonymous posting removed
         post_type=post_data.post_type,
@@ -366,6 +367,56 @@ async def get_my_diaries(
     return PostListResponse(total=total, items=items, next_cursor=next_cursor)
 
 
+@router.get("/diary-calendar")
+async def get_diary_calendar(
+    year: int,
+    month: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return diary entries for a specific month (for calendar view)."""
+    from datetime import date
+    import calendar as cal
+
+    # Validate month
+    if not 1 <= month <= 12:
+        raise HTTPException(status_code=400, detail="月份必须在 1-12 之间")
+
+    # Get first and last day of the month
+    first_day = date(year, month, 1)
+    last_day_num = cal.monthrange(year, month)[1]
+    last_day = date(year, month, last_day_num)
+
+    # Query diary entries for this month
+    posts = (
+        db.query(PostORM)
+        .filter(
+            PostORM.user_id == current_user.id,
+            PostORM.is_private == True,  # noqa: E712
+            PostORM.diary_date >= first_day,
+            PostORM.diary_date <= last_day,
+            PostORM.moderation_status != "blocked",
+        )
+        .order_by(PostORM.diary_date)
+        .all()
+    )
+
+    # Group by date
+    calendar_data = {}
+    for post in posts:
+        date_str = post.diary_date.isoformat()
+        if date_str not in calendar_data:
+            calendar_data[date_str] = []
+        calendar_data[date_str].append({
+            "id": post.id,
+            "title": post.title,
+            "diary_type": getattr(post, "diary_type", None),
+            "mood": post.mood,
+        })
+
+    return {"year": year, "month": month, "entries": calendar_data}
+
+
 @router.get("/posts/{post_id}", response_model=PostModel)
 async def get_post(
     request: Request,
@@ -402,6 +453,7 @@ async def update_post(
             tag_names=post_data.tag_names,
             is_private=post_data.is_private,
             diary_date=post_data.diary_date,
+            diary_type=post_data.diary_type,
             mood=post_data.mood,
             is_anonymous=False,  # Anonymous posting removed
             post_type=post_data.post_type,

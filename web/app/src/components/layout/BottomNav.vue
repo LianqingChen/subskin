@@ -9,10 +9,10 @@ const scrollThreshold = 80
 
 const navItems = computed(() => {
   return [
-    { path: '/', label: 'AI助手', iconClass: 'ri-robot-3-line' },
+    { path: '/', label: '问答', iconClass: 'ri-robot-3-line' },
     { path: '/assessment', label: '测评', iconClass: 'ri-focus-3-line' },
-    { path: '/report', label: '体检', iconClass: 'ri-heart-pulse-line' },
-    { path: '/community', label: '发现', iconClass: 'ri-compass-3-line' },
+    { path: '/report', label: '报告', iconClass: 'ri-heart-pulse-line' },
+    { path: '/community', label: '白友圈', iconClass: 'ri-compass-3-line' },
     { path: '/profile', label: '我的', iconClass: 'ri-user-3-line' },
   ]
 })

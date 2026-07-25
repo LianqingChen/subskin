@@ -13,6 +13,7 @@
 import logging
 import io
 import math
+import os
 from typing import List, Dict, Any, Optional
 
 import numpy as np
@@ -48,7 +49,11 @@ def _load_sam_model():
         import torch
         from segment_anything import sam_model_registry
 
-        model_path = "/root/subskin/models/sam_vit_b_01ec64.pth"
+        model_path = os.environ.get(
+            "SAM_MODEL_PATH",
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "models", "sam_vit_b_01ec64.pth"),
+        )
+        model_path = os.path.abspath(model_path)
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
         logger.info("Loading SAM ViT-B on %s...", device)

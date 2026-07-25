@@ -114,7 +114,7 @@ class EvolutionOrchestrator:
     def _load_modules(self):
         """延迟加载子模块"""
         from web.backend.services.vasi_feedback import VasiFeedbackCollector
-        from web.backend.services.vasi_prompt_evolver import VasiPromptEvolver
+        from web.backend.experiments.vasi_prompt_evolver import VasiPromptEvolver
         from web.backend.services.vasi_param_optimizer import VasiParameterOptimizer
         from web.backend.services.vasi_evaluator import VasiEvaluator
 

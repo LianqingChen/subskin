@@ -158,3 +158,31 @@ class TestGetLatestContent:
         data = response.json()
         if len(data["latest"]) >= 2:
             assert data["latest"][0]["title"] == "Newest"
+
+
+class TestDailyBriefing:
+    """Test GET /daily-briefing endpoint"""
+
+    def test_daily_briefing_returns_structure(self, client):
+        """Test that daily briefing returns correct structure"""
+        response = client.get("/api/content/daily-briefing")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "available" in data
+        assert "briefing" in data
+
+        # If briefing is available, check structure
+        if data["available"] and data["briefing"]:
+            briefing = data["briefing"]
+            assert "date" in briefing
+            assert "total" in briefing
+            assert "stats" in briefing
+            assert "summary" in briefing
+            assert isinstance(briefing["stats"], list)
+
+    def test_daily_briefing_no_auth_required(self, client):
+        """Test that daily briefing doesn't require authentication"""
+        response = client.get("/api/content/daily-briefing")
+        # Should not return 401
+        assert response.status_code != status.HTTP_401_UNAUTHORIZED
