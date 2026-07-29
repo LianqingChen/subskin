@@ -1,13 +1,15 @@
+---
+name: ui-audit
+description: "SubSkin UI/UX 一致性审计 — 布局、颜色、组件复用、命名规范检查"
+---
+
 # UI Audit Skill
 
+> SubSkin UI/UX 一致性审计 — 布局、颜色、组件复用、命名规范检查
+>
+> **触发词**: UI审计、UI audit、设计审查、视觉一致性、design QA、UX review
+
 This skill provides a standardized checklist and methodology for auditing the SubSkin web app's UI/UX consistency. Use this whenever you need to review UI quality, check for design violations, or verify that new features follow established conventions.
-
-## Trigger Phrases
-
-- "audit the UI", "UI audit", "check UI consistency"
-- "review design", "design audit", "UX review"
-- "check visual consistency", "verify design system compliance"
-- "pre-merge UI check", "design QA"
 
 ## Audit Dimensions
 

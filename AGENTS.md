@@ -284,18 +284,35 @@ Before deploying to production, verify ALL of the following:
 | version.json | `{"env":"staging"}` | `{"env":"production"}` |
 | `__APP_ENV__` | `'staging'` | `'production'` |
 
-## 🔧 Available Skills
+## 🔧 Available Skills (统一 Skill 库)
 
-This project uses custom agent skills located in `.agents/skills/`. Load them via `skill` tool when the task domain matches:
+**所有 agent 工具共享同一个 skill 目录：`.agents/skills/`。** 这是本项目唯一的 skill 存放位置。
+
+任何 agent（Claude Code、OpenCode、Codex、Hermes、Cursor、Windsurf、Qoder 等）进入本项目时，都应读取并遵守这些 skill。禁止在其他位置（如 `web/.agents/`、`.opencode/skills/`、`.claude/skills/`）创建竞争性 skill 副本。
 
 | Skill | Purpose | When to Use |
 |-------|---------|-------------|
 | `frontend-architect` | 前端架构审查与质量标准 | 任何前端代码审查、新功能、新页面、新组件、重构 |
 | `backend-architect` | 后端架构审查与质量标准 | 任何后端代码审查、新增API、服务层修改、Python代码 |
+| `ui-audit` | UI/UX 一致性审计 | 设计审查、视觉一致性检查、pre-merge UI QA |
 | `brainstorming` | 需求探索与设计 | 创建功能、构建组件前 |
 | `planning-with-files` | 文件化任务规划 | 复杂多步骤任务 |
+| `deploy-verification` | 部署验证（staging vs production） | 每次部署后对比环境一致性 |
+| `pwa-verification` | PWA 架构验证 | 部署后验证 manifest/SW/version.json |
+| `vue-tsc-guard` | TypeScript 类型守门员 | 编辑 Vue/TS 文件后防止类型错误阻塞部署 |
+| `nginx-config` | Nginx 配置管理 | 修改 nginx 配置、SSL、路由、反向代理 |
+| `llm-testing` | AI/LLM 功能测试 | RAG 向量化、智能问答、VASI 评估测试 |
+| `3d-model-work` | 3D 模型工作 | 数字人/熊猫模型的加载和渲染 |
 
 **IMPORTANT**: Before any frontend work, load the `frontend-architect` skill to ensure compliance with project standards. Before any backend work, load the `backend-architect` skill to ensure compliance with project standards.
+
+### Skill 维护规则
+
+1. **唯一位置**: 所有 skill 必须放在 `.agents/skills/<skill-name>/SKILL.md`
+2. **统一格式**: 每个 skill 必须有 YAML frontmatter（`name` + `description`），禁止 `compatibility` 字段绑定特定工具
+3. **新增 skill**: 任何 agent 新增 skill 时必须放在此目录，并更新本表
+4. **禁止重复**: 不允许在子目录（`web/`、`src/` 等）中创建独立的 `.agents/skills/` 分支
+5. **工具无关**: Skill 内容不得引用特定 AI 工具的私有 API 或命令格式
 
 ## Project Overview
 
@@ -742,9 +759,56 @@ The MCP server returns "not initialized." Ask the user: *"I notice this project 
 **AGENTS.md is the ONE AND ONLY canonical instruction file for this project.**
 
 - `CLAUDE.md` is a pointer only — it redirects to AGENTS.md.
-- All other agent entry files (OPENCODE_INSTRUCTIONS.md, START_HERE.md, etc.) have been removed.
-- Any agent tool entering this project (Claude Code, OpenCode, Codex, Hermes, etc.) MUST read AGENTS.md first and treat it as authoritative.
+- All other agent entry files (OPENCODE_INSTRUCTIONS.md, START_HERE.md, .opencode_instructions.txt, etc.) have been removed.
+- Any agent tool entering this project (Claude Code, OpenCode, Codex, Hermes, Cursor, Windsurf, Qoder, etc.) MUST read AGENTS.md first and treat it as authoritative.
 - If an agent tool creates its own instruction file, it MUST be a short pointer to AGENTS.md — never a competing copy.
+
+### Unified Skill System (统一 Skill 体系)
+
+**`.agents/skills/` is the ONE AND ONLY skill directory for this project.**
+
+| Rule | Description |
+|------|-------------|
+| 唯一位置 | 所有 skill 必须放在 `.agents/skills/<name>/SKILL.md` |
+| 工具无关 | 禁止 `compatibility` 字段绑定特定工具，所有 skill 对所有 agent 通用 |
+| 禁止分支 | 不允许在 `web/`、`src/` 等子目录创建独立的 `.agents/skills/` |
+| 禁止重复 | 不允许创建与现有 skill 功能重叠的竞争性文件 |
+| 更新同步 | 新增/修改 skill 后必须同步更新 AGENTS.md 中的 Skills 表 |
+| 格式统一 | YAML frontmatter (`name` + `description`) + Markdown 内容 |
+
+### Cross-Agent Context Sharing (跨 Agent 上下文共享)
+
+所有 agent 工具共享以下信息源，确保前后逻辑和上下文通用：
+
+| 信息类型 | 唯一位置 | 说明 |
+|----------|----------|------|
+| 项目规范 | `AGENTS.md` | 部署流程、代码规范、架构原则 |
+| Skill 库 | `.agents/skills/` | 前端/后端/部署/测试等所有 skill |
+| 实施计划 | `hermes_plan/` | 所有 agent 的任务规划文件 |
+| 部署日志 | `DEPLOY_LOG.md` | staging/production 变更记录 |
+| 设计文档 | `docs/specs/` | 功能设计规格 |
+| 解决方案 | `docs/solutions/` | 已解决问题的经验文档 |
+
+**禁止行为：**
+- ❌ 在各自工具的私有目录中维护规则副本（如 `.opencode/rules/`、`.claude/rules/`、`.cursor/rules/`）
+- ❌ 创建与 AGENTS.md 内容冲突的独立指令文件
+- ❌ 在工具私有目录中存放应共享的 skill 或规范
+- ❌ 一次性任务指令文件留在项目根目录（应放入 `hermes_plan/` 或删除）
+
+### Tool-Specific Config (工具私有配置)
+
+以下文件是各工具私有的运行时配置，已 gitignore，不影响其他 agent：
+
+| 文件/目录 | 工具 | 用途 |
+|-----------|------|------|
+| `.claude/settings.local.json` | Claude Code | 权限配置 |
+| `opencode.jsonc` | OpenCode | MCP 服务器配置 |
+| `.opencode/` | OpenCode | 运行时状态 |
+| `.codegraph/` | CodeGraph | 代码索引 |
+| `.superpowers/` | Superpowers | 头脑风暴运行时 |
+| `.hermes/` | Hermes | 运行时状态 |
+
+这些文件可以存在，但**不得包含与 AGENTS.md 冲突的规则或指令**。
 
 ### Plan Directory
 
@@ -769,18 +833,24 @@ Before declaring a task "done", verify:
 
 - [ ] All plan files are in `hermes_plan/` (not scattered across agent dotdirs)
 - [ ] No stale intermediate task files remain (check `.hermes/opencode_tasks/`, `.hermes/goals/`, `.sisyphus/drafts/`, etc.)
+- [ ] No one-time instruction files left in project root (e.g., `.opencode_instructions.txt`, `START_HERE.md`)
 - [ ] `.gitignore` covers any new agent tool's state directory
 - [ ] If a new agent tool was used, its entry file is a pointer to AGENTS.md, not a competing instruction set
+- [ ] Any new skill is placed in `.agents/skills/` (not in subdirectories or tool-private dirs)
+- [ ] AGENTS.md Skills table is up-to-date if skills were added/modified
+- [ ] No skill contains `compatibility:` field binding to a specific tool
 
 ### Repository Sanity Baseline
 
 | Concern | Rule |
 |---------|------|
-| Agent instruction | AGENTS.md only. CLAUDE.md is a pointer. |
+| Agent instruction | AGENTS.md only. CLAUDE.md is a pointer. No other instruction files. |
+| Skills | `.agents/skills/` only. Tool-agnostic. YAML frontmatter required. |
 | Plans | `hermes_plan/` only. Date-named. |
 | Agent state dirs | Gitignored. Prune stale session/cache/WAL periodically. |
 | Old logs | Delete >7 days old from `logs/`. |
 | Task stubs | Delete on completion. Don't accumulate. |
+| One-time instructions | Delete after task completion, or move to `hermes_plan/` as history. |
 
 <!-- CODEGRAPH_END -->
 
