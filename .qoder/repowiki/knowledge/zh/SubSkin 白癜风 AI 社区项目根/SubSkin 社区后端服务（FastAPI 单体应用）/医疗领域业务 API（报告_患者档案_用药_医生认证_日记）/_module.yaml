@@ -1,0 +1,12 @@
+schema_version: 1
+module_path: web_backend/medical_domain
+title: 医疗领域业务 API（报告/患者档案/用药/医生认证/日记）
+scope:
+    - web/backend/api/medical_report.py
+    - web/backend/api/patient_profile.py
+    - web/backend/api/medication.py
+    - web/backend/api/doctor.py
+    - web/backend/api/diary.py
+source_files: []
+depends_on: []
+related_to: []

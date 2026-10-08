@@ -12,4 +12,4 @@ repos:
             \.git/|
             data/|
             logs/
-          )$
+          )

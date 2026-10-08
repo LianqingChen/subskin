@@ -1,0 +1,12 @@
+schema_version: 1
+module_path: web_backend/knowledge_rag
+title: 知识库、RAG 问答与图片标注 API
+scope:
+    - web/backend/api/encyclopedia.py
+    - web/backend/api/rag.py
+    - web/backend/api/image_label.py
+    - web/backend/api/files.py
+source_files: []
+depends_on: []
+related_to:
+    - path: data_assets

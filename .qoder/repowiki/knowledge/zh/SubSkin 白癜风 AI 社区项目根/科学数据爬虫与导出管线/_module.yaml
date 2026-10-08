@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: crawler_pipeline
+title: 科学数据爬虫与导出管线
+scope:
+    - src/crawlers/
+    - src/exporters/
+    - src/generators/
+source_files: []
+depends_on: []
+related_to:
+    - path: data_assets

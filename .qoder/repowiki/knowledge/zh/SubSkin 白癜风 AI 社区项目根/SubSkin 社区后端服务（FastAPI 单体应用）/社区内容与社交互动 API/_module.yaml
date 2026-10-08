@@ -1,0 +1,16 @@
+schema_version: 1
+module_path: web_backend/community_content
+title: 社区内容与社交互动 API
+scope:
+    - web/backend/api/community.py
+    - web/backend/api/content.py
+    - web/backend/api/comment.py
+    - web/backend/api/comment_admin.py
+    - web/backend/api/social.py
+    - web/backend/api/events.py
+    - web/backend/api/moderation.py
+    - web/backend/api/notifications.py
+source_files: []
+depends_on: []
+related_to:
+    - path: notifications

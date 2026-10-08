@@ -1,0 +1,346 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: zh-CN
+branch: main
+nodes_managed: true
+exported_at: "2026-08-06T16:31:00Z"
+modules:
+    "":
+        dir_name: SubSkin 白癜风 AI 社区项目根
+        title: SubSkin 白癜风 AI 社区项目根
+        scope:
+            - README.md
+            - INSTALLATION.md
+            - PROJECT_FRAMEWORK.md
+            - AGENTS.md
+            - CLAUDE.md
+            - Makefile
+            - pyproject.toml
+            - pytest.ini
+            - .pre-commit-config.yaml
+            - .coveragerc
+            - scheduler_config.json
+            - opencode.jsonc
+            - .gitignore
+            - DEPLOY_LOG.md
+            - LICENSE
+            - admin-login.png
+            - ai-dialog-contentgen.png
+            - batch-actions.png
+            - content-gen-fixed.png
+            - contentgen-snap.yml
+            - edit-modal-upgraded.png
+            - llm-config-redesign.png
+            - llm-preset-tabs.png
+            - patch_backend.py
+            - post-detail.png
+            - poster-result.png
+            - poster-v2.png
+            - preset-compare-modal.png
+            - subskin-scheduler.service
+        source_files: []
+        children:
+            - admin_interface
+            - crawler_pipeline
+            - data_assets
+            - data_processing
+            - docs
+            - documentation_site
+            - hermes_plans
+            - notifications
+            - scripts
+            - settings_and_utils
+            - tests
+            - web_backend
+        depends_on: []
+        related_to: []
+    admin_interface:
+        dir_name: SubSkin 管理后台前端（Vue3 + Vite 单页应用）
+        title: SubSkin 管理后台前端（Vue3 + Vite 单页应用）
+        scope:
+            - web/admin/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: web_backend/admin_analytics_llm
+    crawler_pipeline:
+        dir_name: 科学数据爬虫与导出管线
+        title: 科学数据爬虫与导出管线
+        scope:
+            - src/crawlers/
+            - src/exporters/
+            - src/generators/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: data_assets
+    data_assets:
+        dir_name: 白癜风知识库数据与配置中心
+        title: 白癜风知识库数据与配置中心
+        scope:
+            - data/
+            - configs/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: crawler_pipeline
+            - path: documentation_site
+            - path: web_backend/knowledge_rag
+    data_processing:
+        dir_name: 医学论文数据处理与模型定义
+        title: 医学论文数据处理与模型定义
+        scope:
+            - src/processors/
+            - src/models/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: web_backend/shared_services
+    docs:
+        dir_name: SubSkin 项目文档与规范中心
+        title: SubSkin 项目文档与规范中心
+        scope:
+            - docs/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    documentation_site:
+        dir_name: SubSkin 白癜风百科 VitePress 文档站点
+        title: SubSkin 白癜风百科 VitePress 文档站点
+        scope:
+            - web/vitepress/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: data_assets
+    hermes_plans:
+        dir_name: SubSkin 项目规划与审计文档集
+        title: SubSkin 项目规划与审计文档集
+        scope:
+            - hermes_plan/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    notifications:
+        dir_name: 多渠道通知推送模块（QQ_微信）
+        title: 多渠道通知推送模块（QQ/微信）
+        scope:
+            - src/notifications/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: web_backend/community_content
+            - path: web_backend/im_messaging
+    scripts:
+        dir_name: 运维与数据工具脚本集
+        title: 运维与数据工具脚本集
+        scope:
+            - scripts/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: web_backend/database_and_migrations
+    settings_and_utils:
+        dir_name: 配置、工具与命令行入口
+        title: 配置、工具与命令行入口
+        scope:
+            - src/settings/
+            - src/utils/
+            - src/web/
+            - src/config.py
+            - src/cli.py
+            - src/exceptions.py
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: web_backend/user_auth_oauth
+    tests:
+        dir_name: Pytest 测试套件（后端 API、服务与 CLI）
+        title: Pytest 测试套件（后端 API、服务与 CLI）
+        scope:
+            - tests/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: web_backend
+    web_backend:
+        dir_name: SubSkin 社区后端服务（FastAPI 单体应用）
+        title: SubSkin 社区后端服务（FastAPI 单体应用）
+        scope:
+            - web/backend/
+        source_files: []
+        children:
+            - web_backend/admin_analytics_llm
+            - web_backend/app_entry_and_runtime
+            - web_backend/community_content
+            - web_backend/database_and_migrations
+            - web_backend/im_messaging
+            - web_backend/knowledge_rag
+            - web_backend/medical_domain
+            - web_backend/scripts_and_data
+            - web_backend/shared_models
+            - web_backend/shared_services
+            - web_backend/user_auth_oauth
+            - web_backend/vasi_assessment
+        depends_on: []
+        related_to:
+            - path: tests
+    web_backend/admin_analytics_llm:
+        dir_name: 管理员后台与 LLM 配置_内容生成 API
+        title: 管理员后台与 LLM 配置/内容生成 API
+        scope:
+            - web/backend/api/admin_general.py
+            - web/backend/api/analytics.py
+            - web/backend/api/audit.py
+            - web/backend/api/llm_config_admin.py
+            - web/backend/api/content_generation_admin.py
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: admin_interface
+    web_backend/app_entry_and_runtime:
+        dir_name: FastAPI 应用入口与运行时初始化
+        title: FastAPI 应用入口与运行时初始化
+        scope:
+            - web/backend/app/
+            - web/backend/ws/
+            - web/backend/exceptions.py
+            - web/backend/sitecustomize.py
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    web_backend/community_content:
+        dir_name: 社区内容与社交互动 API
+        title: 社区内容与社交互动 API
+        scope:
+            - web/backend/api/community.py
+            - web/backend/api/content.py
+            - web/backend/api/comment.py
+            - web/backend/api/comment_admin.py
+            - web/backend/api/social.py
+            - web/backend/api/events.py
+            - web/backend/api/moderation.py
+            - web/backend/api/notifications.py
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: notifications
+    web_backend/database_and_migrations:
+        dir_name: 数据库模型与迁移管理
+        title: 数据库模型与迁移管理
+        scope:
+            - web/backend/database/
+            - web/backend/alembic/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: scripts
+    web_backend/im_messaging:
+        dir_name: IM 即时通讯 API（会话、消息、好友、群聊、通讯录与审核）
+        title: IM 即时通讯 API（会话、消息、好友、群聊、通讯录与审核）
+        scope:
+            - web/backend/api/im_conversations.py
+            - web/backend/api/im_messages.py
+            - web/backend/api/im_friends.py
+            - web/backend/api/im_groups.py
+            - web/backend/api/im_share.py
+            - web/backend/api/im_contacts.py
+            - web/backend/api/im_admin.py
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: notifications
+    web_backend/knowledge_rag:
+        dir_name: 知识库、RAG 问答与图片标注 API
+        title: 知识库、RAG 问答与图片标注 API
+        scope:
+            - web/backend/api/encyclopedia.py
+            - web/backend/api/rag.py
+            - web/backend/api/image_label.py
+            - web/backend/api/files.py
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: data_assets
+    web_backend/medical_domain:
+        dir_name: 医疗领域业务 API（报告_患者档案_用药_医生认证_日记）
+        title: 医疗领域业务 API（报告/患者档案/用药/医生认证/日记）
+        scope:
+            - web/backend/api/medical_report.py
+            - web/backend/api/patient_profile.py
+            - web/backend/api/medication.py
+            - web/backend/api/doctor.py
+            - web/backend/api/diary.py
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    web_backend/scripts_and_data:
+        dir_name: 数据导入与数据库迁移脚本
+        title: 数据导入与数据库迁移脚本
+        scope:
+            - web/backend/scripts/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    web_backend/shared_models:
+        dir_name: 后端共享数据模型（Pydantic DTO 与 SQLAlchemy ORM）
+        title: 后端共享数据模型（Pydantic DTO 与 SQLAlchemy ORM）
+        scope:
+            - web/backend/models/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    web_backend/shared_services:
+        dir_name: 后端共享服务与通用工具库
+        title: 后端共享服务与通用工具库
+        scope:
+            - web/backend/services/
+            - web/backend/utils/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: data_processing
+    web_backend/user_auth_oauth:
+        dir_name: 用户认证与第三方 OAuth 登录 API
+        title: 用户认证与第三方 OAuth 登录 API
+        scope:
+            - web/backend/api/user.py
+            - web/backend/api/oauth.py
+            - web/backend/api/wechat.py
+            - web/backend/api/consent.py
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: settings_and_utils
+    web_backend/vasi_assessment:
+        dir_name: VASI 评估 API 与自进化实验模块
+        title: VASI 评估 API 与自进化实验模块
+        scope:
+            - web/backend/api/vasi.py
+            - web/backend/experiments/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []

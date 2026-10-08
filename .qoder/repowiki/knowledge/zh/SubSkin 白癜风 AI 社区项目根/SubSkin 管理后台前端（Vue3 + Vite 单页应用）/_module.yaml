@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: admin_interface
+title: SubSkin 管理后台前端（Vue3 + Vite 单页应用）
+scope:
+    - web/admin/
+source_files: []
+depends_on: []
+related_to:
+    - path: web_backend/admin_analytics_llm

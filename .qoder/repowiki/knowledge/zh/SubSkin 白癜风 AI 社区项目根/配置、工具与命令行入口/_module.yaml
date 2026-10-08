@@ -1,0 +1,14 @@
+schema_version: 1
+module_path: settings_and_utils
+title: 配置、工具与命令行入口
+scope:
+    - src/settings/
+    - src/utils/
+    - src/web/
+    - src/config.py
+    - src/cli.py
+    - src/exceptions.py
+source_files: []
+depends_on: []
+related_to:
+    - path: web_backend/user_auth_oauth

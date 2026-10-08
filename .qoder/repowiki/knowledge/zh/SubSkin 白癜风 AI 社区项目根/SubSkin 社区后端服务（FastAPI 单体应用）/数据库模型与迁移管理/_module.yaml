@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: web_backend/database_and_migrations
+title: 数据库模型与迁移管理
+scope:
+    - web/backend/database/
+    - web/backend/alembic/
+source_files: []
+depends_on: []
+related_to:
+    - path: scripts

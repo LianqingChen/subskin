@@ -81,6 +81,7 @@ data/vasi_diagnostic/*
 *.db
 *.sqlite
 *.sqlite3
+data/backups/
 
 # Redis
 dump.rdb
@@ -166,6 +167,20 @@ site/
 # ─────────────────────────────────────────────
 *.bak
 *.bak.*
+*.bak-*
 *.full
 *.simple
 *.orig
+
+# ─────────────────────────────────────────────
+# Agent 过程产物 — UI 测试截图/报告不入库
+# ─────────────────────────────────────────────
+output/
+/*.png
+contentgen-snap*.yml
+patch_backend.py
+# ─────────────────────────────────────────────
+# 白斑识别自循环 — 患者级模型/样本（L3 隐私数据）与本地AI模型权重
+# ─────────────────────────────────────────────
+data/vasi_models/
+data/models/mediapipe/

@@ -1,0 +1,15 @@
+schema_version: 1
+module_path: web_backend/im_messaging
+title: IM 即时通讯 API（会话、消息、好友、群聊、通讯录与审核）
+scope:
+    - web/backend/api/im_conversations.py
+    - web/backend/api/im_messages.py
+    - web/backend/api/im_friends.py
+    - web/backend/api/im_groups.py
+    - web/backend/api/im_share.py
+    - web/backend/api/im_contacts.py
+    - web/backend/api/im_admin.py
+source_files: []
+depends_on: []
+related_to:
+    - path: notifications

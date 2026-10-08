@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: web_backend/app_entry_and_runtime
+title: FastAPI 应用入口与运行时初始化
+scope:
+    - web/backend/app/
+    - web/backend/ws/
+    - web/backend/exceptions.py
+    - web/backend/sitecustomize.py
+source_files: []
+depends_on: []
+related_to: []

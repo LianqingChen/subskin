@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: web_backend/scripts_and_data
+title: 数据导入与数据库迁移脚本
+scope:
+    - web/backend/scripts/
+source_files: []
+depends_on: []
+related_to: []

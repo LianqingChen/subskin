@@ -1,0 +1,36 @@
+schema_version: 1
+module_path: ""
+title: SubSkin 白癜风 AI 社区项目根
+scope:
+    - README.md
+    - INSTALLATION.md
+    - PROJECT_FRAMEWORK.md
+    - AGENTS.md
+    - CLAUDE.md
+    - Makefile
+    - pyproject.toml
+    - pytest.ini
+    - .pre-commit-config.yaml
+    - .coveragerc
+    - scheduler_config.json
+    - opencode.jsonc
+    - .gitignore
+    - DEPLOY_LOG.md
+    - LICENSE
+    - admin-login.png
+    - ai-dialog-contentgen.png
+    - batch-actions.png
+    - content-gen-fixed.png
+    - contentgen-snap.yml
+    - edit-modal-upgraded.png
+    - llm-config-redesign.png
+    - llm-preset-tabs.png
+    - patch_backend.py
+    - post-detail.png
+    - poster-result.png
+    - poster-v2.png
+    - preset-compare-modal.png
+    - subskin-scheduler.service
+source_files: []
+depends_on: []
+related_to: []

@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: hermes_plans
+title: SubSkin 项目规划与审计文档集
+scope:
+    - hermes_plan/
+source_files: []
+depends_on: []
+related_to: []

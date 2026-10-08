@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: web_backend/vasi_assessment
+title: VASI 评估 API 与自进化实验模块
+scope:
+    - web/backend/api/vasi.py
+    - web/backend/experiments/
+source_files: []
+depends_on: []
+related_to: []

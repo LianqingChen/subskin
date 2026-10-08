@@ -1,0 +1,12 @@
+schema_version: 1
+module_path: data_assets
+title: 白癜风知识库数据与配置中心
+scope:
+    - data/
+    - configs/
+source_files: []
+depends_on: []
+related_to:
+    - path: crawler_pipeline
+    - path: documentation_site
+    - path: web_backend/knowledge_rag

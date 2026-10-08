@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: tests
+title: Pytest 测试套件（后端 API、服务与 CLI）
+scope:
+    - tests/
+source_files: []
+depends_on: []
+related_to:
+    - path: web_backend

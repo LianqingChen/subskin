@@ -1,0 +1,13 @@
+schema_version: 1
+module_path: web_backend/admin_analytics_llm
+title: 管理员后台与 LLM 配置/内容生成 API
+scope:
+    - web/backend/api/admin_general.py
+    - web/backend/api/analytics.py
+    - web/backend/api/audit.py
+    - web/backend/api/llm_config_admin.py
+    - web/backend/api/content_generation_admin.py
+source_files: []
+depends_on: []
+related_to:
+    - path: admin_interface

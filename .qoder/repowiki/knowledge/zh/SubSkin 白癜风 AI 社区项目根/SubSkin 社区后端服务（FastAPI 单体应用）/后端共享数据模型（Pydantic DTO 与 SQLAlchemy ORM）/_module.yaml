@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: web_backend/shared_models
+title: 后端共享数据模型（Pydantic DTO 与 SQLAlchemy ORM）
+scope:
+    - web/backend/models/
+source_files: []
+depends_on: []
+related_to: []

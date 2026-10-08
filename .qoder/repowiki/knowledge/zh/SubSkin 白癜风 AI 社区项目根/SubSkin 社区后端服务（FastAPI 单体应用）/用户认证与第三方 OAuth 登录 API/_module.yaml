@@ -1,0 +1,12 @@
+schema_version: 1
+module_path: web_backend/user_auth_oauth
+title: 用户认证与第三方 OAuth 登录 API
+scope:
+    - web/backend/api/user.py
+    - web/backend/api/oauth.py
+    - web/backend/api/wechat.py
+    - web/backend/api/consent.py
+source_files: []
+depends_on: []
+related_to:
+    - path: settings_and_utils
