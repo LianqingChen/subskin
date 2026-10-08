@@ -21,3 +21,12 @@ export interface ContributionDistribution {
 }
 export interface ContributionEvent { id: number; title: string; points: number; rule_version: string; awarded_at: string }
 export interface ContributionEvents { total: number; items: ContributionEvent[] }
+export interface ContributionPeriod { month: string; total: number | null; mine: number | null; others: number | null }
+export interface ContributionTimeline {
+  status: 'available' | 'suppressed'; updated_at: string; version: string; timezone: string
+  periods: ContributionPeriod[]; unknown_dates: ContributionMetric; earlier: ContributionMetric; note: string
+  own_unknown_dates?: ContributionMetric; own_earlier?: ContributionMetric
+}
+export interface ContributionPersonalVisuals {
+  updated_at: string; body_sites: { code: string; count: number }[]; timeline: ContributionTimeline
+}

@@ -1,12 +1,14 @@
 import { onScopeDispose, ref, watch } from 'vue'
-import { getContributionEvents, getMyContributions, syncContributionCredits } from '@/api/contribution-overview'
+import { getContributionEvents, getMyContributions, getPersonalContributionVisuals, syncContributionCredits } from '@/api/contribution-overview'
 import { useAuthStore } from '@/stores/auth'
-import type { ContributionEvent, MyContributions } from '@/types/contribution'
+import type { ContributionEvent, ContributionPersonalVisuals, MyContributions } from '@/types/contribution'
 
 export function useMyContributions() {
   const auth = useAuthStore()
   const summary = ref<MyContributions | null>(null)
   const events = ref<ContributionEvent[]>([])
+  const visuals = ref<ContributionPersonalVisuals | null>(null)
+  const visualsError = ref(false)
   const totalEvents = ref(0)
   const loading = ref(false)
   const error = ref(false)
@@ -17,6 +19,8 @@ export function useMyContributions() {
   async function load() {
     const version = ++request
     summary.value = null
+    visuals.value = null
+    visualsError.value = false
     events.value = []
     totalEvents.value = 0
     error.value = false
@@ -28,12 +32,14 @@ export function useMyContributions() {
     try { await syncContributionCredits() }
     catch { if (version === request) syncError.value = true }
     if (version !== request) return
-    const results = await Promise.allSettled([getMyContributions(), getContributionEvents()])
+    const results = await Promise.allSettled([getMyContributions(), getContributionEvents(), getPersonalContributionVisuals()])
     if (version !== request) return
-    const [mine, history] = results
+    const [mine, history, charts] = results
     error.value = mine.status === 'rejected'
     summary.value = mine.status === 'fulfilled' ? mine.value : null
     eventsError.value = history.status === 'rejected'
+    visualsError.value = charts.status === 'rejected'
+    visuals.value = charts.status === 'fulfilled' ? charts.value : null
     if (history.status === 'fulfilled') {
       events.value = history.value.items
       totalEvents.value = history.value.total
@@ -56,5 +62,5 @@ export function useMyContributions() {
   }
   watch(() => [auth.isLoggedIn, auth.user?.id], load, { immediate: true })
   onScopeDispose(() => { request++ })
-  return { summary, events, totalEvents, loading, error, syncError, eventsError, loadingEvents, load, moreEvents }
+  return { summary, visuals, visualsError, events, totalEvents, loading, error, syncError, eventsError, loadingEvents, load, moreEvents }
 }

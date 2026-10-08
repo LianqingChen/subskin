@@ -1,0 +1,28 @@
+const fs = require('fs')
+const path = require('path')
+const vm = require('vm')
+const assert = require('node:assert/strict')
+const ts = require('../../web/app/node_modules/typescript')
+const source = fs.readFileSync(path.join(__dirname, '../../web/app/src/utils/contribution-charts.ts'), 'utf8')
+const script = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText
+const chartMath = {}
+vm.runInNewContext(script, { exports: chartMath, Intl, Math })
+for (const [total, mine] of [[560, 24], [561, 24], [1000000, 1], [5, 0], [5, 5], [0, 0], [125, 7]]) {
+  const result = chartMath.contributionTiles(total, mine)
+  assert.ok(result.tiles.length <= 140)
+  assert.equal(result.tiles.reduce((s, t) => s + t.count, 0), total)
+  assert.equal(result.tiles.reduce((s, t) => s + t.mine, 0), mine)
+  assert.ok(result.tiles.every(t => t.mineFill <= t.fill && t.fill <= 1 && t.mineFill >= 0))
+  assert.ok(Math.abs(result.tiles.reduce((s,t)=>s+t.mineFill,0) * result.unit - mine) < 1e-8)
+}
+const sourceCodes = chartMath.CONTRIBUTION_PARTS.flatMap(x => x.sites)
+assert.equal(new Set(sourceCodes).size, sourceCodes.length)
+const rows = sourceCodes.map((code, index) => ({ code, count: index + 1 }))
+const grouped = chartMath.contributionParts({rows}, null, 'community')
+assert.equal(grouped.reduce((s, x) => s + x.count, 0), rows.reduce((s, x) => s + x.count, 0))
+assert.ok(chartMath.contributionParts({rows: rows.map(x=>({...x,count:null}))}, null, 'community').every(x=>x.count===null))
+assert.ok(chartMath.contributionParts(null, null, 'mine').every(x=>x.count===null))
+assert.equal(chartMath.contributionMetricLabel({status:'unavailable',value:null}),'待统计')
+assert.equal(chartMath.contributionMetricLabel({status:'suppressed',value:null}),'未公开')
+assert.equal(chartMath.contributionMetricLabel({status:'available',value:0}),'0')
+console.log('PASS: exact grouped quantities, partial last tile, million-image small share, empty and suppressed states')

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from web.backend.database.database import get_db
 from web.backend.database.models import User
 from web.backend.services import contribution as service
+from web.backend.services import contribution_charts as charts
 from web.backend.services.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,22 @@ def overview(response: Response, db: Session = Depends(get_db)) -> dict:
 def distribution(response: Response, db: Session = Depends(get_db)) -> dict:
     no_store(response)
     return service.distribution(db)
+
+
+@router.get("/timeline")
+def timeline(response: Response, db: Session = Depends(get_db)) -> dict:
+    no_store(response)
+    return charts.timeline(db)
+
+
+@router.get("/me/visuals")
+def personal_visuals(
+    response: Response,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    no_store(response)
+    return charts.personal_visuals(db, user.id)
 
 
 @router.get("/me")
