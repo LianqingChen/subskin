@@ -129,7 +129,6 @@ id_ed25519
 token.json
 tokens.json
 *.token
-.secrets.baseline
 
 # Node modules
 node_modules/
