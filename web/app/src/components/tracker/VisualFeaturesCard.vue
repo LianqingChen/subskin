@@ -37,7 +37,7 @@ const dimensions = [
   <div class="card  overflow-hidden">
     <!-- Header -->
     <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-      <div class="w-6 h-6 rounded-lg bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center">
+      <div class="w-6 h-6 rounded-lg bg-primary-50 dark:bg-primary-900 flex items-center justify-center">
         <i class="ri-search-eye-line text-primary-600 dark:text-primary-400 text-xs"></i>
       </div>
       <span class="font-semibold text-sm text-gray-800 ">白斑视觉特征分析</span>
@@ -68,7 +68,7 @@ const dimensions = [
         <span class="font-medium text-gray-600  w-10 flex-shrink-0">{{ dim.label }}</span>
         <span
           v-if="levelLabel(dim.key, visualFeatures[dim.key])"
-          class="px-1.5 py-px rounded text-[10px] font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex-shrink-0"
+          class="px-1.5 py-px rounded text-[10px] font-medium bg-primary-50 dark:bg-primary-900 text-primary-600 dark:text-primary-400 flex-shrink-0"
         >
           {{ levelLabel(dim.key, visualFeatures[dim.key]) }}
         </span>
@@ -79,28 +79,28 @@ const dimensions = [
     <!-- Knowledge Card (collapsible) -->
     <div class="px-4 pb-1">
       <button
-        class="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors min-h-[44px]"
+        class="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg bg-primary-50 dark:bg-primary-900 hover:bg-primary-100 dark:hover:bg-primary-900 transition-colors min-h-[44px]"
         @click="showKnowledge = !showKnowledge"
       >
-        <i class="ri-book-open-line text-blue-500 dark:text-blue-400 text-xs"></i>
-        <span class="text-xs text-blue-600 dark:text-blue-400">白癜风常见特征（科普参考）</span>
+        <i class="ri-book-open-line text-primary-500 dark:text-primary-400 text-xs"></i>
+        <span class="text-xs text-primary-600 dark:text-primary-400">白癜风常见特征（科普参考）</span>
         <i
           :class="[
-            'ml-auto text-blue-400 transition-transform duration-200 text-xs',
+            'ml-auto text-primary-400 transition-transform duration-200 text-xs',
             showKnowledge ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line',
           ]"
         ></i>
       </button>
       <div
         v-if="showKnowledge"
-        class="mt-1.5 px-3 py-2 rounded-lg bg-blue-50/30 dark:bg-blue-900/10 text-xs text-gray-600  space-y-1 leading-relaxed"
+        class="mt-1.5 px-3 py-2 rounded-lg bg-primary-50 dark:bg-primary-900 text-xs text-gray-600  space-y-1 leading-relaxed"
       >
         <p>· 颜色：乳白色或瓷白色，与正常皮肤色差明显</p>
         <p>· 边缘：边界通常清晰，边缘可能有色素加深</p>
         <p>· 表面：通常光滑无鳞屑</p>
         <p>· 形态：圆形、椭圆形或不规则形</p>
         <p>· 分布：可对称分布或沿神经节段分布</p>
-        <div class="mt-2 pt-2 border-t border-blue-100 dark:border-blue-800">
+        <div class="mt-2 pt-2 border-t border-primary-100 dark:border-primary-800">
           <p class="text-amber-600 dark:text-amber-400 flex items-start gap-1">
             <i class="ri-error-warning-line mt-0.5"></i>
             <span>以上为科普信息，仅供参考。具体诊断需专业医生结合 Wood 灯等检查综合判断。</span>

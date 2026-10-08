@@ -1,0 +1,22 @@
+{
+  "version": {
+    "buildTime": 1789267398698,
+    "env": "staging",
+    "lastProdBuildTime": 1789178116492
+  },
+  "entry_assets": [
+    "/assets/index-C0KuBkAD.js",
+    "/assets/index-DSDldOom.css"
+  ],
+  "capture_bundle": "AssessmentPage-COVRcplt.js",
+  "normal_hints_removed": true,
+  "manifest": "SubSkin [STAGING]",
+  "sw_bytes": 25176,
+  "health": {
+    "staging.subskin.cn": "ok",
+    "subskin.cn": "ok"
+  },
+  "production_frontend_unchanged": true,
+  "old_assets_restored": 97,
+  "browser_visual_verification": "unavailable-connection-error"
+}

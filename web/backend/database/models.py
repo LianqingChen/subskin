@@ -17,7 +17,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy import JSON
+from sqlalchemy import JSON, text
 from sqlalchemy.orm import relationship, relationship as orm_relationship
 
 from .database import Base
@@ -101,6 +101,8 @@ class User(Base):
     hashed_password = Column(String, nullable=True)  # 社交登录用户可无密码
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
+    # token 版本号：+1 即作废该用户全部存量 access token（改密/注销/登出全部设备）
+    token_version = Column(Integer, default=0, nullable=False, server_default="0")
     is_test = Column(Boolean, default=False)
     is_doctor = Column(Boolean, default=False)  # 认证医生标识
     real_name_verified = Column(Boolean, default=False)  # 实名认证标识
@@ -320,11 +322,14 @@ class Post(Base):
     content = Column(Text, nullable=False)
     content_json = Column(Text, nullable=True)
     content_text = Column(Text, nullable=True)
+    # 结构化治疗经验分享 JSON（method/duration/effect_rating/cost_range/side_effects/vasi_assessment_ids）
+    treatment_share_json = Column(Text, nullable=True)
     content_preview = Column(Text, nullable=True)  # 前100字预览
-    post_type = Column(String(20), nullable=True, default="long")  # image/video/text/long
+    post_type = Column(String(20), nullable=True, default="long")  # image/video/text/long/treatment
     video_url = Column(String, nullable=True)  # 视频文件URL
     video_thumbnail = Column(String, nullable=True)  # 视频封面
     read_count = Column(Integer, default=0)  # 阅读数
+    share_count = Column(Integer, default=0)  # 转发/分享数
     dwell_time = Column(Integer, default=0)  # 平均停留时间(秒)
     category_id = Column(
         Integer, ForeignKey("community_categories.id"), nullable=False, index=True
@@ -334,6 +339,9 @@ class Post(Base):
     diary_date = Column(Date, nullable=True, index=True)
     diary_type = Column(String(20), nullable=True, index=True)  # medication/phototherapy/mood/diet/general
     mood = Column(String, nullable=True)  # 心情标签: 💪坚持中 / 😔低落 / 🎉好转 / 🤔疑问
+    # AI 增强（日记合并到社区后，发帖自动提取；仅自己可见，不进 feed）
+    ai_summary = Column(Text, nullable=True)  # AI 生成的摘要
+    ai_extracted_json = Column(Text, nullable=True)  # 完整提取结果 JSON（心情/睡眠/用药等）
     is_anonymous = Column(Boolean, default=False)  # 匿名发布
     moderation_status = Column(String(20), default="normal", nullable=False, index=True)  # normal/flagged/blocked/approved
     city = Column(String(100), nullable=True, index=True)
@@ -378,10 +386,19 @@ class PostImage(Base):
     """帖子图片"""
 
     __tablename__ = "post_images"
+    __table_args__ = (
+        Index("idx_post_image_user_date", "user_id", "capture_date"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     post_id = Column(Integer, ForeignKey("posts.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # 冗余，便于按用户查图/历史对比
     image_url = Column(String, nullable=False)
+    body_site = Column(String(50), nullable=True)  # 照片对应身体部位
+    capture_date = Column(Date, nullable=True, index=True)  # 拍摄/记录日期（支持历史补录）
+    visual_analysis_json = Column(Text, nullable=True)  # 轻量视觉分析结果
+    analysis_status = Column(String(20), default="pending")  # pending/analyzing/light_done/failed
+    vasi_assessment_id = Column(Integer, nullable=True)  # 关联深度 VASI 评估
     order = Column(Integer, default=0)
     created_at = Column(DateTime, default=_utcnow)
 
@@ -1023,6 +1040,25 @@ class LLMModuleConfig(Base):
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
 
+class LLMPrompt(Base):
+    """模块级提示词配置（管理后台可编辑，用于白斑识别等准确度持续迭代）"""
+
+    __tablename__ = "llm_prompts"
+    __table_args__ = (UniqueConstraint("module_key", "prompt_key", name="uq_llm_prompt_module_key"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    module_key = Column(String(50), nullable=False, index=True)
+    prompt_key = Column(String(80), nullable=False)
+    prompt_name = Column(String(120), nullable=False)
+    prompt_text = Column(Text, nullable=False)  # 当前生效的提示词模板
+    default_text = Column(Text, nullable=True)  # 内置默认模板（用于「恢复默认」）
+    version = Column(Integer, default=1, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    updated_by = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+
 class ImMessageRead(Base):
     """消息已读追踪"""
 
@@ -1129,6 +1165,7 @@ class MedicationReminder(Base):
     notes = Column(Text, nullable=True)  # 备注
     is_active = Column(Boolean, default=True, index=True)
     push_subscription_id = Column(Integer, nullable=True)  # 关联的推送订阅
+    last_push_time = Column(String(16), nullable=True)  # 上次推送的时间槽 "YYYY-MM-DD HH:MM"（防重复推送）
     created_at = Column(DateTime, default=_utcnow)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
@@ -1150,6 +1187,323 @@ class PushSubscription(Base):
     created_at = Column(DateTime, default=_utcnow)
 
     user = relationship("User", backref="push_subscriptions")
+
+
+# ── AI病情日记 ──
+
+
+class DiaryEntry(Base):
+    """AI病情日记 — 对话式记录 + AI结构化提取"""
+
+    __tablename__ = "diary_entries"
+    __table_args__ = (
+        Index("idx_diary_user_date", "user_id", "entry_date"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    profile_id = Column(Integer, ForeignKey("patient_profiles.id"), nullable=True)
+
+    # 原始输入
+    raw_text = Column(Text, nullable=False)  # 用户原始输入
+    input_type = Column(String(20), default="text")  # text/voice/quick
+
+    # AI结构化提取结果
+    mood = Column(String(20), nullable=True)  # good/neutral/bad/anxious/hopeful
+    sleep_quality = Column(String(20), nullable=True)  # good/fair/poor
+    diet_notes = Column(Text, nullable=True)  # 饮食记录
+    medication_taken = Column(Text, nullable=True)  # 用药记录 JSON
+    stress_level = Column(Integer, nullable=True)  # 压力 1-5
+    skin_condition = Column(String(50), nullable=True)  # stable/improving/spreading/new_spots
+    treatment_events_json = Column(Text, nullable=True)  # 治疗事件 JSON
+    ai_summary = Column(Text, nullable=True)  # AI生成的日记摘要
+    ai_extracted_json = Column(Text, nullable=True)  # 完整AI提取结果
+
+    # 关联
+    vasi_assessment_id = Column(Integer, nullable=True)  # 关联VASI评估
+    is_public = Column(Boolean, default=False)  # 是否公开到社区
+    post_id = Column(Integer, ForeignKey("posts.id"), nullable=True)  # 关联的社区帖子
+
+    entry_date = Column(Date, nullable=False, index=True)  # 日记日期
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    user = relationship("User", backref="diary_entries")
+
+
+class TreatmentEvent(Base):
+    """治疗事件 — 从日记/帖子/报告中提取"""
+
+    __tablename__ = "treatment_events"
+    __table_args__ = (
+        Index("idx_treatment_user_date", "user_id", "event_date"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    profile_id = Column(Integer, ForeignKey("patient_profiles.id"), nullable=True)
+
+    event_type = Column(String(30), nullable=False)  # medication/phototherapy/surgery/consultation/diagnosis
+    event_date = Column(Date, nullable=False, index=True)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+
+    # 结构化字段
+    medication_name = Column(String(100), nullable=True)
+    dosage = Column(String(100), nullable=True)
+    body_site = Column(String(50), nullable=True)
+    doctor = Column(String(100), nullable=True)
+    hospital = Column(String(200), nullable=True)
+    cost = Column(Float, nullable=True)
+
+    # 来源
+    source = Column(String(20), default="manual")  # manual/diary_ai/post_ai/report_ai
+    source_ref_id = Column(Integer, nullable=True)  # 关联的日记/帖子/报告ID
+
+    created_at = Column(DateTime, default=_utcnow)
+
+    user = relationship("User", backref="treatment_events")
+
+
+# ── 日记图片（图文日记）──
+
+
+class DiaryImage(Base):
+    """日记图片 — 每张照片可标注部位/拍摄日期，并存储轻量视觉分析结果。
+
+    与 DiaryEntry 为多对一关系；可选关联一次深度 VASI 评估（vasi_assessment_id）。
+    """
+
+    __tablename__ = "diary_images"
+    __table_args__ = (
+        Index("idx_diary_image_entry", "diary_entry_id"),
+        Index("idx_diary_image_user_date", "user_id", "capture_date"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    diary_entry_id = Column(
+        Integer, ForeignKey("diary_entries.id"), nullable=False, index=True
+    )
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    image_url = Column(String, nullable=False)  # 受保护访问的图片URL
+    image_key = Column(String, nullable=True)  # 存储key（预留）
+    thumbnail_url = Column(String, nullable=True)  # 缩略图URL（预留）
+
+    body_site = Column(String(50), nullable=True)  # 照片对应身体部位
+    capture_date = Column(Date, nullable=True, index=True)  # 拍摄/记录日期（支持历史补录）
+
+    # 轻量视觉分析结果 JSON：颜色/边界/面积印象/对比印象等定性描述
+    visual_analysis_json = Column(Text, nullable=True)
+    # 可选：触发深度 VASI 分析后关联的评估记录
+    vasi_assessment_id = Column(Integer, nullable=True)
+    # pending / analyzing / light_done / failed
+    analysis_status = Column(String(20), default="pending")
+
+    order_index = Column(Integer, default=0)  # 展示排序
+    created_at = Column(DateTime, default=_utcnow)
+
+    entry = relationship("DiaryEntry", backref="diary_images")
+    user = relationship("User")
+
+
+# ── 白斑变化报告 ──
+
+
+class SkinReport(Base):
+    """白斑变化分析报告 — 周报/月报/对比报告。
+
+    聚合用户的日记、日记图片（轻量分析）与 VASI 评估（深度数值），
+    由 AI 生成结构化指标与叙事文本，可导出网页/PDF/海报并发布到发现。
+    """
+
+    __tablename__ = "skin_reports"
+    __table_args__ = (
+        Index("idx_skin_report_user", "user_id", "created_at"),
+        Index("idx_skin_report_shared", "share_token"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    profile_id = Column(Integer, ForeignKey("patient_profiles.id"), nullable=True)
+
+    # weekly / monthly / comparison
+    report_type = Column(String(20), nullable=False)
+    title = Column(String(200), nullable=False)
+
+    period_start = Column(Date, nullable=True)
+    period_end = Column(Date, nullable=True)
+    body_site = Column(String(50), nullable=True)  # 聚焦部位，空表示全身概览
+
+    # 源数据快照（日记/VASI/图片摘要），保证报告可复现
+    source_data_json = Column(Text, nullable=True)
+    # 结构化指标：VASI变化/面积变化/分型分期/心情趋势/用药依从性等
+    metrics_json = Column(Text, nullable=True)
+
+    # AI 生成的叙事文本（深度解读，可分段）
+    narrative = Column(Text, nullable=True)
+    insights_json = Column(Text, nullable=True)  # AI 洞察要点数组
+    recommendations_json = Column(Text, nullable=True)  # AI 建议数组
+
+    cover_composite_url = Column(String, nullable=True)  # 封面/前后对比合成图
+    trend_chart_data = Column(Text, nullable=True)  # 趋势曲线数据 JSON（前端渲染用）
+
+    # generating / completed / failed
+    status = Column(String(20), default="generating", nullable=False)
+    llm_module = Column(String(40), default="skin_report", nullable=True)
+    error_message = Column(Text, nullable=True)
+
+    is_public = Column(Boolean, default=False)  # 是否已分享到社区
+    post_id = Column(Integer, ForeignKey("posts.id"), nullable=True)  # 关联社区帖子
+    share_token = Column(String(64), nullable=True, index=True)  # 公开访问 token
+
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    user = relationship("User", backref="skin_reports")
+
+
+class SpotComparison(Base):
+    """同部位两张白斑照片的配对对比识别结果 — 周报/月报的数据基元。
+
+    ref_a / ref_b 为照片引用串："pi:{post_image_id}" 或 "va:{vasi_assessment_id}"，
+    支持日记照片与 VASI 测评照片跨表配对。同一图对只计算一次（唯一索引缓存）。
+    """
+
+    __tablename__ = "spot_comparisons"
+    __table_args__ = (
+        Index("idx_spot_cmp_pair", "ref_a", "ref_b", unique=True),
+        Index("idx_spot_cmp_user", "user_id", "body_site"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False)
+    ref_a = Column(String(40), nullable=False)  # 早期照片引用（旧）
+    ref_b = Column(String(40), nullable=False)  # 近期照片引用（新）
+    body_site = Column(String(50), nullable=True)  # 归一化部位 key
+
+    # 识别结果：vlm(双图视觉对比) + cv(像素交叉验证) + merged(最终指标)
+    metrics_json = Column(Text, nullable=True)
+    model_version = Column(String(80), nullable=True)
+    status = Column(String(20), default="completed", nullable=False)  # completed / failed
+    error_message = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+
+def ensure_spot_comparison_table() -> None:
+    """创建 spot_comparisons 表（新表，additive only，安全可重复调用）。"""
+    from web.backend.database.database import engine
+
+    try:
+        SpotComparison.__table__.create(engine, checkfirst=True)
+        print("[migrate] spot_comparisons table ready")
+    except Exception as e:  # noqa: BLE001
+        print(f"[migrate] spot_comparisons create failed: {e}")
+
+
+def ensure_diary_columns() -> None:
+    """为 diary_entries 增补图文日记所需列（additive only，安全可重复调用）。"""
+    from sqlalchemy import inspect as sqla_inspect
+
+    from web.backend.database.database import engine
+
+    new_columns = {
+        "images_count": ("INTEGER", "0"),
+        "body_sites_json": ("TEXT", None),
+        "report_eligible": ("BOOLEAN", "1"),
+    }
+    try:
+        insp = sqla_inspect(engine)
+        existing_columns = {c["name"] for c in insp.get_columns("diary_entries")}
+        for col_name, (col_type, default_val) in new_columns.items():
+            if col_name in existing_columns:
+                continue
+            try:
+                default_clause = f" DEFAULT {default_val}" if default_val else ""
+                sql = (
+                    f"ALTER TABLE diary_entries ADD COLUMN {col_name} "
+                    f"{col_type}{default_clause}"
+                )
+                with engine.connect() as conn:
+                    conn.exec_driver_sql(sql)
+                    conn.commit()
+                print(f"[migrate] Added column diary_entries.{col_name} ({col_type})")
+            except Exception as e:  # noqa: BLE001
+                # 列可能已存在（并发启动），忽略
+                print(f"[migrate] diary_entries.{col_name}: {e}")
+    except Exception as e:  # noqa: BLE001
+        print(f"[migrate] diary_entries migration check failed: {e}")
+
+
+def ensure_post_columns() -> None:
+    """为 posts 增补 AI 增强字段（additive only，安全可重复调用）。"""
+    from sqlalchemy import inspect as sqla_inspect
+
+    from web.backend.database.database import engine
+
+    new_columns = {
+        "ai_summary": ("TEXT", None),
+        "ai_extracted_json": ("TEXT", None),
+    }
+    try:
+        insp = sqla_inspect(engine)
+        if not insp.has_table("posts"):
+            return
+        existing = {c["name"] for c in insp.get_columns("posts")}
+        for col_name, (col_type, default_val) in new_columns.items():
+            if col_name in existing:
+                continue
+            try:
+                default_clause = f" DEFAULT {default_val}" if default_val else ""
+                sql = f"ALTER TABLE posts ADD COLUMN {col_name} {col_type}{default_clause}"
+                with engine.connect() as conn:
+                    conn.exec_driver_sql(sql)
+                    conn.commit()
+                print(f"[migrate] Added column posts.{col_name} ({col_type})")
+            except Exception as e:  # noqa: BLE001
+                print(f"[migrate] posts.{col_name}: {e}")
+    except Exception as e:  # noqa: BLE001
+        print(f"[migrate] posts migration check failed: {e}")
+
+
+def ensure_post_image_columns() -> None:
+    """为 post_images 增补视觉分析相关字段（additive only，安全可重复调用）。"""
+    from sqlalchemy import inspect as sqla_inspect
+
+    from web.backend.database.database import engine
+
+    new_columns = {
+        "user_id": ("INTEGER", None),
+        "body_site": ("VARCHAR(50)", None),
+        "capture_date": ("DATE", None),
+        "visual_analysis_json": ("TEXT", None),
+        "analysis_status": ("VARCHAR(20)", "'pending'"),
+        "vasi_assessment_id": ("INTEGER", None),
+    }
+    try:
+        insp = sqla_inspect(engine)
+        if not insp.has_table("post_images"):
+            return
+        existing = {c["name"] for c in insp.get_columns("post_images")}
+        for col_name, (col_type, default_val) in new_columns.items():
+            if col_name in existing:
+                continue
+            try:
+                default_clause = f" DEFAULT {default_val}" if default_val else ""
+                sql = (
+                    f"ALTER TABLE post_images ADD COLUMN {col_name} "
+                    f"{col_type}{default_clause}"
+                )
+                with engine.connect() as conn:
+                    conn.exec_driver_sql(sql)
+                    conn.commit()
+                print(f"[migrate] Added column post_images.{col_name} ({col_type})")
+            except Exception as e:  # noqa: BLE001
+                print(f"[migrate] post_images.{col_name}: {e}")
+    except Exception as e:  # noqa: BLE001
+        print(f"[migrate] post_images migration check failed: {e}")
 
 
 # ── 医生认证 ──
@@ -1196,3 +1550,248 @@ class DoctorInvitation(Base):
 
     creator = relationship("User", foreign_keys=[created_by], backref="created_invitations")
     user = relationship("User", foreign_keys=[used_by], backref="used_invitation")
+
+
+class UserConsent(Base):
+    """用户同意记录（2026-08-30 隐私加固补齐 — 此前 API 引用但模型缺失）
+
+    consent_type: terms / privacy / ai_data / medical_photo
+    is_active=False 的行表示撤销记录；判定有效同意须取该类型最新一行（含撤销行），
+    仅当最新一行 is_active=True 才视为同意（见 services/consent.py:latest_consent）。
+    """
+
+    __tablename__ = "user_consents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    consent_type = Column(String(30), nullable=False, index=True)
+    consent_version = Column(String(20), nullable=False)
+    consented_at = Column(DateTime, default=_utcnow)
+    ip_address = Column(String, nullable=True)
+    user_agent = Column(String(500), nullable=True)
+    device_fingerprint = Column(String, nullable=True)
+    platform = Column(String(20), nullable=True)
+    source = Column(String(30), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+
+class UserAssistantPreference(Base):
+    """小白管家外观偏好（用户主动设置的非敏感 UI 偏好，跨设备同步）"""
+
+    __tablename__ = "user_assistant_preferences"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"),
+        unique=True, index=True, nullable=False,
+    )
+    mascot = Column(String(20), nullable=True)   # real(金斑蝶)/deer(梅花鹿)
+    style = Column(String(20), nullable=True)    # circle/rounded
+    size = Column(String(10), nullable=True)     # small/medium/large
+    position = Column(String(10), nullable=True) # right/left
+    greeting = Column(String(100), nullable=True)
+    enabled = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class Hospital(Base):
+    """医院/院区目录（医评 /hospitals 模块）。
+
+    origin=official：平台按官方来源收录的目录条目（lat/lng 为城市中心，非院区导航坐标）。
+    origin=community：病友自行补充的条目，前端必须明确标注「病友补充·待核实」。
+    本表只存机构信息，不存医生个人联系方式；医生信息由病友评价自行填写（仅姓氏/职称/科室）。
+    """
+
+    __tablename__ = "hospitals"
+    __table_args__ = (
+        Index("idx_hospital_region", "province", "city"),
+        Index("idx_hospital_origin_status", "origin", "status"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    slug = Column(String(64), unique=True, index=True, nullable=False)  # 稳定标识（前端离线兜底沿用同一 slug）
+    name = Column(String(200), nullable=False)
+    province = Column(String(50), nullable=False, index=True)
+    city = Column(String(50), nullable=False, index=True)
+    district = Column(String(50), nullable=True)      # 区/县
+    address = Column(String(300), nullable=True)      # 详细地址/院区（病友补充条目由提交者填写）
+    department = Column(String(100), nullable=True)   # 就诊科室
+    kind = Column(String(50), nullable=True)          # 综合医院 / 皮肤病专科 / 其他
+    features = Column(JSON, nullable=True)            # 官方提及的诊疗服务
+    summary = Column(Text, nullable=True)
+    source = Column(String(500), nullable=True)       # 官方来源链接
+    lat = Column(Float, nullable=True)
+    lng = Column(Float, nullable=True)
+    origin = Column(String(20), default="official", nullable=False)  # official / community
+    status = Column(String(20), default="visible", nullable=False, index=True)  # visible / hidden
+    checked_at = Column(String(20), nullable=True)
+    submitted_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+
+class HospitalReview(Base):
+    """病友公开评价/分享（医院、医生、治疗方案、治疗经历）。
+
+    公开可见性：status=visible 且 moderation_status!=blocked。
+    主观体验（ratings/tags）与疗效自述（outcome）分开存储，避免把自述当疗效证据。
+    """
+
+    __tablename__ = "hospital_reviews"
+    __table_args__ = (
+        Index("idx_hospital_review_lookup", "hospital_id", "status", "moderation_status"),
+        Index("idx_hospital_review_target", "target"),
+        Index("idx_hospital_review_user", "user_id"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    hospital_id = Column(Integer, ForeignKey("hospitals.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    target = Column(String(20), nullable=False, default="hospital")  # hospital/doctor/treatment/experience
+
+    # 医生评价：仅「称呼 + 职称 + 科室」，禁止联系方式
+    doctor_name = Column(String(40), nullable=True)
+    doctor_title = Column(String(40), nullable=True)
+    doctor_department = Column(String(60), nullable=True)
+    # 治疗方案评价
+    treatment_name = Column(String(120), nullable=True)
+    treatment_detail = Column(String(500), nullable=True)
+
+    visit_month = Column(String(7), nullable=True)   # YYYY-MM
+    duration = Column(String(20), nullable=True)     # 治疗时长区间
+    cost = Column(String(20), nullable=True)         # 每月自付费用区间
+    outcome = Column(String(20), nullable=True)      # 效果自述（与主观评分分开）
+    ratings = Column(JSON, nullable=True)            # 旧版 {"医护沟通": 4, ...}（保留兼容，不再新增）
+    # 统一 6 维就医体验档位（v3 起唯一评分体系）：
+    # {"医患沟通": "satisfied"|"neutral"|"unsatisfied"|"na", ...}
+    # 不含任何疗效/医术维度 —— 合规红线见 review_risk.BANNED_DIMENSIONS
+    experience_scores = Column(JSON, nullable=True)
+    tags = Column(JSON, nullable=True)
+    # 凭证图（费用单/挂号单/处方/检查单；明确禁止病情照片）：[{"url": ..., "label": "费用单"}]
+    # v3 起默认不公开：仅作者与管理员可读，公开层只显示「已上传」徽标
+    images = Column(JSON, nullable=True)
+    content = Column(Text, nullable=False)
+
+    # approved / flagged / restricted / blocked
+    # restricted = 公开但降权且不进聚合（举报阈值 / 风险分档触发），并非下架
+    moderation_status = Column(String(20), default="approved", nullable=False)
+    risk_reason = Column(String(500), nullable=True)
+    # v3 风控留痕：规则分（可解释）+ 命中标签 + 受限原因 + 聚合冷处理截止时间
+    risk_score = Column(Float, nullable=True)
+    risk_flags = Column(JSON, nullable=True)
+    restricted_reason = Column(String(300), nullable=True)
+    aggregate_after = Column(DateTime, nullable=True)
+    # PIPL 第 28/29 条：病情描述属敏感个人信息 → 单独同意留痕（禁止默认勾选）
+    health_consent = Column(Boolean, default=False, nullable=False)
+    appeal_status = Column(String(20), default="none", nullable=False)  # none/pending/resolved
+    status = Column(String(20), default="visible", nullable=False)  # visible / deleted
+
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+
+class HospitalReviewReport(Base):
+    """用户对某条医评的举报（一人一条，唯一约束保证幂等）。
+
+    达阈值后自动把被举报评价置为 restricted（不进聚合、排序垫底）并入后台队列。
+    """
+
+    __tablename__ = "hospital_review_reports"
+    __table_args__ = (
+        Index("idx_hospital_report_unique", "review_id", "reporter_id", unique=True),
+        Index("idx_hospital_report_status", "status"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    review_id = Column(Integer, ForeignKey("hospital_reviews.id"), nullable=False, index=True)
+    reporter_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    reason_code = Column(String(30), nullable=False)  # fake/abuse/privacy/ad/promotion/other
+    detail = Column(String(500), nullable=True)
+    status = Column(String(20), default="pending", nullable=False)  # pending/upheld/dismissed
+    handled_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    handled_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+
+
+class HospitalReviewAppeal(Base):
+    """评价申诉（被评价方 / 被误判作者双向共用）。
+
+    《民法典》第 1028 条要求对失实内容及时更正或删除；本表提供可预期的救济通道，
+    默认 3 个工作日时限（due_at），超时在管理后台标红。
+    """
+
+    __tablename__ = "hospital_review_appeals"
+    __table_args__ = (Index("idx_hospital_appeal_status", "status", "due_at"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    review_id = Column(Integer, ForeignKey("hospital_reviews.id"), nullable=False, index=True)
+    # 申诉人身份：被评价机构 / 被评价医生 / 评价作者（认为自己被误判）/ 其他
+    claimant_type = Column(String(20), nullable=False)  # hospital/doctor/author/other
+    claimant_name = Column(String(80), nullable=False)
+    contact = Column(String(120), nullable=False)       # 联系方式（仅管理员可见）
+    reason = Column(Text, nullable=False)
+    evidence_urls = Column(JSON, nullable=True)
+    status = Column(String(20), default="pending", nullable=False)  # pending/accepted/rejected
+    resolution = Column(String(300), nullable=True)
+    resolved_action = Column(String(20), nullable=True)  # keep/request_edit/hide/append_note
+    handled_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    handled_at = Column(DateTime, nullable=True)
+    due_at = Column(DateTime, nullable=True)  # 3 个工作日时限
+    created_at = Column(DateTime, default=_utcnow)
+
+
+class HospitalReviewHelpful(Base):
+    """病友给评价点「有用」（一人一票，唯一约束保证幂等）。"""
+
+    __tablename__ = "hospital_review_helpfuls"
+    __table_args__ = (
+        Index("idx_hospital_helpful_unique", "review_id", "user_id", unique=True),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    review_id = Column(Integer, ForeignKey("hospital_reviews.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    created_at = Column(DateTime, default=_utcnow)
+
+
+def ensure_hospital_tables() -> None:
+    """创建医评相关表并补齐新列（additive only，安全可重复调用）。
+
+    新表：hospitals / hospital_reviews / hospital_review_helpfuls
+          + v3 新增 hospital_review_reports / hospital_review_appeals
+    既有表只做 ADD COLUMN，绝不删除或重命名。
+    """
+    from sqlalchemy import inspect as sqla_inspect
+
+    from web.backend.database.database import engine
+
+    try:
+        Hospital.__table__.create(engine, checkfirst=True)
+        HospitalReview.__table__.create(engine, checkfirst=True)
+        HospitalReviewHelpful.__table__.create(engine, checkfirst=True)
+        HospitalReviewReport.__table__.create(engine, checkfirst=True)
+        HospitalReviewAppeal.__table__.create(engine, checkfirst=True)
+        inspector = sqla_inspect(engine)
+        columns = {c["name"] for c in inspector.get_columns("hospital_reviews")}
+        # 列名 → DDL 类型（全部可空，带默认值，向后兼容既有行）
+        additions = {
+            "images": "JSON",
+            "experience_scores": "JSON",
+            "risk_score": "FLOAT",
+            "risk_flags": "JSON",
+            "restricted_reason": "VARCHAR(300)",
+            "aggregate_after": "DATETIME",
+            "health_consent": "BOOLEAN DEFAULT 0",
+            "appeal_status": "VARCHAR(20) DEFAULT 'none'",
+        }
+        for name, ddl in additions.items():
+            if name in columns:
+                continue
+            with engine.begin() as connection:
+                connection.execute(text(f"ALTER TABLE hospital_reviews ADD COLUMN {name} {ddl}"))
+        print("[migrate] hospitals / hospital_reviews / hospital_review_helpfuls / reports / appeals tables ready")
+    except Exception as e:  # noqa: BLE001
+        print(f"[migrate] hospital tables create failed: {e}")

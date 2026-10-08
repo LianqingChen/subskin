@@ -10,6 +10,7 @@ VASI 评估框架 (Phase 4)
   4. 退化检测: 监控生产环境指标趋势
   5. 分层评估: 按部位、肤色、质量分组
 """
+from web.backend.utils.timeutils import iso_utc
 
 import json
 import logging
@@ -358,7 +359,7 @@ class VasiEvaluator:
         """生成 Markdown 格式的评估报告"""
         lines = [
             "# VASI 模型评估报告",
-            f"## 生成时间: {datetime.utcnow().isoformat()}",
+            f"## 生成时间: {iso_utc(datetime.utcnow())}",
             "",
             "## 核心指标",
             "",
@@ -470,7 +471,7 @@ class VasiEvaluator:
                 m = json.loads(v.metrics_json)
                 trend.append({
                     "version": v.version_tag,
-                    "deployed_at": v.deployed_at.isoformat() if v.deployed_at else None,
+                    "deployed_at": iso_utc(v.deployed_at) if v.deployed_at else None,
                     "dice": m.get("dice_coefficient"),
                     "f1": m.get("f1_score"),
                     "mape": m.get("mape"),

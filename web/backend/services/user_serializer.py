@@ -1,10 +1,11 @@
 """用户数据序列化 — 将 DBUser 转为 API 响应字典。"""
+from web.backend.utils.timeutils import iso_utc
 
 from datetime import datetime
 from typing import Optional, cast
 
 from web.backend.database.models import User as DBUser
-from web.backend.utils.redact import mask_phone, mask_email, mask_name
+from web.backend.utils.redact import mask_phone, mask_email, mask_name, safe_public_username
 
 
 def get_user_response(
@@ -26,7 +27,11 @@ def get_user_response(
     response = {
         "id": db_user.id,
         "uid": db_user.uid,
-        "username": db_user.username,
+        "username": (
+            db_user.username
+            if include_sensitive
+            else safe_public_username(db_user.username, db_user.phone)
+        ),
         "avatar_url": db_user.avatar_url,
         "is_active": db_user.is_active,
         "is_admin": db_user.is_admin,
@@ -34,7 +39,7 @@ def get_user_response(
         "is_verified": getattr(db_user, "real_name_verified", False),
         "user_status": getattr(db_user, "user_status", "normal"),
         "muted_until": getattr(db_user, "muted_until", None),
-        "created_at": created_at.isoformat() if created_at else None,
+        "created_at": iso_utc(created_at) if created_at else None,
     }
     if include_private:
         response.update(

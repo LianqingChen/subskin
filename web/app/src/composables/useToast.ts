@@ -20,7 +20,8 @@ export function useToast() {
   }
 
   function success(message: string) { return show(message, 'success') }
-  function warning(message: string) { return show(message, 'warning') }
+  /** 引导类警告停留稍久（4.5s），避免用户还没看清就消失 */
+  function warning(message: string) { return show(message, 'warning', 4500) }
   function error(message: string) { return show(message, 'error') }
 
   function remove(id: number) {

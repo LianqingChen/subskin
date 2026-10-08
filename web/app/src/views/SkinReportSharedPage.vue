@@ -179,7 +179,7 @@ onMounted(load)
       <div class="shared-lead">
         <i class="ri-leaf-line shared-lead__icon"></i>
         <h2>用 SubSkin 追踪你的白斑变化</h2>
-        <p>图文日记 · AI 深度分析 · 变化报告 — 白癜风病友的AI手帐和分享社区</p>
+        <p>图文日记 · AI 深度分析 · 变化报告 — 白癜风病友的AI记录和分享社区</p>
         <button class="shared-lead__btn" @click="goToApp">
           <i class="ri-arrow-right-line"></i>
           {{ authStore.isLoggedIn ? '开始记录' : '立即体验' }}
@@ -193,8 +193,11 @@ onMounted(load)
 .shared-page {
   min-height: 100vh;
   min-height: 100dvh;
-  background: #f5f7fa;
+  background: #f9fafb;
   padding: 16px 16px 40px;
+}
+@media (min-width: 768px) {
+  .shared-page { padding: 40px 24px 64px; }
 }
 
 .shared-loading,
@@ -220,20 +223,28 @@ onMounted(load)
   to { transform: rotate(360deg); }
 }
 
+/* 对外分享的报告：640px 阅读宽度，细边框代替重阴影，封面用品牌深青 */
 .shared-doc {
-  max-width: 600px;
+  max-width: 640px;
   margin: 0 auto;
   background: white;
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 12px 32px -12px rgba(15, 23, 42, 0.08);
   color: #1e293b;
 }
 
 .shared-cover {
-  background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+  background: linear-gradient(135deg, #115e59 0%, #0f766e 55%, #0d9488 100%);
   color: white;
   padding: 28px 24px;
+}
+@media (min-width: 768px) {
+  .shared-cover { padding: 36px 40px; }
+  .shared-cover__title { font-size: 26px; }
+  .shared-section { padding: 24px 40px; }
+  .shared-disclaimer { padding: 16px 40px; }
 }
 
 .shared-cover__brand {
@@ -292,8 +303,9 @@ onMounted(load)
 
 .shared-metric {
   background: #f8fafc;
+  border: 1px solid #f1f5f9;
   border-radius: 12px;
-  padding: 12px 8px;
+  padding: 14px 8px;
   text-align: center;
 }
 
@@ -306,9 +318,10 @@ onMounted(load)
 
 .shared-metric__value {
   display: block;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: #0f172a;
+  font-variant-numeric: tabular-nums;
 }
 
 .shared-narrative {
@@ -352,13 +365,13 @@ onMounted(load)
 }
 
 .shared-lead {
-  max-width: 600px;
+  max-width: 640px;
   margin: 20px auto 0;
   text-align: center;
   background: white;
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 28px 24px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(229, 231, 235, 0.8);
 }
 
 .shared-lead__icon {
@@ -386,23 +399,28 @@ onMounted(load)
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 48px;
   padding: 12px 32px;
-  border-radius: 24px;
+  border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #0f766e, #14b8a6);
+  background: var(--color-primary-600);
   color: white;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.3);
+  transition: background 0.15s;
+}
+.shared-lead__btn:hover {
+  background: var(--color-primary-700);
 }
 
 .shared-cta {
   margin-top: 16px;
+  min-height: 44px;
   padding: 10px 28px;
-  border-radius: 22px;
+  border-radius: 12px;
   border: none;
-  background: var(--color-primary-500);
+  background: var(--color-primary-600);
   color: white;
   font-size: 14px;
   font-weight: 600;

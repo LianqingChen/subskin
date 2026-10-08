@@ -5,12 +5,13 @@ Only test/internal accounts (is_test=True) are excluded.
 
 Page/feature names: see web/shared/page-names.json (single source of truth).
 """
-
 from __future__ import annotations
 
 import json
 import os
 from collections import defaultdict
+
+from web.backend.utils.timeutils import iso_utc
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
 
@@ -58,14 +59,34 @@ EXCLUDED_PHONES = _load_excluded_phones()
 FEATURE_USE_ELEMENT_IDS = (
     "tracker_btn_assess",
     "report_upload_btn",
-    "header_nav_AI助手",
-    "header_nav_测评",
+    # 主导航：元素 id 由导航项 label 拼成（header_nav_<label> / bottom_nav_<label>），
+    # label 来自 web/shared/site-modules.json —— 模块改名后必须同步补上新 id，
+    # 否则该 Tab 的点击不计入「功能使用UV」（当前模块名：问答 / 记录 / 发现 / 调养；原「公益」已改名就医经验并并入发现，不在主导航）。
+    "header_nav_问答",
+    "header_nav_记录",
     "header_nav_发现",
-    "header_nav_我的",
-    "bottom_nav_AI助手",
-    "bottom_nav_测评",
+    "header_nav_分享",  # legacy（2026-09-30 分享Tab更名为发现）
+    "header_nav_调养",
+    "header_nav_公益",
+    "bottom_nav_问答",
+    "bottom_nav_记录",
     "bottom_nav_发现",
-    "bottom_nav_我的",
+    "bottom_nav_分享",  # legacy（2026-09-30 分享Tab更名为发现）
+    "bottom_nav_调养",
+    "bottom_nav_公益",
+    # legacy（旧导航名，保留以兼容历史事件）
+    "header_nav_手帐",
+    "bottom_nav_手帐",
+    "header_nav_AI助手",  # legacy for 问答
+    "header_nav_我的",  # legacy for 个人中心
+    "header_nav_测评",  # legacy for 记录（兼容旧名事件）
+    "header_nav_医评",  # legacy for 公益（模块 2026-09-12 改名）
+    "header_nav_就医地图",  # legacy for 公益（改名链：就医地图 → 医评 → 公益）
+    "bottom_nav_AI助手",  # legacy for 问答
+    "bottom_nav_我的",  # legacy for 个人中心
+    "bottom_nav_测评",  # legacy for 记录
+    "bottom_nav_医评",  # legacy for 公益
+    "bottom_nav_就医地图",  # legacy for 公益
     "community_fab_create",
     "community_fab_login",
     "header_btn_login",
@@ -283,12 +304,22 @@ class AnalyticsService:
 
         today_active_users = self._count_today_active_users(today_start, tomorrow_start)
 
+        total_posts = (
+            self.db.query(func.count(Post.id))
+            .filter(Post.moderation_status != "blocked")
+            .scalar()
+        ) or 0
+
+        vasi_count = self.db.query(func.count(VASIAssessment.id)).scalar() or 0
+
         return {
             "total_users": total_users,
             "today_uv": today_uv,
             "today_pv": today_pv,
             "new_users_today": new_users_today,
             "today_active_users": today_active_users,
+            "total_posts": total_posts,
+            "vasi_count": vasi_count,
         }
 
     # ── trend ────────────────────────────────────────────────────────
@@ -327,7 +358,7 @@ class AnalyticsService:
             ) or 0
 
             items.append({
-                "date": target_date.isoformat(),
+                "date": iso_utc(target_date),
                 "uv": uv,
                 "pv": pv,
                 "new_users": new_users,
@@ -372,7 +403,7 @@ class AnalyticsService:
             ) or 0
             cumulative += new_users
             items.append({
-                "date": target_date.isoformat(),
+                "date": iso_utc(target_date),
                 "new_users": new_users,
                 "cumulative_users": cumulative,
             })
@@ -613,23 +644,6 @@ class AnalyticsService:
             .scalar()
         ) or 0
 
-        encyclopedia_uv = (
-            self.db.query(self._uv_query())
-            .filter(self._excluded_uid_filter())
-            .filter(UserEvent.event_type == "page_view")
-            .filter(UserEvent.page_path.like("/encyclopedia%"))
-            .filter(UserEvent.created_at >= start_at)
-            .scalar()
-        ) or 0
-        encyclopedia_pv = (
-            self.db.query(func.count(UserEvent.id))
-            .filter(self._excluded_uid_filter())
-            .filter(UserEvent.event_type == "page_view")
-            .filter(UserEvent.page_path.like("/encyclopedia%"))
-            .filter(UserEvent.created_at >= start_at)
-            .scalar()
-        ) or 0
-
         return [
             {"name": "AI问答", "uv": ai_uv, "pv": ai_pv},
             {"name": "追踪评估", "uv": vasi_uv, "pv": vasi_pv},
@@ -637,7 +651,6 @@ class AnalyticsService:
             {"name": "发帖", "uv": post_uv, "pv": post_pv},
             {"name": "评论", "uv": comment_uv, "pv": comment_pv},
             {"name": "点赞", "uv": like_uv, "pv": like_pv},
-            {"name": "浏览百科", "uv": encyclopedia_uv, "pv": encyclopedia_pv},
         ]
 
     # ── page views ───────────────────────────────────────────────────

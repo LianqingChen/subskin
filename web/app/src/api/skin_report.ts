@@ -1,3 +1,4 @@
+import type { ManualComparisonAlignment } from '@/types/comparison-alignment'
 import apiClient from './client'
 
 // ── Types ──
@@ -101,10 +102,36 @@ export interface TrendChartWithSeries {
   series: TrendSeries[]
 }
 
+export interface PhotoQuantification {
+  status: string
+  scope: 'individual_photo'
+  version?: string | null
+  source_ref?: string | null
+  area_percentage: number | null
+  lesion_pixels: number | null
+  skin_pixels: number | null
+  area_cm2: number | null
+  relative_lightness: number | null
+  reasons: string[]
+}
+export interface ComparisonEvidence {
+  duplicate?: boolean
+  status?: string
+  reasons?: string[]
+  area_a_px?: number
+  area_b_px?: number
+  common_pixels?: number
+  common_coverage?: number
+  alignment_error_px?: number
+  expanded_pixels?: number
+  reduced_pixels?: number
+  relative_lightness_change?: number
+}
+
 /** 配对识别 merged 指标（spot_compare） */
 export interface PairMetrics {
   measurement_version?: string
-  comparison_status?: 'measured' | 'not_comparable' | 'legacy'
+  comparison_status?: 'measured' | 'not_comparable' | 'legacy' | 'visual_only'
   reasons?: string[]
   change_interval_percent?: number[] | null
   color_reason?: string | null
@@ -127,10 +154,15 @@ export interface PairMetrics {
   capture_note: string | null
   low_confidence: boolean
   duplicate?: boolean
+  evidence?: ComparisonEvidence
+  photo_measurements?: { before: PhotoQuantification; after: PhotoQuantification }
+  photo_measurement_source?: 'report_snapshot' | 'latest_source_records'
+  photo_measurements_as_of?: string
 }
 
 /** 图对像素级配准产物（photo_align） */
 export interface PairAlign {
+  source?: 'manual' | 'automatic' | 'none'
   aligned: boolean
   inlier_count: number | null
   scale: number | null
@@ -227,6 +259,7 @@ export interface SkinReport {
   is_public: boolean
   share_token: string | null
   created_at: string
+  generated_at?: string | null
   source_data?: any
   post_id?: number
   cover_composite_url?: string | null
@@ -245,6 +278,7 @@ export interface SkinReportListItem {
   is_public: boolean
   share_token: string | null
   created_at: string
+  generated_at?: string | null
   trend?: string
   has_vasi?: boolean
   headline?: string
@@ -288,8 +322,13 @@ export function createComparisonReport(data: {
   vasi_ids?: number[]
   body_site?: string
   profile_id?: number
+  manual_alignment?: ManualComparisonAlignment
 }) {
-  return apiClient.post<SkinReport>('/skin-reports/comparison', data)
+  return apiClient.post<SkinReport>(data.manual_alignment ? '/skin-reports/comparison/manual' : '/skin-reports/comparison', data)
+}
+
+export async function getComparisonCapabilities(): Promise<{ manual_alignment: boolean; version: string }> {
+  return (await apiClient.get('/skin-reports/comparison-capabilities', { timeout: 15000 })).data
 }
 
 /** 保存白斑对比照片（存为私有日记帖，供对比报告选择） */

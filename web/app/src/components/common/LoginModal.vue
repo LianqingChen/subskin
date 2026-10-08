@@ -24,11 +24,12 @@ function handleFormClose() {
 
 <template>
   <Teleport to="body">
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="emit('close')">
-      <div class="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-xl">
+    <!-- 手机端底部抽屉，平板/桌面居中弹窗 -->
+    <div class="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 sm:items-center sm:p-4" @click.self="emit('close')">
+      <div class="max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom,0px)] shadow-xl dark:bg-gray-800 sm:max-w-sm sm:rounded-2xl sm:pb-0" role="dialog" aria-modal="true">
         <div class="flex items-center justify-between px-6 pt-5 pb-3">
-          <h2 class="text-lg font-semibold text-gray-900">{{ activeMethod === 'phone' ? '手机登录 / 注册' : '邮箱登录 / 注册' }}</h2>
-          <button class="rounded-full p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" @click="emit('close')">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ activeMethod === 'phone' ? '手机登录 / 注册' : '邮箱登录 / 注册' }}</h2>
+          <button type="button" class="-mr-2 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200" aria-label="关闭" @click="emit('close')">
             <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
           </button>
         </div>
@@ -52,15 +53,6 @@ function handleFormClose() {
 
           <PhoneLoginForm v-if="activeMethod === 'phone'" @close="handleFormClose" @error="handleFormError" />
           <EmailLoginForm v-else @close="handleFormClose" @error="handleFormError" />
-        </div>
-
-        <div class="border-t border-gray-100 px-6 pb-4 pt-2 dark:border-gray-700">
-          <p class="text-center text-xs text-gray-400 ">
-            登录即表示同意
-            <router-link to="/terms" class="text-primary-600 hover:underline dark:text-primary-300" @click="emit('close')">服务条款</router-link>
-            和
-            <router-link to="/privacy" class="text-primary-600 hover:underline dark:text-primary-300" @click="emit('close')">隐私政策</router-link>
-          </p>
         </div>
       </div>
     </div>

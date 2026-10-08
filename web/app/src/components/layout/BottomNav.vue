@@ -1,39 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useMainNav } from '@/composables/useMainNav'
 
-const route = useRoute()
 const isHidden = ref(false)
 const lastScrollY = ref(0)
 const scrollThreshold = 80
 
-const navItems = computed(() => {
-  return [
-    { path: '/', label: '问答', iconClass: 'ri-robot-3-line' },
-    { path: '/assessment', label: '测评', iconClass: 'ri-focus-3-line' },
-    { path: '/report', label: '报告', iconClass: 'ri-heart-pulse-line' },
-    { path: '/community', label: '白友圈', iconClass: 'ri-compass-3-line' },
-    { path: '/profile', label: '我的', iconClass: 'ri-user-3-line' },
-  ]
-})
-
-function isActive(item: { path: string }): boolean {
-  // AI助手: exact match on /
-  if (item.path === '/') {
-    return route.path === '/'
-  }
-  // 测评: match /assessment or /tracker path
-  if (item.path === '/assessment') {
-    return route.path === '/assessment' || route.path.startsWith('/assessment/') || route.path === '/tracker' || route.path.startsWith('/tracker/')
-  }
-  if (item.path === '/report') {
-    return route.path === '/report' || route.path.startsWith('/report/')
-  }
-  if (item.path === '/profile') {
-    return route.path === '/profile' || route.path.startsWith('/profile/')
-  }
-  return route.path === item.path || route.path.startsWith(item.path + '/')
-}
+const { navItems, isNavActive } = useMainNav()
+const isActive = (item: { path: string }) => isNavActive(item.path)
 
 function handleScroll() {
   const currentY = window.scrollY
@@ -90,7 +64,7 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-top: 1px solid rgba(38, 166, 154, 0.15);
+  border-top: 1px solid rgba(229, 231, 235, 0.9);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   transform: translateY(0);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -102,7 +76,7 @@ onUnmounted(() => {
 
 html.dark .bottom-nav {
   background: rgba(15, 23, 42, 0.94);
-  border-top-color: rgba(38, 166, 154, 0.1);
+  border-top-color: rgba(31, 41, 55, 0.9);
 }
 
 .bottom-nav__item {
@@ -126,11 +100,11 @@ html.dark .bottom-nav__item {
 }
 
 .bottom-nav__item--active {
-  color: #26A69A;
+  color: var(--color-primary-600);
 }
 
 html.dark .bottom-nav__item--active {
-  color: #26A69A;
+  color: var(--color-primary-400);
 }
 
 .bottom-nav__icon-wrapper {
@@ -144,8 +118,8 @@ html.dark .bottom-nav__item--active {
 }
 
 .bottom-nav__icon-wrapper--active {
-  background: rgba(38, 166, 154, 0.1);
-  box-shadow: 0 0 12px rgba(38, 166, 154, 0.15);
+  background: rgba(20, 184, 166, 0.1);
+  background: color-mix(in srgb, var(--color-primary-500) 10%, transparent);
 }
 
 .bottom-nav__icon {
@@ -163,8 +137,7 @@ html.dark .bottom-nav__item--active {
 }
 
 .bottom-nav__item--active .bottom-nav__icon {
-  transform: scale(1.08);
-  filter: drop-shadow(0 0 6px rgba(38, 166, 154, 0.4));
+  transform: scale(1.04);
 }
 
 .bottom-nav__label {

@@ -1,0 +1,25 @@
+{
+  "concave_positive_seed_inside": false,
+  "concave_prompt_count": 1,
+  "rectangle_prompt_labels": [
+    1
+  ],
+  "neutral_gray_reported_chroma": 181.02,
+  "five_region_output": {
+    "input": 5,
+    "processed": 4,
+    "output_components": 4,
+    "status": "candidate-only",
+    "measurement_status": "measured"
+  },
+  "colour_rejected_sam": {
+    "reasons": [
+      "lesion:colour-implausible"
+    ],
+    "engine": [
+      "sam"
+    ],
+    "still_nonempty": true
+  },
+  "four_point_rectangle_accepted": "measured"
+}

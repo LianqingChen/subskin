@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { Post } from '@/types'
 import { toProtectedFileUrl } from '@/utils/file-url'
+import { avatarInitial } from '@/utils/avatar'
 import FollowPlus from '@/components/community/FollowPlus.vue'
 
 const props = defineProps<{
@@ -104,6 +105,17 @@ function onCarouselTouchEnd(e: TouchEvent) {
   if (hasMultipleImages.value) startCarousel()
 }
 
+// 封面按首图原始比例展示（用 padding-top 保持比例，兼容不支持 aspect-ratio 的旧微信内核），但限制在 3:4 ~ 4:3 之间，避免过高或过扁
+const coverRatio = ref(3 / 4)
+function onCoverLoad(e: Event, idx: number) {
+  if (idx !== 0) return
+  const img = e.target as HTMLImageElement
+  if (!img.naturalWidth || !img.naturalHeight) return
+  coverRatio.value = Math.min(4 / 3, Math.max(3 / 4, img.naturalWidth / img.naturalHeight))
+}
+
+const cardTitle = computed(() => props.post.title || holdText.value.slice(0, 60))
+
 function isVideo(post: Post): boolean {
   return post.post_type === 'video' || !!post.video_url
 }
@@ -126,12 +138,12 @@ onUnmounted(() => {
 <template>
   <router-link
     :to="`/community/${post.id}`"
-    class="block no-underline mb-3 rounded-xl overflow-hidden bg-white  shadow-sm hover:shadow-md transition-all duration-200 group"
+    class="feed-card block no-underline rounded-xl overflow-hidden bg-white dark:bg-gray-800 group"
   >
     <!-- Cover area: carousel or press-and-hold overlay -->
     <div
-      class="relative aspect-[3/4] bg-gray-100  overflow-hidden select-none"
-      style="touch-action: pan-y"
+      class="relative bg-gray-100 dark:bg-gray-700 overflow-hidden select-none"
+      :style="{ touchAction: 'pan-y', paddingTop: `${100 / coverRatio}%` }"
       data-scroll-x
       @mousedown.prevent="onPointerDown"
       @mouseup="onPointerUp"
@@ -142,24 +154,22 @@ onUnmounted(() => {
     >
       <!-- Default: image carousel -->
       <template v-if="!isHolding">
-        <!-- Image carousel track -->
-        <div class="w-full h-full flex" v-if="carouselImages.length > 0">
+        <!-- Image carousel track（叠放 + 交叉淡入淡出，图片不位移出卡片边界） -->
+        <div class="absolute inset-0" v-if="carouselImages.length > 0">
           <img
             v-for="(img, idx) in carouselImages"
             :key="img.id"
             :src="toProtectedFileUrl(img.image_url)"
             :alt="post.title"
-            class="w-full h-full object-cover flex-shrink-0 transition-transform duration-700"
-            :class="idx === currentImageIndex ? 'opacity-100' : 'opacity-0 absolute inset-0'"
-            :style="{
-              transform: idx === currentImageIndex ? 'translateX(0)' : (idx === (currentImageIndex + 1) % carouselImages.length ? 'translateX(100%)' : 'translateX(-100%)'),
-            }"
+            class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+            :class="idx === currentImageIndex ? 'opacity-100' : 'opacity-0'"
             loading="lazy"
+            @load="onCoverLoad($event, idx)"
           />
         </div>
         <!-- Fallback when no images -->
-        <div v-else class="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30">
-          <span class="text-3xl">{{ post.category?.icon || '📷' }}</span>
+        <div v-else class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-gray-800 dark:to-gray-700">
+          <i :class="post.category?.icon || 'ri-image-line'" class="text-3xl text-primary-500" aria-hidden="true"></i>
           <span class="text-xs text-gray-500  font-medium px-2 text-center">{{ post.category?.name }}</span>
         </div>
 
@@ -179,49 +189,52 @@ onUnmounted(() => {
 
         <span v-if="isVideo(post)" class="absolute inset-0 flex items-center justify-center">
           <div class="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
-            <svg class="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <i class="ri-play-fill text-white text-2xl ml-0.5"></i>
           </div>
         </span>
 
-        <span v-if="post.images && post.images.length > 1" class="absolute top-2 right-2 text-[10px] font-medium px-1.5 py-0.5 rounded bg-black/50 text-white backdrop-blur-sm">
-          📷 {{ post.images.length }}
+        <span v-if="post.images && post.images.length > 1" class="absolute top-2 right-2 text-[10px] font-medium px-1.5 py-0.5 rounded bg-black/50 text-white backdrop-blur-sm inline-flex items-center gap-0.5">
+          <i class="ri-image-line"></i> {{ post.images.length }}
         </span>
 
-        <span v-if="post.is_private" class="absolute top-2 left-2 text-[10px] font-medium px-2 py-0.5 rounded-full bg-black/50 text-white backdrop-blur-sm">🔒 私密</span>
+        <span v-if="post.is_private" class="absolute top-2 left-2 text-[10px] font-medium px-2 py-0.5 rounded-full bg-black/50 text-white backdrop-blur-sm inline-flex items-center gap-0.5"><i class="ri-lock-line"></i> 私密</span>
       </template>
 
       <!-- Press-and-hold: text content scroll overlay -->
       <div
         v-else
-        class="absolute inset-0 bg-white  z-10 overflow-hidden"
+        class="absolute inset-0 bg-white dark:bg-gray-800 z-10 overflow-hidden"
         @click.stop
       >
         <div class="p-3 animate-text-scroll">
-          <h3 class="text-sm font-semibold text-gray-900  mb-2 leading-snug">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 leading-snug">
             {{ post.title }}
           </h3>
-          <p class="text-xs text-gray-600  leading-relaxed whitespace-pre-line">
+          <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">
             {{ holdText }}
           </p>
         </div>
       </div>
     </div>
 
+    <!-- 标题（小红书式：图片下方 1–2 行） -->
+    <h3 v-if="cardTitle" class="px-2.5 pt-2 text-[13px] md:text-sm font-medium leading-snug text-gray-900 dark:text-gray-100 line-clamp-2">{{ cardTitle }}</h3>
+
     <!-- Card footer: avatar + nickname + follow+ ... heart -->
-    <div class="px-2.5 pt-1.5 pb-2 flex items-center justify-between">
+    <div class="px-2.5 pt-1 pb-1.5 flex items-center justify-between gap-1">
       <div class="flex items-center gap-1.5 min-w-0">
         <router-link :to="`/user/${post.author.id}`" @click.stop class="flex-shrink-0 no-underline">
           <img v-if="authorAvatarUrl" :src="authorAvatarUrl" :alt="post.author.username" class="w-5 h-5 rounded-full object-cover bg-gray-100" @error="($event.target as HTMLImageElement).style.display = 'none'" />
           <div v-else class="w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 text-[10px] font-bold">
-            {{ post.author.username.charAt(0) }}
+            {{ avatarInitial(post.author.username) }}
           </div>
         </router-link>
-        <router-link :to="`/user/${post.author.id}`" @click.stop class="text-[12px] text-gray-600 dark:text-gray-400 truncate max-w-[80px] no-underline">
+        <router-link :to="`/user/${post.author.id}`" @click.stop class="min-w-0 text-[12px] text-gray-600 dark:text-gray-400 truncate max-w-[96px] no-underline">
           {{ post.author.username }}
         </router-link>
-        <FollowPlus :targetUserId="post.author.id" :initialFollowed="post.author.is_followed" @follow-change="(f, uid) => emit('follow-change', f, uid)" />
+        <FollowPlus class="hidden sm:inline-flex" :targetUserId="post.author.id" :initialFollowed="post.author.is_followed" @follow-change="(f, uid) => emit('follow-change', f, uid)" />
       </div>
-      <button class="flex items-center gap-1" :class="post.is_liked ? 'text-red-500' : 'text-gray-400'" @click.stop="emit('like-click', post.id)">
+      <button class="flex flex-shrink-0 items-center gap-1 p-1.5 -mr-1" :class="post.is_liked ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" :aria-pressed="post.is_liked" :aria-label="post.is_liked ? `已点赞，共${post.like_count}人` : '点赞'" @click.stop="emit('like-click', post.id)">
         <svg class="w-4 h-4" viewBox="0 0 20 20" :fill="post.is_liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.5">
           <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
         </svg>
@@ -237,6 +250,17 @@ onUnmounted(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* 卡片无阴影；仅桌面鼠标悬停时轻微浮起 */
+.feed-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+@media (hover: hover) and (min-width: 768px) {
+  .feed-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px -8px rgba(15, 23, 42, 0.18);
+  }
 }
 
 @keyframes text-scroll {

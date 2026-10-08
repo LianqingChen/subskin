@@ -37,7 +37,7 @@ export default defineConfig({
       manifest: {
         name: 'SubSkin [STAGING]',
         short_name: 'SubSkin-STG',
-        description: 'SubSkin Staging — 测试环境。AI赋能的白癜风知识库与社区平台',
+        description: 'SubSkin Staging — 测试环境。白癜风病友的AI记录和分享社区',
         theme_color: '#1e293b',
         background_color: '#ffffff',
         display: 'standalone',
@@ -57,34 +57,13 @@ export default defineConfig({
           { src: './icons/maskable-512x512.png?v=c7f3a2', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: {
-        clientsClaim: true,
-        navigateFallbackDenylist: [/^\/wiki-content/, /^\/version\.json/],
+      workbox: undefined,
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      injectManifest: {
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        // Never cache authenticated/sensitive API responses or user uploads.
-        // NetworkFirst previously cached /api/(community|user|vasi|medical-reports)
-        // and CacheFirst cached /uploads/ for 7 days — on a shared device, after
-        // logout the previous user's L3 data (病灶照片、报告、社区帖) remained in
-        // the SW cache and was retrievable by the next user. NetworkOnly + no
-        // cache for these paths ensures every request goes to the network and
-        // nothing sensitive is stored in the SW cache.
-        runtimeCaching: [
-          {
-            urlPattern: /^https?:\/\/.*\/version\.json/i,
-            handler: 'NetworkOnly',
-          },
-          {
-            // All API calls: network-only, never cached.
-            urlPattern: /^https?:\/\/.*\/api\/.*/i,
-            handler: 'NetworkOnly',
-          },
-          {
-            // User uploads (病灶照片、报告、社区图片等 L3 数据): never cache.
-            urlPattern: /^https?:\/\/.*\/uploads\/.*/i,
-            handler: 'NetworkOnly',
-          },
-        ],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
       },
     }),
   ],

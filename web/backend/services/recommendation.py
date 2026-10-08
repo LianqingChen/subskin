@@ -13,6 +13,7 @@ from web.backend.database.models import (
     PostTag,
     PostLike,
     PostComment,
+    Bookmark,
     UserFollow,
     UserBlock,
     UserInteractionLog,
@@ -25,9 +26,11 @@ def _utcnow():
     return datetime.now(timezone.utc)
 
 
-# 同城帖子缓存: {key: (timestamp, (total, posts))}, TTL 5分钟
+# 同城帖子缓存: {key: (timestamp, (total, post_ids))}, TTL 5分钟
+# 只缓存帖子 ID，不缓存 ORM 对象：ORM 对象在 Session 关闭后处于 detached 状态，
+# 跨请求复用会报 DetachedInstanceError 或读到陈旧数据，且可能长期持有 Session 引用。
 _LOCAL_CACHE_TTL = 300  # seconds
-_local_cache: Dict[str, Tuple[float, Tuple[int, List[Any]]]] = {}
+_local_cache: Dict[str, Tuple[float, Tuple[int, List[int]]]] = {}
 
 
 def _cache_key_local(city: str, page: int, page_size: int,
@@ -38,36 +41,58 @@ def _cache_key_local(city: str, page: int, page_size: int,
 
 
 class RecommendationService:
+    # 小红书 CES 式互动权重：深度互动（转发/评论/收藏）远高于轻度互动（点赞/浏览）。
+    # 浏览只给 0.1 —— 参考小红书「互动率优先」：单纯浏览多但无互动不推。
     INTERACTION_WEIGHTS = {
-        "click": 1.0,
+        "click": 0.1,
         "read_end": 1.5,
-        "like": 2.0,
-        "bookmark": 3.0,
-        "comment": 2.5,
+        "like": 1.0,
+        "bookmark": 2.0,
+        "comment": 3.0,
         "share": 4.0,
         "skip": -0.5,
     }
 
+    # 热度时间衰减半衰期（天）：0.5^(age/7)。参考小红书热度榜约 7 天的内容窗口，
+    # 让老帖自然下沉、新帖有机会露头（冷启动）。
+    HEAT_HALF_LIFE_DAYS = 7.0
+
     @classmethod
-    def post_score_expr(cls, post_col=Post):
-        """Unified ranking formula: like*2 + comment*2.5 + read*0.1"""
-        like_subq = (
-            _select(_func.count(PostLike.id))
-            .where(PostLike.post_id == post_col.id)
-            .correlate(post_col)
-            .scalar_subquery()
-        )
-        comment_subq = (
-            _select(_func.count(PostComment.id))
-            .where(PostComment.post_id == post_col.id)
-            .correlate(post_col)
-            .scalar_subquery()
-        )
+    def count_expr(cls, model, post_col=Post):
+        """COUNT 子查询：统计某类关联记录（点赞/评论/收藏）数量。"""
         return (
+            _select(_func.count(model.id))
+            .where(model.post_id == post_col.id)
+            .correlate(post_col)
+            .scalar_subquery()
+        )
+
+    @classmethod
+    def post_score_expr(cls, post_col=Post, with_decay: bool = True):
+        """小红书式 CES 热度分（含时间衰减）。
+
+        heat   = 点赞×1 + 收藏×2 + 评论×3 + 转发×4 + 浏览×0.1
+        decay  = 0.5 ^ (age_days / 7)
+        score  = heat × decay
+
+        ``with_decay=False`` 返回未衰减热度（用于调试或纯计数排序的对照）。
+        """
+        like_subq = cls.count_expr(PostLike, post_col)
+        comment_subq = cls.count_expr(PostComment, post_col)
+        bookmark_subq = cls.count_expr(Bookmark, post_col)
+        heat = (
             like_subq * cls.INTERACTION_WEIGHTS["like"]
+            + bookmark_subq * cls.INTERACTION_WEIGHTS["bookmark"]
             + comment_subq * cls.INTERACTION_WEIGHTS["comment"]
+            + _func.coalesce(post_col.share_count, 0) * cls.INTERACTION_WEIGHTS["share"]
             + _func.coalesce(post_col.read_count, 0) * cls.INTERACTION_WEIGHTS["click"]
         )
+        if not with_decay:
+            return heat
+        # julianday 将 UTC 时间字符串转为天数；'now' 为 SQLite 内置当前时间。
+        age_days = _func.julianday("now") - _func.julianday(post_col.created_at)
+        decay = _func.pow(0.5, age_days / cls.HEAT_HALF_LIFE_DAYS)
+        return heat * decay
 
     def __init__(self, db: Session):
         self.db = db
@@ -236,9 +261,25 @@ class RecommendationService:
             cache_key = _cache_key_local(city, page, page_size, user_lat, user_lng)
             cached = _local_cache.get(cache_key)
             if cached and (_time.time() - cached[0]) < _LOCAL_CACHE_TTL:
-                total_c, posts_c = cached[1]
-                next_c = encode_cursor_from_post(posts_c[-1]) if len(posts_c) >= page_size and posts_c else None
-                return total_c, posts_c, next_c
+                total_c, post_ids_c = cached[1]
+                # 按缓存顺序重新加载当前会话内的 ORM 对象（过滤已被删除/私密的帖子）
+                posts_c = []
+                if post_ids_c:
+                    rows = (
+                        self.db.query(Post)
+                        .filter(Post.id.in_(post_ids_c))
+                        .all()
+                    )
+                    by_id = {p.id: p for p in rows}
+                    posts_c = [
+                        by_id[pid] for pid in post_ids_c
+                        if pid in by_id and not by_id[pid].is_private
+                    ]
+                if posts_c or not post_ids_c:
+                    next_c = encode_cursor_from_post(posts_c[-1]) if len(posts_c) >= page_size and posts_c else None
+                    return total_c, posts_c, next_c
+                # 缓存的帖子已全部失效 → 丢弃缓存，走正常查询
+                _local_cache.pop(cache_key, None)
 
         query = self.db.query(Post).filter(
             Post.is_private.is_(False),
@@ -288,7 +329,7 @@ class RecommendationService:
         next_cursor = encode_cursor_from_post(posts[-1]) if has_more and posts else None
 
         if not after:
-            _local_cache[cache_key] = (_time.time(), (total, posts))
+            _local_cache[cache_key] = (_time.time(), (total, [p.id for p in posts]))
         return total, posts, next_cursor
 
     def _get_user_preference_tags(self, user_id: int, limit: int = 10) -> List[Tag]:

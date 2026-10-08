@@ -29,11 +29,11 @@ const emit = defineEmits<{
       class="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center"
       @click.self="emit('cancel')"
     >
-      <div class="bg-white rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-        <h3 v-if="title" class="text-lg font-semibold text-gray-900 mb-2">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+        <h3 v-if="title" class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
           {{ title }}
         </h3>
-        <p v-if="message" class="text-sm text-gray-500  mb-4">
+        <p v-if="message" class="text-sm text-gray-500 dark:text-gray-400 mb-4">
           {{ message }}
         </p>
 

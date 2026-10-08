@@ -1,6 +1,6 @@
 """
 白斑变化报告 API
-对比报告生成 / 周报月报生成 / 报告列表 / 详情 / 公开分享 / 删除 / 发布到分享
+对比报告生成 / 周报月报生成 / 报告列表 / 详情 / 公开分享 / 删除 / 发布到发现
 """
 import asyncio
 import json
@@ -9,7 +9,7 @@ import secrets
 import threading
 from datetime import date
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -34,6 +34,17 @@ router = APIRouter()
 # ── Pydantic 请求/响应 ──
 
 
+class ManualAlignmentRequest(BaseModel):
+    version: Literal["manual-similarity-v1"]
+    reference_id: int = Field(..., gt=0, strict=True)
+    moving_id: int = Field(..., gt=0, strict=True)
+    scale: float = Field(1.0, ge=.25, le=4, allow_inf_nan=False, strict=True)
+    rotation: float = Field(0.0, ge=-180, le=180, allow_inf_nan=False, strict=True)
+    x: float = Field(0.0, ge=-1, le=1, allow_inf_nan=False, strict=True)
+    y: float = Field(0.0, ge=-1, le=1, allow_inf_nan=False, strict=True)
+    confirmed: Literal[True]
+
+
 class ComparisonReportRequest(BaseModel):
     image_ids: Optional[List[int]] = Field(
         None, min_length=2, description="选中的日记图片ID（≥2），与 vasi_ids 二选一"
@@ -43,6 +54,11 @@ class ComparisonReportRequest(BaseModel):
     )
     body_site: Optional[str] = Field(None, description="聚焦部位，空则自动推断")
     profile_id: Optional[int] = None
+    manual_alignment: Optional[ManualAlignmentRequest] = None
+
+
+class ManualComparisonReportRequest(ComparisonReportRequest):
+    manual_alignment: ManualAlignmentRequest
 
 
 class ComparisonPhotoItem(BaseModel):
@@ -221,6 +237,10 @@ def _strip_private_metrics(metrics: Dict[str, Any]) -> Dict[str, Any]:
             {kk: vv for kk, vv in f.items() if kk != "image_url"} if isinstance(f, dict) else f
             for f in frames
         ]
+    for pair in [metrics.get("pair_metrics"), *[site.get("pair_metrics") for site in metrics.get("sites", []) if isinstance(site, dict)]]:
+        if isinstance(pair, dict):
+            pair.pop("photo_measurements", None)
+            pair.pop("photo_measurements_as_of", None)
     metrics.pop("timeline_stack_url", None)
     return metrics
 
@@ -252,6 +272,7 @@ def _report_to_dict(report: SkinReport, include_private: bool = True) -> Dict[st
         "is_public": report.is_public or False,
         "share_token": report.share_token,
         "created_at": iso_utc(report.created_at) if report.created_at else None,
+        "generated_at": metrics.get("generated_at") if report.status == "completed" else None,
     }
     if include_private:
         d["source_data"] = _safe_json(report.source_data_json, None)
@@ -263,6 +284,11 @@ def _report_to_dict(report: SkinReport, include_private: bool = True) -> Dict[st
 
 
 # ── 生成对比报告 ──
+
+
+@router.get("/comparison-capabilities")
+def comparison_capabilities():
+    return {"manual_alignment": True, "same_site_comparison": True, "version": "manual-similarity-v1"}
 
 
 @router.post("/comparison")
@@ -300,6 +326,31 @@ async def create_comparison_report(
         if vasi_count < 2:
             raise HTTPException(status_code=400, detail="未能找到足够的有效评估记录（至少 2 条）")
 
+    if req.manual_alignment is not None:
+        if bool(req.image_ids) == bool(req.vasi_ids):
+            raise HTTPException(status_code=400, detail="请选择一组照片或一组记录")
+        selected = req.image_ids or req.vasi_ids or []
+        settings = req.manual_alignment.model_dump()
+        if len(selected) != 2 or len(set(selected)) != 2 or set(selected) != {settings["reference_id"], settings["moving_id"]}:
+            raise HTTPException(status_code=400, detail="手动对齐仅支持当前选择的两张照片")
+        from web.backend.services.comparison_alignment import validate_manual_comparison
+        prefix = "pi" if req.image_ids else "va"
+        validation_owner = current_user.id
+        def validate_pair():
+            validation_db = SessionLocal()
+            try:
+                validate_manual_comparison(validation_db, validation_owner,
+                                           "%s:%s" % (prefix, selected[0]), "%s:%s" % (prefix, selected[1]), settings, req.body_site)
+            finally:
+                validation_db.close()
+        try:
+            await asyncio.to_thread(validate_pair)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except Exception:
+            logger.exception("Manual comparison validation failed")
+            raise HTTPException(status_code=503, detail="照片暂时无法校验，请稍后重试")
+
     report = SkinReport(
         user_id=current_user.id,
         profile_id=req.profile_id,
@@ -329,18 +380,9 @@ async def create_comparison_report(
                 profile_id=req.profile_id,
                 report_row=row,
                 vasi_ids=req.vasi_ids,
+                manual_alignment=req.manual_alignment.model_dump() if req.manual_alignment is not None else None,
             )
-            from web.backend.api.notifications import create_notification
-
-            create_notification(
-                thread_db,
-                user_id,
-                type="system",
-                title="你的白斑对比报告已生成",
-                body=row.title,
-                ref_type="skin_report",
-                ref_id=row.id,
-            )
+            # Completed reports remain in history; no inbox notification.
         except ValueError as e:
             thread_db.rollback()
             row = thread_db.query(SkinReport).filter(SkinReport.id == report_id).first()
@@ -364,6 +406,15 @@ async def create_comparison_report(
 
     threading.Thread(target=_run, daemon=True).start()
     return _report_to_dict(db.query(SkinReport).filter(SkinReport.id == report_id).first())
+
+
+@router.post("/comparison/manual")
+async def create_manual_comparison_report(
+    req: ManualComparisonReportRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return await create_comparison_report(req, current_user, db)
 
 
 @router.post("/comparison-photos")
@@ -519,17 +570,7 @@ async def create_periodic_report(
                 force=req.force,
                 report_row=row,
             )
-            from web.backend.api.notifications import create_notification
-
-            create_notification(
-                thread_db,
-                user_id,
-                type="system",
-                title=f"你的白斑{period_name}已生成",
-                body=row.title,
-                ref_type="skin_report",
-                ref_id=row.id,
-            )
+            # Completed reports remain in history; no inbox notification.
         except ValueError as e:
             thread_db.rollback()
             row = thread_db.query(SkinReport).filter(SkinReport.id == report_id).first()
@@ -608,6 +649,7 @@ async def list_reports(
                 "is_public": r.is_public or False,
                 "share_token": r.share_token,
                 "created_at": iso_utc(r.created_at) if r.created_at else None,
+                "generated_at": m.get("generated_at") if r.status == "completed" else None,
                 # 列表预览：趋势 + 首末摘要
                 "trend": m.get("trend"),
                 "has_vasi": m.get("has_vasi"),
@@ -643,7 +685,8 @@ async def get_report(
     )
     if not report:
         raise HTTPException(status_code=404, detail="报告不存在")
-    return _report_to_dict(report, include_private=True)
+    from web.backend.services.report_quantification import supplement_report_quantification
+    return supplement_report_quantification(db, current_user.id, _report_to_dict(report, include_private=True))
 
 
 # ── 任意图对按需对比（报告页日期切换器）──
@@ -815,20 +858,18 @@ async def pair_compare_report(
         # VLM 调用可能长达数十秒，放独立线程 + 独立 DB 会话，避免阻塞事件循环
         thread_db = SessionLocal()
         try:
-            from web.backend.services.spot_compare import compare_pair
-
-            pair = None
-            try:
-                pair = compare_pair(thread_db, current_user.id, ref_a, ref_b)
-            except Exception:
-                logger.exception("skin_report: 图对按需对比失败 %s → %s", ref_a, ref_b)
-            from web.backend.services.assessment_comparison import save_comparison_preview
-            align = save_comparison_preview(thread_db, current_user.id, pair)
-            return pair, align
+            from web.backend.services.comparison_alignment import compare_report_pair
+            return compare_report_pair(thread_db, current_user.id, ref_a, ref_b)
         finally:
             thread_db.close()
 
-    pair, align = await asyncio.to_thread(_compute)
+    try:
+        pair, align = await asyncio.to_thread(_compute)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception:
+        logger.exception("Pair comparison failed")
+        raise HTTPException(status_code=503, detail="照片暂时无法对比，请稍后重试")
 
     frame_a, frame_b = frames[index_a], frames[index_b]
     first, last = (
@@ -920,7 +961,7 @@ async def delete_report(
     return {"status": "ok", "deleted_id": report_id}
 
 
-# ── 发布到分享 ──
+# ── 发布到发现 ──
 
 
 @router.post("/{report_id}/share-to-community")
@@ -930,7 +971,7 @@ async def share_to_community(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """将报告发布到分享（创建「治疗分享」帖子，内嵌报告链接）。"""
+    """将报告发布到发现（创建「治疗分享」帖子，内嵌报告链接）。"""
     report = (
         db.query(SkinReport)
         .filter(SkinReport.id == report_id, SkinReport.user_id == current_user.id)
@@ -1013,5 +1054,5 @@ async def share_to_community(
         "status": "ok",
         "post_id": post.id,
         "share_url": share_url,
-        "message": "已发布到分享",
+        "message": "已发布到发现",
     }

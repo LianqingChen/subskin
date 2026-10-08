@@ -1,3 +1,4 @@
+import type { PhotoMeasurement, ObservationContext } from '@/types/assessment'
 /**
  * useVasiHistory — 评估历史管理
  *
@@ -16,6 +17,8 @@ export function useVasiHistory() {
 
   // ── State ──
   const recentAssessments = ref<Array<{
+    measurement?: PhotoMeasurement | null
+    observation?: ObservationContext | null
     id: number
     date: string
     bodySite: string
@@ -23,11 +26,13 @@ export function useVasiHistory() {
     areaPercentage: number
     stage: string
     classification?: string
+    imageUrl?: string
   }>>([])
 
   const loadingHistory = ref(false)
   const historyPage = ref(1)
-  const historyPageSize = ref(10)
+  /** 默认每页 5 条（未选部位时呈现全量历史、时间倒序，后台已按 assessment_date desc 排序） */
+  const historyPageSize = ref(5)
   const historyTotal = ref(0)
   const historyTotalPages = computed(() =>
     historyPageSize.value > 0 ? Math.max(1, Math.ceil(historyTotal.value / historyPageSize.value)) : 1,
@@ -45,6 +50,17 @@ export function useVasiHistory() {
   const touchStartX = ref(0)
 
   // ── API ──
+  /** 请求保护：15 秒未返回即失败提示，避免历史面板一直转圈 */
+  function withTimeout<T>(p: Promise<T>, ms = 15000): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error('timeout')), ms)
+      p.then(
+        (v) => { clearTimeout(t); resolve(v) },
+        (e) => { clearTimeout(t); reject(e) },
+      )
+    })
+  }
+
   async function loadHistory(reset = true, bodySite?: string) {
     if (!authStore.isLoggedIn) return
     if (reset) {
@@ -55,8 +71,11 @@ export function useVasiHistory() {
     try {
       const limit = historyPageSize.value
       const offset = reset ? 0 : (historyPage.value - 1) * historyPageSize.value
-      const res = await vasiApi.getHistory(limit, offset, currentBodySiteFilter.value || undefined)
+      const owner = authStore.user?.id
+      const res = await withTimeout(vasiApi.getHistory(limit, offset, currentBodySiteFilter.value || undefined))
+      if (!authStore.isLoggedIn || authStore.user?.id !== owner) return
       const items = res.items.map((item: VasiHistoryItem) => ({
+        measurement: item.measurement, observation: item.observation,
         id: item.id,
         date: item.assessment_date.split('T')[0],
         bodySite: item.body_site,
@@ -64,6 +83,7 @@ export function useVasiHistory() {
         areaPercentage: item.final_area_percentage ?? item.area_percentage,
         stage: item.stage,
         classification: item.classification,
+        imageUrl: item.image_url,
       }))
       recentAssessments.value = items
       historyTotal.value = typeof res.total === 'number' ? res.total : items.length
@@ -71,6 +91,7 @@ export function useVasiHistory() {
       selectedIds.value.clear()
     } catch (err) {
       console.error('Failed to load VASI history:', err)
+      toast.show('评估历史加载失败，请重试', 'error')
     } finally {
       loadingHistory.value = false
     }
@@ -85,8 +106,8 @@ export function useVasiHistory() {
   }
 
   async function setPageSize(size: number) {
-    const allowed = [10, 20, 50, 100]
-    const n = allowed.includes(size) ? size : 10
+    const allowed = [5, 10, 20, 50]
+    const n = allowed.includes(size) ? size : 5
     if (n === historyPageSize.value) return
     historyPageSize.value = n
     historyPage.value = 1
@@ -161,11 +182,8 @@ export function useVasiHistory() {
   }
 
   // Sparkline helper
-  const sparklineData = computed(() => {
-    const items = recentAssessments.value
-    if (items.length < 2) return null
-    return items.slice(0, 7).reverse().map(r => r.vasiScore)
-  })
+  // Arbitrary photographs and legacy scores are not a clinical time series.
+  const sparklineData = computed<number[] | null>(() => null)
 
   return {
     // State

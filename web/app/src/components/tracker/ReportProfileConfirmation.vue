@@ -73,9 +73,9 @@ onMounted(loadProfiles)
 </script>
 
 <template>
-  <div class="card p-4 border-l-4 border-primary-500 bg-primary-50/30 dark:bg-primary-900/10">
+  <div class="card p-4 border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-900">
     <div class="flex items-start gap-3">
-      <div class="p-2 bg-primary-100 dark:bg-primary-900/50 rounded-full text-primary-600 dark:text-primary-400 shrink-0">
+      <div class="p-2 bg-primary-100 dark:bg-primary-900 rounded-full text-primary-600 dark:text-primary-400 shrink-0">
         <i class="ri-user-smile-line text-xl"></i>
       </div>
       <div class="flex-1 min-w-0">

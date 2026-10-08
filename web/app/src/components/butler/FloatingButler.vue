@@ -226,7 +226,8 @@ onBeforeUnmount(() => {
 @media (min-width: 768px) {
   .butler-wrap { bottom: 24px; }
   .butler-wrap.pos-right { right: 24px; }
-  .butler-wrap.pos-left { left: 24px; }
+  /* 桌面端左侧有侧边栏，靠左时从侧边栏右侧起算 */
+  .butler-wrap.pos-left { left: calc(var(--app-sidebar-w) + 24px); }
   .butler-wrap.anchor-assistant { bottom: 108px; }
   .butler-wrap.anchor-community { bottom: 148px; }
 }
@@ -352,7 +353,7 @@ onBeforeUnmount(() => {
   transition: transform 0.2s ease;
 }
 .butler-peek.peek-right { right: 0; transform: translateX(52%); }
-.butler-peek.peek-left { left: 0; transform: translateX(-52%); }
+.butler-peek.peek-left { left: var(--app-sidebar-w); transform: translateX(-52%); }
 .butler-peek:hover {
   transform: translateX(38%);
 }

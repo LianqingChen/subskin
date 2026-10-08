@@ -170,20 +170,22 @@ function toggleSource(item: any) {
                     </span>
                   </button>
                   
-                  <div v-if="(item as any)._showSource" class="mt-2 p-3 bg-gray-50  rounded text-xs space-y-2">
+                  <div v-if="(item as any)._showSource" class="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded text-xs space-y-2">
                     <div v-if="item.source_indicators?.length">
-                      <div class="text-gray-500 mb-1">提取的指标数据：</div>
-                      <table class="w-full text-left">
-                        <tr v-for="src in item.source_indicators" :key="src.indicator_name" class="border-b border-gray-200 dark:border-gray-700 last:border-0">
-                          <td class="py-1 text-gray-700 ">{{ src.indicator_name }}</td>
-                          <td class="py-1 font-medium">{{ src.value }}</td>
-                          <td class="py-1 text-gray-500">{{ src.ref_range }}</td>
-                        </tr>
-                      </table>
+                      <div class="text-gray-500 dark:text-gray-400 mb-1">提取的指标数据：</div>
+                      <div class="overflow-x-auto">
+                        <table class="w-full min-w-[360px] text-left">
+                          <tr v-for="src in item.source_indicators" :key="src.indicator_name" class="border-b border-gray-200 dark:border-gray-700 last:border-0">
+                            <td class="py-1 pr-3 text-gray-700 dark:text-gray-300">{{ src.indicator_name }}</td>
+                            <td class="py-1 pr-3 font-medium text-gray-900 dark:text-gray-100">{{ src.value }}</td>
+                            <td class="py-1 text-gray-500 dark:text-gray-400">{{ src.ref_range }}</td>
+                          </tr>
+                        </table>
+                      </div>
                     </div>
                     <div v-if="item.source_text_excerpt">
-                      <div class="text-gray-500 mb-1">报告原文片段：</div>
-                      <blockquote class="border-l-2 border-gray-300 dark:border-gray-600 pl-2 text-gray-600  italic">
+                      <div class="text-gray-500 dark:text-gray-400 mb-1">报告原文片段：</div>
+                      <blockquote class="border-l-2 border-gray-300 dark:border-gray-600 pl-2 text-gray-600 dark:text-gray-300 italic">
                         "{{ item.source_text_excerpt }}"
                       </blockquote>
                     </div>
@@ -195,9 +197,10 @@ function toggleSource(item: any) {
             <!-- Normal indicators -->
             <div v-if="section.indicators?.length" class="p-4 pt-0">
               <h4 class="text-xs font-medium text-gray-400  uppercase tracking-wider mb-2 mt-2">全部指标</h4>
-              <div class="bg-white  rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <table class="w-full text-sm text-left">
-                  <thead class="bg-gray-50  text-gray-500  text-xs">
+              <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div class="overflow-x-auto">
+                <table class="w-full min-w-[420px] text-sm text-left">
+                  <thead class="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-xs">
                     <tr>
                       <th class="px-3 py-2 font-medium">指标名称</th>
                       <th class="px-3 py-2 font-medium">结果</th>
@@ -206,7 +209,7 @@ function toggleSource(item: any) {
                   </thead>
                   <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     <tr v-for="ind in section.indicators" :key="ind.name" class="hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                      <td class="px-3 py-2 text-gray-700 ">
+                      <td class="px-3 py-2 text-gray-700 dark:text-gray-300">
                         <span class="inline-block w-1.5 h-1.5 rounded-full mr-1.5"
                           :class="{
                             'bg-red-500': ind.status === 'high' || ind.status === 'low' || ind.status === 'critical',
@@ -215,13 +218,14 @@ function toggleSource(item: any) {
                           }"></span>
                         {{ ind.name }}
                       </td>
-                      <td class="px-3 py-2 font-medium" :class="ind.status !== 'normal' && ind.status ? 'text-red-500' : 'text-gray-900 '">
+                      <td class="px-3 py-2 font-medium" :class="ind.status !== 'normal' && ind.status ? 'text-red-500' : 'text-gray-900 dark:text-gray-100'">
                         {{ ind.value }} {{ ind.unit }}
                       </td>
-                      <td class="px-3 py-2 text-gray-500">{{ ind.ref_range }}</td>
+                      <td class="px-3 py-2 text-gray-500 dark:text-gray-400">{{ ind.ref_range }}</td>
                     </tr>
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           </div>
@@ -237,8 +241,8 @@ function toggleSource(item: any) {
       </div>
       <div class="space-y-3">
         <div v-for="(rec, idx) in interpretation.recommendations" :key="idx"
-          class="flex items-start gap-3 p-3 rounded-lg bg-primary-50/50 dark:bg-primary-900/10">
-          <span class="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center text-xs font-medium shrink-0 mt-0.5">{{ idx + 1 }}</span>
+          class="flex items-start gap-3 p-3 rounded-lg bg-primary-50 dark:bg-primary-900">
+          <span class="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400 flex items-center justify-center text-xs font-medium shrink-0 mt-0.5">{{ idx + 1 }}</span>
           <p class="text-sm text-gray-700  leading-relaxed">{{ rec.content || rec }}</p>
         </div>
       </div>

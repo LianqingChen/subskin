@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { confirmPublish } from './publishConfirm'
 import { ref, computed, watch, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -6,6 +7,7 @@ import { useToast } from '@/composables/useToast'
 import { useDrafts } from '@/composables/useDrafts'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { communityApi } from '@/api/community'
+import { normalizeMoodValue } from '@/utils/mood'
 import type { Category } from '@/types'
 import TagSelector from '@/components/community/TagSelector.vue'
 import CityPicker from '@/components/community/CityPicker.vue'
@@ -30,6 +32,7 @@ const contentJson = ref('')
 const categoryId = ref<number | null>(null)
 const isAnonymous = ref(false)  // kept for backward compat; always forced to false
 const isPrivate = ref(false)
+const diaryDate = ref(new Date().toISOString().slice(0, 10))  // 图文记录日期（默认今天，支持历史补录）
 const mood = ref('')
 const tags = ref<string[]>([])
 const previewImages = ref<string[]>([])
@@ -44,10 +47,10 @@ const showCity = ref(true)
 const isValid = computed(() => title.value.trim().length > 0 || content.value.trim().length > 0 || previewImages.value.length > 0)
 
 const MOOD_OPTIONS = [
-  { value: '💪坚持中', icon: 'ri-boxing-line', label: '坚持中' },
-  { value: '😔低落', icon: 'ri-emotion-sad-line', label: '低落' },
-  { value: '🎉好转', icon: 'ri-emotion-happy-line', label: '好转' },
-  { value: '🤔疑问', icon: 'ri-question-line', label: '疑问' },
+  { value: '坚持中', icon: 'ri-boxing-line', label: '坚持中' },
+  { value: '低落', icon: 'ri-emotion-sad-line', label: '低落' },
+  { value: '好转', icon: 'ri-emotion-happy-line', label: '好转' },
+  { value: '疑问', icon: 'ri-question-line', label: '疑问' },
 ]
 
 const protectedFileUrl = (url?: string | null) => toProtectedFileUrl(url)
@@ -123,7 +126,7 @@ const loadDraftByKey = () => {
     categoryId.value = d.categoryId || null
     tags.value = d.tags || []
     previewImages.value = d.images || d.previewImages || []
-    mood.value = d.mood || ''
+    mood.value = normalizeMoodValue(d.mood)
     isAnonymous.value = d.isAnonymous ?? false
     isPrivate.value = d.isPrivate ?? false
     showCity.value = d.showCity ?? true
@@ -144,7 +147,7 @@ const loadPost = async () => {
     categoryId.value = post.category_id
     isAnonymous.value = post.is_anonymous // always show nickname
     isPrivate.value = post.is_private
-    mood.value = post.mood || ''
+    mood.value = normalizeMoodValue(post.mood)
     tags.value = post.tags.map(t => t.name)
     previewImages.value = post.images.map(img => img.image_url)
   } catch {
@@ -173,6 +176,13 @@ const goBack = () => {
 
 const handlePublish = async () => {
   if (!title.value.trim() && !content.value.trim() && !previewImages.value.length) return
+  // 公开发布前隐私确认（含 PII 检测提示）；私密日记直接放行
+  const decision = await confirmPublish({
+    title: title.value,
+    content: content.value,
+    isPrivate: isPrivate.value,
+  })
+  if (!decision) return
   publishing.value = true
   try {
     const firstCat = categories.value.find(c => c.name === '治疗分享') || categories.value[0]
@@ -183,9 +193,16 @@ const handlePublish = async () => {
       category_id: categoryId.value || firstCat?.id || 1,
       post_type: 'image' as const,
       images: previewImages.value,
+      image_metas: previewImages.value.map((url) => ({
+        image_url: url,
+        capture_date: isPrivate.value ? diaryDate.value : undefined,
+      })),
       tag_names: tags.value,
       is_anonymous: false,
       is_private: isPrivate.value,
+      confirm_pii: decision.confirmPii,
+      public_ack: isPrivate.value ? undefined : true,
+      diary_date: isPrivate.value ? diaryDate.value : undefined,
       mood: mood.value || undefined,
       city: showCity.value ? (geo.city.value || undefined) : null,
       latitude: showCity.value ? (geo.lat.value ?? undefined) : undefined,
@@ -246,20 +263,23 @@ const handleSaveDraft = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col">
-    <header class="h-12 bg-white border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 sticky top-0 z-30">
+  <div class="flex flex-col pb-4">
+    <header class="sticky top-14 z-20 h-12 border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+      <div class="mx-auto flex h-full w-full max-w-2xl items-center justify-between px-4">
       <button @click="goBack" class="text-sm text-gray-600  hover:text-gray-900 dark:hover:text-gray-100">取消</button>
-      <span class="text-sm font-medium text-gray-900">{{ pageTitle }}</span>
+      <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ pageTitle }}</span>
       <div class="flex items-center gap-2">
         <button @click="handleSaveDraft" class="text-sm text-gray-500  hover:text-primary-600 dark:hover:text-primary-400" :disabled="publishing">存草稿</button>
         <button @click="handlePublish" class="btn-primary px-4 py-1 rounded-full text-sm font-medium" :disabled="publishing || !isValid">
           {{ publishing ? '发布中...' : (isEdit ? '更新' : '发布') }}
         </button>
       </div>
+      </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto pb-8">
-      <div class="max-w-2xl mx-auto px-4 py-4 space-y-5">
+    <main class="flex-1 pb-8">
+      <!-- 平板/桌面：正文放进白色卡片，与全站卡片风格一致 -->
+      <div class="w-full max-w-2xl mx-auto px-4 py-4 space-y-5 md:mt-5 md:rounded-2xl md:border md:border-gray-200/80 md:bg-white md:p-6 md:dark:border-gray-700 md:dark:bg-gray-900">
         <div class="space-y-2">
           <label class="text-sm font-medium text-gray-700">添加图片</label>
           <div class="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -305,7 +325,7 @@ const handleSaveDraft = async () => {
             <button v-for="cat in categories" :key="cat.id" @click="categoryId = cat.id" type="button"
               class="px-3 py-1.5 rounded-full text-sm border transition-all"
               :class="categoryId === cat.id ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300 shadow-sm' : 'border-gray-200 dark:border-gray-600 text-gray-500  hover:border-gray-300'">
-              {{ cat.icon }} {{ cat.name }}
+              <i :class="cat.icon" aria-hidden="true"></i> {{ cat.name }}
             </button>
           </div>
         </div>
@@ -324,6 +344,12 @@ const handleSaveDraft = async () => {
             <input v-model="isPrivate" type="checkbox" class="sr-only peer">
             <div class="w-10 h-5 rounded-full bg-gray-200 peer-focus:outline-none peer peer-checked:bg-primary-500 peer-checked:after:translate-x-full after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all"></div>
           </label>
+        </div>
+
+        <div v-if="isPrivate" class="space-y-1 py-2">
+          <label class="text-sm font-medium text-gray-700"><i class="ri-calendar-line"></i> 记录日期</label>
+          <input v-model="diaryDate" type="date" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100" />
+          <p class="text-[11px] text-gray-400">可改为历史日期，用于补录过往记录</p>
         </div>
 
         <div class="flex items-center justify-between py-2">

@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { ActionCard } from '@/types'
+import type { ActionCard, NavSuggestion } from '@/types'
 
 export interface Source {
   title: string
@@ -124,6 +124,47 @@ function createSSEConnection(endpoint: string, body: Record<string, unknown>) {
   }
 }
 
+/**
+ * 将后端/网络异常转为用户友好文案，
+ * 避免向用户暴露 AuthenticationError 等原始异常类型。
+ */
+function toFriendlyError(raw: string): string {
+  const text = String(raw || '')
+  // 额度/限流类保留原文（包含业务语义，供页面进一步判断）
+  if (text.includes('已用完') || text.includes('429') || text.includes('quota')) return text
+  if (/AuthenticationError|Unauthorized|Forbidden|凭证|token/i.test(text)) {
+    return 'AI 服务授权异常，请稍后再试'
+  }
+  if (/RateLimit|限流|TooManyRequests/i.test(text)) {
+    return 'AI 服务暂时繁忙，请稍后再试'
+  }
+  if (/Timeout|超时/i.test(text)) {
+    return 'AI 服务响应超时，请稍后再试'
+  }
+  // 其他包含异常类型名/英文错误的兜底为友好文案
+  if (/[A-Z]\w*(Error|Exception)|failed|error/i.test(text)) {
+    return 'AI 服务暂时不可用，请稍后再试'
+  }
+  return text || 'AI 服务暂时繁忙，请稍后再试'
+}
+
+/**
+ * 清洗 AI 回答正文：后端在 LLM 调用失败时会把
+ * "AI 问答服务暂时不可用，请稍后再试。（错误: AuthenticationError）" 这样的
+ * 文本直接作为流式 token 下发（非 HTTP 错误路径，toFriendlyError 拦不到），
+ * 需在展示前剥离“（错误: ...）”后缀及任何原始异常类名。
+ */
+export function sanitizeAssistantText(text: string): string {
+  if (!text) return text
+  // 剥离"（错误: XxxError）" / "(错误: ...)" 整段后缀
+  let cleaned = text.replace(/[（(]\s*错误\s*[:：][^（）()]*?[）)]/g, '').trimEnd()
+  // 若仍暴露原始异常类名（如 AuthenticationError / TimeoutException），整体替换
+  if (/[A-Z][A-Za-z0-9_]*(Error|Exception)/.test(cleaned)) {
+    return 'AI 服务暂时繁忙，请稍后再试'
+  }
+  return cleaned
+}
+
 export class SSEStreamReader {
   private reader: ReadableStreamDefaultReader<Uint8Array> | null = null
   private controller: AbortController
@@ -133,6 +174,7 @@ export class SSEStreamReader {
   onThinking: ((stage: string, message: string) => void) | null = null
   onToken: ((token: string) => void) | null = null
   onActionCard: ((card: ActionCard) => void) | null = null
+  onNavigation: ((items: NavSuggestion[]) => void) | null = null
   onDone: ((data: { sources?: Source[]; remaining_quota?: number; is_guest?: boolean }) => void) | null = null
   onError: ((error: string) => void) | null = null
 
@@ -163,7 +205,7 @@ export class SSEStreamReader {
         signal: this.controller.signal,
       })
     } catch (e: any) {
-      this.onError?.(e.message || '网络连接失败')
+      this.onError?.(toFriendlyError(e.message || '网络连接失败'))
       return
     }
 
@@ -173,7 +215,7 @@ export class SSEStreamReader {
         const errBody = await response.json()
         detail = errBody.detail || detail
       } catch { /* skip */ }
-      this.onError?.(detail)
+      this.onError?.(toFriendlyError(detail))
       return
     }
 
@@ -207,6 +249,8 @@ export class SSEStreamReader {
               this.onToken?.(event.content)
             } else if (event.type === 'action_card') {
               this.onActionCard?.(event.card)
+            } else if (event.type === 'navigation') {
+              this.onNavigation?.(event.items)
             } else if (event.type === 'done') {
               this.onDone?.(event)
             }
@@ -215,7 +259,7 @@ export class SSEStreamReader {
       }
     } catch (e: any) {
       if (e.name !== 'AbortError') {
-        this.onError?.(e.message || '流式读取失败')
+        this.onError?.(toFriendlyError(e.message || '流式读取失败'))
       }
     }
   }

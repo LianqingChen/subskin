@@ -8,7 +8,7 @@ from pydantic import BaseModel
 class QuestionRequest(BaseModel):
     question: str
     conversation_id: Optional[str] = None
-    mode: Optional[str] = None  # "knowledge" | "counseling"
+    mode: Optional[str] = None  # "knowledge" | "counseling" | "butler"
 
 
 class AttachmentInfo(BaseModel):
@@ -22,7 +22,7 @@ class QuestionRequestWithAttachments(BaseModel):
     question: str
     conversation_id: Optional[str] = None
     attachment_ids: Optional[list[str]] = None
-    mode: Optional[str] = None  # "knowledge" | "counseling"
+    mode: Optional[str] = None  # "knowledge" | "counseling" | "butler"
 
 
 class Source(BaseModel):
@@ -34,11 +34,19 @@ class Source(BaseModel):
     authority_weight: float = 1.0
 
 
+class NavSuggestion(BaseModel):
+    label: str
+    path: str
+    icon: str = ""
+    desc: str = ""
+
+
 class QuestionResponse(BaseModel):
     answer: str
     sources: list[Source]
     remaining_quota: Optional[int] = None
     is_guest: Optional[bool] = None
+    navigation: Optional[list[NavSuggestion]] = None
 
 
 class TempUploadResponse(BaseModel):

@@ -19,7 +19,7 @@ env_path = Path(__file__).resolve().parent.parent / ".env"
 if env_path.exists():
     _ = load_dotenv(env_path, override=True)
 
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
 
@@ -41,25 +41,27 @@ from web.backend.api import (
     patient_profile,
     wechat,
     moderation,
-    im_conversations,
-    im_messages,
-    im_friends,
-    im_share,
-    im_groups,
-    im_admin,
-    im_contacts,
     notifications,
     llm_config_admin,
+    llm_prompt_admin,
     admin_general,
+    planning_admin,
     content_generation_admin,
     image_label,
+    vasi_training_admin,
     medication,
-    doctor,
+    diary,
+    skin_report,
+    hospital,
 )
+from web.backend.api.rgb_segmentation import router as rgb_segmentation_router
+from web.backend.api.data_consent import router as data_consent_router
+from web.backend.api.self_report import router as self_report_router
+from web.backend.api.contribution import router as contribution_router
+from web.backend.api.assessment_story import router as assessment_story_router
 from web.backend.api.files import router as files_router
 from web.backend.database.database import Base, engine
 from web.backend.database import models
-from web.backend.ws.chat import chat_websocket_endpoint
 from web.backend.services.temp_cleanup import (
     cleanup_temp_uploads,
     run_temp_cleanup_loop,
@@ -69,6 +71,7 @@ _ = models
 
 from web.backend.models.vasi import VASIAssessment, ImageQualityTag
 from web.backend.models.image_label import ImageLabel, ImageLabelAnnotation, ImageLabelLog
+from web.backend.models import data_consent as _data_consent_models, self_report as _self_report_models  # noqa: F401  (register tables for create_all)
 
 Base.metadata.create_all(bind=engine)
 
@@ -189,6 +192,79 @@ def ensure_feedback_tables_on_startup() -> None:
 
 ensure_feedback_tables_on_startup()
 
+
+def ensure_training_tables_on_startup() -> None:
+    try:
+        from web.backend.models.vasi import ensure_training_columns
+        ensure_training_columns()
+    except Exception:
+        logger.exception("ensure_training_columns failed — training schema may be incomplete")
+
+
+ensure_training_tables_on_startup()
+
+
+def ensure_diary_columns_on_startup() -> None:
+    try:
+        from web.backend.database.models import ensure_diary_columns
+
+        ensure_diary_columns()
+    except Exception:
+        logger.exception("ensure_diary_columns failed — diary schema may be incomplete")
+
+
+ensure_diary_columns_on_startup()
+
+
+def ensure_post_columns_on_startup() -> None:
+    try:
+        from web.backend.database.models import (
+            ensure_post_columns,
+            ensure_post_image_columns,
+        )
+
+        ensure_post_columns()
+        ensure_post_image_columns()
+    except Exception:
+        logger.exception("ensure_post_columns failed — post schema may be incomplete")
+
+
+ensure_post_columns_on_startup()
+
+
+def ensure_spot_comparison_table_on_startup() -> None:
+    try:
+        from web.backend.database.models import ensure_spot_comparison_table
+
+        ensure_spot_comparison_table()
+    except Exception:
+        logger.exception("ensure_spot_comparison_table failed — spot comparison unavailable")
+
+
+ensure_spot_comparison_table_on_startup()
+
+
+def ensure_autoloop_tables_on_startup() -> None:
+    try:
+        from web.backend.models.vasi import ensure_autoloop_columns
+        ensure_autoloop_columns()
+    except Exception:
+        logger.exception("ensure_autoloop_columns failed — vitiligo autoloop schema may be incomplete")
+
+
+ensure_autoloop_tables_on_startup()
+
+
+def ensure_hospital_tables_on_startup() -> None:
+    try:
+        from web.backend.database.models import ensure_hospital_tables
+        ensure_hospital_tables()
+    except Exception:
+        logger.exception("ensure_hospital_tables failed — 医评 schema may be incomplete")
+
+
+ensure_hospital_tables_on_startup()
+
 uploads_dir = Path("data/uploads")
 uploads_dir.mkdir(parents=True, exist_ok=True)
 
@@ -246,6 +322,14 @@ async def lifespan(app_instance: FastAPI):
 
     _token_cleanup_task = asyncio.create_task(_token_cleanup_loop())
 
+    # ── 白斑识别自循环引擎（全自动：训练/裁判/质检/审计，零管理员操作）──
+    _autoloop_task: Optional[asyncio.Task[None]] = None
+    try:
+        from web.backend.services.vasi_autoloop import run_autoloop_task
+        _autoloop_task = asyncio.create_task(run_autoloop_task())
+    except Exception:
+        logger.exception("vitiligo autoloop task failed to start")
+
     try:
         yield
     finally:
@@ -258,13 +342,22 @@ async def lifespan(app_instance: FastAPI):
             _temp_cleanup_task = None
         if _token_cleanup_task is not None:
             _token_cleanup_task.cancel()
+        if _autoloop_task is not None:
+            _autoloop_task.cancel()
 
+
+# 2026-08-30 加固：生产环境关闭交互式 API 文档（/docs /redoc /openapi.json），
+# 避免对外暴露完整接口面。开发环境（APP_ENV != production）保留。
+_is_prod_env = os.getenv("APP_ENV", "development").lower() == "production"
 
 app = FastAPI(
     title="SubSkin Community API",
     description="SubSkin 社区网站后端 API",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url=None if _is_prod_env else "/docs",
+    redoc_url=None if _is_prod_env else "/redoc",
+    openapi_url=None if _is_prod_env else "/openapi.json",
 )
 
 # CORS 配置
@@ -289,6 +382,11 @@ app.include_router(
 app.include_router(events.router, prefix="/api/events", tags=["事件追踪"])
 app.include_router(rag.router, prefix="/api/rag", tags=["AI问答"])
 app.include_router(vasi_router, prefix="/api/vasi", tags=["VASI评估"])
+app.include_router(rgb_segmentation_router, prefix="/api/vasi", tags=["RGB图像测量"])
+app.include_router(data_consent_router, prefix="/api/data-consents", tags=["数据授权"])
+app.include_router(self_report_router, prefix="/api/self-report", tags=["自报事实"])
+app.include_router(contribution_router, prefix="/api/contributions", tags=["同行"])
+app.include_router(assessment_story_router, prefix="/api/vasi", tags=["轮廓创意"])
 app.include_router(oauth.router, prefix="/api/oauth", tags=["第三方登录"])
 app.include_router(community.router, prefix="/api/community", tags=["社区帖子"])
 app.include_router(social.router, prefix="/api/community", tags=["社区社交"])
@@ -297,24 +395,28 @@ app.include_router(
 )
 app.include_router(files_router, prefix="/api/files", tags=["文件"])
 app.include_router(audit.router, prefix="/api/audit", tags=["审计日志"])
+
+# 2026-08-30 隐私加固：挂载用户同意（consent）API — 此前从未注册，属于死代码
+from web.backend.api import consent as consent_router  # noqa: E402
+
+app.include_router(consent_router.router, prefix="/api/consent", tags=["用户同意"])
 app.include_router(patient_profile.router, prefix="/api", tags=["白友档案"])
 app.include_router(medication.router, prefix="/api/medication", tags=["用药提醒"])
-app.include_router(doctor.router, prefix="/api/doctor", tags=["医生认证"])
+app.include_router(diary.router, prefix="/api/diary", tags=["AI病情日记"])
+app.include_router(skin_report.router, prefix="/api/skin-reports", tags=["白斑变化报告"])
+app.include_router(hospital.router, prefix="/api/hospitals", tags=["医评"])
 app.include_router(wechat.router, prefix="/api/wechat", tags=["微信"])
 app.include_router(encyclopedia.router, tags=["小白百科"])
 app.include_router(moderation.router, tags=["内容审核"])
-app.include_router(im_conversations.router)
-app.include_router(im_messages.router)
-app.include_router(im_friends.router)
-app.include_router(im_share.router)
-app.include_router(im_groups.router)
-app.include_router(im_admin.router)
-app.include_router(im_contacts.router)
 app.include_router(notifications.router, prefix="/api/notifications", tags=["通知"])
 app.include_router(llm_config_admin.router)
+app.include_router(llm_prompt_admin.router)
 app.include_router(admin_general.router)
+# 2026-09-27 管理后台「终端」：tmux 持久化网页终端 + AI agent（仅 is_admin）
+app.include_router(planning_admin.router)
 app.include_router(content_generation_admin.router)
 app.include_router(image_label.router, prefix="/api/vasi", tags=["图片打标管理"])
+app.include_router(vasi_training_admin.router, prefix="/api/vasi", tags=["模型训练管理"])
 
 # 初始化监控 (Sentry + Prometheus)
 from web.backend.services.monitoring import init_sentry, PrometheusMiddleware
@@ -327,11 +429,16 @@ if os.getenv("PROMETHEUS_ENABLED", "false").lower() == "true":
 # 初始化 LLM 模块配置
 from web.backend.services.llm_config_service import LLMConfigService
 LLMConfigService.init_defaults()
+# 启动迁移（幂等）：存量 api_key 从旧默认加密密钥重加密为 LLM_ENCRYPTION_KEY
+LLMConfigService.rekey_api_keys()
 
+# 初始化模块级提示词（幂等）：为缺失的 (module_key, prompt_key) 补齐内置默认模板
+from web.backend.services.llm_prompt_service import LLMPromptService
+LLMPromptService.ensure_defaults()
 
-@app.websocket("/ws/chat")
-async def ws_chat(websocket, token: str):
-    await chat_websocket_endpoint(websocket, token)
+# 集中修复 datetime 序列化无时区后缀导致的前端 8 小时偏移
+from web.backend.utils.timeutils import patch_datetime_serialization
+patch_datetime_serialization()
 
 
 @app.get("/api/health")

@@ -29,7 +29,7 @@ function handleRemove(index: number) {
 }
 
 function handleAdd() {
-  const lesion = props.manager.addLesion()
+  props.manager.addLesion()
   emit('lesion-changed', props.manager.lesions.value.length - 1)
 }
 </script>

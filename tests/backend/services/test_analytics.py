@@ -338,17 +338,17 @@ def test_get_user_journeys_excludes_test_sessions_and_builds_transitions(db_sess
 
     assert result["total_sessions"] == 2
     # Page names follow the canonical page-names.json single source of truth
-    # (小白百科 / 测评 / 发现 / AI助手 / 个人中心), NOT the deprecated
+    # (问答 / 手帐 / 分享 / 百科（已下线） / 个人中心), NOT the deprecated
     # 白白百科 / 病情追踪 / 病友社区 names listed in old_names_do_not_use.
     assert result["top_paths"] == [
-        {"path": "AI助手 → 小白百科 → AI助手 → 测评", "count": 1},
-        {"path": "发现 → 个人中心", "count": 1},
+        {"path": "问答 → 百科（已下线） → 问答 → 手帐", "count": 1},
+        {"path": "分享 → 个人中心", "count": 1},
     ]
 
-    assert result["nodes"] == ["AI助手", "个人中心", "发现", "小白百科", "测评"]
+    assert result["nodes"] == ["个人中心", "分享", "手帐", "百科（已下线）", "问答"]
     assert result["links"] == [
-        {"source": 0, "target": 3, "value": 1},
-        {"source": 3, "target": 0, "value": 1},
-        {"source": 0, "target": 4, "value": 1},
-        {"source": 2, "target": 1, "value": 1},
+        {"source": 4, "target": 3, "value": 1},
+        {"source": 3, "target": 4, "value": 1},
+        {"source": 4, "target": 2, "value": 1},
+        {"source": 1, "target": 0, "value": 1},
     ]

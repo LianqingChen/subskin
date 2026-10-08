@@ -115,54 +115,68 @@ export interface MedicalReportListResponse {
 }
 
 export interface ComparisonResult {
-  reports: ComparisonReportMeta[]
-  indicators: ComparisonIndicator[]
-  summary: ComparisonSummary
-  overall_assessment: OverallAssessment
+  schema_version: string
+  generated_at: string
+  report_ids: number[]
+  report_count: number
+  aligned_indicators: ComparisonIndicator[]
+  change_summary: Record<ComparisonChangeType, number>
+  highlights: {
+    canonical_name: string | null
+    display_name: string
+    panel: string
+    change_type: ComparisonChangeType
+  }[]
+  report_summaries: {
+    report_id: number
+    title: string
+    date: string
+    patient_profile_id: number | null
+    extracted_patient_info: ExtractedPatientInfo | null
+  }[]
+  narrative: {
+    summary: string
+    key_changes: {
+      indicator_name: string
+      change_type: string
+      interpretation: string
+    }[]
+    recommendations: Recommendation[]
+    change_summary: Record<ComparisonChangeType, number>
+  }
 }
 
-export interface ComparisonReportMeta {
-  id: number
-  date: string
-  title: string
-}
+export type ComparisonChangeType =
+  | 'newly_abnormal'
+  | 'resolved_abnormal'
+  | 'persistent_abnormal'
+  | 'large_delta'
+  | 'unchanged_stable'
+  | 'not_measured'
 
 export interface ComparisonIndicator {
   canonical_name: string
   display_name: string
-  unit: string
-  ref_range: string
+  panel: string
+  unit_family: string | null
+  change_type: ComparisonChangeType
   values: IndicatorValue[]
-  change_category: 'newly_abnormal' | 'resolved_abnormal' | 'persistent_abnormal' | 'large_delta' | 'unchanged_stable' | 'not_measured'
-  delta: number
-  trend: 'improving' | 'stable' | 'worsening'
-  trend_interpretation: string
 }
 
 export interface IndicatorValue {
-  report_id: number
-  date: string
-  value: number
-  status: 'normal' | 'high' | 'low' | 'critical'
+  report_id: number | null
+  indicator_name: string
+  canonical_name: string | null
+  display_name: string
+  panel: string
+  unit_family: string | null
+  value: string
+  numeric_value: number | null
+  status: 'normal' | 'high' | 'low' | 'critical' | 'unknown'
+  ref_range: string
+  measured: boolean
 }
 
-export interface ComparisonSummary {
-  total_indicators: number
-  comparable: number
-  newly_abnormal: number
-  resolved: number
-  persistent_abnormal: number
-  unchanged: number
-  not_measured: number
-}
-
-export interface OverallAssessment {
-  trend: 'improving' | 'stable' | 'worsening'
-  summary: string
-  highlights: string[]
-  concerns: string[]
-  recommendations: string[]
-}
 
 export const medicalReportApi = {
   async list(limit = 20, offset = 0): Promise<MedicalReportListResponse> {
@@ -213,6 +227,9 @@ export const medicalReportApi = {
   async compare(reportIds: number[]): Promise<ComparisonResult> {
     const { data } = await apiClient.post('/medical-reports/compare', {
       report_ids: reportIds
+    }, {
+      // 对比含 LLM 叙述生成，可能耗时数分钟；与 nginx proxy_read_timeout 300s 对齐
+      timeout: 300000,
     })
     return data
   },

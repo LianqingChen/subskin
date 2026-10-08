@@ -15,6 +15,7 @@
 import base64
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -174,7 +175,9 @@ def analyze_light(
             model=vision_model,
             messages=[{"role": "user", "content": content}],
             temperature=0.2,
-            max_tokens=600,
+            # 推理 token 计入 max_tokens：600 在「带历史对比图」（双图）时会被思考耗尽，
+            # 返回空内容 → JSON 解析失败 → 整个轻量分析静默返回 None（2026-09-12 实测）。
+            max_tokens=int(os.getenv("DIARY_VISION_MAX_TOKENS", "4000")),
         )
 
         raw = (response.choices[0].message.content or "").strip()

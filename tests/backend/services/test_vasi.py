@@ -516,3 +516,19 @@ def test_get_trend_data_trend_calculation(vasi_service, test_user, db_session):
 
     trend = vasi_service.get_trend_data(test_user.id, body_site="面部", days=30)
     assert trend["summary"]["trend"] == "稳定"
+
+
+def test_validate_input_accepts_webp(vasi_service):
+    """WebP is accepted end-to-end by the magic-byte and MIME allowlist."""
+    webp = b"RIFF\x24\x00\x00\x00WEBPVP8 "
+    vasi_service._validate_input(webp, "face", "image/webp")
+
+
+def test_validate_input_rejects_spoofed_webp(vasi_service):
+    """A non-image payload cannot pass merely by declaring image/webp."""
+    import pytest
+
+    from web.backend.services.vasi import VASIAssessmentError
+
+    with pytest.raises(VASIAssessmentError):
+        vasi_service._validate_input(b"not-an-image", "face", "image/webp")

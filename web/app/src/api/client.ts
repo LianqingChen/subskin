@@ -50,9 +50,11 @@ apiClient.interceptors.response.use(
       const hasRefreshToken = !!localStorage.getItem('subskin_refresh_token')
 
       if (!hasRefreshToken) {
+        // 未登录/token 缺失时收到 401 是正常业务情形（如访客打开需登录的页面），
+        // 只清除本地态并让请求失败。⚠️ 绝不可 window.location.reload()：
+        // 重载后页面挂载时再次发起同一请求 → 再次 401 → 无限整页刷新循环。
         localStorage.removeItem('subskin_token')
         localStorage.removeItem('subskin_user')
-        window.location.reload()
         return Promise.reject(error)
       }
 
@@ -69,10 +71,12 @@ apiClient.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${accessToken}`
         return apiClient(originalRequest)
       } catch {
+        // refresh 失败（过期/吊销）：清除会话并广播全局事件（如弹出登录框）。
+        // 同样不能 reload —— 否则任何需登录接口的挂载请求会形成 401 刷新循环。
         localStorage.removeItem('subskin_token')
         localStorage.removeItem('subskin_refresh_token')
         localStorage.removeItem('subskin_user')
-        window.location.reload()
+        window.dispatchEvent(new CustomEvent('subskin:session-expired'))
         return Promise.reject(error)
       }
     }

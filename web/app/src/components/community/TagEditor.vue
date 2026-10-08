@@ -57,7 +57,7 @@ onMounted(async () => {
       <div class="px-5 pb-3">
         <div class="flex flex-wrap gap-2 mb-3">
           <span v-for="(tag, index) in tags" :key="index"
-            class="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[13px] font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
             #{{ tag }}
             <button @click="removeTag(index)" class="ml-1.5 w-4 h-4 rounded-full text-primary-400 hover:bg-primary-200 dark:hover:bg-primary-800 hover:text-primary-900">
               <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>

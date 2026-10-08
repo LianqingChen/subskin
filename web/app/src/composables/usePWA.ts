@@ -33,6 +33,9 @@ if (typeof window !== 'undefined') {
 
 const SW_UPDATE_INTERVAL_MS = 5 * 60 * 1000
 
+// controllerchange → reload 仅在用户主动点击"更新"后允许（防刷新死循环）
+let reloadOnControllerChange = false
+
 export function usePWA() {
   let swRegistration: ServiceWorkerRegistration | null = null
   let updateInterval: ReturnType<typeof setInterval> | null = null
@@ -61,9 +64,19 @@ export function usePWA() {
   const isOffline = ref(!navigator.onLine)
   const installStatus = ref<PWAInstallStatus>('unsupported')
   const hasDeferredPrompt = ref(false)
+  // 浏览器未提供原生安装入口时，展示手动安装指引
+  const showInstallGuide = ref(false)
 
   let deferredPrompt: BeforeInstallPromptEvent | null = null
   let showCount = 0
+
+  function openInstallGuide() {
+    showInstallGuide.value = true
+  }
+
+  function closeInstallGuide() {
+    showInstallGuide.value = false
+  }
 
   function detectStandaloneMode(): boolean {
     return window.matchMedia('(display-mode: standalone)').matches
@@ -246,7 +259,13 @@ export function usePWA() {
   }
 
   async function installApp(): Promise<boolean> {
-    if (!deferredPrompt) return false
+    // 浏览器未派发 beforeinstallprompt（Chrome 在用户此前拒绝过原生提示后会
+    // 长时间抑制该事件）：不再静默无响应，改为弹出按系统的安装指引
+    if (!deferredPrompt) {
+      console.warn('[PWA] installApp: no deferredPrompt (beforeinstallprompt not fired)')
+      showInstallGuide.value = true
+      return false
+    }
     await deferredPrompt.prompt()
     const { outcome } = await deferredPrompt.userChoice
     deferredPrompt = null
@@ -255,6 +274,7 @@ export function usePWA() {
     if (outcome === 'accepted') {
       markInstalled()
       reportInstallStatusToBackend(true)
+      showInstallGuide.value = false
       return true
     } else {
       markDismissed()
@@ -294,6 +314,8 @@ export function usePWA() {
   }
 
   async function updateApp() {
+    // 用户已主动确认更新：控制器切换时才允许整页刷新（见下方 controllerchange）
+    reloadOnControllerChange = true
     const reloadFallback = setTimeout(() => window.location.reload(), 3000)
     try {
       await updateServiceWorker(true)
@@ -320,6 +342,15 @@ export function usePWA() {
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('controllerchange', () => {
+        // 仅当用户在更新横幅主动点击"更新"后才整页刷新。
+        // 此前无条件 reload 会在短时间内部署多个版本时形成死循环：
+        // reload → 1s 后 registration.update() → 新 SW 安装激活(clientsClaim)
+        // → controllerchange → reload → ……页面每秒重载数次。
+        // 非主动更新时只亮起"有新版本可用"横幅，由用户决定何时刷新。
+        if (!reloadOnControllerChange) {
+          needRefresh.value = true
+          return
+        }
         // Don't force-reload while the user is filling a form (e.g. login modal).
         // Instead, set a flag and reload on next safe opportunity.
         if (document.querySelector('input:focus, textarea:focus') || sessionStorage.getItem('loginModalOpen')) {
@@ -429,6 +460,9 @@ export function usePWA() {
     dismissInstallLong,
     installStatus,
     hasDeferredPrompt,
+    showInstallGuide,
+    openInstallGuide,
+    closeInstallGuide,
     resetDismissState,
     forceResetAndReload,
     updateApp,

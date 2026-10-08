@@ -72,9 +72,13 @@ async function reverseGeocode(lat: number, lng: number): Promise<string | null> 
   const cached = geocodeCache.get(key)
   if (cached) return cached.city
 
+  // 2026-08-30 隐私加固：对外部反编码服务只发送 2 位小数坐标（≈1km 精度），
+  // 足够解析城市，不暴露精确位置
+  const coarseLat = Number(lat.toFixed(2))
+  const coarseLng = Number(lng.toFixed(2))
   try {
     const resp = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&accept-language=zh`,
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coarseLat}&lon=${coarseLng}&zoom=10&accept-language=zh`,
       { headers: { 'User-Agent': 'SubSkin/1.0' } }
     )
     if (!resp.ok) return null

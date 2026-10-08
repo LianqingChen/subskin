@@ -1,7 +1,7 @@
 <template>
   <div class="image-label-page">
     <n-page-header title="图片打标管理" />
-    <p class="page-desc">管理用户上传照片的 AI 标注与人工标注复核 — AI 像素填涂预标注 + 人工修订</p>
+    <p class="page-desc">管理用户上传照片的 AI 标注与人工标注复核 — 打标数据沉淀为训练样本，持续优化白斑识别模型。为保护用户隐私，列表仅显示匿名编号，病情照片与用户身份不做关联展示</p>
 
     <n-grid :cols="isMobile ? 2 : 4" :x-gap="12" :y-gap="12" style="margin-top: 20px" responsive="screen">
       <n-gi>
@@ -53,30 +53,130 @@
         </n-space>
       </template>
 
+      <!-- 筛选栏 -->
+      <div class="filter-bar">
+        <n-select
+          v-model:value="filters.source"
+          :options="sourceOptions"
+          size="small"
+          clearable
+          placeholder="图片来源"
+          style="width: 130px"
+        />
+        <n-select
+          v-model:value="filters.body_site"
+          :options="bodySiteOptions"
+          size="small"
+          clearable
+          filterable
+          placeholder="身体部位"
+          style="width: 130px"
+        />
+        <n-date-picker
+          v-model:value="filters.dateRange"
+          type="daterange"
+          size="small"
+          clearable
+          style="width: 260px"
+        />
+        <n-input-number
+          v-model:value="filters.user_id"
+          size="small"
+          clearable
+          :show-button="false"
+          placeholder="用户 ID"
+          style="width: 110px"
+        />
+        <n-input
+          v-model:value="filters.username"
+          size="small"
+          clearable
+          placeholder="用户昵称（返回匿名编号，仍可用于精确过滤）"
+          style="width: 130px"
+          @keyup.enter="applyFilters"
+        />
+        <n-button size="small" type="primary" @click="applyFilters">
+          <template #icon><i class="ri-search-line" /></template>
+          查询
+        </n-button>
+        <n-button size="small" quaternary @click="resetFilters">重置</n-button>
+      </div>
+
+      <!-- 批量选择栏 -->
+      <div v-if="selectableItems.length > 0" class="bulk-bar">
+        <n-checkbox
+          :checked="allSelected"
+          :indeterminate="someSelected"
+          @update:checked="toggleSelectAll"
+        >
+          全选可选 ({{ selectableItems.length }})
+        </n-checkbox>
+        <template v-if="selectedIds.length > 0">
+          <span class="bulk-count">已选 {{ selectedIds.length }} 张</span>
+          <n-button size="small" type="primary" ghost :loading="bulkAdding" @click="bulkAddToTraining">
+            <template #icon><i class="ri-database-2-line" /></template>
+            批量添加至训练样本
+          </n-button>
+          <n-button size="small" quaternary @click="selectedIds = []">清空选择</n-button>
+        </template>
+      </div>
+
       <n-spin :show="loading">
         <div v-if="list.length === 0 && !loading" style="padding: 40px 0">
           <n-empty :description="activeTab === 'pending' ? '没有待标注的图片' : activeTab === 'labeled' ? '没有已标注的图片' : '暂无数据'" size="small" />
         </div>
         <div v-else class="label-rows">
           <div v-for="item in list" :key="item.id" class="label-row">
-            <div class="label-row-thumb" @click="openEditor(item)">
-              <img v-if="item.id" :src="proxyImageUrl(item.id)" loading="lazy" alt="" @error="onThumbError($event)" />
-              <div v-else class="thumb-placeholder"><i class="ri-image-line" /></div>
-              <div v-if="item.label_status === 'labeled'" class="thumb-badge">
-                <i class="ri-check-line"></i>
+            <!-- 三图缩略区：原图 / 用户标注 / 管理员标注 -->
+            <div class="label-row-thumbs" @click="openCompare(item)">
+              <div class="thumb-cell">
+                <img v-if="item.id" :src="proxyImageUrl(item.id)" loading="lazy" alt="原图" @error="onThumbError" />
+                <div v-else class="thumb-placeholder"><i class="ri-image-line" /></div>
+                <span class="thumb-label">原图</span>
+                <div v-if="item.label_status === 'labeled'" class="thumb-badge">
+                  <i class="ri-check-line"></i>
+                </div>
+              </div>
+              <div class="thumb-cell">
+                <img
+                  v-if="item.has_user_annotation"
+                  :src="userAnnotatedUrl(item.id)"
+                  loading="lazy"
+                  alt="用户标注"
+                  @error="onThumbError"
+                />
+                <div v-else class="thumb-placeholder"><i class="ri-user-line" /></div>
+                <span class="thumb-label">用户标注</span>
+              </div>
+              <div class="thumb-cell">
+                <img
+                  v-if="item.label_status === 'labeled'"
+                  :src="adminAnnotatedUrl(item.id)"
+                  loading="lazy"
+                  alt="管理员标注"
+                  @error="onThumbError"
+                />
+                <div v-else class="thumb-placeholder"><i class="ri-edit-2-line" /></div>
+                <span class="thumb-label">管理员标注</span>
               </div>
             </div>
 
             <div class="label-row-body">
               <div class="label-row-header">
+                <n-checkbox
+                  v-if="item.label_status === 'labeled' && !item.in_training_set"
+                  :checked="selectedIds.includes(item.id)"
+                  @update:checked="(v: boolean) => toggleSelect(item.id, v)"
+                />
                 <span class="label-row-id">#{{ item.id }}</span>
                 <n-tag :type="getStatusType(item.label_status)" size="tiny" :bordered="false">
                   {{ getStatusLabel(item.label_status) }}
                 </n-tag>
-                <span v-if="item.admin_is_vitiligo != null" class="label-row-conf">
-                  <i class="ri-shield-check-line"></i> 已审核
+                <span v-if="item.username" class="label-row-user">
+                  <i class="ri-user-line"></i> {{ item.username }}
                 </span>
-                <span class="label-row-date">{{ formatShortDate(item.created_at) }}</span>
+                <span v-else-if="item.source === 'admin'" class="label-row-user muted">管理员上传</span>
+                <span class="label-row-date">{{ formatShortDate(item.photo_date || item.created_at) }}</span>
               </div>
 
               <div class="label-row-sections">
@@ -99,17 +199,10 @@
                     <n-button
                       type="primary"
                       size="tiny"
-                      @click="openEditor(item)"
+                      @click="openWorkspace(item)"
                     >
                       <template #icon><i class="ri-brush-line" /></template>
                       开始标注
-                    </n-button>
-                    <n-button
-                      size="tiny"
-                      @click="openWorkspace(item)"
-                    >
-                      <template #icon><i class="ri-external-link-line" /></template>
-                      工作区
                     </n-button>
                     <n-button size="tiny" @click="skipItem(item.id)">跳过</n-button>
                   </div>
@@ -127,14 +220,25 @@
                     <n-tag v-if="item.admin_vitiligo_type" size="tiny" :bordered="false" type="info">{{ item.admin_vitiligo_type }}</n-tag>
                     <n-tag v-if="item.admin_area_percentage != null" size="tiny" :bordered="false">{{ item.admin_area_percentage }}%</n-tag>
                     <span v-if="item.admin_is_vitiligo == null" class="no-ai-tag">未标注</span>
-                    <n-tag v-if="item.training_eligible" size="tiny" :bordered="false" type="success" style="margin-left: auto;">
-                      <i class="ri-database-2-line"></i> 训练就绪
+                    <n-tag v-if="item.in_training_set" size="tiny" :bordered="false" type="success" style="margin-left: auto;">
+                      <i class="ri-database-2-line"></i> 已入训练集
                     </n-tag>
                   </div>
                   <div class="section-actions">
-                    <n-button size="tiny" @click="openEditor(item)">
+                    <n-button size="tiny" @click="openWorkspace(item)">
                       <template #icon><i class="ri-edit-2-line" /></template>
                       重新编辑
+                    </n-button>
+                    <n-button
+                      v-if="!item.in_training_set"
+                      size="tiny"
+                      type="primary"
+                      ghost
+                      :loading="addingTrainingId === item.id"
+                      @click="addToTraining(item)"
+                    >
+                      <template #icon><i class="ri-database-2-line" /></template>
+                      添加至训练样本
                     </n-button>
                   </div>
                 </div>
@@ -154,43 +258,40 @@
       </n-space>
     </n-card>
 
-    <!-- 全屏标注编辑器 Modal -->
+    <!-- 三图对比 Modal -->
     <n-modal
-      v-model:show="editorVisible"
+      v-model:show="compareVisible"
       preset="card"
       :bordered="false"
-      :mask-closable="false"
-      style="width: 95vw; max-width: 1400px; height: 92vh;"
-      :title="`图片打标 #${editingItem?.id ?? ''} — 用户填涂预填充 + 管理员修订`"
+      style="width: 94vw; max-width: 1200px;"
+      :title="compareItem ? `三图对比 #${compareItem.id}${compareItem.username ? ' · ' + compareItem.username : ''}` : '三图对比'"
     >
-      <template #header-extra>
-        <n-tag v-if="editingItem" :type="getStatusType(editingItem.label_status)" size="small" :bordered="false">
-          {{ getStatusLabel(editingItem.label_status) }}
-        </n-tag>
-      </template>
-      <div v-if="editingItem" style="height: calc(92vh - 120px); overflow: hidden; display: flex; flex-direction: column;">
-        <LabelingEditor
-          ref="editorRef"
-          :image-url="annotatedImageUrl || proxyImageUrl(editingItem.id)"
-          :image-hash="editingItem.image_hash"
-          :existing-ai-details="editingItem ? {
-            body_site: editingItem.ai_body_site,
-            is_vitiligo: editingItem.ai_is_vitiligo,
-            vitiligo_type: editingItem.ai_vitiligo_type,
-            vitiligo_stage: editingItem.ai_vitiligo_stage,
-            area_percentage: editingItem.ai_area_percentage,
-            vasi_score: (editingItem as any).ai_vasi_score,
-            depigmentation_level: (editingItem as any).ai_depigmentation_level,
-          } : null"
-          :initial-admin-annotations="initialAnnotations"
-          :initial-form="initialForm"
-          :annotated-image-url="annotatedImageUrl"
-          :ai-pretrain-available="true"
-          @ai-pretrain="handleAiPretrain"
-          @submit="handleEditorSubmit"
-          @save-draft="handleSaveDraft"
-          @cancel="editorVisible = false"
-        />
+      <div v-if="compareItem" class="compare-body">
+        <div class="compare-grid">
+          <div class="compare-cell">
+            <img :src="proxyImageUrl(compareItem.id)" alt="原图" @error="onThumbError" />
+            <div class="compare-caption">原图</div>
+          </div>
+          <div class="compare-cell">
+            <img v-if="compareItem.has_user_annotation" :src="userAnnotatedUrl(compareItem.id)" alt="用户标注" @error="onThumbError" />
+            <div v-else class="compare-empty"><i class="ri-user-line" /><span>无用户标注</span></div>
+            <div class="compare-caption">用户标注（SubSkin 填涂）</div>
+          </div>
+          <div class="compare-cell">
+            <img v-if="compareItem.label_status === 'labeled'" :src="adminAnnotatedUrl(compareItem.id)" alt="管理员标注" @error="onThumbError" />
+            <div v-else class="compare-empty"><i class="ri-edit-2-line" /><span>未标注</span></div>
+            <div class="compare-caption">管理员标注</div>
+          </div>
+        </div>
+        <div class="compare-summary">
+          <n-tag size="small" :bordered="false" :type="getStatusType(compareItem.label_status)">
+            {{ getStatusLabel(compareItem.label_status) }}
+          </n-tag>
+          <n-tag size="small" :bordered="false">{{ compareItem.body_site || '部位未知' }}</n-tag>
+          <span v-if="compareItem.ai_area_percentage != null" class="summary-item">AI 面积: {{ compareItem.ai_area_percentage }}%</span>
+          <span v-if="compareItem.admin_area_percentage != null" class="summary-item">管理员面积: {{ compareItem.admin_area_percentage }}%</span>
+          <span class="summary-item muted">{{ formatShortDate(compareItem.photo_date || compareItem.created_at) }}</span>
+        </div>
       </div>
     </n-modal>
 
@@ -266,17 +367,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import {
   NPageHeader, NGrid, NGi, NCard, NStatistic, NTag, NButton,
   NModal, NSpace, NTabs, NTab, NEmpty, NSpin, NUpload,
-  NPagination, NDropdown,
+  NPagination, NDropdown, NSelect, NDatePicker, NInput, NInputNumber, NCheckbox,
   useMessage,
 } from 'naive-ui'
 import type { UploadFileInfo } from 'naive-ui'
 import { useRouter } from 'vue-router'
 import request from '@/api/request'
-import LabelingEditor, { type AdminAnnotationItem, type LabelingEditorSubmit } from '@/components/labeling/LabelingEditor.vue'
 
 const router = useRouter()
 
@@ -296,23 +396,25 @@ interface LabelItem {
   ai_vitiligo_type?: string
   ai_vitiligo_stage?: string
   ai_area_percentage?: number
-  ai_vasi_score?: number
-  ai_depigmentation_level?: number
   admin_body_site?: string
   admin_is_vitiligo?: boolean
   admin_vitiligo_type?: string
   admin_vitiligo_stage?: string
   admin_area_percentage?: number
-  admin_vasi_score?: number
-  admin_depigmentation_level?: number
-  admin_notes?: string
   label_status: string
   is_user_deleted: boolean
   training_eligible: boolean
   created_at?: string
   labeled_at?: string
-  ai_details?: string | null
-  ai_confidence?: number
+  // 列表新增字段（后端 list_image_labels）
+  original_user_id?: number | null
+  username?: string | null
+  source?: 'user' | 'admin'
+  photo_date?: string | null
+  has_user_annotation?: boolean
+  has_admin_annotation?: boolean
+  has_admin_composite?: boolean
+  in_training_set?: boolean
 }
 
 interface StatsData {
@@ -329,19 +431,125 @@ const stats = ref<StatsData>({ total: 0, pending: 0, labeled: 0, skipped: 0, rej
 const list = ref<LabelItem[]>([])
 const loading = ref(false)
 const syncing = ref(false)
-const submittingId = ref<number | null>(null)
 const activeTab = ref('pending')
 const currentPage = ref(1)
 const pageSize = 20
 const total = ref(0)
 
-// ── 编辑器状态 ──
-const editorVisible = ref(false)
-const editorRef = ref<InstanceType<typeof LabelingEditor> | null>(null)
-const editingItem = ref<LabelItem | null>(null)
-const initialAnnotations = ref<AdminAnnotationItem[]>([])
-const initialForm = ref<Partial<LabelingEditorSubmit> | undefined>(undefined)
-const annotatedImageUrl = ref<string | null>(null)
+// ── 筛选 ──
+const filters = reactive({
+  source: null as string | null,
+  body_site: null as string | null,
+  dateRange: null as [number, number] | null,
+  user_id: null as number | null,
+  username: '',
+})
+
+const sourceOptions = [
+  { label: '用户上传', value: 'user' },
+  { label: '管理员上传', value: 'admin' },
+]
+
+const bodySiteOptions = [
+  '面部', '颈部', '头皮', '躯干前面', '躯干后面', '上肢近端', '上肢远端',
+  '手部', '下肢近端', '下肢远端', '足部', '生殖器', '其他',
+].map(s => ({ label: s, value: s }))
+
+function applyFilters() {
+  currentPage.value = 1
+  fetchList()
+}
+
+function resetFilters() {
+  filters.source = null
+  filters.body_site = null
+  filters.dateRange = null
+  filters.user_id = null
+  filters.username = ''
+  applyFilters()
+}
+
+// ── 三图对比 ──
+const compareVisible = ref(false)
+const compareItem = ref<LabelItem | null>(null)
+
+function openCompare(item: LabelItem) {
+  compareItem.value = item
+  compareVisible.value = true
+}
+
+// ── 添加至训练样本 ──
+const addingTrainingId = ref<number | null>(null)
+
+async function addToTraining(item: LabelItem) {
+  addingTrainingId.value = item.id
+  try {
+    const { data } = await request.post<{ status: string; sample_id: number }>(
+      `/vasi/admin/image-labels/${item.id}/training-sample`,
+    )
+    if (data.status === 'ok') {
+      message.success('已添加至训练样本，可在训练数据页查看')
+      item.in_training_set = true
+      fetchStats()
+    }
+  } catch (err: any) {
+    message.error(err?.response?.data?.detail || '添加失败')
+  } finally {
+    addingTrainingId.value = null
+  }
+}
+
+// ── 批量选择与批量添加至训练样本 ──
+const selectedIds = ref<number[]>([])
+const bulkAdding = ref(false)
+
+const selectableItems = computed(() =>
+  list.value.filter(i => i.label_status === 'labeled' && !i.in_training_set),
+)
+const allSelected = computed(() =>
+  selectableItems.value.length > 0
+  && selectableItems.value.every(i => selectedIds.value.includes(i.id)),
+)
+const someSelected = computed(() =>
+  selectedIds.value.length > 0 && !allSelected.value,
+)
+
+function toggleSelect(id: number, checked: boolean) {
+  if (checked) {
+    if (!selectedIds.value.includes(id)) selectedIds.value.push(id)
+  } else {
+    selectedIds.value = selectedIds.value.filter(v => v !== id)
+  }
+}
+
+function toggleSelectAll(checked: boolean) {
+  selectedIds.value = checked ? selectableItems.value.map(i => i.id) : []
+}
+
+async function bulkAddToTraining() {
+  if (selectedIds.value.length === 0) return
+  bulkAdding.value = true
+  try {
+    const { data } = await request.post<{
+      added: number
+      added_ids: number[]
+      skipped: { label_id: number; reason: string }[]
+    }>('/vasi/admin/image-labels/training-sample/batch', { label_ids: selectedIds.value })
+    if (data.skipped.length === 0) {
+      message.success(`已将 ${data.added} 条标注添加至训练样本`)
+    } else {
+      message.warning(`已添加 ${data.added} 条，跳过 ${data.skipped.length} 条（${data.skipped[0].reason}）`)
+    }
+    const addedSet = new Set(data.added_ids)
+    list.value.forEach(i => { if (addedSet.has(i.id)) i.in_training_set = true })
+    selectedIds.value = []
+    fetchStats()
+  } catch (err: any) {
+    message.error(err?.response?.data?.detail || '批量添加失败')
+  } finally {
+    bulkAdding.value = false
+  }
+}
 
 // ── 批量上传状态 ──
 const showUploadModal = ref(false)
@@ -412,11 +620,24 @@ const exportOptions = [
   { key: 'images', label: '下载图片URL列表' },
 ]
 
+function adminToken(): string {
+  return localStorage.getItem('admin_token') || ''
+}
+
 function proxyImageUrl(id: number): string {
   // 后端图片代理端点 — admin 鉴权后流式返回原图
   // 解决: <img> 标签无法设 Authorization header, 改用 query string 传 token
-  const token = localStorage.getItem('admin_token') || ''
-  return `/api/vasi/admin/image-labels/${id}/image?access_token=${encodeURIComponent(token)}`
+  return `/api/vasi/admin/image-labels/${id}/image?access_token=${encodeURIComponent(adminToken())}`
+}
+
+function userAnnotatedUrl(id: number): string {
+  // 用户在 SubSkin 填涂的合成图（原图 + 用户蒙层）；无用户标注时 404 → 占位
+  return `/api/vasi/admin/image-labels/${id}/user-annotated-image?access_token=${encodeURIComponent(adminToken())}`
+}
+
+function adminAnnotatedUrl(id: number): string {
+  // 管理员标注合成图（原图 + 管理员蒙层）；未标注时 404 → 占位
+  return `/api/vasi/admin/image-labels/${id}/annotated-image?access_token=${encodeURIComponent(adminToken())}`
 }
 
 function onThumbError(event: Event) {
@@ -461,301 +682,23 @@ function formatShortDate(dateStr?: string) {
   } catch { return dateStr }
 }
 
-async function openEditor(item: LabelItem) {
-  editingItem.value = item
-  initialAnnotations.value = []
-  initialForm.value = undefined
-  annotatedImageUrl.value = null
-
-  // ── 先加载所有数据，再显示编辑器（消除异步时序问题）──
-
-  // 1. 加载已有管理员标注（如果有）
-  try {
-    const { data } = await request.get<{ annotations: AdminAnnotationItem[] }>(
-      `/vasi/admin/image-labels/${item.id}/annotations`
-    )
-    initialAnnotations.value = data.annotations || []
-    const firstMask = initialAnnotations.value.find(a => a.mask_data)
-    const firstSkin = initialAnnotations.value.find(a => a.skin_mask_data)
-    message.info(`加载标注: ${initialAnnotations.value.length}条, mask=${firstMask?.mask_data?.length || 0}字节, skinMask=${firstSkin?.skin_mask_data?.length || 0}字节`)
-    console.log('[openEditor] Loaded admin annotations:', initialAnnotations.value.length,
-      'hasMask:', initialAnnotations.value.some(a => a.mask_data),
-      'hasSkinMask:', initialAnnotations.value.some(a => a.skin_mask_data))
-  } catch (err: any) {
-    if (err?.response?.status !== 404) {
-      console.warn('加载已有标注失败', err)
-    }
-  }
-
-  // 1.5. 加载详情（合成图 URL + admin_* 标注字段 — 用作表单回退值）
-  try {
-    const { data: detail } = await request.get<{
-      annotated_image_url?: string | null
-      admin_body_site?: string | null
-      admin_is_vitiligo?: boolean | null
-      admin_vitiligo_type?: string | null
-      admin_vitiligo_stage?: string | null
-      admin_area_percentage?: number | null
-      admin_vasi_score?: number | null
-      admin_depigmentation_level?: number | null
-      admin_notes?: string | null
-    }>(`/vasi/admin/image-labels/${item.id}`)
-    if (detail.annotated_image_url) {
-      const token = localStorage.getItem('admin_token') || ''
-      annotatedImageUrl.value = `/api/vasi/admin/image-labels/${item.id}/annotated-image?access_token=${encodeURIComponent(token)}`
-    }
-    // ⚠️ FIX: Pass admin_* fields as fallback — they may contain annotation
-    // metadata that was saved to ImageLabel but not to ImageLabelAnnotation
-    // records (e.g., when buildAnnotations returned [] due to no canvas data).
-    initialForm.value = {
-      body_site: detail.admin_body_site ?? null,
-      is_vitiligo: detail.admin_is_vitiligo ?? null,
-      vitiligo_type: detail.admin_vitiligo_type ?? null,
-      vitiligo_stage: detail.admin_vitiligo_stage ?? null,
-      area_percentage: detail.admin_area_percentage ?? null,
-      vasi_score: detail.admin_vasi_score ?? null,
-      depigmentation_level: detail.admin_depigmentation_level ?? null,
-      notes: detail.admin_notes ?? null,
-    }
-  } catch (err: any) {
-    console.warn('加载标注详情失败', err)
-  }
-
-  // 2. 加载用户测评页面的填涂数据 — 预填充画布
-  //    管理员可以在用户的基础上修改，无需从零开始
-  if (initialAnnotations.value.length === 0) {
-    try {
-      const { data: userData } = await request.get<{
-        has_user_data: boolean
-        has_ai_data: boolean
-        user_annotations: any[]
-        ai_annotations: any[]
-        assessment_summary: any
-      }>(`/vasi/admin/image-labels/${item.id}/user-annotations`)
-
-      if (userData.has_user_data || userData.has_ai_data) {
-        const prefillAnnotations: AdminAnnotationItem[] = []
-
-        if (userData.has_user_data && userData.user_annotations.length > 0) {
-          for (const ua of userData.user_annotations) {
-            prefillAnnotations.push({
-              source: 'admin',
-              region_index: ua.region_index || 0,
-              body_site: ua.body_site || null,
-              is_vitiligo: ua.is_vitiligo ?? null,
-              vitiligo_type: ua.vitiligo_type || null,
-              vitiligo_stage: ua.vitiligo_stage || null,
-              area_percentage: ua.area_percentage ?? null,
-              depigmentation_level: ua.depigmentation_level ?? null,
-              region_contour: null,
-              region_bbox: null,
-              mask_data: ua.mask_data || null,
-              skin_mask_data: ua.skin_mask_data || null,
-              confidence: ua.confidence ?? null,
-              notes: '预填充自用户填涂结果 — 管理员审核修改',
-            })
-          }
-        }
-
-        if (!userData.has_user_data && userData.has_ai_data && userData.ai_annotations.length > 0) {
-          for (const aa of userData.ai_annotations) {
-            prefillAnnotations.push({
-              source: 'admin',
-              region_index: aa.region_index || 0,
-              body_site: aa.body_site || null,
-              is_vitiligo: aa.is_vitiligo ?? null,
-              vitiligo_type: aa.vitiligo_type || null,
-              vitiligo_stage: aa.vitiligo_stage || null,
-              area_percentage: aa.area_percentage ?? null,
-              depigmentation_level: aa.depigmentation_level ?? null,
-              region_contour: null,
-              region_bbox: null,
-              mask_data: aa.mask_data || null,
-              skin_mask_data: aa.skin_mask_data || null,
-              confidence: aa.confidence ?? null,
-              notes: '预填充自AI填涂结果 — 管理员审核修改',
-            })
-          }
-        }
-
-        if (userData.assessment_summary) {
-          const s = userData.assessment_summary
-          if (prefillAnnotations.length > 0) {
-            prefillAnnotations[0].notes = [
-              prefillAnnotations[0].notes || '',
-              `评估摘要: body_site=${s.body_site}, area=${s.final_area_percentage ?? s.area_percentage ?? 'N/A'}`,
-            ].filter(Boolean).join(' | ')
-          }
-        }
-
-        if (prefillAnnotations.length > 0) {
-          initialAnnotations.value = prefillAnnotations
-          console.log(`预填充 ${prefillAnnotations.length} 条用户/AI填涂数据，管理员可直接在此基础上修改`)
-        }
-      }
-    } catch (err: any) {
-      if (err?.response?.status !== 404) {
-        console.warn('加载用户预填充数据失败', err)
-      }
-    }
-  }
-
-  // ── 数据全部就绪后再显示编辑器 ──
-  // 这样 LabelingEditor 挂载时 initialAdminAnnotations 已有数据，
-  // loadFromProps → loadMaskLayers 在组件初始化阶段即可恢复图层
-  editorVisible.value = true
-  await nextTick()
+function formatDateParam(ts: number): string {
+  const d = new Date(ts)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
-async function handleAiPretrain() {
-  if (!editingItem.value) return
+async function openWorkspace(item: LabelItem) {
+  // 统一入口：全屏工作区。在用户手势内先请求全屏（保留激活状态），再路由跳转
   try {
-    message.info('AI 推理中…')
-    const { data } = await request.post<{
-      contours: any[]
-      lesion_layer_data_url?: string | null
-      skin_layer_data_url?: string | null
-      body_site?: string
-      is_vitiligo?: boolean
-      vitiligo_type?: string
-      vitiligo_stage?: string
-      area_percentage?: number
-      vasi_score?: number
-      depigmentation_level?: number
-      confidence?: number
-      duration_ms?: number
-    }>(`/vasi/admin/image-labels/${editingItem.value.id}/ai-pretrain`)
-
-    if (data.lesion_layer_data_url || data.skin_layer_data_url) {
-      editorRef.value?.applyAiMask(data.skin_layer_data_url || null, data.lesion_layer_data_url || null)
-      message.success(`AI 预标注完成: 皮肤+白斑像素蒙版已生成, 耗时 ${Math.round((data.duration_ms || 0) / 1000)}s`)
-    } else {
-      message.warning('AI 推理未返回蒙版数据, 请手动像素填涂')
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen()
     }
-  } catch (err: any) {
-    const detail = err?.response?.data?.detail || ''
-    const status = err?.response?.status || 0
-    if (status === 400) {
-      message.error(detail || '图片无法加载，请检查图片是否已损坏或删除')
-    } else if (status === 404) {
-      message.error(detail || '标注记录不存在')
-    } else if (status === 500) {
-      message.error(detail || 'AI 推理服务异常，请稍后重试')
-    } else if (status === 0 || !status) {
-      message.error('网络连接失败，请检查服务器是否正常运行')
-    } else {
-      message.error(detail || 'AI 预标注失败')
-    }
+  } catch {
+    // 全屏被浏览器拒绝 — 工作区内有手动全屏按钮兜底
   }
-}
-
-async function handleSaveDraft(payload: LabelingEditorSubmit) {
-  if (!editingItem.value) return
-  const labelId = editingItem.value.id
-  try {
-    // Save draft — same payload as submit but with draft_mode=true
-    const compressedAnnotations = payload.annotations.map(ann => {
-      if (ann.mask_data && ann.mask_data.startsWith('data:image/png;base64,')) {
-        const sizeMB = (ann.mask_data.length * 3) / 4 / 1024 / 1024
-        if (sizeMB > 2) {
-          message.warning(`Mask 大小 ${sizeMB.toFixed(1)}MB, 考虑压缩或减少填涂范围`)
-        }
-      }
-      return ann
-    })
-
-    // DEBUG: show what we're about to send
-    message.info(`暂存中: annotations=${compressedAnnotations.length}条, mask=${compressedAnnotations[0]?.mask_data?.length || 0}字节, skinMask=${compressedAnnotations[0]?.skin_mask_data?.length || 0}字节, annotatedImg=${payload.annotated_image?.length || 0}字节`)
-
-    const submitPayload = {
-      body_site: payload.body_site,
-      is_vitiligo: payload.is_vitiligo,
-      vitiligo_type: payload.vitiligo_type,
-      vitiligo_stage: payload.vitiligo_stage,
-      area_percentage: payload.area_percentage,
-      vasi_score: payload.vasi_score,
-      depigmentation_level: payload.depigmentation_level,
-      notes: payload.notes,
-      training_eligible: payload.training_eligible,
-      annotations: compressedAnnotations,
-      annotated_image: payload.annotated_image || null,  // 保存合成预览图
-      draft_mode: true,  // KEY: save as draft, not finalize
-    }
-
-    await request.post(`/vasi/admin/image-labels/${labelId}/label`, submitPayload)
-    message.success('已暂存！您可以稍后继续编辑')
-  } catch (err: any) {
-    const status = err?.response?.status || 0
-    if (status === 401) {
-      message.error('登录已过期，请重新登录管理后台')
-    } else {
-      message.error(err?.response?.data?.detail || '暂存失败')
-    }
-  }
-}
-
-async function handleEditorSubmit(payload: LabelingEditorSubmit) {
-  if (!editingItem.value) return
-  submittingId.value = editingItem.value.id
-  try {
-    // 把 mask_data 中的大图也压缩一下
-    const compressedAnnotations = payload.annotations.map(ann => {
-      if (ann.mask_data && ann.mask_data.startsWith('data:image/png;base64,')) {
-        // 简单检查大小, 超过 2MB 的 mask 警告
-        const sizeMB = (ann.mask_data.length * 3) / 4 / 1024 / 1024
-        if (sizeMB > 2) {
-          message.warning(`Mask 大小 ${sizeMB.toFixed(1)}MB, 考虑压缩或减少填涂范围`)
-        }
-      }
-      return ann
-    })
-
-    // 如果有标注合成图（原始照片 + 画笔涂层叠加），作为额外 annotation 保存
-    if (payload.annotated_image) {
-      compressedAnnotations.push({
-        source: 'admin',
-        region_index: compressedAnnotations.length,
-        body_site: payload.body_site,
-        is_vitiligo: payload.is_vitiligo,
-        vitiligo_type: payload.vitiligo_type,
-        vitiligo_stage: payload.vitiligo_stage,
-        area_percentage: payload.area_percentage,
-        depigmentation_level: payload.depigmentation_level,
-        region_contour: null,
-        region_bbox: null,
-        mask_data: payload.annotated_image,
-        confidence: null,
-        notes: '标注合成图（原始照片+画笔涂层）',
-      })
-    }
-
-    const submitPayload = {
-      body_site: payload.body_site,
-      is_vitiligo: payload.is_vitiligo,
-      vitiligo_type: payload.vitiligo_type,
-      vitiligo_stage: payload.vitiligo_stage,
-      area_percentage: payload.area_percentage,
-      vasi_score: payload.vasi_score,
-      depigmentation_level: payload.depigmentation_level,
-      notes: payload.notes,
-      training_eligible: payload.training_eligible,
-      annotations: compressedAnnotations,
-    }
-    // 只去掉空字符串 annotations (空字符串在 Pydantic 会被拒绝)
-    // null 值显式传递给后端, 配合 exclude_unset 实现字段清除
-    await request.post(`/vasi/admin/image-labels/${editingItem.value.id}/label`, submitPayload)
-    message.success(`标注成功! 共 ${compressedAnnotations.length} 处白斑`)
-    editorVisible.value = false
-    fetchList()
-    fetchStats()
-  } catch (err: any) {
-    message.error(err?.response?.data?.detail || '提交失败')
-  } finally {
-    submittingId.value = null
-  }
-}
-
-function openWorkspace(item: LabelItem) {
   router.push({ name: 'LabelingWorkspace', params: { id: item.id } })
 }
 
@@ -773,10 +716,19 @@ async function fetchStats() {
 
 async function fetchList() {
   loading.value = true
+  selectedIds.value = []
   try {
     const params: any = { limit: pageSize, offset: (currentPage.value - 1) * pageSize }
     if (activeTab.value === 'pending') params.label_status = 'pending'
     else if (activeTab.value === 'labeled') params.label_status = 'labeled'
+    if (filters.source) params.source = filters.source
+    if (filters.body_site) params.body_site = filters.body_site
+    if (filters.dateRange) {
+      params.date_from = formatDateParam(filters.dateRange[0])
+      params.date_to = formatDateParam(filters.dateRange[1])
+    }
+    if (filters.user_id != null) params.user_id = filters.user_id
+    if (filters.username.trim()) params.username = filters.username.trim()
     const { data } = await request.get<{ total: number; items: LabelItem[] }>('/vasi/admin/image-labels', { params })
     list.value = data.items || []
     total.value = data.total || 0
@@ -831,7 +783,6 @@ async function exportImageList() {
   try {
     const params: any = { limit: 5000, offset: 0 }
     if (activeTab.value === 'pending') params.label_status = 'pending'
-    else if (activeTab.value === 'labeled') params.set('label_status', 'labeled')
     const { data } = await request.get<{ items: LabelItem[] }>('/vasi/admin/image-labels', { params })
     const urls = (data.items || []).map(i => i.image_url).filter(Boolean)
     const blob = new Blob([urls.join('\n')], { type: 'text/plain' })
@@ -865,6 +816,33 @@ onUnmounted(() => {
 .stat-card :deep(.n-card__content) { padding: 16px; }
 .list-card { background-color: #1e293b; }
 
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  margin-bottom: 14px;
+}
+
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px dashed rgba(99, 102, 241, 0.25);
+}
+
+.bulk-count {
+  font-size: 12px;
+  color: #a5b4fc;
+}
+
 .label-rows { display: flex; flex-direction: column; gap: 10px; }
 
 .label-row {
@@ -878,17 +856,23 @@ onUnmounted(() => {
 }
 .label-row:hover { border-color: rgba(99, 102, 241, 0.3); }
 
-.label-row-thumb {
-  position: relative;
-  width: 80px;
-  height: 80px;
+/* ── 三图缩略区 ── */
+.label-row-thumbs {
+  display: flex;
+  gap: 6px;
   flex-shrink: 0;
+  cursor: pointer;
+}
+.thumb-cell {
+  position: relative;
+  width: 72px;
+  height: 92px;
   border-radius: 6px;
   overflow: hidden;
   background: #1e293b;
-  cursor: pointer;
+  border: 1px solid rgba(148, 163, 184, 0.12);
 }
-.label-row-thumb img {
+.thumb-cell img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -898,10 +882,25 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   color: #475569;
-  font-size: 24px;
+  font-size: 18px;
+}
+.thumb-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1px 2px;
+  font-size: 10px;
+  text-align: center;
+  color: #e2e8f0;
+  background: rgba(15, 23, 42, 0.72);
+  white-space: nowrap;
+  overflow: hidden;
 }
 .thumb-badge {
   position: absolute;
@@ -910,12 +909,12 @@ onUnmounted(() => {
   background: #10b981;
   color: #fff;
   border-radius: 50%;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .label-row-body {
@@ -936,13 +935,14 @@ onUnmounted(() => {
   color: #94a3b8;
   font-weight: 600;
 }
-.label-row-conf {
+.label-row-user {
   font-size: 11px;
-  color: #10b981;
+  color: #a5b4fc;
   display: inline-flex;
   align-items: center;
   gap: 3px;
 }
+.label-row-user.muted { color: #64748b; }
 .label-row-date {
   font-size: 11px;
   color: #475569;
@@ -1005,10 +1005,65 @@ onUnmounted(() => {
 .human-section { border-left: 2px solid #10b981; padding-left: 8px; }
 .human-section.done { border-left-color: #475569; }
 
+/* ── 三图对比 Modal ── */
+.compare-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.compare-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.compare-cell img {
+  width: 100%;
+  max-height: 52vh;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+.compare-empty {
+  height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  background: #0f172a;
+  border: 1px dashed rgba(148, 163, 184, 0.2);
+  color: #475569;
+  font-size: 26px;
+}
+.compare-empty span { font-size: 12px; }
+.compare-caption {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+}
+.compare-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #cbd5e1;
+}
+.summary-item.muted { color: #64748b; }
+
 @media (max-width: 768px) {
   .label-row { flex-direction: column; gap: 8px; padding: 10px; }
-  .label-row-thumb { width: 100%; height: 120px; }
-  .label-row-thumb img { object-fit: contain; }
+  .label-row-thumbs { width: 100%; }
+  .thumb-cell { flex: 1; height: 100px; }
+  .compare-grid { grid-template-columns: 1fr; }
+  .compare-empty { height: 160px; }
   .human-section .section-form { gap: 4px; }
 }
 </style>

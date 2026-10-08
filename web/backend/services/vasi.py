@@ -1,6 +1,7 @@
 """
 VASI评估服务
 """
+from web.backend.utils.timeutils import iso_utc
 
 import os
 import json
@@ -12,9 +13,11 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from web.backend.models.vasi import VASIAssessment
+from web.backend.utils.assessment_body_sites import BODY_SITE_LABELS as SHARED_BODY_SITE_LABELS
 from web.backend.database.database import get_db
-from web.backend.services.vasi_segmentation import segment_vitiligo, segment_vitiligo_guided, _segment_with_tiling
+from web.backend.services.vasi_segmentation import segment_vitiligo, segment_vitiligo_guided, consolidate_segmentation
 from web.backend.services.vasi_formula import compute_vasi_v2
+from web.backend.services.assessment_measurement import (decode_mask, measure_layers, normalize_capture, read_details)
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +53,75 @@ def _has_valid_image_magic(data: bytes) -> bool:
                 return len(data) >= 12 and data[8:12] == b"WEBP"
             return True
     return False
+
+
+def _data_url_to_mask(data_url: Optional[str], target_shape) -> Optional[Any]:
+    """data URL PNG → 二值掩膜（目标尺寸）。失败返回 None。"""
+    return decode_mask(data_url, target_shape)
+
+
+def _run_patient_consensus_sync(db: Session, user_id: int, body_site: str,
+                                image_file: bytes,
+                                vasi_result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """评估时执行患者级画布管线 + 共识（同步，供 asyncio.to_thread 调用）。
+
+    SAM 掩膜在预处理图坐标（最长边 1024），需映射回原图坐标后参与共识。
+    分歧时自动排入 LLM 裁判队列（后台限速处理）。
+    """
+    import cv2
+    import numpy as np
+
+    from web.backend.services.vasi_consensus import run_patient_consensus
+    from web.backend.services.vasi_autoloop import queue_judge
+
+    orig = cv2.imdecode(np.frombuffer(image_file, np.uint8), cv2.IMREAD_COLOR)
+    if orig is None:
+        return None
+    details = vasi_result.get("details") or {}
+    sam_lesion = _data_url_to_mask(details.get("lesion_layer_data_url"), orig.shape)
+    sam_skin = _data_url_to_mask(details.get("skin_layer_data_url"), orig.shape)
+
+    consensus_data = run_patient_consensus(
+        db, user_id, body_site, image_file, None,
+        sam_lesion_mask_orig=sam_lesion, sam_skin_mask_orig=sam_skin,
+    )
+
+    if not consensus_data or not consensus_data.get("participated"):
+        return consensus_data
+
+    cons = consensus_data.get("consensus") or {}
+    if cons.get("verdict") == "disputed_needs_judge":
+        # 分歧区 = SAM 与患者掩膜并集 bbox（原图坐标，归一化）
+        masks = [m for m in (sam_lesion, consensus_data.get("patient_mask_orig"))
+                 if m is not None and m.any()]
+        try:
+            union = np.zeros(orig.shape[:2], dtype=bool)
+            for m in masks:
+                union |= m
+            if union.any():
+                ys, xs = np.where(union)
+                h, w = orig.shape[:2]
+                bbox = [float(xs.min()) / w, float(ys.min()) / h,
+                        float(xs.max()) / w, float(ys.max()) / h]
+                # 找到评估 id 后入队（评估记录尚未创建，此处先挂到共识 JSON，
+                # assess_vasi 落库后由 queue_judge_for_assessment 处理）
+                consensus_data["_judge_bbox"] = bbox
+        except Exception:
+            pass
+    return consensus_data
+
+
+def queue_judge_for_assessment(db: Session, assessment_id: int,
+                               consensus_data: Dict[str, Any]) -> bool:
+    """评估落库后：分歧区排入 LLM 裁判队列。"""
+    bbox = consensus_data.get("_judge_bbox")
+    if not bbox:
+        return False
+    try:
+        from web.backend.services.vasi_autoloop import queue_judge
+        return queue_judge(db, assessment_id, {"bbox": bbox})
+    except Exception:
+        return False
 
 
 class VASIService:
@@ -92,31 +164,9 @@ class VASIService:
         "right_foot",
     ]
 
-    BODY_SITE_LABELS = {
-        "face": "面部",
-        "neck": "颈部",
-        "hands": "手部",
-        "abdomen": "腹部",
-        "back": "背部",
-        "arms": "上肢",
-        "legs": "下肢",
-        "feet": "足部",
-        "other": "其他",
-        # Sided variants
-        "chest": "胸部",
-        "upper_back": "上背部",
-        "lower_back": "下背部",
-        "left_arm": "左臂",
-        "right_arm": "右臂",
-        "left_hand": "左手",
-        "right_hand": "右手",
-        "left_leg": "左腿",
-        "right_leg": "右腿",
-        "left_foot": "左脚",
-        "right_foot": "右脚",
-    }
+    BODY_SITE_LABELS = SHARED_BODY_SITE_LABELS
 
-    ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/jpg"]
+    ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/jpg", "image/webp"]
 
     # 最大图片大小（10MB）
     MAX_IMAGE_SIZE = 10 * 1024 * 1024
@@ -163,6 +213,7 @@ class VASIService:
         image_type: str,
         image_filename: str,
         precision: str = "quick",
+        annotation_protocol: str = "",
     ) -> VASIAssessment:
         """执行VASI评估
 
@@ -183,6 +234,11 @@ class VASIService:
         self._validate_input(image_file, body_site, image_type)
 
         body_site = self.BODY_SITE_LABELS.get(body_site, body_site)
+        normalized_image = normalize_capture(image_file)
+        if self.quality_checker and self.quality_checker.available:
+            quality = self.quality_checker.check_all(normalized_image)
+            if quality.overall == "poor":
+                raise VASIAssessmentError("照片暂不适合分析：" + "；".join(quality.suggestions))
 
         # 上传图片到对象存储（TODO：实现实际的OSS上传）
         image_url, image_key = await self._upload_image(
@@ -190,7 +246,78 @@ class VASIService:
         )
 
         # 调用VASI识别API（TODO：等方案确定后实现）
-        vasi_result = await self._call_vasi_api(image_file, precision, body_site)
+        if annotation_protocol:
+            from web.backend.services.annotation_contract import PROTOCOL, AnnotationContractError
+            from web.backend.services.annotation_provider import propose_annotation
+            from web.backend.services.vasi_pixel_refine import (
+                cv_only_layers,
+                refine_annotation_layers,
+            )
+            if annotation_protocol != PROTOCOL:
+                raise VASIAssessmentError("不支持的标注协议")
+            try:
+                vasi_result = await propose_annotation(normalized_image, body_site)
+            except AnnotationContractError as exc:
+                # 视觉模型拒答/不可用：降级为纯 CV 逐像素，仍交付逐像素结果而不是报错。
+                # 设计见 docs/specs/2026-09-12-pixel-level-vitiligo-refine-design.md §3.4
+                degraded = await asyncio.to_thread(cv_only_layers, normalized_image)
+                if not degraded:
+                    raise VASIAssessmentError(str(exc)) from exc
+                logger.info(
+                    "annotation model unavailable (%s); degraded to cv-only pixel layers",
+                    type(exc).__name__,
+                )
+                vasi_result = {
+                    "vasi_score": 0.0, "area_percentage": 0.0,
+                    "classification": "未确定", "stage": "未知",
+                    "confidence": None, "contours": [], "source": "cv-pixel-fallback",
+                    "details": degraded,
+                    "raw_response": {
+                        "source": "cv-pixel-fallback",
+                        "reason": "annotation model unavailable",
+                    },
+                    "visual_features": None,
+                }
+            else:
+                # 逐像素精修：大模型只给候选，SAM/边缘感知决定最终边界。
+                geometry = (vasi_result.get("raw_response") or {}).get("geometry") or {}
+                refined = await asyncio.to_thread(
+                    refine_annotation_layers, normalized_image, geometry
+                )
+                if refined:
+                    prior_annotation = dict(vasi_result.get("details", {}).get("annotation") or {})
+                    vasi_result.setdefault("details", {}).update(refined)
+                    vasi_result["details"]["annotation"] = {**prior_annotation, **refined["annotation"]}
+                    if (refined.get("provenance") or {}).get("status") != "candidate-only":
+                        vasi_result["source"] = "vision-outline-v1+refine"
+        else:
+            vasi_result = await self._call_vasi_api(normalized_image, precision, body_site)
+
+        measurement = measure_layers(
+            vasi_result.get("details", {}).get("skin_layer_data_url"),
+            vasi_result.get("details", {}).get("lesion_layer_data_url"), normalized_image,
+        )
+        from web.backend.services.annotation_measurement_policy import guard_annotation_measurement
+        measurement = guard_annotation_measurement(measurement, vasi_result.get("details", {}).get("annotation"))
+        vasi_result.setdefault("details", {})["measurement"] = measurement
+        # Legacy numeric fields are retained for API compatibility only.
+        vasi_result["stage"] = "未知"
+        vasi_result["classification"] = "未确定"
+        if measurement["area_percentage"] is not None:
+            vasi_result["area_percentage"] = measurement["area_percentage"]
+
+        # ── 患者级画布管线 + 共识（全自动自循环，2026-08-27）──
+        # SAM 掩膜（预处理图坐标）与患者像素分类器掩膜（统一画布坐标）共识；
+        # 共识达标 + 质检门禁通过 → 自动终审 active，无需用户确认。
+        consensus_data: Optional[Dict[str, Any]] = None
+        try:
+            if not annotation_protocol:
+                consensus_data = await asyncio.to_thread(
+                    _run_patient_consensus_sync,
+                    self.db, user_id, body_site, normalized_image, vasi_result,
+                )
+        except Exception as e:
+            logger.info("patient consensus skipped (%s)", e)
 
         # 创建评估记录
         details_data = vasi_result.get("details", {})
@@ -214,8 +341,26 @@ class VASIService:
             preprocessed,
         )
 
+        # ── 共识结果与自动终审判定 ──
+        auto_finalized = False
+        patient_model_version: Optional[str] = None
+        consensus_json: Optional[str] = None
+        canvas_json: Optional[str] = None
+        if consensus_data:
+            canvas_json = json.dumps(consensus_data["snapshot"], ensure_ascii=False) \
+                if consensus_data.get("snapshot") else None
+            patient_model_version = consensus_data.get("patient_model_version")
+            consensus_json = json.dumps(consensus_data.get("consensus") or {},
+                                        ensure_ascii=False)
+            quality_overall = None
+            if isinstance(details_data, dict) and details_data.get("quality"):
+                quality_overall = details_data["quality"].get("overall")
+            if (consensus_data.get("auto_finalize") and quality_overall in ("good", "acceptable")
+                    and measurement["status"] == "measured"):
+                auto_finalized = True
+
         assessment = VASIAssessment(
-            status="draft",  # 草稿状态，用户确认后才变为active
+            status="active" if auto_finalized else "draft",
             user_id=user_id,
             image_url=image_url,
             image_key=image_key,
@@ -230,14 +375,34 @@ class VASIService:
             confidence=confidence,
             quality_report_json=quality_report_json,
             preprocessed=preprocessed,
+            image_hash=__import__("hashlib").sha256(image_file).hexdigest(),
             ai_skin_layer=details_data.get("skin_layer_data_url"),
             ai_lesion_layer=details_data.get("lesion_layer_data_url"),
             visual_features_json=json.dumps(vasi_result.get("visual_features")) if vasi_result.get("visual_features") else None,
+            canvas_json=canvas_json,
+            patient_model_version=patient_model_version,
+            consensus_json=consensus_json,
+            auto_finalized=auto_finalized,
         )
 
         self.db.add(assessment)
         self.db.commit()
         self.db.refresh(assessment)
+
+        # 分歧评估 → LLM 裁判队列（后台限速复核，无需用户参与）
+        if consensus_data and consensus_data.get("_judge_bbox"):
+            try:
+                queue_judge_for_assessment(self.db, assessment.id, consensus_data)
+            except Exception as e:
+                logger.info("queue judge skipped: %s", e)
+
+        if auto_finalized:
+            logger.info(
+                "VASI assessment %d auto-finalized (consensus=%s, model=%s)",
+                assessment.id,
+                (json.loads(consensus_json) if consensus_json else {}).get("verdict"),
+                patient_model_version,
+            )
 
         return assessment
 
@@ -255,6 +420,12 @@ class VASIService:
         )
         if not assessment:
             return False
+        if read_details(assessment.details).get("quality_reject"):
+            raise VASIAssessmentError("照片质检未通过，请重新拍摄")
+        details = read_details(assessment.details)
+        annotation = details.get("annotation") or {}
+        if annotation and annotation.get("review_state") != "user_reviewed":
+            raise VASIAssessmentError("请先核对皮肤、浅色范围和不确定区域后保存")
         if assessment.status == "active":
             return True  # already finalized
         assessment.status = "active"
@@ -477,8 +648,8 @@ class VASIService:
             return {
                 "body_site": body_site or "全部",
                 "period": {
-                    "start": start_date.isoformat(),
-                    "end": end_date.isoformat(),
+                    "start": iso_utc(start_date),
+                    "end": iso_utc(end_date),
                 },
                 "data": [],
                 "summary": {
@@ -490,49 +661,14 @@ class VASIService:
                 },
             }
 
-        # Prefer final_vasi_score (user-corrected) when present, else raw vasi_score.
-        def _score(a):
-            return a.final_vasi_score if a.final_vasi_score is not None else a.vasi_score
-
-        # 构建趋势数据
-        data = [
-            {
-                "date": a.assessment_date.isoformat(),
-                "vasi_score": _score(a),
-                "stage": a.stage,
-            }
-            for a in assessments
-        ]
-
-        # 计算趋势总结
-        first_score = _score(assessments[0])
-        last_score = _score(assessments[-1])
-        change = last_score - first_score
-
-        if first_score > 0:
-            change_percent = (change / first_score) * 100
-        else:
-            change_percent = 0
-
-        # 判断趋势
-        if abs(change_percent) < 5:
-            trend = "稳定"
-        elif change_percent < 0:
-            trend = "好转"
-        else:
-            trend = "恶化"
-
+        # Photographic scores have changing ROIs/versions and cannot form a
+        # clinical time series. Use the verified pair-comparison endpoint.
         return {
             "body_site": body_site or "全部",
-            "period": {"start": start_date.isoformat(), "end": end_date.isoformat()},
-            "data": data,
-            "summary": {
-                "first_score": first_score,
-                "last_score": last_score,
-                "change": round(change, 2),
-                "change_percent": round(change_percent, 1),
-                "trend": trend,
-            },
+            "period": {"start": iso_utc(start_date), "end": iso_utc(end_date)},
+            "data": [],
+            "summary": {"first_score": None, "last_score": None, "change": None,
+                        "change_percent": None, "trend": "无法可靠比较"},
         }
 
     def _validate_input(
@@ -625,11 +761,17 @@ class VASIService:
             # suggestions; no clinical score is persisted for poor photos.
             if quality.overall == "poor":
                 logger.info("VASI quality reject (overall=poor, blur=%.1f)", quality.blur_score)
-                return self._quality_reject_response(quality)
+                raise VASIAssessmentError("照片暂不适合分析：" + "；".join(quality.suggestions))
 
+        # 质检摘要随结果带出（自动终审门禁用，additive）
+        def _attach_quality(result: Dict[str, Any]) -> None:
+            if quality_summary and isinstance(result, dict):
+                details = result.get("details")
+                if isinstance(details, dict):
+                    details["quality"] = quality_summary
+
+        # Keep color/edge evidence unenhanced. Segmentation handles its own resizing.
         processed_image = image_file
-        if self.preprocessor and self.preprocessor.available:
-            processed_image = self.preprocessor.preprocess(image_file)
 
         # Step 3: VLM first — get classification + localization guidance
         # Enable ensemble (run twice, intersect) only in precise mode for stability
@@ -680,36 +822,14 @@ class VASIService:
                     filtered_count, verified_count, len(lesions), raw_lesion_count,
                 )
 
-            # ── Bbox size sanity check: reject overly broad bboxes ──
-            # VLM sometimes produces region-level (not lesion-level) bboxes.
-            # Threshold is body-site-adaptive: small body parts (face/hands/feet/
-            # neck) legitimately have lesions <25% of a close-up, but trunk/back/
-            # legs/arms close-ups and generalized vitiligo can legitimately fill a
-            # much larger fraction — a flat 25% there would drop real large patches.
-            SMALL_SITE_MAX_BBOX_PCT = 25.0
-            LARGE_SITE_MAX_BBOX_PCT = 45.0
-            _small_sites = {"面部", "颈部", "手部", "左手", "右手", "足部", "左脚", "右脚", "其他"}
-            MAX_BBOX_PCT = SMALL_SITE_MAX_BBOX_PCT if body_site in _small_sites else LARGE_SITE_MAX_BBOX_PCT
-            raw_lesions = lesions
-            lesions = []
-            for l in raw_lesions:
-                bbox = l.get("bbox")
-                if bbox and len(bbox) == 4:
-                    bbox_w = float(bbox[2]) - float(bbox[0])
-                    bbox_h = float(bbox[3]) - float(bbox[1])
-                    bbox_pct = bbox_w * bbox_h * 100
-                    if bbox_pct > MAX_BBOX_PCT:
-                        logger.warning(
-                            "Bbox sanity: dropped lesion (%.1f%% bbox > %.1f%% max), conf=%.2f",
-                            bbox_pct, MAX_BBOX_PCT, float(l.get("confidence", 0.5)),
-                        )
-                        continue
-                lesions.append(l)
-            if len(lesions) < len(raw_lesions):
-                logger.info(
-                    "Bbox sanity: dropped %d/%d oversized lesions",
-                    len(raw_lesions) - len(lesions), len(raw_lesions),
-                )
+            # Size alone is not evidence against a lesion. Preserve large patches;
+            # reject only invalid geometry, including non-finite/out-of-frame boxes.
+            import math
+            lesions = [l for l in lesions if not l.get("bbox") or (
+                len(l["bbox"]) == 4
+                and all(isinstance(v, (float, int)) and math.isfinite(v) and 0 <= v <= 1 for v in l["bbox"])
+                and l["bbox"][2] > l["bbox"][0] and l["bbox"][3] > l["bbox"][1]
+            )]
 
             # Write the filtered lesion list back into vlm_result so downstream
             # enrichment (per-lesion depig/contrast/confidence matching) uses the
@@ -788,7 +908,7 @@ class VASIService:
         else:
             logger.info("No VLM guidance available, using auto SAM")
             seg_result = await asyncio.to_thread(
-                segment_vitiligo, processed_image, 0.005, 5, precision
+                segment_vitiligo, processed_image, 0.005, 100, precision
             )
 
         seg_contours: List[Dict[str, Any]] = []
@@ -808,60 +928,18 @@ class VASIService:
                 len(seg_contours), seg_area or 0,
                 skin_region_ratio or 0, seg_source,
             )
-            # If guided SAM found <2 patches, try tiling for small lesions
-            if len(seg_contours) < 2 and precision == "quick":
-                logger.info("Few contours (%d), trying tiling for small lesions", len(seg_contours))
-                tile_result = await asyncio.to_thread(
-                    _segment_with_tiling, processed_image, 0.3, precision
-                )
-                if tile_result["success"] and tile_result["contours"]:
-                    # Merge: deduplicate with existing contours
-                    existing_areas = {c.get("label", ""): c.get("area_percent", 0) for c in seg_contours}
-                    for tc in tile_result["contours"]:
-                        if tc["area_percent"] > 0.3:
-                            seg_contours.append(tc)
-                    seg_area = sum(c["area_percent"] for c in seg_contours)
-                    seg_source += "+tiled"
-                    logger.info(
-                        "Tiling added %d patches, total now %d",
-                        len(tile_result["contours"]), len(seg_contours),
-                    )
         elif has_guidance:
-            # Guided SAM failed — retry with auto SAM
-            logger.warning("VLM-guided SAM failed (%s), retrying with auto SAM", seg_result.get("error"))
-            seg_result = await asyncio.to_thread(
-                segment_vitiligo, processed_image, 0.005, 5, precision
-            )
-            if seg_result["success"]:
-                seg_contours = seg_result["contours"]
-                seg_area = seg_result["total_area_percent"]
-                seg_source = seg_result["source"]
-                skin_layer_data_url = seg_result.get("skin_layer_data_url")
-                lesion_layer_data_url = seg_result.get("lesion_layer_data_url")
-            else:
-                # Auto SAM also failed — try tiling as last resort
-                logger.warning("Auto SAM failed (%s), trying tiling", seg_result.get("error"))
-                tile_result = await asyncio.to_thread(
-                    _segment_with_tiling, processed_image, 0.3, precision
-                )
-                if tile_result["success"]:
-                    seg_contours = tile_result["contours"]
-                    seg_area = tile_result["total_area_percent"]
-                    seg_source = tile_result["source"]
-                    logger.info("Tiling fallback: %d patches", len(seg_contours))
-        else:
-            # No guidance — auto SAM failed, try tiling
-            logger.warning("Auto SAM failed (%s), trying tiling", seg_result.get("error"))
-            tile_result = await asyncio.to_thread(
-                _segment_with_tiling, processed_image, 0.3, precision
-            )
-            if tile_result["success"]:
-                seg_contours = tile_result["contours"]
-                seg_area = tile_result["total_area_percent"]
-                seg_source = tile_result["source"]
-                logger.info("No-guidance tiling: %d patches", len(seg_contours))
-            else:
-                logger.warning("All segmentation methods failed")
+            seg_result = await asyncio.to_thread(segment_vitiligo, processed_image, 0.005, 100, precision)
+        # A single canonical binary mask supplies both overlays and numeric area.
+        # Do not append unclassified tile masks or add overlapping polygon areas.
+        seg_result = consolidate_segmentation(processed_image, seg_result)
+        seg_contours = seg_result.get("contours", [])
+        seg_area = seg_result.get("total_area_percent") if seg_result.get("success") else None
+        seg_source = seg_result.get("source", "none")
+        skin_layer_data_url = seg_result.get("skin_layer_data_url")
+        lesion_layer_data_url = seg_result.get("lesion_layer_data_url")
+        skin_region_ratio = seg_result.get("skin_region_ratio")
+        denominator = seg_result.get("denominator", "unknown")
 
         if vlm_result is not None:
             if seg_area is not None:
@@ -948,7 +1026,7 @@ class VASIService:
                 # the VLM-returned body_site can drift (e.g. default "hands"), which would
                 # mis-weight region area (face 4.5% vs legs 18%).
                 try:
-                    body_site = vlm_result.get("body_site") or body_site
+                    # The validated submitted site remains authoritative.
                     formula_score = compute_vasi_v2(
                         body_site=body_site,
                         area_pct_in_region=raw_area,
@@ -981,6 +1059,7 @@ class VASIService:
                 vlm_result["details"]["skin_layer_data_url"] = skin_layer_data_url
             if lesion_layer_data_url:
                 vlm_result["details"]["lesion_layer_data_url"] = lesion_layer_data_url
+            _attach_quality(vlm_result)
             return vlm_result
 
         # Step 5: VLM failed but SAM succeeded → construct result from SAM
@@ -997,11 +1076,11 @@ class VASIService:
                 )
             except Exception:
                 formula_score = min((seg_area or 0) * 2.5, 100)
-            return {
+            sam_only_result = {
                 "vasi_score": round(formula_score, 1),
                 "area_percentage": round(seg_area, 1) if seg_area else 0,
                 "classification": "未确定",
-                "stage": "稳定",
+                "stage": "未知",
                 "contours": seg_contours,
                 "visual_features": {
                     "visibility": {"level": "visible", "description": "照片中可见色素减退区域"},
@@ -1031,6 +1110,8 @@ class VASIService:
                                 "depigmentation_level": 1.0,
                 "source": f"sam-only-{seg_source}",
             }
+            _attach_quality(sam_only_result)
+            return sam_only_result
 
         # Step 6: nnU-Net fallback (remote API)
         if self.segmentation and self.segmentation.available:
@@ -1103,9 +1184,15 @@ class VASIService:
                 return None
 
             vision_model = config.get("vision_model", "qwen-vl-max")
+            # max_retries=0 is critical: the SDK defaults to 2 retries, and each
+            # attempt can block up to `timeout` (120s). A slow/unresponsive VLM
+            # endpoint would otherwise retry 3×120s = 360s, blowing past the
+            # frontend 180s timeout and nginx 300s proxy timeout. Fail fast once
+            # and let the caller fall back to CV segmentation instead.
             client = openai.OpenAI(
                 api_key=config["api_key"],
                 base_url=config["base_url"],
+                max_retries=0,
             )
 
             b64_image = base64.b64encode(image_file).decode("utf-8")
@@ -1116,105 +1203,29 @@ class VASIService:
             elif image_file[:4] == b"RIFF" and image_file[8:12] == b"WEBP":
                 mime_type = "image/webp"
 
-            # Phase 2: Dynamic prompt with few-shot examples from user corrections
+            # Phase 2: Dynamic prompt — 优先 DB 可编辑提示词（管理后台可持续迭代），
+            # 其次自进化引擎（当前已停用），最后回退内置默认模板。
+            prompt = None
             try:
                 from web.backend.experiments.vasi_prompt_evolver import get_prompt_evolver
                 evolver = get_prompt_evolver(self.db)
-                prompt = evolver.get_current_prompt()
-                logger.info("Using evolved prompt (%d chars)", len(prompt))
+                if evolver is not None:
+                    prompt = evolver.get_current_prompt()
+                    logger.info("Using evolved prompt (%d chars)", len(prompt))
             except Exception as e:
-                logger.warning("Prompt evolver unavailable, using static prompt: %s", e)
-                prompt = """你是一位资深皮肤科AI助手，请精确分析这张皮肤照片中的白斑（白癜风）特征。
+                logger.info("Prompt evolver unavailable (%s), will load DB prompt", e)
 
-重要：你不是医生，不能医疗诊断。用"观察到""可见"等客观措辞。
-
-【皮肤背景评估（先做这步）】
-1. 观察照片中暴露的皮肤区域，估计整体肤色深浅（Fitzpatrick分型 I-VI：I最白易灼伤、VI最深不易灼伤）。
-2. 白斑的"脱色"永远是相对于周围正常皮肤而言——必须先认准正常皮肤基线，再判断哪里更白。
-
-【色素脱失等级量化标准（contrast_to_skin 据此判定）】
-- 0级(无)：正常肤色，无色素脱失。对比度 < 0.10
-- 1级(轻度)：轻度色素减退，隐约可见淡白色。对比度 0.10-0.20
-- 2级(中度)：明显色素减退，呈乳白色。对比度 0.20-0.40
-- 3级(重度)：几乎完全色素脱失，呈瓷白色或纯白色。对比度 > 0.40
-contrast_to_skin = 白斑区与紧邻正常皮肤的明度差比值，范围0-1。
-
-【必须区分的非白斑区域（重要，勿误判）】
-- 照片高光/反光/过曝区域：呈镜面白，多在皮肤凸起处，边界常与光照方向一致，不是独立色斑。
-- 疤痕、白化痣、花斑癣、炎症后色素减退：颜色/质地与白癜风不同，谨慎区分。
-- 参考卡、衣物、背景：非皮肤区域，一律排除。
-- 分散的白斑碎片必须各自独立标注，不要合并成一个大块。
-
-【边缘识别要求（本次重点）】
-- bbox 必须紧贴白斑真实边界，不要留大边距，也不要切掉边缘。
-- edge_points 给出3-8个沿白斑轮廓分布的边界关键点，覆盖最外凸、最内凹处，用于精修不规则边缘。
-- 边缘清晰(diffuse边界)的白斑：edge_points 沿可见色素过渡带外缘取点。
-- 边缘模糊(diffuse边界)的白斑：edge_points 沿主观可辨的最外圈脱色带取点。
-
-【你需要输出的核心字段】
-1. skin_region: 皮肤区域
-   - bbox: [x1, y1, x2, y2] 照片中皮肤区域的归一化包围盒 (0-1)
-   - fitzpatrick: 估计分型 "I"-"VI"
-2. suspected_lesions: 疑似白斑列表，每项包含:
-   - center: [x, y] 白斑几何中心 (0-1归一化坐标)
-   - bbox: [x1, y1, x2, y2] 紧贴白斑边界的归一化包围盒 (0-1)
-   - edge_points: [[x,y], ...] 3-8个沿白斑轮廓的归一化边界关键点 (0-1)
-   - estimated_size_percent: 占照片面积百分比 (数字)
-   - depigmentation_level: 1(轻度) / 2(中度) / 3(重度)
-   - contrast_to_skin: 与周围正常皮肤的对比度 0-1 (按上述量化标准)
-   - boundary_type: clear(清晰) / diffuse(模糊弥散) / mixed(混合)
-   - confidence: 该处为白斑的置信度 0-1
-3. visual_features: 视觉特征概述
-   - visibility: {"level": visible/faint/subtle, "description": "..."}
-   - color: {"level": pale_white/milky_white/porcelain_white/pure_white, "description": "..."}
-   - border: {"level": clear/partial/unclear, "description": "..."}
-   - shape: {"pattern": round/oval/irregular/linear, "description": "..."}
-   - surface: {"texture": smooth/scaly/atrophic, "description": "..."}
-   - distribution: {"pattern": localized/segmental/bilateral/generalized/scattered, "description": "..."}
-   - similarity_note: 一句总结 (20字以内)
-   - recommendation: 建议 (如"建议皮肤科就诊")
-4. classification: 分型 (节段型/非节段型/混合型/未确定)
-5. stage: 阶段 (进展期/稳定期/好转期)
-6. overall_depigmentation: 整体脱色程度 1-3
-7. confidence: 本次整体分析置信度 0-1
-
-【输出要求】
-- 只返回JSON，不要任何其他文字、不要markdown代码块。
-- 所有坐标归一化到0-1 (左上角0,0 右下角1,1)。
-- bbox/edge_points/center 必须互不矛盾：edge_points 应落在 bbox 内部或边缘，center 应在 bbox 内部。
-- 如果没有白斑特征: suspected_lesions=[] 且 overall_depigmentation=0。
-
-返回JSON格式:
-{
-  "skin_region": {
-    "bbox": [0.10, 0.10, 0.90, 0.90],
-    "fitzpatrick": "III"
-  },
-  "suspected_lesions": [{
-    "center": [0.35, 0.42],
-    "bbox": [0.28, 0.35, 0.42, 0.49],
-    "edge_points": [[0.30, 0.40], [0.35, 0.36], [0.41, 0.42], [0.38, 0.48], [0.30, 0.47]],
-    "estimated_size_percent": 8.0,
-    "depigmentation_level": 2,
-    "contrast_to_skin": 0.35,
-    "boundary_type": "clear",
-    "confidence": 0.85
-  }],
-  "visual_features": {
-    "visibility": {"level": "visible", "description": "..."},
-    "color": {"level": "milky_white", "description": "..."},
-    "border": {"level": "clear", "description": "..."},
-    "shape": {"pattern": "round", "description": "..."},
-    "surface": {"texture": "smooth", "description": "..."},
-    "distribution": {"pattern": "localized", "description": "..."},
-    "similarity_note": "...",
-    "recommendation": "..."
-  },
-  "classification": "非节段型",
-  "stage": "稳定期",
-  "overall_depigmentation": 2,
-  "confidence": 0.8
-}"""
+            if not prompt:
+                try:
+                    from web.backend.services.llm_prompt_service import (
+                        LLMPromptService,
+                        VASI_VISION_PROMPT,
+                    )
+                    prompt = LLMPromptService.get_prompt(self.db, "vasi", "vision_analysis")
+                    logger.info("Using DB prompt (%d chars)", len(prompt))
+                except Exception as e2:
+                    logger.warning("Prompt service unavailable (%s), using builtin default", e2)
+                    prompt = VASI_VISION_PROMPT
 
             logger.info(
                 "Calling vision model: provider=%s, model=%s, image_size=%d bytes",
@@ -1230,7 +1241,12 @@ contrast_to_skin = 白斑区与紧邻正常皮肤的明度差比值，范围0-1�
             vlm_max_tokens = int(os.getenv("VASI_VLM_MAX_TOKENS", "8192"))
             vlm_timeout = int(os.getenv("VASI_VLM_TIMEOUT", "120"))
 
-            response = client.chat.completions.create(
+            # Offload the synchronous (blocking) OpenAI SDK call to a worker
+            # thread. Running it directly in the event loop would freeze the
+            # entire single-worker backend for the full VLM latency (~76-120s),
+            # stalling every other request (health checks, notifications, file
+            # serving) for all users during each assessment.
+            request_kwargs = dict(
                 model=vision_model,
                 messages=[
                     {
@@ -1251,7 +1267,22 @@ contrast_to_skin = 白斑区与紧邻正常皮肤的明度差比值，范围0-1�
                 timeout=vlm_timeout,
             )
 
-            content = (response.choices[0].message.content or "").strip()
+            # deepseek 推理视觉模型偶发「推理耗尽 token、内容为空」，重试一次
+            response = None
+            content = ""
+            for attempt in range(2):
+                response = await asyncio.to_thread(
+                    client.chat.completions.create, **request_kwargs
+                )
+                content = (response.choices[0].message.content or "").strip()
+                if content:
+                    break
+                logger.warning(
+                    "vasi: VLM 返回空内容（第 %s 次，finish=%s），重试",
+                    attempt + 1,
+                    response.choices[0].finish_reason,
+                )
+                await asyncio.sleep(1.0)
 
             # Strip markdown code fences
             if content.startswith("```"):

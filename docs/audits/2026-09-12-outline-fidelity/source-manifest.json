@@ -1,0 +1,6 @@
+{
+  "web/backend/services/annotation_provider.py": "f245567fe8e2bd819c7de080c35f63999d145c520fb6d49a131ba83b22caf1fa",
+  "web/backend/services/annotation_contract.py": "af2bf708ea7168ed2c3d87479cfcdb5493350d6382100e7fac0341e766c80e53",
+  "web/backend/services/vasi_pixel_refine.py": "bd58441040a1608998a951b6c36e20ab0e12190d6f8cd4f6ee26a0806b3c4c48",
+  "web/backend/services/vasi.py": "811fb3e0908c4560df3879ec4d74f6c1c3b1775f8e4b20237e6068f5f6d7011f"
+}

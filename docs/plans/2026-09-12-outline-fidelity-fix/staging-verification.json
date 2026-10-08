@@ -1,0 +1,21 @@
+{
+  "version": {
+    "buildTime": 1789224658528,
+    "env": "staging",
+    "lastProdBuildTime": 1789178116492
+  },
+  "manifest": "SubSkin [STAGING]",
+  "service_worker_bytes": 25053,
+  "entry_assets": [
+    "/assets/index-BfwwiJO9.js",
+    "/assets/index-BRbzQrFS.css"
+  ],
+  "health": "ok",
+  "refinement_version": "pixel-refine-v2",
+  "verified_at": "2026-09-12T23:22:29.944628+08:00",
+  "shared_backend_restart": "user_confirmed_completed",
+  "production_health": "ok",
+  "production_frontend_unchanged": true,
+  "browser_page": "assessment loaded and update applied",
+  "validation_scope": "deployment smoke check; no new upload or clinical accuracy claim"
+}

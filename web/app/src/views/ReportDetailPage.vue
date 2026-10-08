@@ -18,7 +18,10 @@ const interpretation = ref<InterpretationResult | null>(null)
 // Progress state
 const interpreting = ref(false)
 const progressStage = ref(0)
+const interpretError = ref('')
 let pollingInterval: number | null = null
+let progressStageInterval: number | null = null
+let pollingStartedAt = 0
 
 // Profile confirmation state
 const skipProfileLink = ref(false)
@@ -49,11 +52,17 @@ async function loadReport() {
 
 async function triggerInterpret() {
   interpreting.value = true
+  interpretError.value = ''
   progressStage.value = 1
   
   try {
     // Start interpretation in background
-    medicalReportApi.interpret(reportId.value).catch(() => {})
+    medicalReportApi.interpret(reportId.value).catch(async () => {
+      stopPolling()
+      interpreting.value = false
+      interpretError.value = 'AI 解读服务暂时不可用，请稍后重试'
+      await loadReport()
+    })
     
     // Start polling
     startPolling()
@@ -63,10 +72,11 @@ async function triggerInterpret() {
 }
 
 function startPolling() {
-  if (pollingInterval) clearInterval(pollingInterval)
+  stopPolling()
+  pollingStartedAt = Date.now()
   
   // Simulate progress stages since we don't have real SSE
-  const stageInterval = setInterval(() => {
+  progressStageInterval = window.setInterval(() => {
     if (progressStage.value < 4) {
       progressStage.value++
     }
@@ -74,11 +84,15 @@ function startPolling() {
   
   pollingInterval = window.setInterval(async () => {
     try {
+      if (Date.now() - pollingStartedAt > 120_000) {
+        stopPolling()
+        interpreting.value = false
+        interpretError.value = 'AI 解读超时，请稍后重试'
+        return
+      }
       const result = await medicalReportApi.getInterpretation(reportId.value)
       if (result.interpreted) {
-        clearInterval(pollingInterval!)
-        clearInterval(stageInterval)
-        pollingInterval = null
+        stopPolling()
         interpreting.value = false
         await loadReport()
       }
@@ -86,6 +100,17 @@ function startPolling() {
       // ignore polling errors
     }
   }, 2000)
+}
+
+function stopPolling() {
+  if (pollingInterval) {
+    clearInterval(pollingInterval)
+    pollingInterval = null
+  }
+  if (progressStageInterval) {
+    clearInterval(progressStageInterval)
+    progressStageInterval = null
+  }
 }
 
 function handleProfileLinked(profileId: number) {
@@ -103,7 +128,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (pollingInterval) clearInterval(pollingInterval)
+  stopPolling()
 })
 
 function formatDate(dateStr: string) {
@@ -112,37 +137,37 @@ function formatDate(dateStr: string) {
 </script>
 
 <template>
-  <div class="min-h-dvh bg-gray-50  pb-20 md:pb-8">
-    <!-- Header -->
-    <header class="sticky top-0 z-30 bg-white/80  backdrop-blur border-b border-gray-200 dark:border-gray-700">
-      <div class="max-w-6xl mx-auto flex items-center gap-3 px-4 h-12">
-        <button @click="router.back()" class="p-1 -ml-1 text-gray-600  hover:text-gray-900 dark:hover:text-gray-100">
-          <i class="ri-arrow-left-s-line text-xl"></i>
+  <div class="flex-1 bg-gray-50 pb-8 dark:bg-gray-950 md:pb-10">
+    <!-- 子工具条：与记录页同宽同样式 -->
+    <header class="sticky top-14 z-30 border-b border-gray-200/80 bg-white dark:border-gray-800 dark:bg-gray-900">
+      <div class="page flex min-h-[52px] items-center gap-2">
+        <button type="button" aria-label="返回" @click="router.back()" class="-ml-2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800">
+          <i class="ri-arrow-left-s-line text-xl" aria-hidden="true"></i>
         </button>
-        <h1 class="text-base font-semibold text-gray-900  truncate">体检报告解读</h1>
+        <h1 class="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">体检报告解读</h1>
       </div>
     </header>
 
-    <main class="max-w-6xl mx-auto px-4 py-4">
+    <div class="page py-4 md:py-6">
       <!-- Loading -->
-      <div v-if="loading" class="text-center py-16 text-gray-400 ">
+      <div v-if="loading" class="text-center py-16 text-gray-400 dark:text-gray-500">
         <div class="text-4xl mb-3 animate-pulse"><i class="ri-file-list-3-line"></i></div>
         <p>加载中...</p>
       </div>
 
       <template v-else-if="report">
-        <div class="flex flex-col lg:flex-row gap-6">
+        <div class="flex flex-col lg:flex-row lg:items-start gap-6">
           
           <!-- Left Column: File Viewer -->
           <div class="w-full lg:w-1/2 flex flex-col gap-4">
             <div class="card p-4">
-              <h2 class="font-semibold text-gray-900 ">{{ report.title }}</h2>
+              <h2 class="font-semibold text-gray-900 dark:text-gray-100">{{ report.title }}</h2>
               <div class="flex items-center gap-2 mt-1 flex-wrap">
                 <span v-for="tag in (report.tags || '').split(',').filter(Boolean)" :key="tag"
                   class="px-2 py-0.5 rounded-full text-xs bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300">
                   {{ tag }}
                 </span>
-                <span class="text-xs text-gray-400 ">{{ formatDate(report.created_at) }}</span>
+                <span class="text-xs text-gray-400 dark:text-gray-500">{{ formatDate(report.created_at) }}</span>
               </div>
             </div>
             
@@ -172,22 +197,29 @@ function formatDate(dateStr: string) {
             <!-- Not yet interpreted -->
             <div v-if="!interpretation && !interpreting" class="card p-8 text-center flex-1 flex flex-col items-center justify-center">
               <div class="text-5xl mb-4 text-primary-500"><i class="ri-robot-line"></i></div>
-              <p class="text-gray-900  font-medium mb-2 text-lg">还未进行AI解读</p>
-              <p class="text-sm text-gray-500  mb-6 max-w-sm">AI将用通俗易懂的语言解读你的体检报告，提示风险项并给出建议</p>
+              <p class="text-gray-900 dark:text-gray-100 font-medium mb-2 text-lg">还未进行AI解读</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm">AI将用通俗易懂的语言解读你的体检报告，提示风险项并给出建议</p>
               <button @click="triggerInterpret" class="btn-primary px-6 py-2.5">
                 <i class="ri-magic-line mr-1"></i> 开始AI解读
               </button>
+            </div>
+
+            <div v-else-if="interpretError" class="card p-8 text-center flex-1 flex flex-col items-center justify-center">
+              <div class="text-5xl mb-4 text-red-400"><i class="ri-error-warning-line"></i></div>
+              <p class="text-gray-900 dark:text-gray-100 font-medium mb-2">AI 解读未完成</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">{{ interpretError }}</p>
+              <button type="button" class="btn-primary px-6" @click="triggerInterpret">重新解读</button>
             </div>
 
             <!-- Interpreting Progress -->
             <div v-else-if="interpreting" class="card p-8 flex-1 flex flex-col items-center justify-center">
               <div class="w-full max-w-sm space-y-6">
                 <div class="text-center mb-8">
-                  <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-500 mb-4">
+                  <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-50 dark:bg-primary-900 text-primary-500 mb-4">
                     <i class="ri-loader-4-line text-3xl animate-spin"></i>
                   </div>
-                  <h3 class="text-lg font-medium text-gray-900 ">AI正在解读报告</h3>
-                  <p class="text-sm text-gray-500 mt-1">通常需要10-30秒，请耐心等待</p>
+                  <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">AI正在解读报告</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">通常需要10-30秒，请耐心等待</p>
                 </div>
                 
                 <div class="space-y-4">
@@ -219,11 +251,11 @@ function formatDate(dateStr: string) {
       </template>
 
       <!-- Report not found -->
-      <div v-else class="text-center py-16 text-gray-400 ">
+      <div v-else class="text-center py-16 text-gray-400 dark:text-gray-500">
         <div class="text-4xl mb-3"><i class="ri-file-damage-line"></i></div>
         <p>报告不存在或已被删除</p>
-        <button @click="router.push({ name: 'assessment' })" class="mt-4 text-sm text-primary-500 hover:underline">返回健康手帐</button>
+        <button @click="router.push({ name: 'assessment' })" class="mt-4 min-h-[44px] text-sm text-primary-600 hover:underline dark:text-primary-300">返回记录</button>
       </div>
-    </main>
+    </div>
   </div>
 </template>

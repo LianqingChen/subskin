@@ -111,8 +111,11 @@ export const authApi = {
     await apiClient.delete(`/user/credentials/${credentialId}`)
   },
 
-  async setPassword(password: string) {
-    const { data } = await apiClient.post('/user/set-password', { password })
+  async setPassword(password: string, oldPassword?: string) {
+    const { data } = await apiClient.post('/user/set-password', {
+      password,
+      old_password: oldPassword || undefined,
+    })
     return data as { detail: string }
   },
 
@@ -128,7 +131,12 @@ export const authApi = {
       code,
       new_password: newPassword,
     })
-    return data as { detail: string }
+    return data as {
+      detail: string
+      access_token?: string
+      refresh_token?: string
+      token_type?: string
+    }
   },
 
   // Username/password login (legacy)

@@ -2,9 +2,9 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { notificationApi, type NotificationItem } from '@/api/notifications'
+import { parseDate, timeAgo as formatRelative } from '@/utils/date'
 
 const router = useRouter()
-const isStaging = __APP_ENV__ === 'staging'
 const notifications = ref<NotificationItem[]>([])
 const unreadCount = ref(0)
 const loading = ref(false)
@@ -53,31 +53,27 @@ function updateDropdownPosition() {
 }
 
 const TYPE_ICONS: Record<string, string> = {
-  like: '❤️',
-  comment: '💬',
-  follow: '👤',
-  bookmark: '⭐',
-  collect: '⭐',
-  friend_accepted: '🤝',
-  system: '📢',
-  moderation: '⚠️',
+  like: 'ri-heart-3-fill text-red-400',
+  comment: 'ri-chat-3-line text-blue-400',
+  follow: 'ri-user-add-line text-primary-500',
+  bookmark: 'ri-star-line text-amber-400',
+  collect: 'ri-star-line text-amber-400',
+  friend_accepted: 'ri-user-follow-line text-primary-500',
+  system: 'ri-megaphone-line text-gray-500 dark:text-gray-300',
+  moderation: 'ri-error-warning-line text-amber-500',
 }
 
 function typeIcon(type: string) {
-  return TYPE_ICONS[type] || '🔔'
+  return TYPE_ICONS[type] || 'ri-notification-3-line text-gray-500 dark:text-gray-300'
 }
 
 function timeAgo(iso: string) {
-  const ms = Date.now() - new Date(iso).getTime()
-  const sec = Math.floor(ms / 1000)
-  if (sec < 60) return '刚刚'
-  const min = Math.floor(sec / 60)
-  if (min < 60) return `${min}分钟前`
-  const hour = Math.floor(min / 60)
-  if (hour < 24) return `${hour}小时前`
-  const day = Math.floor(hour / 24)
-  if (day < 30) return `${day}天前`
-  return new Date(iso).toLocaleDateString('zh-CN')
+  const d = parseDate(iso)
+  if (!d) return ''
+  const relative = formatRelative(d)
+  const day = Math.floor((Date.now() - d.getTime()) / 86400000)
+  if (day < 30) return relative
+  return d.toLocaleDateString('zh-CN')
 }
 
 async function fetchUnreadCount() {
@@ -120,6 +116,8 @@ function handleClick(n: NotificationItem) {
     router.push(`/community/${n.ref_id}`)
   } else if (n.ref_type === 'user' && n.ref_id) {
     router.push(`/profile?uid=${n.ref_id}`)
+  } else if (n.ref_type === 'skin_report' && n.ref_id) {
+    router.push({ name: 'skin-report-view', params: { id: n.ref_id } })
   }
   open.value = false
 }
@@ -164,7 +162,7 @@ onUnmounted(() => {
     <!-- Bell button -->
     <button
       ref="btnRef"
-      :class="['relative p-2 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center', isStaging ? 'text-slate-300 hover:text-white hover:bg-slate-700' : 'text-gray-500  hover:bg-gray-100 dark:hover:bg-gray-300']"
+      class="relative p-2 rounded-full transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800"
       aria-label="通知"
       @click.stop="toggle"
     >
@@ -187,12 +185,12 @@ onUnmounted(() => {
         <div
           v-if="open"
           ref="dropdownRef"
-          class="bg-white rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-[60]"
+          class="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-[60]"
           @vue:mounted="updateDropdownPosition"
         >
           <!-- Header -->
           <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-            <span class="text-sm font-semibold text-gray-800">通知</span>
+            <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">通知</span>
             <button
               v-if="unreadCount > 0"
               class="text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400"
@@ -209,7 +207,7 @@ onUnmounted(() => {
             </div>
 
             <div v-else-if="notifications.length === 0" class="py-10 text-center">
-              <span class="text-4xl">🔔</span>
+              <i class="ri-notification-3-line text-4xl text-gray-300 dark:text-gray-600"></i>
               <p class="text-sm text-gray-400 mt-2">暂无通知</p>
             </div>
 
@@ -229,7 +227,7 @@ onUnmounted(() => {
                   :alt="n.actor.username"
                   class="w-full h-full rounded-full object-cover"
                 />
-                <span v-else>{{ typeIcon(n.type) }}</span>
+                <i v-else :class="typeIcon(n.type)" aria-hidden="true"></i>
               </div>
               <div class="flex-1 min-w-0">
                 <p class="text-sm text-gray-800 leading-snug">

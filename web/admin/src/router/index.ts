@@ -16,6 +16,7 @@ const router = createRouter({
       component: () => import('@/views/Layout.vue'),
       redirect: '/dashboard',
       children: [
+        { path: 'planning', name: 'PlanningArchive', component: () => import('@/views/PlanningArchive.vue') },
         {
           path: 'dashboard',
           name: 'Dashboard',
@@ -32,6 +33,11 @@ const router = createRouter({
           component: () => import('@/views/Moderation.vue')
         },
         {
+          path: 'hospital-risk',
+          name: 'HospitalRisk',
+          component: () => import('@/views/HospitalRisk.vue')
+        },
+        {
           path: 'content-gen',
           name: 'ContentGen',
           component: () => import('@/views/ContentGen.vue')
@@ -40,6 +46,11 @@ const router = createRouter({
           path: 'llm-config',
           name: 'LLMConfig',
           component: () => import('@/views/LLMConfig.vue')
+        },
+        {
+          path: 'prompt-config',
+          name: 'PromptConfig',
+          component: () => import('@/views/PromptConfig.vue')
         },
         {
           path: 'image-labeling',
@@ -58,17 +69,25 @@ const router = createRouter({
           component: () => import('@/views/TrainingDashboard.vue')
         },
         {
-          path: 'system-monitor',
-          name: 'SystemMonitor',
-          component: () => import('@/views/SystemMonitor.vue')
-        }
+          path: 'site-maintenance',
+          name: 'SiteMaintenance',
+          component: () => import('@/views/SiteMaintenance.vue')
+        },
+        { path: 'system-monitor', redirect: '/site-maintenance' },
+        { path: 'terminal', redirect: '/site-maintenance' }
+
       ]
     }
   ]
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
+  // Session restore: token persists in localStorage but user is memory-only,
+  // so without this a page refresh would bounce a valid session to /login.
+  if (authStore.isLoggedIn && !authStore.user) {
+    await authStore.fetchUser()
+  }
   // Admin SPA is admin-only: a logged-in non-admin must not access any route
   // (even if they reuse a main-app token). Redirect to login with a notice.
   if (!to.meta.public && (!authStore.isLoggedIn || !authStore.user?.is_admin)) {

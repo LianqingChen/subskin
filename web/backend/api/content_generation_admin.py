@@ -3,6 +3,7 @@
 
 前缀 /api/admin/content
 """
+from web.backend.utils.timeutils import iso_utc
 import json
 import logging
 import re
@@ -111,16 +112,16 @@ def _serialize_draft(draft: AdminGeneratedPost, detail: bool = False) -> Dict[st
         "images": json.loads(draft.images) if draft.images else [],
         "source_type": draft.source_type,
         "ai_confidence": draft.ai_confidence,
-        "scheduled_at": draft.scheduled_at.isoformat() if draft.scheduled_at else None,
-        "published_at": draft.published_at.isoformat() if draft.published_at else None,
-        "created_at": draft.created_at.isoformat() if draft.created_at else None,
+        "scheduled_at": iso_utc(draft.scheduled_at) if draft.scheduled_at else None,
+        "published_at": iso_utc(draft.published_at) if draft.published_at else None,
+        "created_at": iso_utc(draft.created_at) if draft.created_at else None,
     }
     if detail:
         data["content"] = draft.content
         data["content_json"] = draft.content_json
         data["source_refs"] = json.loads(draft.source_refs) if draft.source_refs else []
         data["published_post_id"] = draft.published_post_id
-        data["updated_at"] = draft.updated_at.isoformat() if draft.updated_at else None
+        data["updated_at"] = iso_utc(draft.updated_at) if draft.updated_at else None
     return data
 
 

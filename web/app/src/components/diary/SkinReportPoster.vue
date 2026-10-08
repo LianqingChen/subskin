@@ -156,7 +156,7 @@ async function generate() {
     ctx.fillText('SubSkin', 70, 80)
     ctx.font = '30px sans-serif'
     ctx.globalAlpha = 0.9
-    ctx.fillText('白癜风病友的AI手帐和分享社区', 70, 150)
+    ctx.fillText('白癜风病友的AI记录和分享社区', 70, 150)
     ctx.globalAlpha = 1
 
     // 报告标签

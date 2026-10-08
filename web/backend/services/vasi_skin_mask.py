@@ -63,6 +63,12 @@ VITILIGO_MAX_CHROMA = 35.0
 MIN_SKIN_RATIO_FOR_DETECTION = 0.05
 MORPH_KERNEL_SIZE = 7
 
+# 工作分辨率：4000×3000 原图上做 1.2% 长边的形态学核会带来秒级延迟，
+# 肤色区域只需要区域级精度，处理后再按最近邻还原到原尺寸。
+WORK_MAX_DIM = 1280
+SKIN_OPEN_RATIO = 0.012      # 开运算核 / 长边：切断皮肤与背景之间的细桥
+SKIN_WHITE_V_RATIO = 0.20    # 近纯白参考物（参考卡/纸张）判定窗口
+
 FITZPATRICK_VITILIGO_THRESHOLDS: dict[str, tuple[float, float]] = {
     "I": (10.0, 30.0),
     "II": (11.0, 32.0),
@@ -121,53 +127,103 @@ def _get_adaptive_skin_thresholds(fitz_type: str) -> dict:
     }
 
 
+def _skin_color_candidates(img_rgb: np.ndarray, fitz_type: str) -> np.ndarray:
+    """严格肤色分类（uint8 0/255）。
+
+    旧实现把 HSV 与 YCrCb 的匹配结果**取并集**，任何落在任一宽松色域内的
+    像素都算皮肤 —— 实测墙面、窗帘、衣物、显示器支架全被纳入（手部照片
+    skin=100%）。这里改为：
+      - 亮肤色（I-III）：HSV ∩ YCrCb 严格交集，再并上 Kovac RGB 规则
+        （补回被 HSV 饱和度下限漏掉的浅肤色）；
+      - 深肤色（IV-VI）：HSV ∩ 放宽 Cr 下限的 YCrCb，避免交集过严丢皮肤。
+    """
+    img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
+    hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    ycrcb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2YCrCb)
+    thresh = _get_adaptive_skin_thresholds(fitz_type)
+
+    mask_hsv = cv2.bitwise_or(
+        cv2.inRange(hsv, thresh["hsv_lower_1"], thresh["hsv_upper_1"]),
+        cv2.inRange(hsv, thresh["hsv_lower_2"], thresh["hsv_upper_2"]),
+    )
+    mask_ycrcb = cv2.inRange(ycrcb, thresh["ycrcb_lower"], thresh["ycrcb_upper"])
+    strict = cv2.bitwise_and(mask_hsv, mask_ycrcb)
+
+    if fitz_type in ("I", "II", "III"):
+        r = img_rgb[:, :, 0].astype(np.int16)
+        g = img_rgb[:, :, 1].astype(np.int16)
+        b = img_rgb[:, :, 2].astype(np.int16)
+        mx = np.maximum(np.maximum(r, g), b)
+        mn = np.minimum(np.minimum(r, g), b)
+        rgb_rule = (
+            (r > 95) & (g > 40) & (b > 20)
+            & ((mx - mn) > 15)
+            & (np.abs(r - g) > 15)
+            & (r > g) & (r > b)
+        )
+        strict = cv2.bitwise_or(strict, rgb_rule.astype(np.uint8) * 255)
+    else:
+        loose = cv2.inRange(
+            ycrcb, np.array([0, 128, 72], np.uint8), np.array([255, 190, 135], np.uint8)
+        )
+        strict = cv2.bitwise_or(strict, cv2.bitwise_and(mask_hsv, loose))
+
+    return strict
+
+
 def build_skin_mask(img_rgb: np.ndarray) -> Optional[np.ndarray]:
     """Return a boolean (H, W) mask where True = pixel is skin.
 
-    Uses adaptive thresholds based on estimated Fitzpatrick skin type.
-    The mask is the union of HSV and YCrCb skin-color matches, followed by
-    morphological open + close to remove noise and fill small holes.
+    Uses adaptive thresholds based on estimated Fitzpatrick skin type, a strict
+    HSV∩YCrCb (+RGB rule) colour model, scale-relative morphological opening
+    (breaks the thin bridges that used to merge skin with background), and
+    exclusion of near-pure-white reference objects.
+
+    The returned mask always has the same H×W as the input (processing happens
+    at a capped working resolution for speed, then is restored).
     """
     if not _CV2_AVAILABLE:
         return None
 
     try:
-        img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
-        hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-        ycrcb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2YCrCb)
+        h, w = img_rgb.shape[:2]
+        scale = min(1.0, WORK_MAX_DIM / max(h, w))
+        if scale < 1.0:
+            work = cv2.resize(
+                img_rgb,
+                (max(1, int(w * scale)), max(1, int(h * scale))),
+                interpolation=cv2.INTER_AREA,
+            )
+        else:
+            work = img_rgb
+        wh, ww = work.shape[:2]
 
-        # Estimate Fitzpatrick and get adaptive thresholds
-        fitz = _estimate_fitzpatrick(img_rgb)
-        thresh = _get_adaptive_skin_thresholds(fitz)
-        logger.debug("Skin detection: Fitzpatrick=%s, using adaptive thresholds", fitz)
+        fitz = _estimate_fitzpatrick(work)
+        logger.debug("Skin detection: Fitzpatrick=%s, using strict dual-space model", fitz)
 
-        mask_hsv_1 = cv2.inRange(hsv, thresh["hsv_lower_1"], thresh["hsv_upper_1"])
-        mask_hsv_2 = cv2.inRange(hsv, thresh["hsv_lower_2"], thresh["hsv_upper_2"])
-        mask_ycrcb = cv2.inRange(ycrcb, thresh["ycrcb_lower"], thresh["ycrcb_upper"])
-
-        skin_mask = cv2.bitwise_or(cv2.bitwise_or(mask_hsv_1, mask_hsv_2), mask_ycrcb)
-
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (MORPH_KERNEL_SIZE, MORPH_KERNEL_SIZE))
-        skin_mask = cv2.morphologyEx(skin_mask, cv2.MORPH_OPEN, kernel)
+        cand = _skin_color_candidates(work, fitz)
+        k = max(3, int(SKIN_OPEN_RATIO * max(wh, ww)) | 1)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
+        skin_mask = cv2.morphologyEx(cand, cv2.MORPH_OPEN, kernel)
         skin_mask = cv2.morphologyEx(skin_mask, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-        # Optional: exclude known reference objects from skin mask if present
-        # (reference cards, coins, rulers should not count as skin)
-        # This is a best-effort exclusion based on color + shape heuristics:
-        # - Pure white rectangle (reference card) → likely not skin
-        # - Circular metallic object (coin) → likely not skin
+        # 排除近纯白参考物（参考卡/硬币/纸张）——它们不应计入皮肤面积
         try:
-            gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-            # Exclude near-pure-white regions (V>240) from skin mask
+            gray = cv2.cvtColor(cv2.cvtColor(work, cv2.COLOR_RGB2BGR), cv2.COLOR_BGR2GRAY)
             _, white_mask = cv2.threshold(gray, 240, 255, cv2.THRESH_BINARY)
-            white_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 20))
+            wk = max(5, int(SKIN_WHITE_V_RATIO * max(wh, ww)) | 1)
+            white_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (wk, wk))
             white_regions = cv2.morphologyEx(white_mask, cv2.MORPH_OPEN, white_kernel, iterations=2)
-            skin_mask_bool = skin_mask.astype(bool)
-            skin_mask_bool[white_regions.astype(bool)] = False
-            return skin_mask_bool
+            skin_bool = skin_mask.astype(bool)
+            skin_bool[white_regions.astype(bool)] = False
+            skin_mask = skin_bool.astype(np.uint8)
         except Exception:
             pass
 
+        if scale < 1.0:
+            skin_mask = cv2.resize(
+                skin_mask, (w, h), interpolation=cv2.INTER_NEAREST
+            )
         return skin_mask.astype(bool)
     except Exception as e:
         logger.warning("Skin mask build failed: %s", e)
@@ -177,36 +233,24 @@ def build_skin_mask(img_rgb: np.ndarray) -> Optional[np.ndarray]:
 def expand_skin_mask_to_include_vitiligo(
     img_rgb: np.ndarray, skin_mask: np.ndarray
 ) -> np.ndarray:
-    """Vitiligo lesions themselves are NOT detected by skin-color heuristics
-    (they lack melanin chroma). To avoid excluding them from the analysis
-    region, we expand the skin mask by morphologically dilating it and then
-    keeping any pixel inside the convex hull of the skin region.
+    """Vitiligo lesions themselves are NOT detected by skin-colour heuristics
+    (they lack melanin chroma), so the analysis region must also cover them.
 
-    Returns the expanded mask (boolean, same shape).
+    历史实现对「膨胀后的最大轮廓」做**凸包**：当皮肤区域贴到画面边缘时，
+    凸包等于整幅图像，分母（皮肤面积）严重失真 —— 实测白斑占比因此被
+    系统性低估。现改为 `refine_skin_region()`：色彩候选 ∪ 邻近脱色素候选，
+    主体连通域 + 填洞 + 有界膨胀，保持真实轮廓、绝不做凸包。
     """
     if not _CV2_AVAILABLE:
         return skin_mask
-
     try:
-        mask_u8 = (skin_mask.astype(np.uint8)) * 255
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (21, 21))
-        dilated = cv2.dilate(mask_u8, kernel, iterations=2)
+        from web.backend.services.vasi_edge_segmentation import refine_skin_region
 
-        contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if not contours:
-            return dilated.astype(bool)
-
-        h, w = skin_mask.shape
-        hull_mask = np.zeros((h, w), dtype=np.uint8)
-        largest = max(contours, key=cv2.contourArea)
-        hull = cv2.convexHull(largest)
-        cv2.fillConvexPoly(hull_mask, hull, 255)
-
-        combined = cv2.bitwise_or(dilated, hull_mask)
-        return combined.astype(bool)
+        return refine_skin_region(img_rgb, skin_mask, None)
     except Exception as e:
         logger.warning("Skin mask expansion failed: %s", e)
         return skin_mask
+
 
 
 def detect_vitiligo_within_skin(
@@ -215,77 +259,63 @@ def detect_vitiligo_within_skin(
     l_offset: Optional[float] = None,
     max_chroma: Optional[float] = None,
 ) -> Tuple[Optional[np.ndarray], dict]:
-    """Detect vitiligo pixels within the analysis region using a *relative*
-    lightness test against the surrounding skin's median.
+    """Detect vitiligo pixels within the analysis region.
 
-    If l_offset/max_chroma are not provided, they are auto-adapted based on
-    estimated Fitzpatrick skin type.
+    现在委派给 `vasi_edge_segmentation.segment_lesions_edge_aware`：
+      逐像素 LAB 颜色 → 局部光照校正（剥离亮区求局部健康肤色中位）→
+      邻域色差梯度 → 白斑似然 → 滞后双阈值 → 分水岭边缘吸附 → 连通域过滤。
+
+    旧的「全图单一阈值」在全球光照不均时会把整片亮侧皮肤判成白斑
+    （实测面部照片 12%~23% 误检），因此不再作为主路径。
+
+    `l_offset` / `max_chroma` 仅为签名向后兼容保留，会写进 stats 便于排查。
 
     Returns:
-        (mask, stats) where mask is a boolean array (True = vitiligo) and
-        stats contains the median skin L, threshold used, and pixel counts.
+        (mask, stats) — mask 为与输入同尺寸的 bool 数组。
     """
-    stats = {
+    stats: dict = {
         "skin_median_l": None,
         "l_threshold": None,
         "region_pixels": 0,
         "vitiligo_pixels": 0,
     }
-    if not _CV2_AVAILABLE:
+    if not _CV2_AVAILABLE or analysis_region is None or not analysis_region.any():
         return None, stats
 
-    if l_offset is None or max_chroma is None:
-        fitz = _estimate_fitzpatrick(img_rgb)
-        adaptive_l, adaptive_chroma = FITZPATRICK_VITILIGO_THRESHOLDS.get(fitz, (12.0, 35.0))
-        if l_offset is None:
-            l_offset = adaptive_l
-        if max_chroma is None:
-            max_chroma = adaptive_chroma
-        stats["fitzpatrick_type"] = fitz
-
     try:
+        from web.backend.services.vasi_edge_segmentation import segment_lesions_edge_aware
+
+        region = analysis_region.astype(bool)
+        stats["suggested_l_offset"] = l_offset
+        stats["suggested_max_chroma"] = max_chroma
+
+        # 记录全局中位/相对阈值（仅用于日志与历史字段兼容）
         img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
         lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
         L = lab[:, :, 0].astype(np.float32)
-        A = lab[:, :, 1].astype(np.float32)
-        B = lab[:, :, 2].astype(np.float32)
+        fitz = _estimate_fitzpatrick(img_rgb)
+        adaptive_l, adaptive_chroma = FITZPATRICK_VITILIGO_THRESHOLDS.get(fitz, (12.0, 35.0))
+        eff_l = l_offset if l_offset is not None else adaptive_l
+        skin_l = L[region]
+        stats["skin_median_l"] = round(float(np.median(skin_l)), 1)
+        stats["l_threshold"] = round(float(np.median(skin_l) + eff_l), 1)
+        stats["fitzpatrick_type"] = fitz
+        stats["adaptive_chroma"] = max_chroma if max_chroma is not None else adaptive_chroma
 
-        chroma = np.sqrt((A - 128) ** 2 + (B - 128) ** 2)
-
-        skin_l_values = L[analysis_region]
-        if skin_l_values.size == 0:
-            return None, stats
-
-        skin_median_l = float(np.median(skin_l_values))
-        skin_p25 = float(np.percentile(skin_l_values, 25))
-        skin_p75 = float(np.percentile(skin_l_values, 75))
-
-        l_threshold = max(skin_median_l + l_offset, skin_p75 + 5.0)
-
-        vitiligo = (
-            analysis_region
-            & (L >= l_threshold)
-            & (chroma <= max_chroma)
-        )
-
-        kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-        kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
-        vit_u8 = (vitiligo.astype(np.uint8)) * 255
-        vit_u8 = cv2.morphologyEx(vit_u8, cv2.MORPH_OPEN, kernel_open)
-        vit_u8 = cv2.morphologyEx(vit_u8, cv2.MORPH_CLOSE, kernel_close)
-        vitiligo = vit_u8.astype(bool)
-
-        stats["skin_median_l"] = round(skin_median_l, 1)
-        stats["skin_p25_l"] = round(skin_p25, 1)
-        stats["skin_p75_l"] = round(skin_p75, 1)
-        stats["l_threshold"] = round(l_threshold, 1)
-        stats["region_pixels"] = int(analysis_region.sum())
-        stats["vitiligo_pixels"] = int(vitiligo.sum())
-
-        return vitiligo, stats
+        res = segment_lesions_edge_aware(img_rgb, region)
+        mask = res["lesion_mask"]
+        edge_stats = res.get("stats", {})
+        stats["region_pixels"] = int(region.sum())
+        stats["vitiligo_pixels"] = int(mask.sum())
+        stats["method"] = "edge-aware-local-adaptive"
+        stats["sigma_l"] = edge_stats.get("sigma_l")
+        stats["sigma_c"] = edge_stats.get("sigma_c")
+        stats["components"] = edge_stats.get("components")
+        return mask, stats
     except Exception as e:
         logger.warning("Vitiligo detection failed: %s", e)
         return None, stats
+
 
 
 def mask_to_data_url(mask: np.ndarray, color: tuple = (99, 102, 241), alpha: int = 200) -> str:

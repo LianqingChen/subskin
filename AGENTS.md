@@ -15,8 +15,8 @@ These 3 rules are the foundation of SubSkin's deployment workflow. **Every agent
 **Rule 1: Sync Baseline — Staging = Production (except 4 intentional differences)**
 
 As of **2026-06-08**, staging and production are EXACTLY identical in code content. The ONLY intentional differences are:
-1. Nav bar color: staging = 深蓝 `bg-slate-800`, production = 白色 `bg-white`
-2. PWA app name: staging = "SubSkin [STAGING]", production = "SubSkin更懂你"
+1. Nav bar color: staging = 深蓝 `bg-slate-800`, production = 天青色渐变 `from-primary-700 to-primary-500`（白字）
+2. PWA app name: staging = "SubSkin [STAGING]", production = "SubSkin - 白癜风病友的AI手帐和分享社区"
 3. version.json `env` field: staging = `"staging"`, production = `"production"`
 4. Update banner text: staging = "测试环境有新版本可用", production = "有新版本可用"
 
@@ -60,8 +60,8 @@ When the user says "推送到正式环境" or "更新到正式环境", it means:
 │  staging.subskin.cn          │    │  subskin.cn                 │
 │  /usr/share/nginx/html/      │    │  /usr/share/nginx/html/     │
 │    subskin-staging/          │    │    subskin/                 │
-│  Nav: 深蓝色 bg-slate-800   │    │  Nav: 白色 bg-white         │
-│  PWA: "SubSkin [STAGING]"   │    │  PWA: "SubSkin更懂你"       │
+│  Nav: 深蓝色 bg-slate-800   │    │  Nav: 天青色渐变(primary)   │
+│  PWA: "SubSkin [STAGING]"   │    │  PWA: "SubSkin - 白癜风病友的AI手帐和分享社区" │
 │  __APP_ENV__ = 'staging'    │    │  __APP_ENV__ = 'production' │
 └──────────────────────────────┘    └─────────────────────────────┘
 ```
@@ -84,7 +84,6 @@ When the user says "推送到正式环境" or "更新到正式环境", it means:
 **Shared between both:**
 - Backend: `uvicorn` on `127.0.0.1:8000` (single instance, single DB)
 - Nginx: `subskin.conf` (prod) + `subskin-staging.conf` (staging)
-- VitePress百科: Same `/encyclopedia/` content served to both
 
 ---
 
@@ -277,8 +276,8 @@ Before deploying to production, verify ALL of the following:
 
 | Feature | Staging | Production |
 |---------|---------|------------|
-| Nav bar | Dark blue (`bg-slate-800`) | White (`bg-white`) |
-| PWA name | "SubSkin [STAGING]" | "SubSkin更懂你" |
+| Nav bar | Dark blue (`bg-slate-800`) | 天青色渐变 (`from-primary-700 to-primary-500`，白字) |
+| PWA name | "SubSkin [STAGING]" | "SubSkin - 白癜风病友的AI手帐和分享社区" |
 | PWA theme_color | `#1e293b` (slate — status bar) | `#26A69A` (teal — status bar) |
 | PWA background_color | `#ffffff` (white — same as prod) | `#ffffff` (white) |
 | version.json | `{"env":"staging"}` | `{"env":"production"}` |
@@ -564,7 +563,7 @@ SubSkin is a PWA (Progressive Web App). All development and design decisions MUS
 4. **Viewport units**: Use `dvh` (dynamic viewport height) instead of `vh` for full-height layouts to handle mobile browser address bar correctly.
 5. **BottomNav for mobile**: Mobile navigation uses bottom tab bar (`md:hidden`). Desktop uses top header nav (`hidden md:flex`). Both must always be present and functional.
 6. **No layout-breaking global styles**: Never apply `min-width: 44px` or `min-height: 44px` to ALL `<a>` tags — this breaks nav layouts. Apply touch targets via padding on nav-specific elements instead.
-7. **SPA navigation**: Use `<router-link>` for internal navigation. Use `<a href>` ONLY for external links (encyclopedia). Never use `<a href="#">` or `@click.prevent` + `router.push()` for internal navigation — it causes blank-page bugs.
+7. **SPA navigation**: Use `<router-link>` for internal navigation. Use `<a href>` ONLY for external links (e.g., 论文/文献引用源). Never use `<a href="#">` or `@click.prevent` + `router.push()` for internal navigation — it causes blank-page bugs.
 8. **PWA install & offline**: Service Worker, manifest, offline detection, and install prompt must remain functional after any change. Test `sw.js` and `manifest.webmanifest` after deployment.
 9. **Theme consistency**: Dark/light mode toggle must work identically across ALL pages. Use `dark:` Tailwind variants everywhere.
 10. **No page-transition glitches**: Do NOT use `<Transition mode="out-in">` on `<router-view>` — it causes blank-page bugs on slow connections. Let Vue Router handle view swaps directly.
@@ -595,7 +594,7 @@ User privacy and data security are the lifeblood of SubSkin. A single data leak 
 | 🔴 L4-Critical | 密码、银行卡号、身份证号、JWT token | **绝对不可出现在任何 API 响应、日志、前端代码、公开页面、GitHub。** 不可明文存储（密码必须 bcrypt hash，token 过期即废弃）。 |
 | 🟠 L3-High | 手机号、邮箱、病情图片、个人照片、音频、视频、体检报告、真实姓名、家庭住址 | **不可暴露给任何第三方或其他用户。** API 返回时脱敏（手机号 `138****1234`，邮箱前2字符+`***@domain`）。图片/文件仅授权用户本人可访问。 |
 | 🟡 L2-Medium | 用户昵称、头像、发表内容、收藏、评估历史摘要 | 用户自主选择公开/私密。社区分享由用户主动授权，**所有授权操作必须留不可篡改的审计记录**。 |
-| 🟢 L1-Public | 百科内容、公开帖子、匿名统计数据 | 可公开访问，但数据采集仍需注明来源。 |
+| 🟢 L1-Public | 知识库内容、公开帖子、匿名统计数据 | 可公开访问，但数据采集仍需注明来源。 |
 
 **Hard Rules (零容忍):**
 
@@ -619,7 +618,8 @@ User privacy and data security are the lifeblood of SubSkin. A single data leak 
 
 All new features and modifications MUST follow these principles to maintain a unified, consistent experience:
 
-1. **Consistent Container Widths**: All content pages use `max-w-6xl mx-auto px-4` as the outer container. Chat uses `max-w-4xl`. This ensures the header, content, and footer feel like one coherent layout — not disconnected strips.
+1. **Consistent Container Widths**: All content pages use the shared `.page` class (`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8`, defined in `styles/main.css`) as the outer container — NEVER hand-write `max-w-* px-*` or hardcode `max-width: NNNpx` in scoped CSS. The desktop header inner row uses the same width, so page title, content and header icons share the same left/right edges. Reading/form/chat pages may narrow with `page-narrow` (3xl) or a deliberate `max-w-*` override; feeds use `.page`. Page backgrounds must inherit the app background (never hardcode `#f5f7fa`).
+   - **Desktop navigation**: 1024–1279px = 72px icon rail (icon + small label), ≥1280px = full 224px sidebar, <1024px = header + BottomNav. Width comes from `--app-sidebar-w`; fixed bars must use `.app-fixed-x` or that variable.
 
 2. **In-Page Navigation = Left Sidebar**: Page-internal navigation (tabs, categories, history lists) MUST use a collapsible left sidebar pattern on desktop (`md:` and up), consistent across all pages:
    - **Sidebar width**: `w-52` (208px) expanded, thin strip when collapsed
@@ -629,9 +629,12 @@ All new features and modifications MUST follow these principles to maintain a un
    - **Mobile**: Horizontal scrollable tabs or drawer overlay (NEVER left sidebar on mobile)
 
 3. **Naming Consistency**: Use the same names across ALL surfaces (nav, title, header, body text):
-   - 模块名: 小白助手 / 小白追踪 / 小白社区 / 小白百科
-   - NEVER mix "病友社区" and "小白社区" for the same concept
-   - NEVER mix "病情追踪" and "小白追踪" for the same concept
+   - 功能模块命名以 `web/shared/site-modules.json` 为**唯一事实来源**（当前在线模块，顺序 = 主导航顺序：问答 `/`、手帐 `/assessment`、分享 `/community`、公益 `/hospitals`、白斑报告 `/community/reports`、体检解读 `/assessment?tab=exam`、个人中心 `/profile`）。前端导航（BottomNav / AppHeader / 小白管家）与后端 AI 导航（rag.py）均从它派生，禁止硬编码其他模块名。
+   - 旧命名（白友圈 / 小白助手 / 小白追踪 / 小白社区 / 小白百科 / 医评）仅作历史关键词别名（供用户用旧名提问时仍能匹配），不得再作为新代码的模块名。
+   - 小白百科已下线（内容融入智能问答 / 小白管家），不得向用户透出独立百科入口或页面。
+   - NEVER mix "病友社区"/"白友社区" and "分享" for the same concept
+   - NEVER mix "病情追踪"/"小白追踪"/"测评" and "手帐" for the same concept（`/assessment` 模块 2026-09-10 起官方名为「手帐」，「测评」仅作历史关键词别名）
+   - NEVER mix "医评" and "公益" for the same concept（`/hospitals` 模块 2026-09-12 起官方名为「公益」，路径与功能不变，「医评」仅作历史关键词别名）
    - When referring to users within the community, "病友" is acceptable as a term of address
 
 4. **Theme Color System**: All primary/accent colors use CSS variables (`--color-primary-*`). NEVER hardcode hex colors like `#10b981`, `#34d399`, or Tailwind's `emerald-*` classes. Use `primary-*` Tailwind classes instead.
@@ -642,7 +645,7 @@ All new features and modifications MUST follow these principles to maintain a un
    - Section descriptions: `section-desc` class
    - Buttons: `btn-primary`, `btn-ghost`
 
-6. **AI Navigation Sync (MANDATORY)**: 小白助手 is the central entry point for the entire website. When ANY new feature, page, or module is added, the following MUST be updated in sync:
+6. **AI Navigation Sync (MANDATORY)**: 小白管家（漂浮入口）+ 问答（`/`）is the central entry point for the entire website. When ANY new feature, page, or module is added, the following MUST be updated in sync:
    - **System prompt** in `web/backend/services/rag.py` (`_build_llm_messages` function): Add the new feature to the site navigation guide table, including path and description
    - **`SITE_FEATURE_KEYWORDS`** in `web/backend/services/rag.py`: Add keywords users might use to ask about the new feature
    - **Navigation components** (`BottomNav.vue`, `AppHeader.vue`): If it's a top-level module
@@ -653,7 +656,7 @@ All new features and modifications MUST follow these principles to maintain a un
 7. **Icon System — RemixIcon (MANDATORY)**: ALL icons across the project MUST use [RemixIcon](https://remixicon.com/) for visual consistency. NEVER use emoji characters (📱🔒📷 etc.) or inline SVGs for icons.
    - **Package**: `remixicon` (CSS font approach, imported in `main.ts`)
    - **Usage**: `<i class="ri-icon-name"></i>` (line variant) or `<i class="ri-icon-name-fill"></i>` (filled variant)
-   - **In data arrays**: Store the class string (e.g., `{ icon: 'ri-bar-chart-2-line', label: '小白手账' }`), render with `<i :class="item.icon"></i>`
+   - **In data arrays**: Store the class string (e.g., `{ icon: 'ri-bar-chart-2-line', label: '白斑报告' }`), render with `<i :class="item.icon"></i>`
    - **Default to line variants** unless filled is explicitly needed for emphasis
    - **Never mix**: Do NOT use emoji, Heroicons SVGs, or other icon systems alongside RemixIcon
    - **Icon size**: Controlled by parent font-size or Tailwind classes (`text-sm`, `text-lg`, `text-2xl`, etc.)
@@ -882,7 +885,7 @@ These three environments are **completely different applications/purposes**. The
 | **UI Framework** | Custom components + PWA | NaiveUI + ECharts |
 | **Routing** | History mode | Hash mode (`/#/dashboard`) |
 | **PWA / Service Worker** | Yes | **No** — explicitly unregisters SW |
-| **Title** | "SubSkin更懂你" | "SubSkin 管理后台" |
+| **Title** | "SubSkin - 白癜风病友的AI手帐和分享社区" | "SubSkin 管理后台" |
 | **Environments** | Production + Staging | **Single** — no staging/prod split |
 
 **❌ NEVER deploy the main app (`web/app/`) to the admin directory.**
@@ -932,11 +935,11 @@ These three environments are **completely different applications/purposes**. The
 
 | | Production | Staging | Admin |
 |---|---|---|---|
-| **Page title** | "SubSkin更懂你" | "SubSkin更懂你" | **"SubSkin 管理后台"** |
+| **Page title** | "SubSkin - 白癜风病友的AI手帐和分享社区" | "SubSkin - 白癜风病友的AI手帐和分享社区" | **"SubSkin 管理后台"** |
 | **URL** | subskin.cn / www.subskin.cn | staging.subskin.cn | admin.subskin.cn |
 | **PWA** | Yes (teal theme) | Yes ("[STAGING]") | **No PWA** |
 | **Login page** | Main app login flow | Main app login flow | **`/#/login` — standalone admin login** |
-| **3D assets** | Yes (panda models) | Yes (panda models) | **No** — lightweight |
+| **3D assets** | Yes (金斑蝶/梅花鹿 3D 形象) | Yes (金斑蝶/梅花鹿 3D 形象) | **No** — lightweight |
 | **Access** | All users | Internal testing | **Admin-only** |
 
 ### Quick Reference — ALL Build Commands

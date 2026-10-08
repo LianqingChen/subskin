@@ -9,7 +9,7 @@
       <span 
         v-for="(tag, index) in modelValue" 
         :key="index"
-        class="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium bg-primary-50 text-primary-700"
+        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[13px] font-medium bg-primary-50 text-primary-700"
       >
         #{{ tag }}
         <button 
@@ -54,7 +54,7 @@
           v-for="tag in suggestedTags" 
           :key="tag.id"
           @mousedown.prevent="addTag(tag.name)"
-          class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex justify-between items-center"
+          class="px-3 py-1.5 text-[13px] text-gray-700 hover:bg-gray-100 cursor-pointer flex justify-between items-center"
         >
           <span>#{{ tag.name }}</span>
           <span class="text-xs text-gray-400">{{ tag.usage_count }} 次使用</span>

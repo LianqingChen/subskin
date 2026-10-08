@@ -1,5 +1,6 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useMainNav } from './useMainNav'
 
 interface SwipeOptions {
   minDistance?: number
@@ -87,21 +88,10 @@ export function useSwipeNavigation() {
   const router = useRouter()
   const { direction } = useSwipe()
 
-  const tabOrder = [
-    '/',
-    '/community',
-    '/messages',
-    '/profile',
-  ]
+  const { navItems, isNavActive } = useMainNav()
 
   function getCurrentTabIndex(): number {
-    const path = router.currentRoute.value.path
-    for (let i = 0; i < tabOrder.length; i++) {
-      const tab = tabOrder[i]
-      if (tab === '/' && (path === '/' || path === '/chat' || path === '/tracker')) return i
-      if (tab !== '/' && path.startsWith(tab)) return i
-    }
-    return -1
+    return navItems.value.findIndex(item => isNavActive(item.path))
   }
 
   watch(direction, (dir) => {
@@ -110,8 +100,8 @@ export function useSwipeNavigation() {
     if (currentIndex === -1) return
 
     const nextIndex = dir === 'left' ? currentIndex + 1 : currentIndex - 1
-    if (nextIndex < 0 || nextIndex >= tabOrder.length) return
+    if (nextIndex < 0 || nextIndex >= navItems.value.length) return
 
-    router.push(tabOrder[nextIndex])
+    router.push(navItems.value[nextIndex].path)
   })
 }

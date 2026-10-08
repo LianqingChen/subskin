@@ -24,6 +24,10 @@ class PostImageBase(BaseModel):
 
 class PostImage(PostImageBase):
     id: int
+    body_site: Optional[str] = None
+    capture_date: Optional[str] = None
+    analysis_status: str = "pending"
+    vasi_assessment_id: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -70,6 +74,21 @@ class Tag(TagBase):
         from_attributes = True
 
 
+class TreatmentShareInfo(BaseModel):
+    """结构化治疗经验分享模板"""
+
+    method: str = Field(..., max_length=500, description="治疗方案描述")
+    duration: Optional[str] = Field(None, max_length=50, description="持续周期")
+    effect_rating: Optional[int] = Field(None, ge=1, le=5, description="效果评价 1-5 星")
+    cost_range: Optional[str] = Field(None, max_length=50, description="费用区间")
+    side_effects: List[str] = Field(default_factory=list, description="副作用标签列表")
+    vasi_assessment_ids: List[int] = Field(default_factory=list, description="关联的 VASI 评估记录 ID（最多2个）")
+    vasi_assessments: List[Dict[str, Any]] = Field(default_factory=list, description="VASI 评估快照（后端填充）")
+
+    class Config:
+        extra = "allow"
+
+
 class PostBase(BaseModel):
     title: str = Field(..., description="帖子标题")
     content: str = Field(..., description="帖子内容(HTML)")
@@ -84,11 +103,28 @@ class PostBase(BaseModel):
     mood: Optional[str] = Field(None, description="心情标签: 💪坚持中/😔低落/🎉好转/🤔疑问")
     is_anonymous: bool = Field(False, description="是否匿名发布")
     city: Optional[str] = Field(None, description="发布时所在城市")
+    treatment_share: Optional[TreatmentShareInfo] = Field(None, description="结构化治疗分享信息")
+
+
+class PostImageMeta(BaseModel):
+    """发帖时附带图片的元信息（部位/日期，用于白斑追踪与报告）"""
+
+    image_url: str = Field(..., description="图片URL")
+    body_site: Optional[str] = Field(None, description="照片对应身体部位 key")
+    capture_date: Optional[str] = Field(None, description="拍摄/记录日期 YYYY-MM-DD")
 
 
 class PostCreate(PostBase):
-    images: Optional[List[str]] = Field(None, description="图片URL列表")
+    images: Optional[List[str]] = Field(None, description="图片URL列表（兼容旧前端）")
+    image_metas: Optional[List[PostImageMeta]] = Field(
+        None, description="图片元信息列表（补充对应图片的部位/日期；images定义完整图片及顺序）"
+    )
     tag_names: Optional[List[str]] = Field(None, description="标签名称列表(最多5个)")
+    # 2026-08-30 隐私加固：公开帖正文命中手机号/邮箱/身份证等 PII 时，
+    # 默认自动脱敏；仅当用户在前端二次确认后传 confirm_pii=True 才保留原文。
+    confirm_pii: bool = Field(False, description="用户已确认保留原文中的隐私信息")
+    # 公开发布确认标记（前端弹窗确认后置 True，仅用于审计，不传不阻断旧客户端）
+    public_ack: bool = Field(False, description="用户已确认内容将公开发布")
 
 
 class PostUpdate(BaseModel):
@@ -107,6 +143,7 @@ class PostUpdate(BaseModel):
     is_anonymous: Optional[bool] = Field(None, description="是否匿名")
     city: Optional[str] = Field(None, description="发布时所在城市")
     images: Optional[List[str]] = Field(None, description="图片URL列表")
+    treatment_share: Optional[TreatmentShareInfo] = Field(None, description="结构化治疗分享信息")
 
 
 class PostAuthor(BaseModel):
@@ -131,6 +168,7 @@ class Post(PostBase):
     tags: List[Tag] = []
     content_preview: Optional[str] = None
     read_count: int = 0
+    share_count: int = Field(0, description="转发/分享数")
     is_private: bool = False
     draft_expires_at: Optional[datetime] = None
     diary_date: Optional[str] = None
@@ -193,6 +231,10 @@ class PostCommentListResponse(BaseModel):
 class LikeResponse(BaseModel):
     liked: bool = Field(..., description="是否已点赞")
     like_count: int = Field(..., description="当前点赞数")
+
+
+class ShareResponse(BaseModel):
+    share_count: int = Field(..., description="当前转发数")
 
 
 class ImageUploadResponse(BaseModel):

@@ -247,7 +247,7 @@ def _send_sms_aliyun_auth(phone: str, code: str) -> tuple[bool, str]:
 
         logger.info(
             "阿里云短信认证服务发送参数: phone=%s, sign_name=%s, template_code=%s",
-            phone,
+            _mask_phone(phone),
             sign_name,
             template_code,
         )
@@ -315,7 +315,7 @@ def _send_sms_aliyun(phone: str, code: str) -> tuple[bool, str]:
 
         logger.info(
             "阿里云短信发送参数: phone=%s, sign_name=%s, template_code=%s",
-            phone,
+            _mask_phone(phone),
             sign_name,
             template_code,
         )

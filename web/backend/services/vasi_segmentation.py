@@ -161,11 +161,15 @@ def _merge_overlapping_masks(
 
 def _mask_to_polygon(
     mask: np.ndarray,
-    epsilon_factor: float = 0.005,
-    max_points: int = 40,
+    epsilon_factor: float = 0.0025,
+    max_points: int = 120,
 ) -> Optional[List[List[float]]]:
     """
     将二值 mask 转换为归一化的多边形坐标。
+
+    v2（2026-09-11）：顶点上限 40 → 120、简化系数 0.005 → 0.0025。
+    旧参数把不规则的白斑边界压成粗块（用户反馈"边缘不准"），
+    新参数在保留更多细节的同时仍能抑制像素级锯齿。
 
     Args:
         mask: 二值 numpy array (H, W)
@@ -273,6 +277,155 @@ def _mask_to_polygon_fallback(
     return points[:max_points]
 
 
+# ── 自训练 U-Net 模型（管理员打标数据训练，手动上线后生效） ──
+
+_unet_model = None            # 已加载的 active U-Net（惰性加载，只加载一次）
+_unet_version_tag = None
+_unet_load_attempted = False
+
+
+def reset_unet_cache() -> None:
+    """模型上线/切换后调用，使缓存的 U-Net 失效（下次推理重新加载）。"""
+    global _unet_model, _unet_version_tag, _unet_load_attempted
+    _unet_model = None
+    _unet_version_tag = None
+    _unet_load_attempted = False
+    logger.info("U-Net model cache reset")
+
+
+def _get_active_unet():
+    """惰性加载当前 is_active 的 model_weights 版本；无则 None。"""
+    global _unet_model, _unet_version_tag, _unet_load_attempted
+
+    if _unet_load_attempted:
+        return _unet_model
+    _unet_load_attempted = True
+
+    try:
+        from web.backend.database.database import SessionLocal
+        from web.backend.models.vasi import VasiModelVersion
+        from web.backend.services.vasi_model_trainer import load_unet
+
+        session = SessionLocal()
+        try:
+            version = session.query(VasiModelVersion).filter(
+                VasiModelVersion.is_active == True,  # noqa: E712
+                VasiModelVersion.evolution_layer == "model_weights",
+            ).order_by(VasiModelVersion.deployed_at.desc(), VasiModelVersion.id.desc()).first()
+        finally:
+            session.close()
+
+        if version is None:
+            return None
+
+        model = load_unet(version.version_tag)
+        if model is not None:
+            _unet_model = model
+            _unet_version_tag = version.version_tag
+            logger.info("Active U-Net loaded: %s", version.version_tag)
+            return _unet_model
+    except Exception as e:
+        logger.warning("Failed to load active U-Net: %s", e)
+    return None
+
+
+def segment_with_unet(img_np: np.ndarray) -> Optional[np.ndarray]:
+    """用已上线的 U-Net 推理。返回二值 mask（H, W），无 active 模型或推理失败返回 None。"""
+    model = _get_active_unet()
+    if model is None:
+        return None
+    try:
+        from web.backend.services.vasi_model_trainer import predict_mask
+        return predict_mask(model, img_np)
+    except Exception as e:
+        logger.error("U-Net inference failed: %s", e)
+        return None
+
+
+def _segmentation_result_from_mask(
+    img_np: np.ndarray,
+    lesion_mask: np.ndarray,
+    source: str,
+    min_patch_area_ratio: float = 0.005,
+    max_patches: int = 5,
+) -> Dict[str, Any]:
+    """把二值 lesion mask 转换为标准分割结果（与 SAM 路径相同的输出结构）。
+
+    对模型输出的 mask 先做边缘吸附：U-Net 输出的边界常偏像素锯齿，
+    沿颜色梯度脊线收敛后才能真正贴合白斑边界。
+    """
+    from web.backend.services.vasi_edge_segmentation import (
+        refine_mask_by_edges,
+        extract_precise_polygon,
+    )
+
+    h, w = img_np.shape[:2]
+    total_pixels = h * w
+
+    result: Dict[str, Any] = {
+        "success": False,
+        "contours": [],
+        "total_area_percent": 0.0,
+        "source": source,
+        "error": None,
+    }
+    if _unet_version_tag:
+        result["model_version"] = _unet_version_tag
+
+    skin_mask = build_skin_mask(img_np)
+    if skin_mask is not None and skin_mask.sum() / total_pixels >= 0.03:
+        analysis_region = expand_skin_mask_to_include_vitiligo(img_np, skin_mask)
+        skin_region_ratio = round(100 * skin_mask.sum() / total_pixels, 1)
+    else:
+        analysis_region = np.ones((h, w), dtype=bool)
+        skin_region_ratio = 100.0
+
+    try:
+        refined = refine_mask_by_edges(img_np, lesion_mask, region=analysis_region)
+        if refined.any():
+            lesion_mask = refined
+    except Exception as e:
+        logger.warning("Edge refinement of %s mask failed: %s", source, e)
+
+    skin_pixels = max(int(analysis_region.sum()), 1)
+
+    contours: List[Dict[str, Any]] = []
+    total_area_in_skin = 0.0
+
+    for i, component in enumerate(split_into_connected_components(lesion_mask, min_area=100)):
+        area_pixels = int(component.sum())
+        area_percent_in_skin = (area_pixels / skin_pixels) * 100
+        area_percent_in_image = (area_pixels / total_pixels) * 100
+        if area_percent_in_skin < min_patch_area_ratio * 100:
+            continue
+        polygon = extract_precise_polygon(component)
+        if polygon is None:
+            continue
+        contours.append({
+            "label": f"白斑{i + 1}",
+            "polygon": polygon,
+            "area_percent": round(area_percent_in_skin, 1),
+            "area_percent_in_image": round(area_percent_in_image, 1),
+        })
+        total_area_in_skin += area_percent_in_skin
+        if len(contours) >= max_patches:
+            break
+
+    result["skin_region_ratio"] = skin_region_ratio
+    result["denominator"] = "skin_region"
+    result["skin_layer_data_url"] = mask_to_data_url(analysis_region, color=(96, 165, 250), alpha=110)
+
+    if not contours:
+        result["error"] = "未在皮肤区域内检测到明显的白斑"
+        return result
+
+    result["success"] = True
+    result["contours"] = contours
+    result["total_area_percent"] = round(min(total_area_in_skin, 100.0), 1)
+    result["lesion_layer_data_url"] = mask_to_data_url(lesion_mask, color=(244, 114, 182), alpha=180)
+    return result
+
+
 # ── 主分割函数 ──
 
 def segment_vitiligo(
@@ -319,6 +472,14 @@ def segment_vitiligo(
 
     h, w = img_np.shape[:2]
     total_pixels = h * w
+
+    # Step 1.5: 已上线的自训练 U-Net 优先推理（无 active 模型或推理异常时回退 SAM/CV 链路）
+    unet_mask = segment_with_unet(img_np)
+    if unet_mask is not None:
+        logger.info("Segmenting with trained U-Net (source=unet)")
+        return _segmentation_result_from_mask(
+            img_np, unet_mask, "unet", min_patch_area_ratio, max_patches,
+        )
 
     # Step 2: 尝试 SAM 分割
     mask_generator = _get_sam_generator(precision)
@@ -447,14 +608,18 @@ def _is_white_patch_mask_within_skin(
     """Decide whether a SAM-generated mask represents a vitiligo patch.
 
     A real vitiligo patch must:
-      1. Cover at most `max_skin_coverage` of the skin region (otherwise it's
-         likely the whole skin, not a localized patch).
-      2. Sit substantially inside the skin region (≥70% overlap, checked by caller).
-      3. Be ≥ min_l_offset L* units lighter than the surrounding skin median.
-      4. Have low chroma (median < max_chroma) — vitiligo lacks melanin pigment.
+      1. Sit inside the skin region (≥70% overlap, checked by caller).
+      2. Be lighter than its **local** healthy skin reference, not merely
+         lighter than the whole-image median (v2: the global comparison broke
+         under uneven lighting — one bright side of the face was flagged).
+      3. Have less pigment (lower LAB chroma) than the surrounding skin.
+
+    `max_chroma` / `max_skin_coverage` are kept in the signature for backward
+    compatibility with the SAM auto path; the v2 gate is relative, so they no
+    longer drive the decision.
 
     Returns False if any condition fails. Conservative by design — false
-    negatives are acceptable because the relative-L global detector
+    negatives are acceptable because the edge-aware detector
     (detect_vitiligo_within_skin) provides a second path.
     """
     if not mask.any():
@@ -464,12 +629,7 @@ def _is_white_patch_mask_within_skin(
     except ImportError:
         return False
 
-    mask_area = int(mask.sum())
-    skin_area = int(skin_region.sum())
-    if skin_area == 0:
-        return False
-    if mask_area / skin_area > max_skin_coverage:
-        return False
+    from web.backend.services.vasi_edge_segmentation import compute_local_reference
 
     img_bgr = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
     lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
@@ -482,13 +642,24 @@ def _is_white_patch_mask_within_skin(
     if surrounding_skin.sum() < 200:
         return False
 
+    # 局部参考：白斑周围皮肤的局部中位亮度
+    l_ref = compute_local_reference(
+        L, surrounding_skin, pct=50.0, win=9, mode="mean"
+    )
     mask_l_median = float(np.median(L[mask]))
-    skin_l_median = float(np.median(L[surrounding_skin]))
-    mask_chroma_median = float(np.median(chroma[mask]))
+    local_ref_median = float(np.median(l_ref[mask]))
 
+    # 若局部参考不可信（区域内像素太少），退回 mask 周围的直接邻域
+    if not np.isfinite(local_ref_median) or local_ref_median <= 0:
+        local_ref_median = float(np.median(L[surrounding_skin]))
+
+    mask_chroma_median = float(np.median(chroma[mask]))
+    skin_chroma_ref = float(np.median(chroma[surrounding_skin]))
+
+    # 脱色素判据：比**局部**健康皮肤更亮，且色素低于周围皮肤
     return (
-        mask_l_median >= skin_l_median + min_l_offset
-        and mask_chroma_median <= max_chroma
+        mask_l_median >= local_ref_median + min_l_offset
+        and mask_chroma_median <= skin_chroma_ref + 1.0
     )
 
 
@@ -497,11 +668,17 @@ def _fallback_segmentation(
     min_patch_area_ratio: float,
     max_patches: int,
 ) -> Dict[str, Any]:
-    """Skin-aware CV fallback when SAM is unavailable.
+    """Skin-aware edge-guided CV segmentation when SAM is unavailable.
 
-    Uses the same two-stage logic as the SAM path: skin foreground first,
-    then relative-lightness vitiligo detection inside it.
+    使用 `vasi_edge_segmentation.segment_lesions_edge_aware`：
+    逐像素 LAB 颜色 + 局部光照校正 + 邻域色差梯度 + 滞后双阈值 +
+    分水岭边缘吸附 + 连通域伪阳性过滤。与 SAM 路径输出同一结构。
     """
+    from web.backend.services.vasi_edge_segmentation import (
+        segment_lesions_edge_aware,
+        extract_precise_polygon,
+    )
+
     h, w = img_np.shape[:2]
     total_pixels = h * w
 
@@ -519,7 +696,11 @@ def _fallback_segmentation(
         return result
 
     analysis_region = expand_skin_mask_to_include_vitiligo(img_np, skin_mask)
-    vitiligo_mask, stats = detect_vitiligo_within_skin(img_np, analysis_region)
+    seg = segment_lesions_edge_aware(
+        img_np, analysis_region, skin_candidate=skin_mask
+    )
+    vitiligo_mask = seg["lesion_mask"]
+    stats = seg.get("stats", {})
 
     skin_pixels = max(int(analysis_region.sum()), 1)
     skin_region_ratio = round(100 * skin_mask.sum() / total_pixels, 1)
@@ -528,6 +709,7 @@ def _fallback_segmentation(
         result["error"] = "未在皮肤区域内检测到明显的白斑"
         result["skin_region_ratio"] = skin_region_ratio
         result["vitiligo_stats"] = stats
+        result["skin_layer_data_url"] = mask_to_data_url(analysis_region, color=(96, 165, 250), alpha=110)
         return result
 
     patches_meta: List[Dict[str, Any]] = []
@@ -537,7 +719,7 @@ def _fallback_segmentation(
         area_percent_in_image = (area_pixels / total_pixels) * 100
         if area_percent_in_skin < min_patch_area_ratio * 100:
             continue
-        polygon = _mask_to_polygon(component)
+        polygon = extract_precise_polygon(component)
         if polygon is None:
             continue
         patches_meta.append({
@@ -563,8 +745,7 @@ def _fallback_segmentation(
     result["denominator"] = "skin_region"
     result["vitiligo_stats"] = stats
     result["skin_layer_data_url"] = mask_to_data_url(analysis_region, color=(96, 165, 250), alpha=110)
-    if patches_meta and vitiligo_mask is not None:
-        result["lesion_layer_data_url"] = mask_to_data_url(vitiligo_mask, color=(244, 114, 182), alpha=180)
+    result["lesion_layer_data_url"] = mask_to_data_url(vitiligo_mask, color=(244, 114, 182), alpha=180)
     return result
 
 
@@ -748,13 +929,13 @@ def segment_vitiligo_guided(
         sam = _load_sam_model()
         if sam is None:
             logger.warning("SAM not available for guided mode, falling back to auto")
-            return segment_vitiligo(image_bytes, 0.005, 5, precision)
+            return segment_vitiligo(image_bytes, 0.005, 100, precision)
 
         predictor = SamPredictor(sam)
         predictor.set_image(img_np)
     except Exception as e:
         logger.error("SAM predictor setup failed: %s", e)
-        return segment_vitiligo(image_bytes, 0.005, 5, precision)
+        return segment_vitiligo(image_bytes, 0.005, 100, precision)
 
     # ── Step 1: Skin mask via VLM box prompt or color fallback ──
     skin_pixels: Optional[int] = None
@@ -794,7 +975,7 @@ def segment_vitiligo_guided(
 
     if skin_mask is None or skin_pixels is None or skin_pixels < total_pixels * 0.03:
         logger.warning("Insufficient skin region, falling back to auto")
-        return segment_vitiligo(image_bytes, 0.005, 5, precision)
+        return segment_vitiligo(image_bytes, 0.005, 100, precision)
 
     skin_region_ratio = round(100 * skin_pixels / total_pixels, 1)
     result["skin_region_ratio"] = skin_region_ratio
@@ -1488,6 +1669,47 @@ def _segment_with_tiling(
         result["total_area_percent"] = round(min(total_area, 100.0), 1)
 
     return result
+
+
+def consolidate_segmentation(image_bytes: bytes, result: Dict[str, Any]) -> Dict[str, Any]:
+    """Derive contours, area and overlays from the same union mask.
+
+    在生成轮廓前对 lesion mask 做**边缘吸附**（分水岭沿颜色梯度脊线收敛），
+    使最终展示/计入面积的范围贴合真实色差边界，而不是模型输出的像素锯齿。
+    """
+    from web.backend.services.assessment_measurement import decode_mask
+    from web.backend.services.vasi_edge_segmentation import (
+        refine_mask_by_edges,
+        extract_precise_polygon,
+    )
+
+    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    skin = decode_mask(result.get("skin_layer_data_url"), (image.height, image.width))
+    lesion = decode_mask(result.get("lesion_layer_data_url"), (image.height, image.width))
+    if skin is None or lesion is None or not skin.any():
+        return {**result, "success": False, "error": "无法确认测量范围"}
+    if int((lesion & ~skin).sum()) > max(4, int(lesion.sum()) * 0.02):
+        return {**result, "success": False, "error": "白斑候选超出皮肤范围，请核对"}
+    lesion &= skin
+    try:
+        img_np = np.array(image)
+        lesion = refine_mask_by_edges(img_np, lesion)
+        lesion &= skin
+    except Exception as e:
+        logger.warning("Edge refinement in consolidate failed: %s", e)
+    total = int(skin.sum())
+    contours = []
+    for i, component in enumerate(split_into_connected_components(lesion, min_area=1)):
+        polygon = extract_precise_polygon(component)
+        if polygon is not None:
+            contours.append({"label": f"白斑{i + 1}", "polygon": polygon,
+                "area_percent": round(float(component.sum() / total * 100), 2),
+                "area_percent_in_image": round(float(component.sum() / skin.size * 100), 2)})
+    return {**result, "success": True, "contours": contours,
+        "total_area_percent": round(float(lesion.sum() / total * 100), 2),
+        "denominator": "skin_region", "skin_region_ratio": round(float(total / skin.size * 100), 2),
+        "skin_layer_data_url": mask_to_data_url(skin, color=(96, 165, 250), alpha=110),
+        "lesion_layer_data_url": mask_to_data_url(lesion, color=(244, 114, 182), alpha=180)}
 
 
 # ── Module-level singleton ───────────────────────────────────────────────────

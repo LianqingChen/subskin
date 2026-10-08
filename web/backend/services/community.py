@@ -1,7 +1,9 @@
+from web.backend.utils.timeutils import iso_utc
 # pyright: reportArgumentType=false, reportAttributeAccessIssue=false, reportGeneralTypeIssues=false, reportMissingTypeArgument=false
 
 from datetime import datetime, timedelta
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+import json
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from sqlalchemy.exc import IntegrityError
@@ -23,9 +25,11 @@ from web.backend.database.models import (
     Bookmark,
     UserInteractionLog,
     UserFollow,
+    UserBlock,
 )
 from web.backend.services.recommendation import RecommendationService
 from web.backend.utils.cursor import decode_cursor, encode_cursor_from_post
+from web.backend.utils.redact import safe_public_username
 from web.backend.models.community import (
     Post as PostModel,
     PostComment as PostCommentModel,
@@ -64,6 +68,73 @@ class CommunityService:
     def get_categories(self) -> List[CommunityCategory]:
         return self.db.query(CommunityCategory).order_by(CommunityCategory.order).all()
 
+    # ── 结构化治疗分享 ──
+
+    @staticmethod
+    def serialize_treatment_share(data: Optional[Dict[str, Any]]) -> Optional[str]:
+        if not data:
+            return None
+        return json.dumps(data, ensure_ascii=False)
+
+    @staticmethod
+    def parse_treatment_share(raw: Optional[str]) -> Optional[Dict[str, Any]]:
+        if not raw:
+            return None
+        try:
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else None
+        except (ValueError, TypeError):
+            return None
+
+    def enrich_treatment_share(self, user_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """校验关联的 VASI 评估归属并写入快照，仅保留本人记录，最多 2 条。"""
+        raw_ids = data.get("vasi_assessment_ids") or []
+        deduped: List[int] = []
+        seen = set()
+        for item in raw_ids:
+            try:
+                aid = int(item)
+            except (TypeError, ValueError):
+                continue
+            if aid in seen:
+                continue
+            seen.add(aid)
+            deduped.append(aid)
+            if len(deduped) == 2:
+                break
+        snapshots: List[Dict[str, Any]] = []
+        if deduped:
+            from web.backend.models.vasi import VASIAssessment
+
+            records = (
+                self.db.query(VASIAssessment)
+                .filter(
+                    VASIAssessment.id.in_(deduped),
+                    VASIAssessment.user_id == user_id,
+                )
+                .all()
+            )
+            by_id = {r.id: r for r in records}
+            for aid in deduped:
+                rec = by_id.get(aid)
+                if rec is None:
+                    continue
+                snapshots.append(
+                    {
+                        "id": rec.id,
+                        "assessment_date": iso_utc(rec.assessment_date.date())
+                        if rec.assessment_date
+                        else None,
+                        "vasi_score": rec.vasi_score,
+                        "final_vasi_score": rec.final_vasi_score,
+                        "body_site": rec.body_site,
+                        "stage": rec.stage,
+                    }
+                )
+        data["vasi_assessment_ids"] = [s["id"] for s in snapshots]
+        data["vasi_assessments"] = snapshots
+        return data
+
     def create_post(
         self,
         user_id: int,
@@ -72,6 +143,7 @@ class CommunityService:
         category_id: int,
         content_json: Optional[str] = None,
         image_urls: Optional[List[str]] = None,
+        image_metas: Optional[List[dict]] = None,
         tag_names: Optional[List[str]] = None,
         is_private: bool = False,
         diary_date: Optional[str] = None,
@@ -82,6 +154,7 @@ class CommunityService:
         video_url: Optional[str] = None,
         video_thumbnail: Optional[str] = None,
         city: Optional[str] = None,
+        treatment_share_json: Optional[str] = None,
     ) -> Post:
         category = self.db.query(CommunityCategory).filter_by(id=category_id).first()
         if not category:
@@ -115,6 +188,7 @@ class CommunityService:
             mood=mood,
             is_anonymous=is_anonymous,
             city=city,
+            treatment_share_json=treatment_share_json,
         )
         if is_private:
             post.draft_expires_at = datetime.utcnow() + timedelta(days=30)
@@ -126,13 +200,22 @@ class CommunityService:
         if diary_type:
             post.diary_type = diary_type
         self.db.add(post)
-        self.db.commit()
-        self.db.refresh(post)
+        self.db.flush()  # Publish the post and its ordered images in one transaction.
 
-        if image_urls:
-            for order, url in enumerate(image_urls):
-                image = PostImage(post_id=post.id, image_url=url, order=order)
-                self.db.add(image)
+        # The image list defines membership and order; metadata only enriches matching URLs.
+        metadata = {(item.get("image_url") or item.get("url")): item for item in (image_metas or [])}
+        ordered_urls = image_urls if image_urls is not None else list(metadata)
+        for order, url in enumerate(ordered_urls or []):
+            im = metadata.get(url, {})
+            cap_date = None
+            if im.get("capture_date"):
+                try:
+                    cap_date = datetime.strptime(im["capture_date"], "%Y-%m-%d").date()
+                except (ValueError, TypeError):
+                    cap_date = None
+            self.db.add(PostImage(post_id=post.id, user_id=user_id, image_url=url,
+                                  body_site=im.get("body_site"), capture_date=cap_date,
+                                  order=order, analysis_status="pending"))
 
         if tag_names:
             for name in tag_names[:5]:
@@ -158,6 +241,8 @@ class CommunityService:
         tag_name: Optional[str] = None,
         post_type: Optional[str] = None,
         feed_type: Optional[str] = None,
+        sort: Optional[str] = None,
+        city: Optional[str] = None,
         limit: int = 20,
         offset: int = 0,
         user_id: Optional[int] = None,
@@ -194,6 +279,29 @@ class CommunityService:
             else:
                 return 0, [], None
 
+        # 关注/同城范围内排序：显式 sort（综合/最新/最多浏览/点赞/收藏/转发）时，
+        # 排序范围限定在 feed_type 对应的子集内（与推荐服务 get_feed 的过滤语义一致）。
+        if feed_type == "following" and user_id is not None:
+            follows = self.db.query(UserFollow).filter_by(follower_id=user_id).all()
+            author_ids = [f.followee_id for f in follows]
+            if author_ids:
+                blocked = {
+                    b[0]
+                    for b in self.db.query(UserBlock.blocked_id)
+                    .filter_by(blocker_id=user_id)
+                    .all()
+                }
+                author_ids = [aid for aid in author_ids if aid not in blocked]
+            if author_ids:
+                query = query.filter(Post.user_id.in_(author_ids))
+            # 无关注对象（或全部被屏蔽）时不加过滤 → 保持全局排序范围（与原 hot 回退行为一致）
+
+        if feed_type == "local" and city:
+            query = query.filter(
+                Post.city.isnot(None),
+                func.lower(Post.city) == city.strip().lower(),
+            )
+
         if after:
             cursor = decode_cursor(after)
             if cursor:
@@ -203,10 +311,27 @@ class CommunityService:
                     ((Post.created_at == cursor_ts) & (Post.id < cursor_id))
                 )
 
-        if feed_type == "hot":
-            weight = RecommendationService.post_score_expr(Post)
-            query = query.order_by(weight.desc(), Post.created_at.desc())
-        elif feed_type == "recommend":
+        if sort == "newest":
+            query = query.order_by(desc(Post.created_at), desc(Post.id))
+        elif sort == "views":
+            query = query.order_by(
+                desc(func.coalesce(Post.read_count, 0)),
+                desc(Post.created_at),
+                desc(Post.id),
+            )
+        elif sort == "likes":
+            like_subq = RecommendationService.count_expr(PostLike, Post)
+            query = query.order_by(like_subq.desc(), desc(Post.created_at), desc(Post.id))
+        elif sort == "bookmarks":
+            bookmark_subq = RecommendationService.count_expr(Bookmark, Post)
+            query = query.order_by(bookmark_subq.desc(), desc(Post.created_at), desc(Post.id))
+        elif sort == "shares":
+            query = query.order_by(
+                desc(func.coalesce(Post.share_count, 0)),
+                desc(Post.created_at),
+                desc(Post.id),
+            )
+        elif sort == "hot" or feed_type in ("hot", "recommend"):
             weight = RecommendationService.post_score_expr(Post)
             query = query.order_by(weight.desc(), Post.created_at.desc())
         else:
@@ -249,6 +374,7 @@ class CommunityService:
         video_thumbnail: Optional[str] = None,
         city: Optional[str] = None,
         image_urls: Optional[List[str]] = None,
+        treatment_share_json: Optional[str] = None,
     ) -> Post:
         post = self.db.query(Post).filter_by(id=post_id, user_id=user_id).first()
         if not post:
@@ -295,6 +421,8 @@ class CommunityService:
             post.diary_type = diary_type
         if city is not None:
             post.city = city
+        if treatment_share_json is not None:
+            post.treatment_share_json = treatment_share_json or None
         if tag_names is not None:
             self.db.query(PostTag).filter_by(post_id=post.id).delete()
             for name in tag_names[:5]:
@@ -390,6 +518,29 @@ class CommunityService:
         )
         return like is not None
 
+    def share_post(self, post_id: int, user_id: int) -> int:
+        """记录一次转发：share_count +1 并写入交互日志（推荐算法数据源）。
+
+        Args:
+            post_id: 帖子 ID
+            user_id: 转发用户 ID
+
+        Returns:
+            最新转发数
+
+        Raises:
+            ValueError: 帖子不存在或无权访问（私密/封禁）
+        """
+        post = self.get_post_by_id(post_id, user_id)
+        if not post:
+            raise ValueError("帖子不存在或无权转发")
+        post.share_count = (post.share_count or 0) + 1
+        self.db.add(
+            UserInteractionLog(user_id=user_id, post_id=post_id, action_type="share")
+        )
+        self.db.commit()
+        return post.share_count
+
     def add_comment(self, post_id: int, user_id: int, content: str) -> PostComment:
         post = self.db.query(Post).filter_by(id=post_id).first()
         if not post:
@@ -484,13 +635,24 @@ class CommunityService:
         import hashlib
         from pathlib import Path
 
-        if len(content) > self.MAX_FILE_UPLOAD_BYTES:
+        is_report_upload = subdir == "reports"
+        max_bytes = 20 * 1024 * 1024 if is_report_upload else self.MAX_FILE_UPLOAD_BYTES
+        allowed_exts = (
+            {".pdf"} | self.ALLOWED_IMAGE_EXTS
+            if is_report_upload
+            else self.ALLOWED_FILE_EXTS
+        )
+        if len(content) > max_bytes:
             raise ValueError(
-                f"文件过大，最大支持 {self.MAX_FILE_UPLOAD_BYTES // (1024 * 1024)}MB"
+                f"文件过大，最大支持 {max_bytes // (1024 * 1024)}MB"
             )
         ext = (Path(filename).suffix or "").lower()
-        if ext not in self.ALLOWED_FILE_EXTS:
-            raise ValueError(f"不支持的文件格式，支持: {', '.join(sorted(self.ALLOWED_FILE_EXTS))}")
+        if ext not in allowed_exts:
+            raise ValueError(f"不支持的文件格式，支持: {', '.join(sorted(allowed_exts))}")
+        if is_report_upload and ext in self.ALLOWED_IMAGE_EXTS and not self._check_image_magic(content):
+            raise ValueError("图片内容与声明格式不符（magic byte 校验失败）")
+        if is_report_upload and ext == ".pdf" and not content.startswith(b"%PDF-"):
+            raise ValueError("PDF 内容与声明格式不符（magic byte 校验失败）")
 
         upload_dir = Path(f"data/uploads/{subdir}")
         upload_dir.mkdir(parents=True, exist_ok=True)
@@ -806,7 +968,12 @@ class CommunityService:
             id=comment.id,
             content=comment.content,
             author=PostCommentAuthor(
-                id=comment.author.id, username=comment.author.username
+                # 序列化层脱敏（2026-08-30）：历史 username 可能是手机号，
+                # 公开 feed 不得透出原始值
+                id=comment.author.id,
+                username=safe_public_username(
+                    comment.author.username, getattr(comment.author, "phone", None)
+                ),
             ),
             post_id=comment.post_id,
             created_at=comment.created_at,
@@ -854,10 +1021,11 @@ class CommunityService:
             video_thumbnail=getattr(post, "video_thumbnail", None),
             content_preview=getattr(post, "content_preview", None),
             read_count=getattr(post, "read_count", 0),
+            share_count=getattr(post, "share_count", 0) or 0,
             category_id=post.category_id,
             is_private=post.is_private,
             draft_expires_at=getattr(post, "draft_expires_at", None),
-            diary_date=post.diary_date.isoformat() if post.diary_date else None,
+            diary_date=iso_utc(post.diary_date) if post.diary_date else None,
             diary_type=getattr(post, "diary_type", None),
             mood=post.mood,
             is_anonymous=False,
@@ -865,9 +1033,14 @@ class CommunityService:
             latitude=getattr(post, "latitude", None),
             longitude=getattr(post, "longitude", None),
             distance=self.calc_distance(user_lat, user_lng, getattr(post, "latitude", None), getattr(post, "longitude", None)),
+            treatment_share=self.parse_treatment_share(getattr(post, "treatment_share_json", None)),
             author=PostAuthor(
                 id=post.author.id,
-                username=post.author.username,
+                # 序列化层脱敏（2026-08-30）：历史 username 可能是手机号，
+                # 公开 feed 不得透出原始值
+                username=safe_public_username(
+                    post.author.username, getattr(post.author, "phone", None)
+                ),
                 avatar=post.author.avatar_url,
                 is_doctor=getattr(post.author, "is_doctor", False),
                 is_verified=getattr(post.author, "real_name_verified", False),
@@ -879,7 +1052,15 @@ class CommunityService:
             ),
             category=self.category_to_model(post.category) if post.category else None,
             images=[
-                PostImageModel(id=img.id, image_url=img.image_url, order=img.order)
+                PostImageModel(
+                    id=img.id,
+                    image_url=img.image_url,
+                    order=img.order,
+                    body_site=img.body_site,
+                    capture_date=img.capture_date.isoformat() if img.capture_date else None,
+                    analysis_status=img.analysis_status or "pending",
+                    vasi_assessment_id=img.vasi_assessment_id,
+                )
                 for img in images
             ],
             audios=[
@@ -1057,10 +1238,11 @@ class CommunityService:
                 video_thumbnail=getattr(post, "video_thumbnail", None),
                 content_preview=getattr(post, "content_preview", None),
                 read_count=getattr(post, "read_count", 0),
+                share_count=getattr(post, "share_count", 0) or 0,
                 category_id=post.category_id,
                 is_private=post.is_private,
                 draft_expires_at=getattr(post, "draft_expires_at", None),
-                diary_date=post.diary_date.isoformat() if post.diary_date else None,
+                diary_date=iso_utc(post.diary_date) if post.diary_date else None,
                 diary_type=getattr(post, "diary_type", None),
                 mood=post.mood,
                 is_anonymous=False,
@@ -1068,10 +1250,19 @@ class CommunityService:
                 latitude=getattr(post, "latitude", None),
                 longitude=getattr(post, "longitude", None),
                 distance=self.calc_distance(user_lat, user_lng, getattr(post, "latitude", None), getattr(post, "longitude", None)),
+                treatment_share=self.parse_treatment_share(getattr(post, "treatment_share_json", None)),
                 author=author_model,
                 category=category_model,
                 images=[
-                    PostImageModel(id=img.id, image_url=img.image_url, order=img.order)
+                    PostImageModel(
+                        id=img.id,
+                        image_url=img.image_url,
+                        order=img.order,
+                        body_site=img.body_site,
+                        capture_date=img.capture_date.isoformat() if img.capture_date else None,
+                        analysis_status=img.analysis_status or "pending",
+                        vasi_assessment_id=img.vasi_assessment_id,
+                    )
                     for img in images
                 ],
                 audios=[

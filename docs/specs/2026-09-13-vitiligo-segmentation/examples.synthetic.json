@@ -1,0 +1,129 @@
+[
+  {
+    "protocol": "skin-seg-v2",
+    "input_type": "rgb_photo",
+    "job_id": "synthetic-example",
+    "image": {
+      "id": "synthetic-image",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "width": 1000,
+      "height": 800,
+      "transform_id": "synthetic-identity",
+      "roi_revision": "synthetic-roi-v1",
+      "coordinate_frame": "normalized_original"
+    },
+    "status": "review_required",
+    "review_state": "pending",
+    "mask_revision": "1111111111111111111111111111111111111111111111111111111111111111",
+    "masks": {
+      "valid_skin": "mask_synthetic_skin",
+      "lesion": "mask_synthetic_lesion",
+      "uncertain": "mask_synthetic_uncertain",
+      "excluded": null
+    },
+    "measurement": null,
+    "confidence": {
+      "event": "segmentation_meets_acceptance",
+      "calibrated": false,
+      "score": null,
+      "calibration_id": null
+    },
+    "blocking_reasons": [
+      "REGIONS_UNRESOLVED"
+    ],
+    "provenance": {
+      "skin_model": "synthetic-placeholder",
+      "lesion_model": "synthetic-placeholder",
+      "refiner": null,
+      "policy_version": "proposed-rgb-policy-v1",
+      "decision_by": "server_measurement_policy"
+    }
+  },
+  {
+    "protocol": "skin-seg-v2",
+    "input_type": "rgb_photo",
+    "job_id": "synthetic-measured",
+    "image": {
+      "id": "synthetic-image",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "width": 1000,
+      "height": 800,
+      "transform_id": "synthetic-identity",
+      "roi_revision": "synthetic-roi-v1",
+      "coordinate_frame": "normalized_original"
+    },
+    "status": "measurable",
+    "review_state": "user_reviewed",
+    "mask_revision": "1111111111111111111111111111111111111111111111111111111111111111",
+    "masks": {
+      "valid_skin": "mask_synthetic_skin",
+      "lesion": "mask_synthetic_lesion",
+      "uncertain": null,
+      "excluded": null
+    },
+    "measurement": {
+      "scope": "visible_skin_in_selected_roi",
+      "skin_pixels": 600000,
+      "lesion_pixels": 120000,
+      "area_percentage": 20.0,
+      "area_cm2": null,
+      "scale_status": "unavailable",
+      "perimeter_pixels": null,
+      "calibration_id": null
+    },
+    "confidence": {
+      "event": "segmentation_meets_acceptance",
+      "calibrated": false,
+      "score": null,
+      "calibration_id": null
+    },
+    "blocking_reasons": [],
+    "provenance": {
+      "skin_model": "synthetic-placeholder",
+      "lesion_model": "synthetic-placeholder",
+      "refiner": null,
+      "policy_version": "proposed-rgb-policy-v1",
+      "decision_by": "server_measurement_policy"
+    }
+  },
+  {
+    "protocol": "skin-seg-v2",
+    "input_type": "rgb_photo",
+    "job_id": "synthetic-failure",
+    "image": {
+      "id": "synthetic-image",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "width": 1000,
+      "height": 800,
+      "transform_id": "synthetic-identity",
+      "roi_revision": "synthetic-roi-v1",
+      "coordinate_frame": "normalized_original"
+    },
+    "status": "failed",
+    "review_state": "pending",
+    "mask_revision": null,
+    "masks": {
+      "valid_skin": null,
+      "lesion": null,
+      "uncertain": null,
+      "excluded": null
+    },
+    "measurement": null,
+    "confidence": {
+      "event": "segmentation_meets_acceptance",
+      "calibrated": false,
+      "score": null,
+      "calibration_id": null
+    },
+    "blocking_reasons": [
+      "SERVICE_UNAVAILABLE"
+    ],
+    "provenance": {
+      "skin_model": "synthetic-placeholder",
+      "lesion_model": "synthetic-placeholder",
+      "refiner": null,
+      "policy_version": "proposed-rgb-policy-v1",
+      "decision_by": "server_measurement_policy"
+    }
+  }
+]

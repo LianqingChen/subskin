@@ -1,8 +1,17 @@
+/**
+ * SubSkin VitePress 百科配置
+ *
+ * ⚠️ 本 VitePress 项目已降级为「内容编辑工具」，不再构建和部署为独立静态站点。
+ * - Markdown 内容在 web/vitepress/docs/encyclopedia/ 下编写
+ * - 通过 scripts/import_encyclopedia_md.py 导入数据库
+ * - 用户通过 SPA 的 /encyclopedia 路由阅读（从数据库读取）
+ * - VitePress dev server (npm run dev) 仅用于本地预览和编辑
+ */
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: "SubSkin",
-  description: "白癜风百科全书 - 利用 AI 赋能，缩短医学前沿与普通患者之间的知识鸿沟",
+  description: "SubSkin - 白癜风病友的AI手帐和分享社区",
   head: [
     ['link', { rel: 'icon', href: '/subskin_logo.png' }],
     ['meta', { name: 'theme-color', content: '#2b6cb0' }]

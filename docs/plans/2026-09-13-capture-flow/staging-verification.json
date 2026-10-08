@@ -1,0 +1,15 @@
+{
+  "version": {
+    "buildTime": 1789262683778,
+    "env": "staging",
+    "lastProdBuildTime": 1789178116492
+  },
+  "manifest": "SubSkin [STAGING]",
+  "service_worker_bytes": 25176,
+  "entry_assets": [
+    "/assets/index-CcWUdOiq.js",
+    "/assets/index-BRbzQrFS.css"
+  ],
+  "health": "ok",
+  "refinement_version": "pixel-refine-v2"
+}

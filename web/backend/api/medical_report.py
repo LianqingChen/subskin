@@ -1,6 +1,7 @@
 import json as _json
 import logging
 import os
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
@@ -233,34 +234,48 @@ async def create_report(
 
     service = CommunityService(db)
     uploaded_files = files or []
+    uploaded_paths: List[Path] = []
 
-    for idx, file in enumerate(uploaded_files):
-        if not file.filename:
-            continue
-        content = await file.read()
-        result = service.upload_file(
-            user_id=_as_int(current_user.id),
-            filename=file.filename,
-            content=content,
-            subdir="reports",
-        )
-        db_file = MedicalReportFile(
-            report_id=report.id,
-            file_url=result["url"],
-            file_name=file.filename,
-            file_size=len(content),
-            file_type=file.content_type,
-            order=idx,
-        )
-        db.add(db_file)
+    try:
+        for idx, file in enumerate(uploaded_files):
+            if not file.filename:
+                continue
+            content = await file.read()
+            result = service.upload_file(
+                user_id=_as_int(current_user.id),
+                filename=file.filename,
+                content=content,
+                subdir="reports",
+            )
+            db_file = MedicalReportFile(
+                report_id=report.id,
+                file_url=result["url"],
+                file_name=file.filename,
+                file_size=len(content),
+                file_type=file.content_type,
+                order=idx,
+            )
+            db.add(db_file)
+            db.commit()
+            db.refresh(db_file)
+            uploaded_paths.append(Path("data") / str(result["url"]).lstrip("/"))
+
+            # Auto-convert PDFs to page images for in-browser viewing
+            _convert_pdf_to_pages(
+                local_path=Path("data") / str(result["url"]).lstrip("/"),
+                file_id=_as_int(db_file.id),
+            )
+    except ValueError as exc:
+        # Do not leave an empty/partial report row when one attachment fails.
+        db.query(MedicalReportFile).filter(MedicalReportFile.report_id == report.id).delete()
+        db.delete(report)
         db.commit()
-        db.refresh(db_file)
-
-        # Auto-convert PDFs to page images for in-browser viewing
-        _convert_pdf_to_pages(
-            local_path=Path("data") / str(result["url"]).lstrip("/"),
-            file_id=_as_int(db_file.id),
-        )
+        for uploaded_path in uploaded_paths:
+            try:
+                uploaded_path.unlink(missing_ok=True)
+            except OSError:
+                logger.warning("Failed to clean uploaded report file: %s", uploaded_path)
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     db.commit()
 
@@ -314,6 +329,11 @@ async def compare_reports(
         report_summary = report_interpreter.interpret_for_comparison(interpretation, indicators)
         report_summary["report_id"] = _as_int(report.id)
         report_summary["title"] = _as_str(report.title)
+        report_summary["date"] = (
+            report.created_at.date().isoformat()
+            if isinstance(report.created_at, datetime)
+            else _as_str(report.created_at)[:10]
+        )
         report_summary["patient_profile_id"] = _get_report_patient_profile_id(report)
         report_summary["extracted_patient_info"] = _get_report_extracted_patient_info(report)
         report_summaries.append(report_summary)
@@ -414,13 +434,50 @@ async def delete_report(
     if not report:
         raise HTTPException(status_code=404, detail="报告不存在")
 
+    report_files = (
+        db.query(MedicalReportFile)
+        .filter(MedicalReportFile.report_id == report.id)
+        .all()
+    )
+    # Content-hash filenames can be shared across a user's reports; only
+    # unlink files no other report still references.
+    orphan_urls: List[str] = []
+    for db_file in report_files:
+        other_refs = (
+            db.query(MedicalReportFile.id)
+            .filter(
+                MedicalReportFile.file_url == db_file.file_url,
+                MedicalReportFile.report_id != report.id,
+            )
+            .count()
+        )
+        if other_refs == 0:
+            orphan_urls.append(_as_str(db_file.file_url))
+    file_ids = [_as_int(db_file.id) for db_file in report_files]
+
     db.query(MedicalReportFile).filter(
         MedicalReportFile.report_id == report.id
     ).delete()
     db.delete(report)
     db.commit()
 
+    _cleanup_report_files(orphan_urls, file_ids)
+
     return {"detail": "删除成功"}
+
+
+def _cleanup_report_files(file_urls: List[str], file_ids: List[int]) -> None:
+    uploads_root = Path("data/uploads").resolve()
+    for url in file_urls:
+        local_path = (Path("data") / url.lstrip("/")).resolve()
+        if uploads_root not in local_path.parents:
+            continue
+        try:
+            local_path.unlink(missing_ok=True)
+        except OSError as exc:
+            logger.warning("Failed to delete report file %s: %s", local_path, exc)
+    for file_id in file_ids:
+        shutil.rmtree(PAGES_DIR / str(file_id), ignore_errors=True)
 
 
 @router.post("/{report_id}/interpret")
@@ -438,6 +495,20 @@ async def trigger_interpretation(
     )
     if not report:
         raise HTTPException(status_code=404, detail="报告不存在")
+
+    # 2026-08-30 隐私加固：报告解读需将报告内容/图片发往第三方 AI 服务，
+    # 必须先获得用户 medical_photo 授权；未授权时返回 403 + 明确提示，
+    # 前端据此引导用户到授权弹窗/隐私设置。
+    from web.backend.services.consent import (
+        CONSENT_TYPE_MEDICAL_PHOTO,
+        has_active_consent,
+    )
+
+    if not has_active_consent(db, current_user.id, CONSENT_TYPE_MEDICAL_PHOTO):
+        raise HTTPException(
+            status_code=403,
+            detail="需要先授权「AI 处理我的体检报告」才能解读，请前往 个人中心 → 隐私设置 开启",
+        )
 
     if report.interpretation_json is not None:
         existing_result = _get_report_interpretation(report)
@@ -749,27 +820,6 @@ def _pdf_to_images(pdf_path: str) -> List[bytes]:
         import logging
         logging.getLogger(__name__).warning("PDF to image conversion failed: %s", exc)
     return images
-
-
-@router.get("/{report_id}/interpretation")
-async def get_interpretation(
-    report_id: int,
-    current_user: User = Depends(auth),
-    db: Session = Depends(get_db),
-):
-    report = (
-        db.query(MedicalReport)
-        .filter(MedicalReport.id == report_id, MedicalReport.user_id == current_user.id)
-        .first()
-    )
-    if not report:
-        raise HTTPException(status_code=404, detail="报告不存在")
-
-    if report.interpretation_json is None:
-        return {"interpreted": False}
-
-    interpretation = _get_report_interpretation(report)
-    return {"interpreted": True, **interpretation}
 
 
 def _extract_text_from_file(file_path: str) -> str:

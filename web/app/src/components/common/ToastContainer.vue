@@ -13,16 +13,17 @@ const typeStyles: Record<string, string> = {
 
 <template>
   <Teleport to="body">
-    <div class="fixed top-4 right-4 z-[200] flex flex-col gap-2 max-w-sm">
+    <!-- 顶栏下方：手机端居中，桌面端靠右，不遮挡顶栏按钮 -->
+    <div class="pointer-events-none fixed inset-x-4 top-[calc(3.5rem+env(safe-area-inset-top,0px)+0.5rem)] z-[200] flex flex-col items-center gap-2 sm:inset-x-auto sm:right-6 sm:max-w-xs sm:items-end">
       <TransitionGroup name="toast">
         <div
           v-for="toast in toasts"
           :key="toast.id"
-          class="flex items-center justify-between px-4 py-3 rounded-lg shadow-lg border text-sm"
+          class="pointer-events-auto flex items-center justify-between px-3.5 py-2.5 rounded-xl shadow-lg border text-[13px]"
           :class="typeStyles[toast.type]"
         >
           <span>{{ toast.message }}</span>
-          <button class="ml-3 opacity-60 hover:opacity-100" @click="remove(toast.id)">×</button>
+          <button type="button" class="ml-3 min-h-0 opacity-60 hover:opacity-100" aria-label="关闭提示" @click="remove(toast.id)">×</button>
         </div>
       </TransitionGroup>
     </div>

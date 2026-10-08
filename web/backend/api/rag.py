@@ -1,3 +1,4 @@
+from web.backend.utils.timeutils import iso_utc
 # pyright: reportAny=false, reportArgumentType=false, reportAttributeAccessIssue=false, reportCallInDefaultInitializer=false, reportGeneralTypeIssues=false, reportIndexIssue=false, reportMissingTypeArgument=false, reportPrivateUsage=false, reportReturnType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedCallResult=false, reportUnusedVariable=false
 
 import hashlib
@@ -7,7 +8,7 @@ import shutil
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import (
     APIRouter,
@@ -46,6 +47,7 @@ from web.backend.services.rag import (
     is_site_feature_question,
     is_vitiligo_related,
     is_crisis_message,
+    resolve_site_navigation,
     search_documents,
 )
 from web.backend.services.auth import auth
@@ -69,7 +71,11 @@ ALLOWED_UPLOAD_TYPES = {
 
 
 def _get_client_fingerprint(request: Request) -> str:
-    ip = request.client.host if request.client else "unknown"
+    # nginx 反代后 request.client.host 恒为 127.0.0.1，必须解析代理头
+    # 获取真实客户端 IP，否则访客每日配额可被轻易绕过/互相挤占
+    from web.backend.utils.client_ip import get_real_client_ip
+
+    ip = get_real_client_ip(request)
     user_agent = request.headers.get("user-agent", "")
     # Include request path prefix for additional entropy
     path_prefix = request.url.path.split("/")[1] if request.url.path.startswith("/") else ""
@@ -486,7 +492,7 @@ def confirm_action(
 
         post = Post(
             user_id=current_user.id,
-            title=card.get("title", f"{date.today().isoformat()} 病情日记"),
+            title=card.get("title", f"{iso_utc(date.today())} 病情日记"),
             content=card.get("content", ""),
             content_json=None,
             category_id=diary_category.id,
@@ -670,6 +676,7 @@ def _stream_rag_response(
         )
 
         action_cards = []
+        attachment_notes: List[str] = []
         if attachment_ids:
             for attachment_id in attachment_ids:
                 matches = sorted(_temp_upload_dir().glob(f"{attachment_id}*"))
@@ -733,8 +740,24 @@ def _stream_rag_response(
                         }
                         action_cards.append(card)
                         yield event({"type": "action_card", "card": card})
+                        attachment_notes.append(
+                            "图片附件「{name}」已按皮肤白斑照片完成 VASI 分析："
+                            "评分 {score}、部位 {site}、分期 {stage}、面积约 {area}%，"
+                            "结果以卡片形式展示给用户。".format(
+                                name=filepath.name,
+                                score=card["vasiScore"],
+                                site=card["bodySite"],
+                                stage=card["stage"],
+                                area=card["areaPercentage"],
+                            )
+                        )
                     except Exception as exc:
                         logger.warning("VASI analysis failed: %s", str(exc))
+                        attachment_notes.append(
+                            "图片附件「{name}」分析失败，未能识别出有效内容。".format(
+                                name=filepath.name
+                            )
+                        )
 
                 elif suffix in {".pdf", ".doc", ".docx", ".txt", ".md"}:
                     yield event(
@@ -764,8 +787,22 @@ def _stream_rag_response(
                         }
                         action_cards.append(card)
                         yield event({"type": "action_card", "card": card})
+                        attachment_notes.append(
+                            "文档附件「{name}」已完成体检报告解读："
+                            "报告类型 {rtype}，摘要「{summary}」，"
+                            "完整解读以卡片形式展示给用户。".format(
+                                name=card["fileName"],
+                                rtype=card["reportType"],
+                                summary=(card["summary"] or "")[:120],
+                            )
+                        )
                     except Exception as exc:
                         logger.warning("Document interpretation failed: %s", str(exc))
+                        attachment_notes.append(
+                            "文档附件「{name}」解读失败，未能提取有效内容。".format(
+                                name=filepath.name
+                            )
+                        )
 
         conversation_history = None
         if conversation_id:
@@ -801,8 +838,10 @@ def _stream_rag_response(
             query=question,
             docs=docs,
             conversation_history=conversation_history,
-            has_attachments=bool(attachment_ids),
+            attachment_summary="\n".join(attachment_notes),
             mode=mode,
+            db=db,
+            user_id=user_id,
         ):
             full_answer += token
             yield event({"type": "token", "content": token})
@@ -834,6 +873,12 @@ def _stream_rag_response(
                 yield event({"type": "action_card", "card": diary_card})
             except Exception as exc:
                 logger.warning("Diary generation failed: %s", str(exc))
+
+        # 小白管家：附带结构化导航建议（确定性解析，不由 LLM 生成链接）
+        if mode == "butler":
+            nav_items = resolve_site_navigation(question)
+            if nav_items:
+                yield event({"type": "navigation", "items": nav_items})
 
         done_data: dict = {"type": "done", "sources": sources}
         if remaining_quota is not None:
@@ -884,10 +929,10 @@ def list_conversations(
             {
                 "id": conv.conversation_id,
                 "title": title,
-                "date": conv.updated_at.isoformat()
+                "date": iso_utc(conv.updated_at)
                 if conv.updated_at
-                else conv.created_at.isoformat(),
-                "created_at": conv.created_at.isoformat(),
+                else iso_utc(conv.created_at),
+                "created_at": iso_utc(conv.created_at),
             }
         )
     return result
@@ -922,7 +967,7 @@ def get_conversation_messages(
             "id": msg.id,
             "role": msg.role,
             "content": msg.content,
-            "created_at": msg.created_at.isoformat(),
+            "created_at": iso_utc(msg.created_at),
         }
         for msg in messages
     ]

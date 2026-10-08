@@ -11,5 +11,7 @@ repos:
             node_modules/|
             \.git/|
             data/|
-            logs/
+            logs/|
+            docs/.*/(source-sha256|compact-source-sha256|source-manifest|release-manifest|deployment-verification|brush-before|label-sync-before|viewport-before|offline-probes)\.json|
+            docs/research/.*/github-evidence\.json
           )

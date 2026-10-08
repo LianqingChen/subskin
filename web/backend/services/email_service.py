@@ -197,7 +197,7 @@ def _send_via_smtp(to_email: str, code: str, purpose: str) -> bool:
             <p style="color:#9ca3af;font-size:12px;">如果您没有请求此验证码，请忽略此邮件。</p>
         </div>
         <div style="text-align:center;padding:16px;color:#9ca3af;font-size:12px;">
-            SubSkin - 用AI缩短医学前沿与白友之间的知识鸿沟
+            SubSkin - 白癜风病友的AI记录和分享社区
         </div>
     </div>"""
 
@@ -217,8 +217,8 @@ def _send_via_smtp(to_email: str, code: str, purpose: str) -> bool:
         server.login(smtp_user, smtp_password)
         server.sendmail(smtp_from, [to_email], msg.as_string())
         server.quit()
-        logger.info("邮件发送成功: %s", to_email)
+        logger.info("邮件发送成功: %s", _mask_email(to_email))
         return True
     except Exception as e:
-        logger.error("邮件发送失败: %s, 错误: %s", to_email, str(e))
+        logger.error("邮件发送失败: %s, 错误: %s", _mask_email(to_email), str(e))
         return False

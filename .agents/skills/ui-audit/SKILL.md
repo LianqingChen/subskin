@@ -97,22 +97,23 @@ Run through each dimension below. For each, flag violations as P0 (blocking), P1
 - PostDetailPage ✅
 - ProfilePage ✅
 - HomePage ✅
-- EncyclopediaPage (if it exists, it must have one)
+- EncyclopediaPage（小白百科已下线，内容融入问答，无需检查）
 
 ### 8. Naming Consistency
 
-**Rule**: Module names must be consistent across ALL surfaces (nav, title, header, body).
+**Rule**: Module names must be consistent across ALL surfaces (nav, title, header, body). 命名唯一事实来源：`web/shared/site-modules.json`，新代码不得硬编码模块名，一律从它派生。
 
 | Module | Correct Name | Wrong Names |
 |--------|-------------|-------------|
-| AI Chat | 小白助手 / AI助手 | — |
-| Tracker | 小白追踪 / 手账 | 健康手账 (internal label OK) |
-| Community | 小白社区 / 发现 | 病友社区 |
-| Encyclopedia | 小白百科 | 白白百科 |
-| Profile | 我的 | — |
+| AI Chat | 问答 / AI助手 | 小白助手 (legacy alias) |
+| Tracker | 测评 | 小白追踪、健康手账、病情追踪 (legacy) |
+| Community | 分享 | 白友圈、小白社区、病友社区、白友社区 (legacy) |
+| Reports | 白斑报告 | — |
+| Encyclopedia | 已下线（融入问答） | 小白百科、白白百科 (legacy) |
+| Profile | 个人中心 / 我的 | — |
 
 **Check**:
-- grep for "白白百科", "病友社区" — flag and replace
+- grep for "小白助手", "小白追踪", "小白社区", "小白百科", "白白百科", "病友社区" — flag and replace（旧名仅作历史关键词别名，不得作为新代码模块名）
 
 ### 9. Interaction Flow Integrity
 

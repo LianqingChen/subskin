@@ -140,20 +140,20 @@ function chooseGallery() {
         class="absolute left-0 right-0 top-full mt-2 p-3 rounded-xl bg-white  shadow-xl border border-gray-200 dark:border-gray-700 z-20 flex gap-2"
       >
         <button
-          class="flex-1 flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors border border-transparent hover:border-primary-200 dark:hover:border-primary-800"
+          class="flex-1 flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900 transition-colors border border-transparent hover:border-primary-200 dark:hover:border-primary-800"
           @click="chooseCamera"
         >
-          <div class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+          <div class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
             <i class="ri-camera-line text-2xl text-primary-600 dark:text-primary-400"></i>
           </div>
           <span class="text-sm font-medium text-gray-700 ">拍照</span>
           <span class="text-[10px] text-gray-400">使用相机拍摄</span>
         </button>
         <button
-          class="flex-1 flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors border border-transparent hover:border-primary-200 dark:hover:border-primary-800"
+          class="flex-1 flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900 transition-colors border border-transparent hover:border-primary-200 dark:hover:border-primary-800"
           @click="chooseGallery"
         >
-          <div class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+          <div class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
             <i class="ri-image-line text-2xl text-primary-600 dark:text-primary-400"></i>
           </div>
           <span class="text-sm font-medium text-gray-700 ">相册选择</span>

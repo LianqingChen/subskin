@@ -5,9 +5,9 @@ const isWechat = /MicroMessenger/i.test(navigator.userAgent)
 const isReady = ref(false)
 
 const DEFAULT_SHARE = {
-    title: 'SubSkin更懂你',
-    desc: 'SubSkin更懂你。AI赋能的白癜风知识库与社区平台。',
-  link: window.location.origin,
+    title: 'SubSkin - 白癜风病友的AI记录和分享社区',
+    desc: '白癜风病友的AI记录和分享社区。',
+  link: window.location.href.split('#')[0],
   imgUrl: `${window.location.origin}/og-image.png`,
 }
 
@@ -31,12 +31,14 @@ async function initWxConfig() {
       jsApiList: [
         'updateAppMessageShareData',
         'updateTimelineShareData',
+        'onMenuShareAppMessage',
+        'onMenuShareTimeline',
       ],
     })
 
     wx.ready(() => {
       isReady.value = true
-      setShareData(DEFAULT_SHARE)
+      setShareData({ ...DEFAULT_SHARE, link: window.location.href.split('#')[0] })
     })
 
     wx.error((err: { errMsg: string }) => {
@@ -62,12 +64,30 @@ export function setShareData(data: {
     imgUrl: data.imgUrl || DEFAULT_SHARE.imgUrl,
   }
 
-  wx.updateAppMessageShareData({ ...shareData, success() {} })
-  wx.updateTimelineShareData({
+  const legacyAppMessage = {
+    title: shareData.title,
+    desc: shareData.desc,
+    link: shareData.link,
+    imgUrl: shareData.imgUrl,
+    success() {},
+    cancel() {},
+  }
+  wx.updateAppMessageShareData?.({ ...legacyAppMessage, success() {} })
+  wx.updateTimelineShareData?.({
     title: shareData.title,
     link: shareData.link,
     imgUrl: shareData.imgUrl,
     success() {},
+    cancel() {},
+  })
+  // Older WeChat WebView versions do not expose the update* APIs.
+  wx.onMenuShareAppMessage?.(legacyAppMessage)
+  wx.onMenuShareTimeline?.({
+    title: shareData.title,
+    link: shareData.link,
+    imgUrl: shareData.imgUrl,
+    success() {},
+    cancel() {},
   })
 }
 

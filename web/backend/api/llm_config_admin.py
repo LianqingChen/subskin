@@ -3,6 +3,7 @@ LLM 模块配置管理员 API
 
 前缀 /api/admin/llm
 """
+from web.backend.utils.timeutils import iso_utc
 
 import json
 import os
@@ -20,6 +21,8 @@ from web.backend.services.llm_config_service import (
     LLMConfigService,
     RECOMMENDED_PROVIDERS,
     decrypt_api_key,
+    encrypt_api_key,
+    mask_api_key,
 )
 
 router = APIRouter(prefix="/api/admin/llm", tags=["管理员-LLM配置"])
@@ -85,7 +88,9 @@ class ProvidersResponse(BaseModel):
     providers: List[ProviderInfo]
 
 
-def _serialize_module(module: LLMModuleConfig, with_api_key: bool = False) -> Dict[str, Any]:
+def _serialize_module(
+    module: LLMModuleConfig, with_api_key: bool = False, masked: bool = True
+) -> Dict[str, Any]:
     data = {
         "id": module.id,
         "module_key": module.module_key,
@@ -97,11 +102,13 @@ def _serialize_module(module: LLMModuleConfig, with_api_key: bool = False) -> Di
         "embedding_model": module.embedding_model,
         "base_url": module.base_url,
         "is_active": module.is_active,
-        "created_at": module.created_at.isoformat() if module.created_at else None,
-        "updated_at": module.updated_at.isoformat() if module.updated_at else None,
+        "created_at": iso_utc(module.created_at) if module.created_at else None,
+        "updated_at": iso_utc(module.updated_at) if module.updated_at else None,
     }
     if with_api_key:
-        data["api_key"] = decrypt_api_key(module.api_key) or ""
+        plain = decrypt_api_key(module.api_key) or ""
+        # 安全修复（P1-1）：接口一律返回掩码，不再吐出明文密钥
+        data["api_key"] = mask_api_key(plain) if masked else plain
     return data
 
 
@@ -127,7 +134,7 @@ async def get_module(
     module = LLMConfigService.get_module_by_key(db, module_key)
     if not module:
         raise HTTPException(status_code=404, detail="模块配置不存在")
-    return _serialize_module(module, with_api_key=True)
+    return _serialize_module(module, with_api_key=True, masked=True)
 
 
 @router.put("/modules/{module_key}", response_model=ModuleConfigDetail)
@@ -148,7 +155,7 @@ async def update_module(
     updated = LLMConfigService.update_module(db, module_key, update_data)
     if not updated:
         raise HTTPException(status_code=500, detail="更新失败")
-    return _serialize_module(updated, with_api_key=True)
+    return _serialize_module(updated, with_api_key=True, masked=True)
 
 
 @router.post("/modules/{module_key}/test", response_model=TestConfigResponse)
@@ -230,18 +237,30 @@ async def create_backup(
         raise HTTPException(status_code=403, detail="需要管理员权限")
 
     modules = LLMConfigService.get_all_modules(db)
+    # 磁盘备份文件存密文（api_key_enc），接口响应返回掩码，不再落明文
+    file_modules = []
+    for m in modules:
+        item = _serialize_module(m, with_api_key=False)
+        plain = decrypt_api_key(m.api_key) or ""
+        item["api_key_enc"] = encrypt_api_key(plain) if plain else ""
+        file_modules.append(item)
+
     backup_data = {
-        "backup_time": datetime.now(timezone.utc).isoformat(),
-        "modules": [_serialize_module(m, with_api_key=True) for m in modules],
+        "backup_time": iso_utc(datetime.now(timezone.utc)),
+        "modules": file_modules,
     }
 
     os.makedirs(os.path.dirname(BACKUP_PATH), exist_ok=True)
     with open(BACKUP_PATH, "w", encoding="utf-8") as f:
         json.dump(backup_data, f, ensure_ascii=False, indent=2)
 
+    masked_modules = [
+        {**item, "api_key": mask_api_key(decrypt_api_key(m.api_key) or "")}
+        for item, m in zip(file_modules, modules)
+    ]
     return BackupResponse(
         status="ok",
-        modules=backup_data["modules"],
+        modules=masked_modules,
         backup_time=backup_data["backup_time"],
     )
 
@@ -257,9 +276,17 @@ async def get_backup(current_user=Depends(auth)):
     with open(BACKUP_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    # 接口响应一律掩码：密文字段不外抛，明文字段掩码化
+    masked_modules = []
+    for mod in data.get("modules", []):
+        item = {k: v for k, v in mod.items() if k != "api_key_enc"}
+        plain = decrypt_api_key(mod.get("api_key_enc")) if mod.get("api_key_enc") else mod.get("api_key")
+        item["api_key"] = mask_api_key(plain or "")
+        masked_modules.append(item)
+
     return BackupResponse(
         status="ok",
-        modules=data.get("modules", []),
+        modules=masked_modules,
         backup_time=data.get("backup_time"),
     )
 
@@ -289,8 +316,18 @@ async def restore_backup(
         if not module_key:
             continue
         update_data = {k: v for k, v in mod_data.items() if k in (
-            "provider", "chat_model", "vision_model", "embedding_model", "api_key", "base_url", "is_active"
+            "provider", "chat_model", "vision_model", "embedding_model", "base_url", "is_active"
         )}
+        # api_key 优先从密文字段解密；兼容旧明文备份；跳过掩码值避免污染配置
+        api_key_enc = mod_data.get("api_key_enc")
+        if api_key_enc:
+            plain_key = decrypt_api_key(api_key_enc)
+            if plain_key and "****" not in plain_key:
+                update_data["api_key"] = plain_key
+        else:
+            legacy_key = mod_data.get("api_key")
+            if legacy_key and "****" not in legacy_key:
+                update_data["api_key"] = legacy_key
         module = LLMConfigService.update_module(db, module_key, update_data)
         if module:
             updated.append({"module_key": module_key, "provider": mod_data.get("provider", ""), "chat_model": mod_data.get("chat_model", "")})
@@ -314,8 +351,9 @@ PRESET_CONFIGS = {
         "icon": "ri-star-line",
         "modules": {
             "rag": {"provider": "deepseek", "chat_model": "deepseek-v4-flash", "vision_model": "qwen-vl-plus", "embedding_model": "text-embedding-v4"},
-            "vasi": {"provider": "dashscope", "chat_model": "qwen-vl-max", "vision_model": "qwen-vl-max", "embedding_model": "text-embedding-v4"},
-            "medical_report": {"provider": "dashscope", "chat_model": "qwen-vl-max", "vision_model": "qwen-vl-max", "embedding_model": "text-embedding-v4"},
+            "vasi": {"provider": "dashscope", "chat_model": "qwen3.8-max", "vision_model": "qwen3.7-plus", "embedding_model": "text-embedding-v4"},
+            "medical_report": {"provider": "dashscope", "chat_model": "qwen3.8-max", "vision_model": "qwen3.7-plus", "embedding_model": "text-embedding-v4"},
+            "skin_report": {"provider": "dashscope", "chat_model": "qwen3.8-max", "vision_model": "qwen3.7-plus", "embedding_model": "text-embedding-v4"},
             "content_safety": {"provider": "dashscope", "chat_model": "qwen-turbo", "vision_model": "qwen-vl-plus", "embedding_model": "text-embedding-v3"},
             "im_moderation": {"provider": "dashscope", "chat_model": "qwen-turbo", "vision_model": "qwen-vl-plus", "embedding_model": "text-embedding-v3"},
             "summarizer": {"provider": "deepseek", "chat_model": "deepseek-v4-flash", "vision_model": "qwen-vl-plus", "embedding_model": "text-embedding-v4"},
@@ -346,8 +384,9 @@ PRESET_CONFIGS = {
         "icon": "ri-rocket-line",
         "modules": {
             "rag": {"provider": "deepseek", "chat_model": "deepseek-v4-pro", "vision_model": "qwen-vl-max", "embedding_model": "text-embedding-v4"},
-            "vasi": {"provider": "dashscope", "chat_model": "qwen-vl-max", "vision_model": "qwen-vl-max", "embedding_model": "text-embedding-v4"},
-            "medical_report": {"provider": "dashscope", "chat_model": "qwen-vl-max", "vision_model": "qwen-vl-max", "embedding_model": "text-embedding-v4"},
+            "vasi": {"provider": "dashscope", "chat_model": "qwen3.8-max", "vision_model": "qwen3.7-plus", "embedding_model": "text-embedding-v4"},
+            "medical_report": {"provider": "dashscope", "chat_model": "qwen3.8-max", "vision_model": "qwen3.7-plus", "embedding_model": "text-embedding-v4"},
+            "skin_report": {"provider": "dashscope", "chat_model": "qwen3.8-max", "vision_model": "qwen3.7-plus", "embedding_model": "text-embedding-v4"},
             "content_safety": {"provider": "deepseek", "chat_model": "deepseek-v4-pro", "vision_model": "qwen-vl-plus", "embedding_model": "text-embedding-v4"},
             "im_moderation": {"provider": "deepseek", "chat_model": "deepseek-v4-pro", "vision_model": "qwen-vl-plus", "embedding_model": "text-embedding-v4"},
             "summarizer": {"provider": "deepseek", "chat_model": "deepseek-v4-pro", "vision_model": "qwen-vl-max", "embedding_model": "text-embedding-v4"},

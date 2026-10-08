@@ -24,7 +24,12 @@ watch(showLoginModal, (val: boolean) => {
   function setUser(nextUser: User | null) {
     user.value = nextUser
     if (nextUser) {
-      localStorage.setItem('subskin_user', JSON.stringify(nextUser))
+      // 2026-08-30 隐私加固：持久化副本剔除 phone/email 等 L3 字段，
+      // 需要时通过 /users/me 实时拉取
+      const persisted = { ...nextUser }
+      delete (persisted as Record<string, unknown>).phone
+      delete (persisted as Record<string, unknown>).email
+      localStorage.setItem('subskin_user', JSON.stringify(persisted))
       return
     }
     localStorage.removeItem('subskin_user')
@@ -37,6 +42,7 @@ watch(showLoginModal, (val: boolean) => {
     if (savedToken) {
       token.value = savedToken
       refreshToken.value = savedRefreshToken
+      showLoginModal.value = false
       try {
         setUser(savedUser ? JSON.parse(savedUser) : null)
       } catch {
@@ -69,8 +75,23 @@ watch(showLoginModal, (val: boolean) => {
     localStorage.setItem('subskin_token', loginData.access_token)
   }
 
+  async function clearSensitiveCaches() {
+    if (typeof window === 'undefined' || !('caches' in window)) return
+    try {
+      const cacheNames = await caches.keys()
+      await Promise.all(
+        cacheNames
+          .filter((name) => name === 'api-cache' || name === 'uploads-cache')
+          .map((name) => caches.delete(name)),
+      )
+    } catch {
+      // Cache cleanup is best-effort and must never block logout.
+    }
+  }
+
   async function _completeLogin(loginData: LoginResponse) {
     _saveTokens(loginData)
+    showLoginModal.value = false
     await fetchUser()
     // Prefetch a short-lived file token so file URLs use it instead of the
     // long-lived access token. Errors are non-fatal; file-url.ts falls back.
@@ -151,8 +172,8 @@ watch(showLoginModal, (val: boolean) => {
     return authApi.unbindCredential(credentialId)
   }
 
-  async function setPassword(password: string) {
-    return authApi.setPassword(password)
+  async function setPassword(password: string, oldPassword?: string) {
+    return authApi.setPassword(password, oldPassword)
   }
 
   async function resetPassword(
@@ -161,23 +182,37 @@ watch(showLoginModal, (val: boolean) => {
     code: string,
     newPassword: string,
   ) {
-    return authApi.resetPassword(credentialId, credType, code, newPassword)
+    const res = await authApi.resetPassword(credentialId, credType, code, newPassword)
+    // 重置成功后后端已吊销全部旧令牌并为当前会话补发新令牌对，
+    // 必须立即保存，否则当前 access token 过期后会被静默登出。
+    if (res.access_token && res.refresh_token) {
+      _saveTokens({
+        access_token: res.access_token,
+        refresh_token: res.refresh_token,
+        token_type: res.token_type || 'bearer',
+      })
+    }
+    return res
   }
 
   async function register(username: string, email: string, password: string) {
     return authApi.register(username, email, password)
   }
 
-  async function fetchUser() {
+  async function fetchUser(isRetryAfterRefresh = false) {
     if (!token.value) return
     try {
       const userData = await authApi.getMe(token.value)
       setUser(userData)
     } catch (e: any) {
       const status = e?.response?.status
-      if (status === 401 || status === 403) {
+      if ((status === 401 || status === 403) && !isRetryAfterRefresh) {
         const refreshed = await tryRefreshToken()
-        if (!refreshed) logout()
+        if (refreshed) {
+          await fetchUser(true)
+        } else {
+          logout()
+        }
       }
     }
   }
@@ -199,7 +234,6 @@ watch(showLoginModal, (val: boolean) => {
     try {
       const data = await authApi.refreshToken(refreshToken.value)
       _saveTokens(data)
-      await fetchUser()
       return true
     } catch {
       logout()
@@ -224,6 +258,7 @@ watch(showLoginModal, (val: boolean) => {
     localStorage.removeItem('subskin_token')
     localStorage.removeItem('subskin_refresh_token')
     clearFileToken()
+    await clearSensitiveCaches()
   }
 
   return {

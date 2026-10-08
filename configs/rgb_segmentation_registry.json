@@ -1,0 +1,12 @@
+{
+  "enabled": false,
+  "model_id": "unregistered",
+  "input_type": "rgb_photo",
+  "format": "torchscript",
+  "weights": "REPLACE_WITH_VALIDATED_WEIGHTS.pt",
+  "sha256": "REPLACE_WITH_SHA256",
+  "labels": ["background", "normal_skin", "depigmented_skin", "occlusion", "unreadable"],
+  "training_source": "not_trained",
+  "dataset_review_id": null,
+  "automatic_measurement": false
+}

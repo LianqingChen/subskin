@@ -37,12 +37,12 @@ function resetThemeColor() {
             <div class="flex gap-3">
               <button type="button"
                 class="flex-1 py-2.5 rounded-lg border-2 text-sm font-medium transition-colors"
-                :class="themeStore.mode === 'light' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'border-gray-200 dark:border-gray-600 text-gray-600 '"
+                :class="themeStore.mode === 'light' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300' : 'border-gray-200 dark:border-gray-600 text-gray-600 '"
                 @click="themeStore.setMode('light')"><i class="ri-sun-line"></i> 浅色</button>
               <button type="button"
                 class="flex-1 py-2.5 rounded-lg border-2 text-sm font-medium transition-colors"
-                :class="themeStore.mode === 'dark' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'border-gray-200 dark:border-gray-600 text-gray-600 '"
-                @click="themeStore.setMode('dark')">🌙 深色</button>
+                :class="themeStore.mode === 'dark' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300' : 'border-gray-200 dark:border-gray-600 text-gray-600 '"
+                @click="themeStore.setMode('dark')"><i class="ri-moon-line"></i> 深色</button>
             </div>
           </div>
           <div>

@@ -3,8 +3,19 @@ import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'path'
 
+let buildBase = '/'
+const buildTime = Date.now()
+
 export default defineConfig({
-  plugins: [vue(), tailwindcss()],
+  plugins: [vue(), tailwindcss(), {
+    name: 'admin-build-version',
+    configResolved(config) { buildBase = config.base },
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({
+        buildTime, env: buildBase === '/admin-preview/' ? 'admin-preview' : 'admin',
+      }) })
+    },
+  }],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src')

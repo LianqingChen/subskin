@@ -11,15 +11,18 @@
 
 /** Map URL path prefix → display name for user journey / path analysis */
 export const PATH_TO_PAGE_NAME: Record<string, string> = {
-  '/': 'AI助手',
-  '/chat': 'AI助手',
-  '/assessment': '测评',
-  '/tracker': '测评',
+  '/': '问答',
+  '/chat': '问答',
+  '/assessment': '记录',
+  '/tracker': '记录',
   '/community': '发现',
-  '/encyclopedia': '小白百科',
-  '/wiki-content': '小白百科',
-  '/knowledge': '小白百科',
-  '/dashboard': '管理员',
+  '/hospitals': '就医经验',
+  '/care': '调养',
+  '/contribution': '同行',
+  '/discover': '发现',
+  '/encyclopedia': '百科（已下线）',
+  '/wiki-content': '百科（已下线）',
+  '/knowledge': '百科（已下线）',
   '/profile': '个人中心',
   '/privacy': '隐私政策',
   '/terms': '服务条款',
@@ -32,7 +35,6 @@ export const FEATURE_NAMES = {
   post: '发帖',
   comment: '评论',
   like: '点赞',
-  encyclopedia: '浏览百科',
 } as const
 
 export const NORTH_STAR = {

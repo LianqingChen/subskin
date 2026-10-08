@@ -111,14 +111,17 @@ function renderIcon(iconClass: string) {
 }
 
 const menuItems = [
+  { label: '规划档案', key: 'PlanningArchive', iconClass: 'ri-folder-history-line' },
   { label: '数据监控', key: 'Dashboard', iconClass: 'ri-dashboard-line' },
   { label: '内容生成', key: 'ContentGen', iconClass: 'ri-article-line' },
   { label: '风控管理', key: 'Moderation', iconClass: 'ri-shield-check-line' },
+  { label: '公益风控', key: 'HospitalRisk', iconClass: 'ri-hospital-line' },
   { label: '用户管理', key: 'UserManagement', iconClass: 'ri-user-settings-line' },
   { label: 'LLM配置', key: 'LLMConfig', iconClass: 'ri-cpu-line' },
+  { label: '提示词管理', key: 'PromptConfig', iconClass: 'ri-file-edit-line' },
   { label: '图片打标', key: 'ImageLabeling', iconClass: 'ri-image-line' },
   { label: '训练数据', key: 'TrainingDashboard', iconClass: 'ri-database-2-line' },
-  { label: '系统监控', key: 'SystemMonitor', iconClass: 'ri-server-line' },
+  { label: '网站运维', key: 'SiteMaintenance', iconClass: 'ri-settings-3-line' },
 ]
 
 const menuOptions = menuItems.map(item => ({
@@ -141,14 +144,17 @@ function handleMenuSelect(key: string) {
     return
   }
   const map: Record<string, string> = {
+    PlanningArchive: '/planning',
     Dashboard: '/dashboard',
     UserManagement: '/users',
     Moderation: '/moderation',
+    HospitalRisk: '/hospital-risk',
     ContentGen: '/content-gen',
     LLMConfig: '/llm-config',
+    PromptConfig: '/prompt-config',
     ImageLabeling: '/image-labeling',
     TrainingDashboard: '/training',
-    SystemMonitor: '/system-monitor'
+    SiteMaintenance: '/site-maintenance'
   }
   router.push(map[key] || '/')
 }

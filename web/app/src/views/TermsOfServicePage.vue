@@ -25,10 +25,10 @@ function scrollTo(id: string) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#F5F7FA]">
+  <div class="bg-gray-50 dark:bg-gray-950">
     <!-- Header -->
-    <div class="sticky top-0 z-10 bg-[#F5F7FA]/80  backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
-      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+    <div class="sticky top-14 z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+      <div class="page max-w-5xl py-2.5 flex items-center gap-3">
         <button
           class="p-2 -ml-2 rounded-lg hover:bg-gray-100 text-gray-600"
           @click="router.back()"
@@ -41,15 +41,15 @@ function scrollTo(id: string) {
       </div>
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 py-6 flex gap-6">
+    <div class="page max-w-5xl pt-6 pb-20 lg:pb-10 flex gap-10">
       <!-- Sidebar TOC (desktop) -->
-      <nav class="hidden lg:block w-48 shrink-0">
-        <div class="sticky top-20 space-y-1">
+      <nav class="hidden lg:block w-44 shrink-0" aria-label="目录">
+        <div class="sticky top-32 space-y-0.5">
           <p class="text-xs font-medium text-gray-400  uppercase tracking-wider mb-2">目录</p>
           <button
             v-for="s in sections"
             :key="s.id"
-            class="block w-full text-left text-sm px-3 py-1.5 rounded-md text-gray-600  hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition"
+            class="block w-full text-left text-sm px-3 py-1.5 rounded-md text-gray-600  hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900 transition"
             @click="scrollTo(s.id)"
           >
             {{ s.title }}
@@ -58,17 +58,17 @@ function scrollTo(id: string) {
       </nav>
 
       <!-- Content -->
-      <article class="flex-1 min-w-0 prose prose-sm dark:prose-invert max-w-none">
+      <article class="flex-1 min-w-0 max-w-3xl prose prose-sm md:prose-base dark:prose-invert prose-headings:scroll-mt-32 rounded-2xl border border-gray-200/80 bg-white px-5 py-6 dark:border-gray-800 dark:bg-gray-900 md:px-10 md:py-8">
           <p class="text-sm text-gray-500 ">最近更新日期：2026年4月25日 &nbsp;|&nbsp; 生效日期：2026年4月25日</p>
 
-        <div id="acceptance" class="pt-4">
+        <div id="acceptance" class="pt-4 scroll-mt-32">
           <h2>一、接受条款</h2>
           <p>欢迎使用 SubSkin（以下简称"本平台"）。在注册、登录或使用本平台服务之前，请您仔细阅读并充分理解本服务条款（以下简称"本条款"）。</p>
           <p><strong>您一旦注册、登录或使用本平台服务，即视为您已阅读并同意受本条款约束。</strong>如果您不同意本条款的任何内容，请立即停止使用本平台服务。</p>
           <p>本条款由 SubSkin 运营团队（以下简称"我们"）与注册用户（以下简称"您"）之间签订。</p>
         </div>
 
-        <div id="account" class="pt-4">
+        <div id="account" class="pt-4 scroll-mt-32">
           <h2>二、账户注册</h2>
           <h3>2.1 注册资格</h3>
           <p>您确认您具备完全民事行为能力。如果您是未满14周岁的未成年人，请在监护人的陪同和同意下使用本平台。</p>
@@ -98,14 +98,14 @@ function scrollTo(id: string) {
           </ul>
         </div>
 
-        <div id="services" class="pt-4">
+        <div id="services" class="pt-4 scroll-mt-32">
           <h2>三、服务说明</h2>
           <h3>3.1 服务内容</h3>
-          <p>SubSkin 是一个面向白癜风白友及家属的知识社区平台，提供以下核心服务：</p>
+          <p>SubSkin 是白癜风病友的AI记录和分享社区，提供以下核心服务：</p>
           <ul>
             <li><strong>AI助手</strong>：基于 AI 的智能问答服务</li>
-            <li><strong>手账</strong>：VASI评估及病情记录</li>
-            <li><strong>发现</strong>：白友交流与经验分享社区</li>
+            <li><strong>AI病情日记</strong>：每日病情记录与 VASI 评估跟踪</li>
+            <li><strong>发现</strong>：白友交流、治疗经验分享与日常调养科普</li>
           </ul>
 
           <h3>3.2 服务性质</h3>
@@ -118,7 +118,7 @@ function scrollTo(id: string) {
           <p>我们保留随时修改、暂停或终止部分或全部服务的权利。重大变更将提前通知用户。</p>
         </div>
 
-        <div id="content" class="pt-4">
+        <div id="content" class="pt-4 scroll-mt-32">
           <h2>四、内容规范</h2>
           <h3>4.1 您的内容</h3>
           <p>您在社区发布的帖子、评论等内容（以下简称"用户内容"），您保留原始著作权。</p>
@@ -144,7 +144,7 @@ function scrollTo(id: string) {
           <p>用户在社区分享的病情经验、治疗心得等属于个人经验，不代表平台立场。我们不对用户内容的医学准确性和有效性做任何保证。</p>
         </div>
 
-        <div id="community-rules" class="pt-4">
+        <div id="community-rules" class="pt-4 scroll-mt-32">
           <h2>五、社区行为规范</h2>
 
           <h3>5.1 风险内容风控</h3>
@@ -211,33 +211,33 @@ function scrollTo(id: string) {
           <p>如您对审核结果有异议，可通过站内通知中的联系方式向我们申诉。我们将在3个工作日内处理您的申诉。</p>
         </div>
 
-        <div id="privacy-data" class="pt-4">
+        <div id="privacy-data" class="pt-4 scroll-mt-32">
           <h2>六、隐私与数据保护</h2>
           <p>我们高度重视您的个人信息保护。详细信息请参阅我们的 <router-link to="/privacy" class="text-primary-600 dark:text-primary-400 hover:underline font-medium">隐私政策</router-link>。</p>
           <p>以下为本条款中的隐私要点：</p>
 
-          <h3>5.1 数据分级</h3>
+          <h3>6.1 数据分级</h3>
           <p>我们实行四级数据分类管理：</p>
           <div class="not-prose space-y-2 my-4">
             <div class="flex items-center gap-2 text-sm">
-              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white">🔴 L4</span>
-              <span class="text-gray-700">密码、Token — 绝不在任何场合暴露</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white">L4</span>
+              <span class="text-gray-700 dark:text-gray-300">密码、Token — 绝不在任何场合暴露</span>
             </div>
             <div class="flex items-center gap-2 text-sm">
-              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-500 text-white">🟠 L3</span>
-              <span class="text-gray-700">手机号、邮箱、病情图片 — 严格脱敏、仅本人可见</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-500 text-white">L3</span>
+              <span class="text-gray-700 dark:text-gray-300">手机号、邮箱、病情图片 — 严格脱敏、仅本人可见</span>
             </div>
             <div class="flex items-center gap-2 text-sm">
-              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-yellow-500 text-white">🟡 L2</span>
-              <span class="text-gray-700">昵称、公开内容 — 用户自主控制公开范围</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-yellow-500 text-white">L2</span>
+              <span class="text-gray-700 dark:text-gray-300">昵称、公开内容 — 用户自主控制公开范围</span>
             </div>
             <div class="flex items-center gap-2 text-sm">
-              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-500 text-white">🟢 L1</span>
-              <span class="text-gray-700">百科内容、匿名统计 — 公开可见</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-500 text-white">L1</span>
+              <span class="text-gray-700 dark:text-gray-300">知识库内容、匿名统计 — 公开可见</span>
             </div>
           </div>
 
-          <h3>5.2 安全承诺</h3>
+          <h3>6.2 安全承诺</h3>
           <ul>
             <li>全站 HTTPS 加密，所有 API 强制 TLS</li>
             <li>密码 bcrypt 加密存储，永不明文保存</li>
@@ -246,11 +246,11 @@ function scrollTo(id: string) {
           </ul>
         </div>
 
-        <div id="sharing" class="pt-4">
+        <div id="sharing" class="pt-4 scroll-mt-32">
           <h2>七、信息分享授权</h2>
           <p>我们不会主动将您的个人信息分享给任何第三方。当您选择分享时：</p>
 
-          <h3>6.1 您的分享权</h3>
+          <h3>7.1 您的分享权</h3>
           <p>您可以在平台内以下场景主动分享信息：</p>
           <ul>
             <li>社区帖子：发布经验、心得、问答</li>
@@ -258,7 +258,7 @@ function scrollTo(id: string) {
             <li>收藏公开：将收藏夹设为公开可见</li>
           </ul>
 
-          <h3>6.2 审计追踪</h3>
+          <h3>7.2 审计追踪</h3>
           <p><strong>所有用户授权的分享、公开操作均会记录不可篡改的审计日志</strong>，包含：</p>
           <div class="not-prose my-4 overflow-x-auto">
             <table class="w-full text-sm border-collapse">
@@ -280,19 +280,19 @@ function scrollTo(id: string) {
           <p>审计日志<strong>不可修改、不可删除</strong>，确保用户授权行为可追溯。</p>
         </div>
 
-        <div id="ip" class="pt-4">
+        <div id="ip" class="pt-4 scroll-mt-32">
           <h2>八、知识产权</h2>
-          <h3>7.1 平台内容</h3>
-          <p>本平台的百科内容、AI模型、界面设计、商标等知识产权归我们所有或经合法授权使用。</p>
+          <h3>8.1 平台内容</h3>
+          <p>本平台的知识库内容、AI模型、界面设计、商标等知识产权归我们所有或经合法授权使用。</p>
 
-          <h3>7.2 用户内容</h3>
+          <h3>8.2 用户内容</h3>
           <p>用户保留其原创内容的著作权。发布内容即授予我们非独家、不可撤销的许可，允许我们在平台内展示和传播该内容。</p>
 
-          <h3>7.3 开源许可</h3>
+          <h3>8.3 开源许可</h3>
           <p>SubSkin 的源代码遵循 MIT 许可证开源。社区贡献内容遵循 CC BY-NC-SA 4.0 协议。</p>
         </div>
 
-        <div id="disclaimer" class="pt-4">
+        <div id="disclaimer" class="pt-4 scroll-mt-32">
           <h2>九、免责声明</h2>
 
           <div class="not-prose my-4 p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
@@ -309,9 +309,9 @@ function scrollTo(id: string) {
           </ul>
         </div>
 
-        <div id="termination" class="pt-4">
+        <div id="termination" class="pt-4 scroll-mt-32">
           <h2>十、服务终止</h2>
-          <h3>9.1 用户主动注销</h3>
+          <h3>10.1 用户主动注销</h3>
           <p>您有权随时注销您的账户。注销后：</p>
           <ul>
             <li>L4 数据（密码、Token）：即时删除</li>
@@ -330,7 +330,7 @@ function scrollTo(id: string) {
           </ul>
         </div>
 
-        <div id="dispute" class="pt-4">
+        <div id="dispute" class="pt-4 scroll-mt-32">
           <h2>十一、争议解决</h2>
           <p>本条款适用中华人民共和国法律。如发生争议：</p>
           <ol>
@@ -339,7 +339,7 @@ function scrollTo(id: string) {
           </ol>
         </div>
 
-        <div id="changes" class="pt-4">
+        <div id="changes" class="pt-4 scroll-mt-32">
           <h2>十二、条款变更</h2>
           <p>我们可能会不时修订本服务条款。修订后，我们将：</p>
           <ol>
@@ -350,7 +350,7 @@ function scrollTo(id: string) {
           </ol>
         </div>
 
-        <div id="contact" class="pt-4">
+        <div id="contact" class="pt-4 scroll-mt-32">
           <h2>十三、联系我们</h2>
           <p>如您对本服务条款有任何疑问或建议，请通过以下方式联系我们：</p>
           <ul>
@@ -366,8 +366,8 @@ function scrollTo(id: string) {
     </div>
 
     <!-- Mobile TOC (bottom bar) -->
-    <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-[#F5F7FA]/90  backdrop-blur-md border-t border-gray-200 dark:border-gray-700 px-4 py-2 z-20 safe-bottom">
-      <div class="flex overflow-x-auto gap-2 scrollbar-hide">
+    <div class="lg:hidden fixed left-0 right-0 bottom-[calc(54px+env(safe-area-inset-bottom,0px))] md:bottom-0 md:pb-[max(env(safe-area-inset-bottom,0px),0.5rem)] bg-white/95 dark:bg-gray-900/95 border-t border-gray-200 dark:border-gray-800 px-4 py-2 z-30">
+      <div class="flex overflow-x-auto gap-2 no-scrollbar">
         <button
           v-for="s in sections"
           :key="s.id"

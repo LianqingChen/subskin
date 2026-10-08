@@ -8,6 +8,9 @@ from pydantic import BaseModel, Field
 
 class VASIAssessmentResponse(BaseModel):
     """VASI评估评估响应"""
+    record_status: Optional[str] = None
+    measurement: Optional[Dict[str, Any]] = None
+    observation: Optional[Dict[str, Any]] = None
     id: int
     user_id: int
     image_url: str
@@ -41,10 +44,16 @@ class VASIAssessmentResponse(BaseModel):
     skin_fitzpatrick: Optional[Any] = Field(None, description="Fitzpatrick 肤色分型（VLM 推断）")
     # Phase A — 白斑视觉特征分析（非诊断性观察描述）
     visual_features: Optional[Dict[str, Any]] = Field(None, description="6维视觉特征分析结果")
+    # 全自动识别自循环（2026-08-27）
+    auto_finalized: Optional[bool] = Field(False, description="是否已由AI共识自动确认（无需用户操作）")
+    consensus: Optional[Dict[str, Any]] = Field(None, description="共识引擎详情（SAM vs 患者模型 IoU / 色值验证）")
+    patient_model_version: Optional[str] = Field(None, description="本次使用的患者像素分类器版本")
 
 
 class VASIHistoryItem(BaseModel):
     """VASI历史记录项"""
+    measurement: Optional[Dict[str, Any]] = None
+    observation: Optional[Dict[str, Any]] = None
     id: int
     image_url: str
     vasi_score: float

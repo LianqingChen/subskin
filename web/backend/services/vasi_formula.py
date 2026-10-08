@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # (BSA_PERCENT) so the frontend and backend agree on weights.
 BODY_SITE_BSA_PERCENT: dict[str, float] = {
     # English (VLM legacy / API canonical)
+    "head": 4.5,
     "face": 4.5,
     "neck": 1.0,
     "chest": 9.0,
@@ -41,6 +42,7 @@ BODY_SITE_BSA_PERCENT: dict[str, float] = {
     "right_foot": 1.75,
     "feet": 3.5,  # legacy alias
     # 中文 (VLM returns Chinese body-site labels)
+    "头部": 4.5,
     "面部": 4.5,
     "颈部": 1.0,
     "手部": 2.0,
@@ -56,6 +58,9 @@ BODY_SITE_BSA_PERCENT: dict[str, float] = {
     "右臂": 4.5,
     "左手": 1.0,
     "右手": 1.0,
+    "左脚": 1.75,
+    "右脚": 1.75,
+    "脖子": 1.0,
     "左腿": 9.0,
     "右腿": 9.0,
     "其他": 9.0,
@@ -65,7 +70,9 @@ DEFAULT_BSA_PERCENT = 9.0  # If body site unknown, assume one body region
 
 
 def get_body_site_bsa(body_site: str) -> float:
-    return BODY_SITE_BSA_PERCENT.get(body_site, DEFAULT_BSA_PERCENT)
+    if body_site not in BODY_SITE_BSA_PERCENT:
+        raise ValueError("Unknown body site; BSA cannot be inferred")
+    return BODY_SITE_BSA_PERCENT[body_site]
 
 
 def compute_vasi_v2(
@@ -77,7 +84,7 @@ def compute_vasi_v2(
 
     Formula:
         hand_units = area_pct_in_region * BSA_PERCENT(body_site) / 100
-        VASI = hand_units * depigmentation_level * 10   # scaled to ~0-100 range
+        VASI = hand_units * depigmentation_level
 
     Args:
         body_site: One of the BODY_SITE_BSA_PERCENT keys.
@@ -90,6 +97,9 @@ def compute_vasi_v2(
     Returns:
         VASI score, rounded to 1 decimal, clamped to [0, 100].
     """
+    import math
+    if not math.isfinite(area_pct_in_region) or (depigmentation_level is not None and not math.isfinite(depigmentation_level)):
+        raise ValueError("Measurement must be finite")
     bsa = get_body_site_bsa(body_site)
     hand_units = (max(0.0, min(100.0, area_pct_in_region)) / 100.0) * bsa
     if depigmentation_level is None:
@@ -97,7 +107,7 @@ def compute_vasi_v2(
     if depigmentation_level < 0:
         depigmentation_level = 0.0
     depig = max(0.0, min(1.0, depigmentation_level))
-    score = hand_units * depig * 10
+    score = hand_units * depig
     return round(min(100.0, max(0.0, score)), 1)
 
 
@@ -148,7 +158,10 @@ def compute_two_layer_area(
 
     skin_mask = skin_alpha > 32
     lesion_mask = lesion_alpha > 32
-    region_mask = skin_mask | lesion_mask
+    if int((lesion_mask & ~skin_mask).sum()) > max(4, int(lesion_mask.sum()) * 0.02):
+        return None
+    lesion_mask = lesion_mask & skin_mask
+    region_mask = skin_mask
 
     region_px = int(region_mask.sum())
     lesion_px = int(lesion_mask.sum())

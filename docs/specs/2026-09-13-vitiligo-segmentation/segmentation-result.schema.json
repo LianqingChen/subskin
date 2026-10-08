@@ -1,0 +1,493 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Proposed SubSkin RGB segmentation result",
+  "description": "Design-only contract. Schema validity does not establish measurement accuracy or authorize access.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol",
+    "input_type",
+    "job_id",
+    "image",
+    "status",
+    "review_state",
+    "mask_revision",
+    "masks",
+    "measurement",
+    "confidence",
+    "blocking_reasons",
+    "provenance"
+  ],
+  "properties": {
+    "protocol": {
+      "const": "skin-seg-v2"
+    },
+    "input_type": {
+      "const": "rgb_photo"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sha256",
+        "width",
+        "height",
+        "transform_id",
+        "roi_revision",
+        "coordinate_frame"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "transform_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "roi_revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "coordinate_frame": {
+          "const": "normalized_original"
+        }
+      }
+    },
+    "status": {
+      "enum": [
+        "retake_required",
+        "review_required",
+        "measurable",
+        "no_target_candidate",
+        "failed"
+      ]
+    },
+    "review_state": {
+      "enum": [
+        "pending",
+        "user_reviewed"
+      ]
+    },
+    "mask_revision": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "masks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "valid_skin",
+        "lesion",
+        "uncertain",
+        "excluded"
+      ],
+      "properties": {
+        "valid_skin": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^mask_[A-Za-z0-9_-]+$"
+        },
+        "lesion": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^mask_[A-Za-z0-9_-]+$"
+        },
+        "uncertain": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^mask_[A-Za-z0-9_-]+$"
+        },
+        "excluded": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^mask_[A-Za-z0-9_-]+$"
+        }
+      }
+    },
+    "measurement": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "scope",
+            "skin_pixels",
+            "lesion_pixels",
+            "area_percentage",
+            "area_cm2",
+            "scale_status",
+            "perimeter_pixels",
+            "calibration_id"
+          ],
+          "properties": {
+            "scope": {
+              "const": "visible_skin_in_selected_roi"
+            },
+            "skin_pixels": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "lesion_pixels": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "area_percentage": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "area_cm2": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "scale_status": {
+              "enum": [
+                "unavailable",
+                "calibrated"
+              ]
+            },
+            "perimeter_pixels": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "calibration_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1
+            },
+            "region_count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "scale_status": {
+                    "const": "unavailable"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "area_cm2": {
+                    "type": "null"
+                  },
+                  "calibration_id": {
+                    "type": "null"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "calibration_id": {
+                    "type": "string"
+                  },
+                  "area_cm2": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "confidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "calibrated",
+        "score",
+        "calibration_id"
+      ],
+      "properties": {
+        "event": {
+          "const": "segmentation_meets_acceptance"
+        },
+        "calibrated": {
+          "type": "boolean"
+        },
+        "score": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "calibration_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "calibrated": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "score": {
+                "type": "null"
+              },
+              "calibration_id": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "score": {
+                "type": "number"
+              },
+              "calibration_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "blocking_reasons": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "QUALITY_INFORMATION_LOST",
+          "AUTH_REQUIRED",
+          "SERVICE_UNAVAILABLE",
+          "TIMEOUT",
+          "SKIN_UNVERIFIED",
+          "REGIONS_UNRESOLVED",
+          "NO_TARGET",
+          "ARTIFACT_INVALID",
+          "OUT_OF_SCOPE",
+          "USER_REVIEW_REQUIRED"
+        ]
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "skin_model",
+        "lesion_model",
+        "refiner",
+        "policy_version",
+        "decision_by"
+      ],
+      "properties": {
+        "skin_model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lesion_model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "refiner": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision_by": {
+          "const": "server_measurement_policy"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "measurable"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "measurement": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "scope",
+              "skin_pixels",
+              "lesion_pixels",
+              "area_percentage",
+              "area_cm2",
+              "scale_status",
+              "perimeter_pixels",
+              "calibration_id"
+            ],
+            "properties": {
+              "scope": {
+                "const": "visible_skin_in_selected_roi"
+              },
+              "skin_pixels": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "lesion_pixels": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "area_percentage": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "area_cm2": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "scale_status": {
+                "enum": [
+                  "unavailable",
+                  "calibrated"
+                ]
+              },
+              "perimeter_pixels": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "calibration_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1
+              },
+              "region_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "scale_status": {
+                      "const": "unavailable"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "area_cm2": {
+                      "type": "null"
+                    },
+                    "calibration_id": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "calibration_id": {
+                      "type": "string"
+                    },
+                    "area_cm2": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "mask_revision": {
+            "type": "string"
+          },
+          "blocking_reasons": {
+            "maxItems": 0
+          },
+          "masks": {
+            "properties": {
+              "valid_skin": {
+                "type": "string"
+              },
+              "lesion": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "measurement": {
+            "type": "null"
+          },
+          "blocking_reasons": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 """
 通知 API
 """
+from web.backend.utils.timeutils import iso_utc
 
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -48,8 +49,6 @@ NOTIFICATION_TITLES = {
     "follow": "关注了你",
     "bookmark": "收藏了你的帖子",
     "collect": "收藏了你的帖子",
-    "friend_accepted": "通过了你的好友请求",
-    "message": "发来一条私信",
     "system": "系统通知",
     "moderation": "账号状态通知",
 }
@@ -76,7 +75,7 @@ def _notification_out(n: UserNotification, actor_user: Optional[User] = None) ->
         ref_id=n.ref_id,
         is_read=n.is_read,
         actor=_actor_dict(actor),
-        created_at=n.created_at.isoformat() if n.created_at else "",
+        created_at=iso_utc(n.created_at) if n.created_at else "",
     )
 
 

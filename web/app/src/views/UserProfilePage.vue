@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { communityApi } from '@/api/community'
-import { imApi } from '@/api/im'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { toProtectedFileUrl } from '@/utils/file-url'
+import { avatarInitial } from '@/utils/avatar'
 import FollowButton from '@/components/community/FollowButton.vue'
 import FeedWaterfall from '@/components/community/FeedWaterfall.vue'
 import type { PublicUserProfile, Post } from '@/types'
@@ -29,20 +29,6 @@ const avatarUrl = computed(() => {
 })
 
 const isSelf = computed(() => authStore.user?.id === userId.value)
-
-async function handleSendMessage() {
-  if (!authStore.isLoggedIn) {
-    authStore.showLoginModal = true
-    return
-  }
-  try {
-    const res = await imApi.createPrivateChat(userId.value)
-    router.push(`/chat/${res.data.conversation_id}`)
-  } catch (err) {
-    toast.error('发起聊天失败')
-    console.error('Failed to create private chat:', err)
-  }
-}
 
 async function fetchProfile() {
   loading.value = true
@@ -100,6 +86,18 @@ function formatDate(dateStr: string | null) {
   return new Date(dateStr).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' })
 }
 
+function goBack() {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/community')
+  }
+}
+
+watch(profile, (p) => {
+  if (p?.username) document.title = `${p.username} - SubSkin`
+})
+
 onMounted(() => {
   fetchProfile()
   fetchPosts()
@@ -107,15 +105,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-[calc(100dvh-3.5rem)] bg-[#F5F7FA] pb-20 md:pb-6">
-    <div class="sticky top-0 z-10 bg-[#F5F7FA]/80  backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
-      <div class="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
-        <button class="p-2 -ml-2 rounded-lg hover:bg-gray-100 text-gray-600" @click="router.back()">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
+  <div class="pb-8">
+    <div class="page-wide">
+      <div class="flex items-center gap-2 py-2 md:py-3">
+        <button class="-ml-2 flex h-10 w-10 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800" aria-label="返回" @click="goBack">
+          <i class="ri-arrow-left-s-line text-xl" aria-hidden="true"></i>
         </button>
-        <h1 class="text-lg font-semibold text-gray-900">用户主页</h1>
+        <h1 class="truncate text-base font-semibold text-gray-900 dark:text-white">{{ profile?.username || '用户主页' }}</h1>
       </div>
     </div>
 
@@ -126,56 +122,49 @@ onMounted(() => {
       </svg>
     </div>
 
-    <div v-else-if="profile" class="max-w-4xl mx-auto px-4 pt-4">
-      <div class="card p-5">
+    <div v-else-if="profile" class="page-wide">
+      <!-- 手机端上下排列；平板/桌面：头像信息在左，数据与关注在右 -->
+      <div class="card p-5 md:flex md:items-center md:gap-8 md:p-6">
         <!-- Top: avatar + user info -->
-        <div class="flex items-start gap-4">
-          <div class="w-16 h-16 rounded-full overflow-hidden bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 text-xl font-bold shrink-0">
+        <div class="flex items-start gap-4 md:flex-1 md:items-center">
+          <div class="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 text-xl font-bold shrink-0">
             <img v-if="avatarUrl" :src="avatarUrl" :alt="profile.username" class="w-full h-full object-cover" @error="avatarError = true" />
-            <span v-else>{{ profile.username.charAt(0) }}</span>
+            <span v-else>{{ avatarInitial(profile.username) }}</span>
           </div>
           <div class="flex-1 min-w-0 pt-1">
             <div class="flex items-center gap-2">
               <span class="text-lg font-bold text-gray-900 dark:text-white truncate">{{ profile.username }}</span>
-              <svg v-if="profile.is_doctor" class="w-4 h-4 text-primary-500 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
-              </svg>
+              <i v-if="profile.is_doctor" class="ri-verified-badge-fill text-primary-500 shrink-0" title="医护人员已认证" aria-label="医护人员已认证"></i>
             </div>
-            <div v-if="profile.patient_relation" class="text-xs text-gray-500  mt-0.5">{{ profile.patient_relation }}</div>
-            <div v-if="profile.created_at" class="text-xs text-gray-400  mt-0.5">{{ formatDate(profile.created_at) }}加入</div>
+            <div v-if="profile.patient_relation" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ profile.patient_relation }}</div>
+            <div v-if="profile.created_at" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ formatDate(profile.created_at) }}加入</div>
           </div>
         </div>
 
         <!-- Stats -->
-        <div class="grid grid-cols-3 gap-3 mt-4">
-          <div class="text-center py-2 rounded-lg bg-gray-50 ">
+        <div class="grid grid-cols-3 gap-3 mt-4 md:mt-0 md:w-80 md:shrink-0">
+          <div class="text-center py-2 rounded-lg bg-gray-50 dark:bg-gray-800/60">
             <div class="text-lg font-bold text-gray-900 dark:text-white">{{ profile.post_count }}</div>
-            <div class="text-xs text-gray-500 ">帖子</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">帖子</div>
           </div>
-          <div class="text-center py-2 rounded-lg bg-gray-50 ">
+          <div class="text-center py-2 rounded-lg bg-gray-50 dark:bg-gray-800/60">
             <div class="text-lg font-bold text-gray-900 dark:text-white">{{ profile.following_count }}</div>
-            <div class="text-xs text-gray-500 ">关注</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">关注</div>
           </div>
-          <div class="text-center py-2 rounded-lg bg-gray-50 ">
+          <div class="text-center py-2 rounded-lg bg-gray-50 dark:bg-gray-800/60">
             <div class="text-lg font-bold text-gray-900 dark:text-white">{{ profile.follower_count }}</div>
-            <div class="text-xs text-gray-500 ">粉丝</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">粉丝</div>
           </div>
         </div>
 
         <!-- Action buttons -->
-        <div v-if="!isSelf" class="flex gap-3 mt-4">
+        <div v-if="!isSelf" class="flex gap-3 mt-4 md:mt-0 md:shrink-0">
           <FollowButton :targetUserId="profile.id" :initialFollowed="profile.is_followed" />
-          <button
-            class="flex-1 text-sm py-1.5 rounded-lg font-medium transition-colors bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50 border border-primary-200 dark:border-primary-700"
-            @click="handleSendMessage"
-          >
-            <i class="ri-chat-3-line mr-1.5"></i>私信
-          </button>
         </div>
       </div>
 
-      <div class="mt-4">
-        <h2 class="text-sm font-semibold text-gray-700 mb-3">TA的帖子</h2>
+      <div class="mt-5 md:mt-6">
+        <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">TA的帖子</h2>
         <div v-if="postsLoading" class="text-center py-8 text-sm text-gray-400">加载中...</div>
         <div v-else-if="!posts.length" class="card p-8 text-center text-sm text-gray-400">暂无公开帖子</div>
         <FeedWaterfall v-else :posts="posts" @tag-click="handleTagClick" @like-click="handleLikeClick" @bookmark-click="handleBookmarkClick" />

@@ -6,6 +6,8 @@ from typing import Optional
 
 from fastapi import Request, HTTPException, status
 
+from web.backend.utils.client_ip import get_real_client_ip
+
 
 class RateLimiter:
     def __init__(self, max_requests: int, window_seconds: int = 60):
@@ -40,7 +42,7 @@ class ReadRateLimit:
     """FastAPI dependency: rate-limit by client IP."""
 
     async def __call__(self, request: Request) -> None:
-        ip = request.client.host if request.client else "unknown"
+        ip = get_real_client_ip(request)
         key = f"ip:{ip}"
         if not read_limiter.is_allowed(key):
             raise HTTPException(
@@ -56,7 +58,7 @@ class WriteRateLimit:
     async def __call__(self, request: Request) -> None:
         # Try to get user_id from request state (set by auth middleware)
         user_id = getattr(request.state, "user_id", None)
-        key = f"user:{user_id}" if user_id else f"ip:{request.client.host if request.client else 'unknown'}"
+        key = f"user:{user_id}" if user_id else f"ip:{get_real_client_ip(request)}"
         if not write_limiter.is_allowed(key):
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -75,7 +77,7 @@ class ChatRateLimit:
 
     async def __call__(self, request: Request) -> None:
         user_id = getattr(request.state, "user_id", None)
-        key = f"chat:user:{user_id}" if user_id else f"chat:ip:{request.client.host if request.client else 'unknown'}"
+        key = f"chat:user:{user_id}" if user_id else f"chat:ip:{get_real_client_ip(request)}"
         if not chat_limiter.is_allowed(key):
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -86,7 +88,7 @@ class ChatRateLimit:
 
 async def limit_write_for_user(request: Request, user_id: Optional[int]) -> None:
     """Write rate limit with explicit user_id (use inside endpoint body)."""
-    key = f"user:{user_id}" if user_id else f"ip:{request.client.host if request.client else 'unknown'}"
+    key = f"user:{user_id}" if user_id else f"ip:{get_real_client_ip(request)}"
     if not write_limiter.is_allowed(key):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,

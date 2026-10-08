@@ -1,0 +1,111 @@
+{
+  "version.json": {
+    "buildTime": 1789172827675,
+    "env": "staging",
+    "lastProdBuildTime": 1788097546229
+  },
+  "manifest.webmanifest": {
+    "name": "SubSkin [STAGING]",
+    "short_name": "SubSkin-STG",
+    "description": "SubSkin Staging — 测试环境。白癜风病友的AI手帐和分享社区",
+    "start_url": "./",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#1e293b",
+    "lang": "en",
+    "scope": "./",
+    "orientation": "portrait-primary",
+    "categories": [
+      "medical",
+      "health"
+    ],
+    "icons": [
+      {
+        "src": "./icons/icon-72x72.png?v=c7f3a2",
+        "sizes": "72x72",
+        "type": "image/png",
+        "purpose": "any"
+      },
+      {
+        "src": "./icons/icon-96x96.png?v=c7f3a2",
+        "sizes": "96x96",
+        "type": "image/png",
+        "purpose": "any"
+      },
+      {
+        "src": "./icons/icon-128x128.png?v=c7f3a2",
+        "sizes": "128x128",
+        "type": "image/png",
+        "purpose": "any"
+      },
+      {
+        "src": "./icons/icon-144x144.png?v=c7f3a2",
+        "sizes": "144x144",
+        "type": "image/png",
+        "purpose": "any"
+      },
+      {
+        "src": "./icons/icon-152x152.png?v=c7f3a2",
+        "sizes": "152x152",
+        "type": "image/png",
+        "purpose": "any"
+      },
+      {
+        "src": "./icons/icon-192x192.png?v=c7f3a2",
+        "sizes": "192x192",
+        "type": "image/png",
+        "purpose": "any"
+      },
+      {
+        "src": "./icons/icon-384x384.png?v=c7f3a2",
+        "sizes": "384x384",
+        "type": "image/png",
+        "purpose": "any"
+      },
+      {
+        "src": "./icons/icon-512x512.png?v=c7f3a2",
+        "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "any"
+      },
+      {
+        "src": "./icons/maskable-512x512.png?v=c7f3a2",
+        "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "maskable"
+      }
+    ]
+  },
+  "sw.js": {
+    "bytes": 25053,
+    "sha256": "5e99c661d1873d6d20d2940d5757cf6bc981940a1d576fa42434034e041d7be2"
+  },
+  "index.html": {
+    "bytes": 3229,
+    "sha256": "340b2e525450f4709a7cd552d6eceb39984babc474fe80c5471bbf6d2c01101f"
+  },
+  "entry_assets": {
+    "/assets/index-BGkggMPE.js": true,
+    "/assets/index-CFcplJwq.css": true
+  },
+  "api/health": {
+    "status": "ok",
+    "service": "subskin-backend"
+  },
+  "production_frontend_unchanged": true,
+  "backend_protocol_status": "loaded",
+  "protocol": {
+    "protocol": "skin-outline-v1",
+    "manual_review_required": true
+  },
+  "backend_health": {
+    "status": "ok",
+    "service": "subskin-backend"
+  },
+  "production_backend_health": {
+    "status": "ok",
+    "service": "subskin-backend"
+  },
+  "verified_at": "2026-09-12T08:56:04+08:00",
+  "real_model_retest": "browser_control_timed_out_before_analysis_submission; accuracy not established"
+}

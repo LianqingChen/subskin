@@ -15,6 +15,24 @@ logger = logging.getLogger(__name__)
 DISCLAIMER = "以上解读由AI生成，仅供参考，不构成医疗诊断。请咨询医生获取专业意见。"
 
 
+def _get_prompt_template(module_key: str, prompt_key: str, fallback: str) -> str:
+    """从 DB 读取管理后台可编辑的提示词模板，失败时回退内置常量。"""
+    try:
+        from web.backend.database.database import SessionLocal
+        from web.backend.services.llm_prompt_service import LLMPromptService
+
+        db = SessionLocal()
+        try:
+            template = LLMPromptService.get_prompt(db, module_key, prompt_key)
+            if template:
+                return template
+        finally:
+            db.close()
+    except Exception as e:
+        logger.warning("Failed to load prompt %s/%s: %s", module_key, prompt_key, e)
+    return fallback
+
+
 class ReportInterpreter:
     def interpret(
         self,
@@ -119,7 +137,7 @@ class ReportInterpreter:
         image_data_list: List[bytes],
         user_context: Optional[Dict[str, Any]] = None,
     ) -> Optional[Dict[str, Any]]:
-        config = get_llm_config()
+        config = get_llm_config("medical_report")
         if config["provider"] == "none":
             logger.warning("LLM provider not configured, cannot use vision model")
             return None
@@ -141,46 +159,10 @@ class ReportInterpreter:
                 "image_url": {"url": "data:%s;base64,%s" % (mime, b64)},
             })
 
-        prompt = (
-            "你是一位面向白癜风白友的体检报告解读助手。请仔细阅读这份体检报告图片，提取所有检验指标并给出解读。"
-            "用户信息: %s\n\n"
-            "请输出JSON，格式如下：\n"
-            "{\n"
-            '  "risk_level": "low" | "medium" | "high" | "critical",\n'
-            '  "summary": "200字以内白友易懂总结",\n'
-            '  "parsed_indicators": [\n'
-            '    {"indicator_name": "指标名", "value": "检测值+单位", "status": "normal"/"high"/"low", "ref_range": "参考范围"}\n'
-            "  ],\n"
-            '  "abnormal_items": [\n'
-            "    {\n"
-            '      "indicator_name": "指标名",\n'
-            '      "value": "检测值+单位",\n'
-            '      "status": "high"/"low"/"critical",\n'
-            '      "interpretation": "通俗解释这个指标异常意味着什么",\n'
-            '      "possible_causes": ["可能原因1", "可能原因2"],\n'
-            '      "suggestions": ["建议1", "建议2"]\n'
-            "    }\n"
-            "  ],\n"
-            '  "recommendations": [\n'
-            '    {"content": "具体可执行建议"}\n'
-            "  ],\n"
-            '  "extracted_patient_info": {\n'
-            '    "name": "姓名",\n'
-            '    "gender": "男/女",\n'
-            '    "age": 35,\n'
-            '    "exam_date": "2025-01-15",\n'
-            '    "confidence": 0.9\n'
-            '  } | null,\n'
-            '  "disclaimer": "%s"\n'
-            "}\n\n"
-            "注意事项：\n"
-            "1. 请尽可能提取图片中所有可见的检验指标，包括指标名称、检测值、单位、参考范围\n"
-            "2. status判断：检测值在参考范围内为normal，偏高为high，偏低为low，严重偏离为critical\n"
-            "3. 特别关注与白癜风相关的指标（甲状腺功能、免疫指标、肝功能、微量元素等）\n"
-            "4. 从报告头部提取姓名、性别、年龄、体检日期等基本信息\n"
-            "5. 如果图片不是体检报告或无法识别，返回包含空指标和上传建议的JSON\n"
-            "6. 严格输出JSON，不要输出Markdown代码块或JSON以外的文字"
-        ) % (user_info, DISCLAIMER)
+        from web.backend.services.llm_prompt_service import MEDICAL_REPORT_VISION_PROMPT
+
+        template = _get_prompt_template("medical_report", "vision_interpret", MEDICAL_REPORT_VISION_PROMPT)
+        prompt = template % (user_info, DISCLAIMER)
         content.append({"type": "text", "text": prompt})
 
         try:
@@ -418,7 +400,7 @@ class ReportInterpreter:
     def _call_llm_with_metadata(
         self, prompt: str, max_tokens: int = 16384
     ) -> Tuple[Optional[Dict[str, Any]], str]:
-        config = get_llm_config()
+        config = get_llm_config("medical_report")
         model_name = config.get("chat_model", "unknown")
         if config["provider"] == "none":
             logger.warning("LLM provider not configured")
@@ -922,7 +904,7 @@ class ReportInterpreter:
         return abnormal_items
 
     def _build_output_metadata(self, model_name: Optional[str] = None) -> Dict[str, Any]:
-        config = get_llm_config()
+        config = get_llm_config("medical_report")
         return {
             "schema_version": "2.0",
             "parser_version": "1.0",

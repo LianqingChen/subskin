@@ -47,7 +47,7 @@ def _get_env_config() -> dict:
             "api_key": os.getenv("DEEPSEEK_API_KEY"),
             "base_url": os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
             "chat_model": "deepseek-v4-flash",
-            "vision_model": "",
+            "vision_model": "deepseek-v4-flash-vision-exp",
             "embedding_model": "",
             "embedding_dimensions": None,
             "provider": "deepseek",

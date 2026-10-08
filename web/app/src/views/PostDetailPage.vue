@@ -2,18 +2,24 @@
 import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { communityApi } from '@/api/community'
-import { imApi } from '@/api/im'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import type { Post, PostComment as PostCommentType, Category } from '@/types'
-import ShareSheet from '@/components/community/ShareSheet.vue'
-import SharePoster from '@/components/community/SharePoster.vue'
+import PageShareSheet from '@/components/common/PageShareSheet.vue'
+import PageSharePoster from '@/components/common/PageSharePoster.vue'
 import AudioPlayer from '@/components/community/AudioPlayer.vue'
 import FileAttachment from '@/components/community/FileAttachment.vue'
 import PostCard from '@/components/community/PostCard.vue'
+import TreatmentShareCard from '@/components/community/TreatmentShareCard.vue'
 import RichEditor from '@/components/community/RichEditor.vue'
 import FollowButton from '@/components/community/FollowButton.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import MedicalDisclaimer from '@/components/common/MedicalDisclaimer.vue'
+import { getCategoryColor } from '@/utils/colors'
 import { rewriteProtectedHtml, toProtectedFileUrl } from '@/utils/file-url'
+import { timeAgo } from '@/utils/date'
+import { avatarInitial } from '@/utils/avatar'
+import { getMoodMeta } from '@/utils/mood'
 
 const route = useRoute()
 const router = useRouter()
@@ -54,28 +60,11 @@ const toast = useToast()
 
 const protectedContent = computed(() => rewriteProtectedHtml(post.value?.content || ''))
 
-const categoryColor: Record<string, string> = {
-  '治疗分享': 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-  '心理支持': 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-  '护肤经验': 'bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300',
-  '日常饮食': 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  '诊断咨询': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300',
-  '白白日记': 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
-  '最新资讯': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-  '其他': 'bg-gray-100 text-gray-700  ',
-}
+// 点赞/收藏无障碍反馈文案 (aria-live)
+const actionFeedback = ref('')
 
 function formatTimeAgo(dateStr: string): string {
-  const now = new Date()
-  const date = new Date(dateStr)
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  if (diffMins < 60) return `${diffMins}分钟前`
-  const diffHours = Math.floor(diffMins / 60)
-  if (diffHours < 24) return `${diffHours}小时前`
-  const diffDays = Math.floor(diffHours / 24)
-  if (diffDays < 30) return `${diffDays}天前`
-  return `${Math.floor(diffDays / 30)}月前`
+  return timeAgo(dateStr) || dateStr
 }
 
 function protectedFileUrl(url?: string | null): string {
@@ -99,6 +88,8 @@ function onCarouselTouchEnd(e: TouchEvent) {
   }
 }
 
+const moodMeta = computed(() => getMoodMeta(post.value?.mood))
+
 async function loadPost() {
   loading.value = true
   try {
@@ -111,6 +102,7 @@ async function loadPost() {
     comments.value = commentsRes.items
     categories.value = catRes
     currentImageIndex.value = 0
+    document.title = postRes.title ? `${postRes.title} - SubSkin` : '帖子详情 - SubSkin'
 
     // Load related posts (same category, different post)
     if (postRes.category_id) {
@@ -164,20 +156,6 @@ const authorAvatarError = ref(false)
 // Reset avatar error when post changes
 watch(postId, () => { authorAvatarError.value = false })
 
-async function handleSendMessage() {
-  if (!authStore.isLoggedIn || !post.value) {
-    authStore.showLoginModal = true
-    return
-  }
-  try {
-    const res = await imApi.createPrivateChat(post.value.author.id)
-    router.push(`/chat/${res.data.conversation_id}`)
-  } catch (err) {
-    toast.error('发起聊天失败')
-    console.error('Failed to create private chat:', err)
-  }
-}
-
 async function confirmDeletePost() {
   if (!post.value) return
   try {
@@ -198,6 +176,7 @@ async function toggleLike() {
     const res = await communityApi.toggleLike(post.value.id)
     post.value.is_liked = res.liked
     post.value.like_count = res.like_count
+    actionFeedback.value = res.liked ? '已点赞' : '已取消点赞'
   } catch (err) {
     console.error('Failed to toggle like:', err)
   }
@@ -209,8 +188,21 @@ async function toggleBookmark() {
   try {
     const res = await communityApi.toggleBookmark(post.value.id)
     post.value.is_bookmarked = res.bookmarked
+    actionFeedback.value = res.bookmarked ? '已收藏' : '已取消收藏'
   } catch (err) {
     console.error('Failed to toggle bookmark:', err)
+  }
+}
+
+async function onShared() {
+  // 未登录用户仍可复制链接/系统分享，但转发计数需登录（与点赞/收藏一致）
+  if (!authStore.isLoggedIn || !post.value) return
+  try {
+    const res = await communityApi.sharePost(post.value.id)
+    post.value.share_count = res.share_count
+    actionFeedback.value = '已转发'
+  } catch (err) {
+    console.error('Failed to count share:', err)
   }
 }
 
@@ -222,9 +214,18 @@ async function submitComment() {
     comments.value.push(comment)
     post.value.comment_count += 1
     newComment.value = ''
-  } catch (err) {
-    console.error('Failed to add comment:', err)
+  } catch (err: unknown) {
+    const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+    toast.error(detail || '评论失败，请稍后重试')
   }
+}
+
+/** 桌面端有图帖子用左右两栏（小红书式） */
+const hasMedia = computed(() => !!post.value && post.value.images.length > 0)
+function stepImage(delta: number) {
+  if (!post.value) return
+  const total = post.value.images.length
+  currentImageIndex.value = (currentImageIndex.value + delta + total) % total
 }
 
 function goBack() {
@@ -237,15 +238,15 @@ function goBack() {
 </script>
 
 <template>
-  <div class="max-w-2xl mx-auto px-3 pb-24">
+  <div class="mx-auto w-full px-4 pb-48 sm:px-6 md:pb-28 lg:px-8" :class="hasMedia ? 'max-w-6xl' : 'max-w-3xl'">
     <!-- Top bar -->
-    <div class="flex items-center gap-3 py-3 sticky top-0 bg-white/80  backdrop-blur-md z-20">
-      <button @click="goBack" class="text-gray-600  hover:text-gray-900 dark:hover:text-gray-100">
+    <div class="flex items-center gap-2 py-2 md:py-3">
+      <button @click="goBack" class="-ml-2 flex h-10 w-10 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100" aria-label="返回">
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
         </svg>
       </button>
-      <span class="text-sm font-medium text-gray-700 ">帖子详情</span>
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-200">帖子详情</span>
       <!-- Author actions -->
       <div v-if="authStore.user && post && post.author.id === authStore.user.id" class="ml-auto flex items-center gap-3">
         <button class="text-xs text-gray-400  hover:text-primary-600" @click="showEditModal = true">编辑</button>
@@ -253,17 +254,19 @@ function goBack() {
       </div>
     </div>
 
-    <div v-if="loading" class="text-center py-12 text-gray-400 ">加载中...</div>
+    <LoadingSpinner v-if="loading" />
 
     <template v-else-if="post">
+      <!-- 桌面端有图：左图（sticky）右文；手机端单栏 -->
+      <div :class="hasMedia ? 'lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start lg:gap-8' : ''">
       <!-- Image Carousel -->
       <div
         v-if="post.images.length > 0"
-        class="relative rounded-xl overflow-hidden bg-black mb-4"
+        class="group relative mb-4 overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-900 lg:sticky lg:top-[4.5rem] lg:mb-0"
         @touchstart="onCarouselTouchStart"
         @touchend="onCarouselTouchEnd"
       >
-        <div class="aspect-[4/3] relative">
+        <div class="aspect-[4/3] relative lg:aspect-[4/5] lg:max-h-[calc(100vh-8rem)] lg:w-full">
           <img
             v-for="(img, idx) in post.images"
             :key="img.id"
@@ -286,8 +289,14 @@ function goBack() {
         <span class="absolute top-3 right-3 text-xs text-white bg-black/40 rounded-full px-2 py-0.5">
           {{ currentImageIndex + 1 }}/{{ post.images.length }}
         </span>
+        <!-- 桌面端没有滑动手势，提供左右切换按钮 -->
+        <template v-if="post.images.length > 1">
+          <button type="button" class="absolute left-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow transition-opacity hover:bg-white md:flex md:opacity-0 md:group-hover:opacity-100" aria-label="上一张" @click="stepImage(-1)"><i class="ri-arrow-left-s-line text-xl" aria-hidden="true"></i></button>
+          <button type="button" class="absolute right-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow transition-opacity hover:bg-white md:flex md:opacity-0 md:group-hover:opacity-100" aria-label="下一张" @click="stepImage(1)"><i class="ri-arrow-right-s-line text-xl" aria-hidden="true"></i></button>
+        </template>
       </div>
 
+      <div class="min-w-0">
       <!-- Post Content -->
       <article class="space-y-4">
         <!-- Author + category -->
@@ -295,34 +304,26 @@ function goBack() {
           <router-link :to="`/user/${post.author.id}`" class="flex-shrink-0 no-underline">
             <img v-if="authorAvatarUrl && !authorAvatarError" :src="authorAvatarUrl" :alt="post.author.username" class="w-9 h-9 rounded-full object-cover bg-gray-100" @error="authorAvatarError = true" />
             <div v-else class="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 text-sm font-medium">
-              {{ post.author.username.charAt(0) }}
+              {{ avatarInitial(post.author.username) }}
             </div>
           </router-link>
           <div class="flex-1 min-w-0">
-            <div class="font-medium text-sm text-gray-900 ">
+            <div class="font-medium text-sm text-gray-900 dark:text-gray-100">
             {{ post.author.username }}
-            <svg v-if="post.author.is_doctor" class="w-3.5 h-3.5 text-primary-500 inline -mt-0.5" viewBox="0 0 20 20" fill="currentColor" title="认证医生">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
-            </svg>
+            <i v-if="post.author.is_doctor" class="ri-verified-badge-fill text-primary-500 text-sm inline -mt-0.5" title="认证医生" aria-label="认证医生"></i>
           </div>
             <div class="text-[11px] text-gray-400 ">{{ formatTimeAgo(post.created_at) }}</div>
           </div>
           <div v-if="authStore.isLoggedIn && post.author.id !== authStore.user?.id" class="flex items-center gap-2">
             <FollowButton :targetUserId="post.author.id" />
-            <button
-              class="text-xs px-3 py-1 rounded-full font-medium transition-colors bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              @click="handleSendMessage"
-            >
-              私信
-            </button>
           </div>
-          <span :class="categoryColor[post.category.name] || 'bg-gray-100 text-gray-700  '" class="px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0">
-            {{ post.category.icon }} {{ post.category.name }}
+          <span :class="getCategoryColor(post.category.name)" class="px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 inline-flex items-center gap-0.5">
+            <i :class="post.category.icon" aria-hidden="true"></i> {{ post.category.name }}
           </span>
         </div>
 
         <!-- Title -->
-        <h1 class="text-lg font-bold text-gray-900  leading-snug">{{ post.title }}</h1>
+        <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100 leading-snug md:text-xl">{{ post.title }}</h1>
 
         <!-- Tags -->
         <div v-if="post.tags && post.tags.length > 0" class="flex flex-wrap gap-1.5">
@@ -337,9 +338,13 @@ function goBack() {
         </div>
 
         <!-- Mood badge -->
-        <div v-if="post.mood" class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100  text-sm text-gray-700 ">
-          {{ post.mood }}
+        <div v-if="moodMeta" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm text-white" :class="moodMeta.color">
+          <i :class="moodMeta.icon" class="text-xs"></i>
+          {{ moodMeta.label }}
         </div>
+
+        <!-- 治疗分享结构化信息卡 -->
+        <TreatmentShareCard v-if="post.treatment_share" :treatment="post.treatment_share" />
 
         <!-- Audio -->
         <div v-if="post.audios && post.audios.length > 0" class="space-y-2">
@@ -350,13 +355,10 @@ function goBack() {
         <FileAttachment v-if="post.attachments && post.attachments.length > 0" :attachments="post.attachments" />
 
         <!-- Content -->
-        <div class="prose prose-sm dark:prose-invert max-w-none text-gray-700  text-[15px] leading-relaxed" v-html="protectedContent"></div>
+        <div class="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-200 text-[15px] leading-relaxed" v-html="protectedContent"></div>
 
         <!-- Medical disclaimer -->
-        <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-lg p-3 flex items-start gap-2">
-          <span class="text-amber-500 text-sm mt-0.5">⚠️</span>
-          <p class="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">本文不构成医疗建议，内容仅供参考。请勿轻信偏方，治疗请遵医嘱。</p>
-        </div>
+        <MedicalDisclaimer variant="banner" message="本文不构成医疗建议，内容仅供参考。请勿轻信偏方，治疗请遵医嘱。" />
 
         <!-- Engagement stats -->
         <div class="flex items-center gap-4 text-xs text-gray-400  py-2">
@@ -367,52 +369,69 @@ function goBack() {
 
       <!-- Comments Section -->
       <section class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
-        <h3 class="font-semibold text-sm text-gray-900  mb-4">评论 ({{ comments.length }})</h3>
+        <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-4">评论 ({{ comments.length }})</h3>
         <div class="space-y-4">
           <div v-for="comment in comments" :key="comment.id" class="flex gap-3 pb-4 border-b border-gray-50 dark:border-gray-800 last:border-0">
             <div class="w-8 h-8 rounded-full bg-gray-100  flex items-center justify-center text-gray-600  text-xs font-medium flex-shrink-0">
-              {{ comment.author.username.charAt(0) }}
+              {{ avatarInitial(comment.author.username) }}
             </div>
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
-                <span class="text-sm font-medium text-gray-900 ">{{ comment.author.username }}</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ comment.author.username }}</span>
                 <span v-if="post && comment.author.id === post.author.id" class="text-[10px] bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 px-1.5 py-0.5 rounded font-medium">楼主</span>
                 <span class="text-[11px] text-gray-400 ">{{ formatTimeAgo(comment.created_at) }}</span>
               </div>
-              <p class="text-sm text-gray-600  leading-relaxed">{{ comment.content }}</p>
+              <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed break-words min-w-0">{{ comment.content }}</p>
             </div>
           </div>
           <div v-if="comments.length === 0" class="text-center py-8 text-sm text-gray-400 ">
-            暂无评论，来说两句吧 💬
+            暂无评论，来说两句吧 <i class="ri-chat-3-line ml-0.5"></i>
           </div>
         </div>
       </section>
 
+      </div>
+      </div>
+
       <!-- Related Posts -->
       <section v-if="relatedPosts.length > 0" class="mt-8 pt-4 border-t border-gray-100 dark:border-gray-800">
-        <h3 class="font-semibold text-sm text-gray-900  mb-3">相关分享</h3>
-        <div class="columns-2 gap-2">
+        <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-3">相关分享</h3>
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <PostCard v-for="rp in relatedPosts" :key="rp.id" :post="rp" />
         </div>
       </section>
     </template>
 
-    <!-- Fixed bottom action bar -->
-    <div v-if="post" class="fixed bottom-0 left-0 right-0 bg-white/90  backdrop-blur-md border-t border-gray-100 dark:border-gray-800 z-30 safe-bottom">
-      <div class="max-w-2xl mx-auto px-3 py-2 flex items-center gap-2">
+    <!-- Fixed bottom action bar：移动端抬高到 BottomNav（54px + safe-area）之上，避免重叠/误触导航 -->
+    <div v-if="post" class="comment-bar app-fixed-x fixed bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 z-30">
+      <!-- 与正文同宽；桌面两栏时对齐右栏 -->
+      <div class="mx-auto w-full px-4 sm:px-6 lg:px-8" :class="hasMedia ? 'max-w-6xl lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-8' : 'max-w-3xl'">
+      <div v-if="hasMedia" class="hidden lg:block" aria-hidden="true"></div>
+      <div class="flex min-w-0 items-center gap-2 py-2">
         <!-- Comment input -->
         <div class="flex-1 relative">
           <input
             v-model="newComment"
             type="text"
             placeholder="写下你的评论..."
-            class="w-full bg-gray-100  rounded-full px-4 py-2 text-sm text-gray-700  placeholder-gray-400 dark:placeholder-gray-500 outline-none"
+            class="w-full bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 outline-none"
             @keydown.enter="submitComment"
           />
         </div>
+        <button
+          v-if="newComment.trim()"
+          class="w-9 h-9 rounded-full bg-primary-600 hover:bg-primary-700 text-white flex items-center justify-center transition-colors shrink-0"
+          aria-label="发送评论"
+          @click="submitComment"
+        >
+          <i class="ri-send-plane-fill" aria-hidden="true"></i>
+        </button>
         <!-- Action buttons -->
+        <span class="sr-only" aria-live="polite">{{ actionFeedback }}</span>
         <button class="flex flex-col items-center gap-0.5 px-2 py-1 transition-colors"
           :class="post.is_liked ? 'text-red-500' : 'text-gray-400  hover:text-red-500'"
+          :aria-pressed="post.is_liked"
+          :aria-label="post.is_liked ? `已点赞，共${post.like_count}人` : '点赞'"
           @click="toggleLike"
         >
           <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
@@ -423,26 +442,29 @@ function goBack() {
         </button>
         <button class="flex flex-col items-center gap-0.5 px-2 py-1 transition-colors"
           :class="post.is_bookmarked ? 'text-yellow-500' : 'text-gray-400  hover:text-yellow-500'"
+          :aria-pressed="post.is_bookmarked"
+          :aria-label="post.is_bookmarked ? '已收藏' : '收藏'"
           @click="toggleBookmark"
         >
           <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
             <path v-if="post.is_bookmarked" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5z"/>
             <path v-else fill-rule="evenodd" d="M3 4a2 2 0 012-2h10a2 2 0 012 2v14l-3.5-2L10 18l-3.5-2L3 18V4z" clip-rule="evenodd"/>
           </svg>
-          <span class="text-[10px]">收藏</span>
+          <span class="text-[10px]">{{ post.is_bookmarked ? '已收藏' : '收藏' }}</span>
         </button>
-        <button class="flex flex-col items-center gap-0.5 px-2 py-1 text-gray-400  hover:text-primary-600 transition-colors" @click="showShare = true">
+        <button class="flex flex-col items-center gap-0.5 px-2 py-1 text-gray-400  hover:text-primary-600 transition-colors" @click="showShare = true" aria-label="转发">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/>
           </svg>
-          <span class="text-[10px]">分享</span>
+          <span class="text-[10px]">{{ post.share_count ? `转发 ${post.share_count}` : '转发' }}</span>
         </button>
+      </div>
       </div>
     </div>
   </div>
 
-  <ShareSheet v-if="post" :visible="showShare" :post="post" @close="showShare = false" @generate-poster="showShare = false; showPoster = true" />
-  <SharePoster v-if="post" :visible="showPoster" :post="post" @close="showPoster = false" />
+  <PageShareSheet v-if="post" :visible="showShare" :post="post" @close="showShare = false" @shared="onShared" @generate-poster="showShare = false; showPoster = true" />
+  <PageSharePoster v-if="post" :visible="showPoster" :post="post" @close="showPoster = false" />
 
   <!-- Delete Confirmation Modal -->
   <Teleport to="body">
@@ -479,7 +501,7 @@ function goBack() {
                   : 'border-gray-200 dark:border-gray-600 text-gray-600  hover:border-primary-300'"
                 @click="editCategoryId = cat.id"
               >
-                {{ cat.icon }} {{ cat.name }}
+                <i :class="cat.icon" aria-hidden="true"></i> {{ cat.name }}
               </button>
             </div>
           </div>
@@ -505,7 +527,15 @@ function goBack() {
 </template>
 
 <style scoped>
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+.comment-bar {
+  /* 移动端 BottomNav 固定高 54px + safe-area，评论栏需整体避开 */
+  bottom: calc(54px + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 768px) {
+  /* 桌面端无 BottomNav，贴底并兼顾 safe-area */
+  .comment-bar {
+    bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 </style>

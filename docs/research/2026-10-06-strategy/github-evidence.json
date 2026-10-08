@@ -1,0 +1,143 @@
+[
+  {
+    "full_name": "YuhanZheng0327/Weakly-Supervised-Vitiligo-Lesion-Segmentation",
+    "html_url": "https://github.com/YuhanZheng0327/Weakly-Supervised-Vitiligo-Lesion-Segmentation",
+    "description": null,
+    "stargazers_count": 4,
+    "pushed_at": "2025-12-30T01:33:12Z",
+    "archived": false,
+    "license": null,
+    "default_branch": "master"
+  },
+  {
+    "full_name": "birajadash/Vitiligo-Identification-CNN",
+    "html_url": "https://github.com/birajadash/Vitiligo-Identification-CNN",
+    "description": "Vitiligo Detection using Convolutional Neural Networks: Automated Image Collection and Classification",
+    "stargazers_count": 5,
+    "pushed_at": "2024-02-28T15:22:01Z",
+    "archived": false,
+    "license": {
+      "name": "MIT License",
+      "spdx_id": "MIT"
+    },
+    "default_branch": "main"
+  },
+  {
+    "full_name": "samuelbharti/VIRdb",
+    "html_url": "https://github.com/samuelbharti/VIRdb",
+    "description": "Vitiligo Information resource (VIRdb) is a comprehensive database which systematically mounts all the information relating to vitiligo in terms of potential protein targets and differentially expressed genes in a user-friendly database.",
+    "stargazers_count": 3,
+    "pushed_at": "2020-07-13T06:10:46Z",
+    "archived": false,
+    "license": {
+      "name": "Creative Commons Zero v1.0 Universal",
+      "spdx_id": "CC0-1.0"
+    },
+    "default_branch": "master"
+  },
+  {
+    "full_name": "Google-Health/derm-foundation",
+    "html_url": "https://github.com/Google-Health/derm-foundation",
+    "description": null,
+    "stargazers_count": 40,
+    "pushed_at": "2026-05-19T17:38:37Z",
+    "archived": false,
+    "license": {
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0"
+    },
+    "default_branch": "master"
+  },
+  {
+    "full_name": "google-research-datasets/scin",
+    "html_url": "https://github.com/google-research-datasets/scin",
+    "description": "The SCIN dataset contains 10,000+ images of dermatology conditions, crowdsourced with informed consent from US internet users. Contributions include self-reported demographic and symptom information and dermatologist labels. The dataset also contains estimated Fitzpatrick skin type and Monk Skin Tone.",
+    "stargazers_count": 168,
+    "pushed_at": "2024-11-23T00:20:09Z",
+    "archived": false,
+    "license": {
+      "name": "Other",
+      "spdx_id": "NOASSERTION"
+    },
+    "default_branch": "main"
+  },
+  {
+    "full_name": "mattgroh/fitzpatrick17k",
+    "html_url": "https://github.com/mattgroh/fitzpatrick17k",
+    "description": null,
+    "stargazers_count": 152,
+    "pushed_at": "2026-03-05T15:54:39Z",
+    "archived": false,
+    "license": null,
+    "default_branch": "main"
+  },
+  {
+    "repo": "MIT-LCP/ddi-dataset",
+    "status": 404
+  },
+  {
+    "full_name": "bowang-lab/MedSAM",
+    "html_url": "https://github.com/bowang-lab/MedSAM",
+    "description": "Segment Anything in Medical Images",
+    "stargazers_count": 4411,
+    "pushed_at": "2025-05-07T13:36:16Z",
+    "archived": false,
+    "license": {
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0"
+    },
+    "default_branch": "main"
+  },
+  {
+    "full_name": "MIC-DKFZ/nnUNet",
+    "html_url": "https://github.com/MIC-DKFZ/nnUNet",
+    "description": null,
+    "stargazers_count": 8935,
+    "pushed_at": "2026-09-29T13:05:21Z",
+    "archived": false,
+    "license": {
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0"
+    },
+    "default_branch": "master"
+  },
+  {
+    "full_name": "HumanSignal/label-studio",
+    "html_url": "https://github.com/HumanSignal/label-studio",
+    "description": "Label Studio is a multi-type data labeling and annotation tool with standardized output format",
+    "stargazers_count": 28401,
+    "pushed_at": "2026-10-06T00:12:54Z",
+    "archived": false,
+    "license": {
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0"
+    },
+    "default_branch": "develop"
+  },
+  {
+    "full_name": "cvat-ai/cvat",
+    "html_url": "https://github.com/cvat-ai/cvat",
+    "description": "Computer Vision Annotation Tool (CVAT) is a leading platform for building high-quality visual datasets for vision AI. It offers open-source, cloud, and enterprise products, as well as labeling services, for image, video, and 3D annotation with AI-assisted labeling, quality assurance, team collaboration, analytics, and developer APIs.",
+    "stargazers_count": 16861,
+    "pushed_at": "2026-10-05T13:41:33Z",
+    "archived": false,
+    "license": {
+      "name": "MIT License",
+      "spdx_id": "MIT"
+    },
+    "default_branch": "develop"
+  },
+  {
+    "full_name": "Project-MONAI/MONAI",
+    "html_url": "https://github.com/Project-MONAI/MONAI",
+    "description": "AI Toolkit for Healthcare Imaging",
+    "stargazers_count": 8752,
+    "pushed_at": "2026-10-05T18:48:25Z",
+    "archived": false,
+    "license": {
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0"
+    },
+    "default_branch": "dev"
+  }
+]

@@ -5,6 +5,7 @@
 
 from datetime import datetime, timezone
 from typing import List, Optional
+import re
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -121,6 +122,31 @@ CommentResponse.model_rebuild()
 
 # ── Helper Functions ──
 
+# 存储侧轻量消毒（P1-3 纵深防御）：百科修订由普通用户提交，前端渲染主防线
+# 是 DOMPurify，这里在入库前额外剔除最危险的脚本载荷。
+_DANGEROUS_TAG_RE = re.compile(
+    r"<\s*(script|iframe|object|embed|link|meta|base)[^>]*>.*?<\s*/\s*\1\s*>",
+    re.IGNORECASE | re.DOTALL,
+)
+_DANGEROUS_TAG_SELF_RE = re.compile(
+    r"<\s*/?\s*(script|iframe|object|embed|link|meta|base)[^>]*>",
+    re.IGNORECASE,
+)
+_EVENT_HANDLER_RE = re.compile(r"\son\w+\s*=", re.IGNORECASE)
+_JS_URL_RE = re.compile(r"(href|src)\s*=\s*(['\"]?)\s*javascript:", re.IGNORECASE)
+
+
+def _sanitize_user_content(content: str) -> str:
+    """剔除用户提交内容中的脚本类载荷（不替代前端 DOMPurify 消毒）。"""
+    if not content:
+        return content
+    cleaned = _DANGEROUS_TAG_RE.sub("", content)
+    cleaned = _DANGEROUS_TAG_SELF_RE.sub("", cleaned)
+    cleaned = _EVENT_HANDLER_RE.sub(" ", cleaned)
+    cleaned = _JS_URL_RE.sub(r"\1=\2", cleaned)
+    return cleaned
+
+
 def _get_article_or_404(db: Session, slug: str) -> EncyclopediaArticle:
     article = db.query(EncyclopediaArticle).filter(
         EncyclopediaArticle.slug == slug,
@@ -190,32 +216,10 @@ def list_articles(db: Session = Depends(get_db)):
     return list(category_map.values())
 
 
-@router.get("/articles/{slug:path}", response_model=ArticleDetail)
-def get_article(slug: str, db: Session = Depends(get_db)):
-    """获取百科文章详情。"""
-    article = _get_article_or_404(db, slug)
-
-    # 增加浏览次数
-    article.view_count += 1
-    db.commit()
-
-    revision_count = db.query(EncyclopediaRevision).filter(
-        EncyclopediaRevision.article_id == article.id,
-        EncyclopediaRevision.status == "approved",
-    ).count()
-
-    return ArticleDetail(
-        id=article.id,
-        slug=article.slug,
-        title=article.title,
-        category=article.category,
-        icon=article.icon,
-        content=article.content,
-        summary=article.summary,
-        view_count=article.view_count,
-        updated_at=article.updated_at,
-        revision_count=revision_count,
-    )
+# 注意：贪婪的 GET /articles/{slug:path} 详情路由已移至文件末尾注册。
+# {slug:path} 会吞掉 /articles/{slug}/comments、/articles/{slug}/revisions 等
+# 子资源路径（slug 被匹配为 "xxx/comments"），导致这些路由永远 404。
+# Starlette 按注册顺序匹配，具体子资源路由必须先于贪婪路由注册。
 
 
 # ── Revision Endpoints ──
@@ -230,13 +234,17 @@ def submit_revision(
     """提交百科修订建议。"""
     article = _get_article_or_404(db, slug)
 
-    diff_preview = _build_diff_preview(article.content, body.content)
+    # 存储侧轻量消毒：剔除脚本类载荷（前端渲染另有 DOMPurify 主防线）
+    sanitized_content = _sanitize_user_content(body.content)
+    sanitized_title = _sanitize_user_content(body.title)
+
+    diff_preview = _build_diff_preview(article.content, sanitized_content)
 
     revision = EncyclopediaRevision(
         article_id=article.id,
         user_id=current_user.id,
-        title=body.title,
-        content=body.content,
+        title=sanitized_title,
+        content=sanitized_content,
         change_summary=body.change_summary,
         change_type="suggest",
         status="pending",
@@ -545,3 +553,33 @@ def create_comment(
         "message": "评论已提交，等待审核",
         "comment_id": comment.id,
     }
+
+
+# ── Article Detail（贪婪 slug 路由必须最后注册，见文件中部注释） ──
+
+@router.get("/articles/{slug:path}", response_model=ArticleDetail)
+def get_article(slug: str, db: Session = Depends(get_db)):
+    """获取百科文章详情。"""
+    article = _get_article_or_404(db, slug)
+
+    # 增加浏览次数
+    article.view_count += 1
+    db.commit()
+
+    revision_count = db.query(EncyclopediaRevision).filter(
+        EncyclopediaRevision.article_id == article.id,
+        EncyclopediaRevision.status == "approved",
+    ).count()
+
+    return ArticleDetail(
+        id=article.id,
+        slug=article.slug,
+        title=article.title,
+        category=article.category,
+        icon=article.icon,
+        content=article.content,
+        summary=article.summary,
+        view_count=article.view_count,
+        updated_at=article.updated_at,
+        revision_count=revision_count,
+    )

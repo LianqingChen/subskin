@@ -1,0 +1,28 @@
+[Unit]
+Description=SubSkin private RGB segmentation worker
+After=network.target subskin-backend.service
+Requires=subskin-backend.service
+
+[Service]
+Type=simple
+WorkingDirectory=/root/subskin
+EnvironmentFile=-/root/subskin/data/rgb-worker.env
+Environment=OMP_NUM_THREADS=2
+Environment=MKL_NUM_THREADS=2
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/root/subskin/.venv/bin/python -m web.backend.rgb_segmentation_worker
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=10
+CPUQuota=200%
+MemoryMax=4G
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/root/subskin/data
+IPAddressDeny=any
+
+[Install]
+WantedBy=multi-user.target

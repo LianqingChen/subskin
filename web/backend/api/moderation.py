@@ -379,14 +379,19 @@ async def get_moderation_history(
     db: Session = Depends(get_db),
 ):
     _ = admin
-    query = db.query(ModerationRecord).filter(
-        ModerationRecord.status.in_(["approved", "rejected", "punished"])
+    query = db.query(ContentModeration).filter(
+        ContentModeration.status.in_(["approved", "rejected", "punished"])
     )
     if status:
-        query = query.filter(ModerationRecord.status == status)
+        query = query.filter(ContentModeration.status == status)
 
     total = query.count()
-    records = query.order_by(ModerationRecord.reviewed_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    records = (
+        query.order_by(ContentModeration.reviewed_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
 
     items = []
     for r in records:
@@ -400,15 +405,15 @@ async def get_moderation_history(
                 content_type=r.content_type,
                 content_snapshot=r.content_snapshot,
                 risk_level=r.risk_level,
-                risk_categories=json.loads(r.risk_categories) if r.risk_categories else [],
+                risk_categories=r.risk_categories,
                 auto_action=r.auto_action,
                 ai_reason=r.ai_reason,
                 ai_confidence=r.ai_confidence,
                 status=r.status,
                 reviewed_by=r.reviewed_by,
-                reviewed_at=r.reviewed_at.isoformat() if r.reviewed_at else None,
+                reviewed_at=r.reviewed_at,
                 review_note=r.review_note,
-                created_at=r.created_at.isoformat() if r.created_at else None,
+                created_at=r.created_at,
                 author_username=author.username if author else None,
                 post_title=post.title if post else None,
             )

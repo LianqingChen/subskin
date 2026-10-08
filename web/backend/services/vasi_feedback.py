@@ -347,6 +347,10 @@ class VasiFeedbackCollector:
             user_mask_b64: 用户修正后的mask（可选，从assessment.user_lesion_layer fallback）
             pipeline_params: RL管线参数快照（可选）
         """
+        # RGB reference review does not grant permission to train.
+        if getattr(assessment, "assessment_source", None) == "rgb-tools-v1":
+            return None
+
         # 必须有图片和用户修正才能生成训练样本
         if not assessment.image_key:
             return None
@@ -528,6 +532,10 @@ class VasiFeedbackCollector:
             VasiTrainingSample 或 None（无有效数据时）
         """
         from web.backend.models.image_label import ImageLabel
+        from web.backend.services.rgb_segmentation.label_sync import is_rgb_label
+
+        if is_rgb_label(label):
+            return None  # RGB review is not a consented/versioned training release.
 
         if not hasattr(label, "image_hash") or not label.image_hash:
             logger.warning("Admin label %s has no image_hash, skipping training export", label.id)
@@ -541,6 +549,13 @@ class VasiFeedbackCollector:
         # Must be training-eligible
         if not label.training_eligible:
             logger.debug("Admin label %s not training_eligible, skipping", label.id)
+            return None
+
+        # 分用途授权：用户来源的图片必须有有效的“改进识别”授权
+        from web.backend.services.data_consent import label_training_decision
+
+        if not label_training_decision(self.db, label).allowed:
+            logger.info("Admin label %s lacks model_training consent, skipping", label.id)
             return None
 
         # Collect admin annotations as ground truth
@@ -627,6 +642,7 @@ class VasiFeedbackCollector:
             existing.sample_source = "admin_labeling"
             existing.admin_mask_b64 = admin_mask
             existing.admin_label_id = admin_label_id
+            existing.image_label_id = label.id
             existing.body_site = body_site
             if vitiligo_type:
                 existing.vitiligo_type = vitiligo_type
@@ -659,6 +675,7 @@ class VasiFeedbackCollector:
             quality_level="good",
             admin_mask_b64=admin_mask,
             admin_label_id=admin_label_id,
+            image_label_id=label.id,
             ai_mask_b64=ai_mask,
             ai_contours_json=ai_contours_json,
             dice_score=dice_score,

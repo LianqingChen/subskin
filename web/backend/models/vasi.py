@@ -9,6 +9,7 @@ from sqlalchemy import (
     Column,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     DateTime,
@@ -91,6 +92,26 @@ class VASIAssessment(Base):
     # VASI 自进化 — per-lesion contour diff metrics (RL reward signal)
     # JSON array: [{"lesion_id":0, "dice_score":0.85, "area_error_pct":12.3}, ...]
     final_contour_diff_metrics = Column(Text, nullable=True)
+
+    # ── 全自动识别自循环（2026-08-27）──
+    # 患者级时空画布管线快照（对齐矩阵+校准参数+画布参数+aligned标志）
+    canvas_json = Column(Text, nullable=True)
+    # 本次评估使用的患者像素分类器版本（None=未使用）
+    patient_model_version = Column(String, nullable=True)
+    # 共识引擎详情（SAM vs 患者模型 IoU、色值验证、LLM裁判裁决）
+    consensus_json = Column(Text, nullable=True)
+    # 是否已自动终审（无需用户确认即 active）
+    auto_finalized = Column(Boolean, default=False)
+
+    # ── 全自动识别自循环（2026-08-27）──
+    # 患者级时空画布管线快照（对齐矩阵+校准参数+画布参数+aligned标志）
+    canvas_json = Column(Text, nullable=True)
+    # 本次评估使用的患者像素分类器版本（None=未使用）
+    patient_model_version = Column(String, nullable=True)
+    # 共识引擎详情（SAM vs 患者模型 IoU、色值验证、LLM裁判裁决）
+    consensus_json = Column(Text, nullable=True)
+    # 是否已自动终审（无需用户确认即 active）
+    auto_finalized = Column(Boolean, default=False)
 
     # 测评状态: draft(未确认) | active(已确认) | abandoned(已放弃)
 
@@ -231,6 +252,7 @@ class VasiTrainingSample(Base):
     # 管理员精标注 (gold standard — 最高优先级)
     admin_mask_b64 = Column(Text, nullable=True)  # 管理员标注mask PNG data URL
     admin_label_id = Column(Integer, nullable=True)  # FK to image_label_annotations.id
+    image_label_id = Column(Integer, nullable=True, index=True)  # FK to image_labels.id（三图关联的权威字段）
 
     # 差异分析
     contour_diff_json = Column(Text, nullable=True)  # AI vs 用户差异 JSON
@@ -280,6 +302,228 @@ class VasiModelVersion(Base):
 
     # 关系
     deployer = relationship("User", foreign_keys=[deployed_by])
+
+
+class VasiTrainingRun(Base):
+    """U-Net 模型训练运行 — 跟踪每次训练的进度与前后对比指标"""
+
+    __tablename__ = "vasi_training_runs"
+    __table_args__ = (
+        Index("idx_training_run_status", "status"),
+        Index("idx_training_run_created", "created_at"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    status = Column(String(20), default="pending", nullable=False, index=True)
+    # pending / running / completed / failed
+    progress = Column(Integer, default=0, nullable=False)  # 0-100
+    stage = Column(String(30), nullable=True)
+    # collect / split / baseline / train / eval / done
+
+    train_size = Column(Integer, nullable=True)
+    test_size = Column(Integer, nullable=True)
+
+    # 前后对比指标 JSON: {"dice": 0.72, "baseline_dice": 0.55, "iou": ..., "area_error_pct": ...}
+    baseline_metrics_json = Column(Text, nullable=True)
+    new_metrics_json = Column(Text, nullable=True)
+
+    version_tag = Column(String, nullable=True)  # 产出的 VasiModelVersion.version_tag
+    error = Column(Text, nullable=True)
+
+    started_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    finished_at = Column(DateTime, nullable=True)
+
+    starter = relationship("User", foreign_keys=[started_by])
+
+
+def ensure_training_columns() -> None:
+    """Add vasi_training_samples.image_label_id column and vasi_training_runs table.
+
+    Safe to call multiple times — additive only.
+    """
+    from web.backend.database.database import engine, Base
+
+    try:
+        Base.metadata.create_all(bind=engine, tables=[VasiTrainingRun.__table__])
+
+        insp = inspect(engine)
+        existing_columns = {c["name"] for c in insp.get_columns("vasi_training_samples")}
+        if "image_label_id" not in existing_columns:
+            with engine.connect() as conn:
+                conn.exec_driver_sql(
+                    "ALTER TABLE vasi_training_samples ADD COLUMN image_label_id INTEGER"
+                )
+                conn.exec_driver_sql(
+                    "CREATE INDEX IF NOT EXISTS idx_vts_image_label_id ON vasi_training_samples(image_label_id)"
+                )
+                conn.commit()
+            logger.info("Added column vasi_training_samples.image_label_id")
+
+        # Backfill image_label_id from admin_label_id where the value refers to
+        # an image_label_annotations row (upsert_from_admin_label semantics).
+        try:
+            with engine.connect() as conn:
+                conn.exec_driver_sql(
+                    """
+                    UPDATE vasi_training_samples
+                    SET image_label_id = (
+                        SELECT a.image_label_id
+                        FROM image_label_annotations a
+                        WHERE a.id = vasi_training_samples.admin_label_id
+                    )
+                    WHERE image_label_id IS NULL
+                      AND admin_label_id IS NOT NULL
+                      AND sample_source = 'admin_labeling'
+                    """
+                )
+                conn.commit()
+        except Exception as e:
+            logger.warning("Backfill image_label_id failed (non-blocking): %s", e)
+
+        logger.info("Training tables ensured")
+    except Exception as e:
+        logger.warning("Training table migration check failed: %s", e)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 全自动识别自循环 — 患者级对齐/模型/轨迹/审计（2026-08-27，全部 additive）
+# ══════════════════════════════════════════════════════════════════════════════
+
+class PatientAlignState(Base):
+    """患者级时空对齐与色彩校准锚点（每患者每部位一份）。"""
+
+    __tablename__ = "patient_align_states"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    body_site = Column(String, nullable=False, index=True)
+
+    anchor_image_key = Column(String, nullable=True)   # 锚点照片（定义画布坐标系）
+    anchor_image_hash = Column(String, nullable=True)  # 锚点照片 hash（换照片时重锚）
+    kind = Column(String, nullable=True)               # face/hand/pose/identity
+    canvas_params_json = Column(Text, nullable=True)   # 画布宽高/偏移/基准尺度
+    calibration_json = Column(Text, nullable=True)     # wb_gains/ref_mean_bgr/roi
+    stats_json = Column(Text, nullable=True)           # 累计使用统计
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class PatientModel(Base):
+    """患者级像素分类器注册表（每患者每部位一版本链）。"""
+
+    __tablename__ = "patient_models"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    body_site = Column(String, nullable=False, index=True)
+    model_kind = Column(String, nullable=False)        # random_forest
+    model_path = Column(String, nullable=True)         # 本地 joblib 路径
+    version = Column(String, nullable=True)            # 版本号
+    training_source = Column(String, nullable=True)    # user_correction/pseudo_label/kmeans_cold_start
+    sample_count = Column(Integer, default=0)          # 参与训练的照片数
+    metrics_json = Column(Text, nullable=True)         # shadow评估: {"dice":..., "heldout":...}
+    is_active = Column(Boolean, default=False)
+    deactivated_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class LesionTrack(Base):
+    """每处白斑的跨时间轨迹（统一画布身份匹配后）。"""
+
+    __tablename__ = "lesion_tracks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    body_site = Column(String, nullable=False, index=True)
+    track_key = Column(String, nullable=False, index=True)  # 患者+部位+病灶序号
+    photo_ref = Column(String, nullable=True)               # "va:{id}" / "pi:{id}"
+    photo_date = Column(DateTime, nullable=True, index=True)
+    photo_hash = Column(String, nullable=True)              # 同图去重
+
+    area_canvas_px = Column(Float, nullable=True)           # 画布坐标面积
+    area_normalized = Column(Float, nullable=True)          # 除以身体尺度基准²
+    center_x = Column(Float, nullable=True)                 # 画布坐标中心
+    center_y = Column(Float, nullable=True)
+    status = Column(String, nullable=True)                  # new/grew/shrunk/disappeared/stable/repigmented
+    repigment_signals_json = Column(Text, nullable=True)    # 色素岛等复色信号
+    source = Column(String, nullable=True)                  # sam/patient_model/consensus/user_corrected
+    confidence = Column(Float, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AutoLoopRun(Base):
+    """自循环引擎审计日志（触发原因/结果/耗时）。"""
+
+    __tablename__ = "auto_loop_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    trigger = Column(String, nullable=False)   # collect/train/deploy/judge/qa/stats
+    strategy = Column(String, nullable=True)
+    detail_json = Column(Text, nullable=True)  # 本轮处理了什么、结果如何
+    duration_ms = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class AutoLoopQueue(Base):
+    """自循环引擎任务队列（训练/裁判伪标签）。"""
+
+    __tablename__ = "auto_loop_queue"
+
+    id = Column(Integer, primary_key=True, index=True)
+    kind = Column(String, nullable=False, index=True)  # train / judge
+    user_id = Column(Integer, nullable=True, index=True)
+    body_site = Column(String, nullable=True, index=True)
+    assessment_id = Column(Integer, nullable=True, index=True)
+    payload_json = Column(Text, nullable=True)
+    status = Column(String, default="pending", index=True)  # pending/done/skipped/failed
+    result_json = Column(Text, nullable=True)
+    attempts = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+def ensure_autoloop_columns() -> None:
+    """vasi_assessments 全自动自循环新列 + 4 张新表（additive only）。"""
+    from web.backend.database.database import engine, Base
+
+    new_columns = {
+        "canvas_json": ("TEXT", None),
+        "patient_model_version": ("TEXT", None),
+        "consensus_json": ("TEXT", None),
+        "auto_finalized": ("BOOLEAN", "0"),
+    }
+    try:
+        insp = inspect(engine)
+        existing = {c["name"] for c in insp.get_columns("vasi_assessments")}
+        for col_name, (col_type, default_val) in new_columns.items():
+            if col_name in existing:
+                continue
+            try:
+                default_clause = f" DEFAULT {default_val}" if default_val else ""
+                sql = f"ALTER TABLE vasi_assessments ADD COLUMN {col_name} {col_type}{default_clause}"
+                with engine.connect() as conn:
+                    conn.exec_driver_sql(sql)
+                    conn.commit()
+                logger.info("Added column vasi_assessments.%s (%s)", col_name, col_type)
+            except Exception as e:
+                logger.warning("Failed to add column vasi_assessments.%s: %s", col_name, e)
+    except Exception as e:
+        logger.warning("vasi_assessments autoloop migration check failed: %s", e)
+
+    try:
+        Base.metadata.create_all(bind=engine, tables=[
+            PatientAlignState.__table__,
+            PatientModel.__table__,
+            LesionTrack.__table__,
+            AutoLoopRun.__table__,
+            AutoLoopQueue.__table__,
+        ])
+        logger.info("Autoloop tables ensured (align_states/models/lesion_tracks/loop_runs/queue)")
+    except Exception as e:
+        logger.warning("Autoloop tables creation check: %s", e)
 
 
 def ensure_feedback_columns() -> None:

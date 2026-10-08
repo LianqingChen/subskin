@@ -405,10 +405,10 @@ const toast = useToast()
 
   // ── History ──
   // Mode notes:
-  //  - Page-based (AssessmentSection): pass reset=true to load page 1, or
+  //  - Page-based (AssessmentPage): pass reset=true to load page 1, or
   //    use goToHistoryPage / setHistoryPageSize. Always replaces the visible
   //    window with the current page slice.
-  //  - Legacy "load more" (TrackerPage): keeps appending items via
+  //  - Legacy "load more": keeps appending items via
   //    loadMoreHistory(); preserves the original behavior.
   async function loadAssessmentHistory(reset = true, bodySite?: string, mode: 'page' | 'append' = 'page') {
     if (!authStore.isLoggedIn) return
@@ -582,7 +582,7 @@ const toast = useToast()
       content: htmlContent,
       images,
       categoryId: null,
-      mood: '💪坚持中',
+      mood: '坚持中',
       isPrivate: true,
     })
 

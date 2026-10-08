@@ -22,8 +22,8 @@ RECOMMENDED_PROVIDERS: Dict[str, Any] = {
     "dashscope": {
         "name": "百炼（阿里云）",
         "models": {
-            "chat": ["qwen-plus", "qwen-max", "qwen-turbo", "qwen-plus-latest", "qwen-max-latest", "qwen-long"],
-            "vision": ["qwen-vl-plus", "qwen-vl-max", "qwen-vl-max-latest"],
+            "chat": ["qwen3.8-max", "qwen3.7-max", "qwen3.7-plus", "qwen-max", "qwen-plus", "qwen-turbo", "qwen-plus-latest", "qwen-max-latest", "qwen-long"],
+            "vision": ["qwen3.7-plus", "qwen3-vl-max", "qwen3-vl-plus", "qwen-vl-plus", "qwen-vl-max", "qwen-vl-max-latest"],
             "embedding": ["text-embedding-v4", "text-embedding-v3"],
         },
         "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -132,6 +132,7 @@ DEFAULT_MODULES: List[Dict[str, Any]] = [
     {"module_key": "rag", "module_name": "RAG 智能问答", "module_description": "知识库 RAG 问答系统"},
     {"module_key": "vasi", "module_name": "VASI 白斑评估", "module_description": "VASI 白斑面积评估"},
     {"module_key": "medical_report", "module_name": "医疗报告解读", "module_description": "体检报告 AI 解读"},
+    {"module_key": "skin_report", "module_name": "白斑报告生成", "module_description": "白斑变化报告（对比/周报/月报）叙事生成"},
     {"module_key": "content_safety", "module_name": "内容安全审核", "module_description": "社区内容安全风控"},
     {"module_key": "im_moderation", "module_name": "IM 消息审核", "module_description": "即时通讯消息风控"},
     {"module_key": "summarizer", "module_name": "文献摘要", "module_description": "医学论文摘要生成"},
@@ -141,10 +142,12 @@ DEFAULT_MODULES: List[Dict[str, Any]] = [
 ]
 
 
-def _get_fernet() -> Fernet:
-    """获取加解密实例，密钥从环境变量获取或使用默认值。"""
-    raw_key = os.getenv("LLM_CONFIG_ENCRYPTION_KEY", "subskin-llm-config-default-key-32b!")
-    # Fernet 需要 32 字节的 base64 编码密钥
+# 旧版硬编码默认加密密钥（仅用于存量数据迁移解密，不再用于加密）
+_LEGACY_DEFAULT_ENCRYPTION_KEY = "subskin-llm-config-default-key-32b!"
+
+
+def _build_fernet(raw_key: str) -> Fernet:
+    """由任意字符串派生 Fernet 实例（32 字节 base64 编码）。"""
     key_bytes = raw_key.encode("utf-8")
     if len(key_bytes) < 32:
         key_bytes = key_bytes.ljust(32, b"\0")
@@ -152,6 +155,30 @@ def _get_fernet() -> Fernet:
         key_bytes = key_bytes[:32]
     fernet_key = base64.urlsafe_b64encode(key_bytes)
     return Fernet(fernet_key)
+
+
+def _current_encryption_key() -> str:
+    """当前加密密钥：优先 LLM_ENCRYPTION_KEY，兼容旧变量名。
+
+    若均未配置则回退旧默认密钥（保持存量数据可读，但会在日志告警）。
+    """
+    key = os.getenv("LLM_ENCRYPTION_KEY") or os.getenv("LLM_CONFIG_ENCRYPTION_KEY")
+    if not key:
+        logger.warning(
+            "LLM_ENCRYPTION_KEY 未配置，回退内置默认密钥（不安全，请尽快在 .env 配置）"
+        )
+        return _LEGACY_DEFAULT_ENCRYPTION_KEY
+    return key
+
+
+def _get_fernet() -> Fernet:
+    """获取当前加解密实例，密钥从环境变量读取。"""
+    return _build_fernet(_current_encryption_key())
+
+
+def _get_legacy_fernet() -> Fernet:
+    """旧默认密钥实例，仅用于存量数据迁移解密。"""
+    return _build_fernet(_LEGACY_DEFAULT_ENCRYPTION_KEY)
 
 
 def encrypt_api_key(api_key: Optional[str]) -> Optional[str]:
@@ -170,8 +197,20 @@ def decrypt_api_key(encrypted: Optional[str]) -> Optional[str]:
     try:
         return _get_fernet().decrypt(encrypted.encode("utf-8")).decode("utf-8")
     except Exception:
-        # 可能是明文存储的旧数据，直接返回
-        return encrypted
+        # 可能是旧默认密钥加密的存量数据或明文旧数据
+        try:
+            return _get_legacy_fernet().decrypt(encrypted.encode("utf-8")).decode("utf-8")
+        except Exception:
+            return encrypted
+
+
+def mask_api_key(api_key: Optional[str]) -> str:
+    """接口展示用掩码：只显示前4后4位。"""
+    if not api_key:
+        return ""
+    if len(api_key) <= 8:
+        return "****"
+    return f"{api_key[:4]}****{api_key[-4:]}"
 
 
 class LLMConfigService:
@@ -329,9 +368,10 @@ class LLMConfigService:
                     module.embedding_model = env_config["embedding_model"]
                     changed = True
                 if env_config.get("api_key"):
-                    new_key = encrypt_api_key(env_config["api_key"])
-                    if module.api_key != new_key:
-                        module.api_key = new_key
+                    # 比较解密后的明文值：Fernet 密文含随机盐，直接比较密文
+                    # 会导致每次 refresh 都误判为“已变更”
+                    if decrypt_api_key(module.api_key) != env_config["api_key"]:
+                        module.api_key = encrypt_api_key(env_config["api_key"])
                         changed = True
                 if env_config.get("base_url") and module.base_url != env_config["base_url"]:
                     module.base_url = env_config["base_url"]
@@ -352,6 +392,82 @@ class LLMConfigService:
                 db.close()
 
         return updated
+
+    @staticmethod
+    def rekey_api_keys(db: Optional[Session] = None) -> int:
+        """启动时迁移：将旧默认密钥/明文存储的 api_key 重加密为当前密钥（幂等）。
+
+        逻辑：逐条尝试用当前密钥解密；失败则用旧默认密钥解密后重加密；
+        两者都失败视为明文旧数据，直接用当前密钥加密。已用当前密钥
+        加密的记录直接跳过，因此可重复执行。
+        """
+        close_db = False
+        if db is None:
+            db = SessionLocal()
+            close_db = True
+
+        current = _get_fernet()
+        legacy = _get_legacy_fernet()
+        migrated = 0
+        try:
+            modules = db.query(LLMModuleConfig).all()
+            for module in modules:
+                stored = module.api_key
+                if not stored:
+                    continue
+                # 尝试用当前密钥解密一次
+                try:
+                    decrypted = current.decrypt(stored.encode("utf-8")).decode("utf-8")
+                except Exception:
+                    # 当前密钥解密失败 → 走旧默认密钥 / 明文旧数据分支
+                    try:
+                        plain = legacy.decrypt(stored.encode("utf-8")).decode("utf-8")
+                    except Exception:
+                        # 非 Fernet 格式 → 视为明文旧数据
+                        plain = stored
+                    module.api_key = current.encrypt(plain.encode("utf-8")).decode("utf-8")
+                    module.updated_at = datetime.now(timezone.utc)
+                    migrated += 1
+                    continue
+
+                # 解密一次成功：防御双重 Fernet 加密。
+                # 若解密结果仍以 gAAAAA 开头（仍是 Fernet 密文），说明该记录被
+                # 加密了两次：运行时 decrypt_api_key() 只解密一次会返回内层密文
+                # 当作 api_key 传给模型供应商 → 401。这里再解密一次拿明文，用
+                # 当前密钥重新加密一次写回（仅加密一次），保证幂等。
+                if decrypted.startswith("gAAAAA"):
+                    try:
+                        plain = current.decrypt(decrypted.encode("utf-8")).decode("utf-8")
+                    except Exception:
+                        # 内层不是当前密钥可解的 Fernet 密文：无法自动修复，
+                        # 保持原样并告警，避免破坏数据（幂等、异常降级）。
+                        logger.error(
+                            "模块 %s api_key 疑似双重加密但二次解密失败，已跳过（需人工核查）",
+                            module.module_key,
+                        )
+                        continue
+                    module.api_key = current.encrypt(plain.encode("utf-8")).decode("utf-8")
+                    module.updated_at = datetime.now(timezone.utc)
+                    migrated += 1
+                    logger.warning(
+                        "模块 %s api_key 检测到双重 Fernet 加密，已解密一次并重加密（仅加密一次）",
+                        module.module_key,
+                    )
+                    continue
+
+                # 正常：已用当前密钥单次加密 → 跳过
+                continue
+
+            if migrated:
+                db.commit()
+                logger.info(f"Re-encrypted {migrated} LLM api_keys with current key")
+        except Exception as e:
+            logger.error(f"LLM api_key rekey migration failed: {e}")
+            db.rollback()
+        finally:
+            if close_db:
+                db.close()
+        return migrated
 
     @staticmethod
     def test_config(module_key: str, config_override: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

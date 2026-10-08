@@ -29,10 +29,10 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['subskin_logo.png', 'og-image.png', 'icons/*.png'],
       manifest: {
-        name: 'SubSkin更懂你',
+        name: 'SubSkin - 白癜风病友的AI记录和分享社区',
         short_name: 'SubSkin',
-        description: 'SubSkin更懂你。AI赋能的白癜风知识库与社区平台',
-        theme_color: '#26A69A',
+        description: '白癜风病友的AI记录和分享社区',
+        theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait-primary',
@@ -51,28 +51,13 @@ export default defineConfig({
           { src: './icons/maskable-512x512.png?v=c7f3a2', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: {
-        clientsClaim: true,
-        navigateFallbackDenylist: [/^\/wiki-content/, /^\/version\.json/],
+      workbox: undefined,
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      injectManifest: {
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https?:\/\/.*\/version\.json/i,
-            handler: 'NetworkOnly',
-          },
-          {
-            // All API calls: network-only, never cached (L3 data leakage on
-            // shared devices — see vite.config.ts for rationale).
-            urlPattern: /^https?:\/\/.*\/api\/.*/i,
-            handler: 'NetworkOnly',
-          },
-          {
-            // User uploads (L3): never cache.
-            urlPattern: /^https?:\/\/.*\/uploads\/.*/i,
-            handler: 'NetworkOnly',
-          },
-        ],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
       },
     }),
   ],

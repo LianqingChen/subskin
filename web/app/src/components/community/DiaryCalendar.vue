@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { communityApi } from '@/api/community'
+import { moodLabel } from '@/utils/mood'
 import type { DiaryCalendarEntry } from '@/api/community'
+import { getSkinReports, type SkinReportListItem } from '@/api/skin_report'
 
 const props = defineProps<{
   visible: boolean
@@ -16,6 +18,30 @@ const loading = ref(false)
 const currentDate = ref(new Date())
 const entries = ref<Record<string, DiaryCalendarEntry[]>>({})
 const selectedDate = ref<string | null>(null)
+
+// 最新报告摘要（日历顶部展示，与报告功能融合）
+const latestReport = ref<SkinReportListItem | null>(null)
+
+function reportTypeLabel(t: string): string {
+  return { weekly: '周报', monthly: '月报', comparison: '对比报告' }[t] || '报告'
+}
+
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })
+  } catch {
+    return ''
+  }
+}
+
+async function loadReportSummary() {
+  try {
+    const { data } = await getSkinReports({ limit: 1 })
+    latestReport.value = data.items?.[0] ?? null
+  } catch {
+    latestReport.value = null
+  }
+}
 
 const year = computed(() => currentDate.value.getFullYear())
 const month = computed(() => currentDate.value.getMonth() + 1)
@@ -119,7 +145,10 @@ onMounted(() => {
 })
 
 watch(() => props.visible, (v) => {
-  if (v) loadCalendar()
+  if (v) {
+    loadCalendar()
+    loadReportSummary()
+  }
 })
 </script>
 
@@ -128,6 +157,25 @@ watch(() => props.visible, (v) => {
     <div v-if="visible" class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div class="absolute inset-0 bg-black/40" @click="emit('close')"></div>
       <div class="relative w-full max-w-md mx-auto bg-white rounded-t-2xl md:rounded-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <!-- 最新报告摘要（融合报告功能） -->
+        <router-link
+          v-if="latestReport"
+          :to="`/community/reports/${latestReport.id}`"
+          class="block no-underline px-4 pt-3 pb-2.5 border-b border-gray-100 bg-primary-50/50"
+        >
+          <div class="flex items-center gap-1.5 text-[11px] text-gray-500">
+            <i class="ri-file-chart-2-line text-primary-500"></i>
+            <span>最新报告 · {{ reportTypeLabel(latestReport.report_type) }}</span>
+            <span v-if="latestReport.body_site_label" class="text-gray-400">· {{ latestReport.body_site_label }}</span>
+            <span class="ml-auto text-gray-400">{{ formatDate(latestReport.created_at) }}</span>
+          </div>
+          <div class="mt-1 flex items-center gap-2">
+            <span class="flex-1 min-w-0 text-sm font-medium text-gray-800 truncate">{{ latestReport.headline || latestReport.title }}</span>
+            <span v-if="latestReport.trend" class="shrink-0 text-xs text-primary-600">{{ latestReport.trend }}</span>
+          </div>
+          <div class="mt-0.5 text-[11px] text-primary-500">查看完整报告 <i class="ri-arrow-right-s-line align-middle"></i></div>
+        </router-link>
+
         <!-- Header -->
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <button @click="prevMonth" class="p-2 text-gray-500 hover:text-gray-900">
@@ -181,7 +229,7 @@ watch(() => props.visible, (v) => {
               </div>
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium text-gray-900 truncate">{{ entry.title }}</div>
-                <div class="text-xs text-gray-500">{{ getDiaryTypeLabel(entry.diary_type) }}{{ entry.mood ? ' · ' + entry.mood : '' }}</div>
+                <div class="text-xs text-gray-500">{{ getDiaryTypeLabel(entry.diary_type) }}{{ entry.mood ? ' · ' + moodLabel(entry.mood) : '' }}</div>
               </div>
               <i class="ri-arrow-right-s-line text-gray-400"></i>
             </button>

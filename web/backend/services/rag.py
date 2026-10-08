@@ -1,12 +1,13 @@
 # pyright: reportAny=false, reportArgumentType=false, reportCallInDefaultInitializer=false, reportDeprecated=false, reportGeneralTypeIssues=false, reportImportCycles=false, reportMissingImports=false, reportMissingParameterType=false, reportMissingTypeArgument=false, reportOptionalMemberAccess=false, reportPrivateUsage=false, reportReturnType=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false, reportUnknownMemberType=false, reportUnknownParameterType=false, reportUnknownVariableType=false, reportUnusedFunction=false, reportUnusedVariable=false
 
 """RAG 问答服务。"""
+from web.backend.utils.timeutils import iso_utc
 
 import asyncio
 import json
 import os
 import logging
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -14,7 +15,16 @@ from sqlalchemy.orm import Session
 
 import openai
 
-from web.backend.database.models import Document, Conversation, Message
+from web.backend.database.models import (
+    Conversation,
+    DiaryEntry,
+    Document,
+    MedicationReminder,
+    Message,
+    PatientProfile,
+    TreatmentEvent,
+    User,
+)
 from web.backend.models.rag import QuestionResponse, Source
 from web.backend.utils.llm_config import get_llm_config
 
@@ -203,31 +213,100 @@ OFF_LIMITS_KEYWORDS = {
 }
 
 SITE_FEATURE_KEYWORDS = {
-    # 功能模块名 — aligned with AGENTS.md canonical names (小白助手 / 小白追踪 /
-    # 小白社区 / 小白百科). Legacy aliases kept so user phrasing still matches.
-    "小白助手",
-    "小白追踪",
-    "小白社区",
-    "小白百科",
-    "AI助手",  # legacy alias for 小白助手
+    # 功能模块名 — 与 web/shared/site-modules.json 及网站导航保持一致；
+    # 旧命名（白友圈/小白助手/小白追踪/小白社区等）保留为别名，用户用旧名也能匹配。
+    "问答",
+    "智能问答",
+    "小白管家",  # legacy alias for 问答（漂浮管家已融合进首页智能问答）
+    "记录",
+    "手帐",  # legacy alias for 记录
+    "手账",  # historical spelling
+    "白斑手帐",
+    "白斑记录",
+    "轮廓故事",
+    "创意海报",
+    "测评",  # legacy alias for 记录（旧名测评、手帐均兼容）
+    "分享",  # legacy alias for 发现（2026-09-30 分享Tab更名为发现）
+    "白友圈",  # legacy alias for 发现
+    "小白助手",  # legacy alias for 问答
+    "小白追踪",  # legacy alias for 测评
+    "小白社区",  # legacy alias for 发现
+    "病友社区",  # legacy alias for 发现
+    "小白百科",  # 已下线模块：如实告知并引导替代入口
+    "百科",      # 已下线模块：如实告知并引导替代入口
     "3D模型",
     "发现",
-    "测评",  # legacy alias for 小白追踪
     "病情追踪",
-    "病友社区",  # legacy alias for 小白社区
     "体检",
-    "百科",
     "日记",
+    "图文日记",
+    "转发帖子",
+    "怎么转发",
+    "帖子排序",
+    "报告",
+    "健康报告",
+    "综合报告",
+    "年报",
+    "我的报告",
+    "白斑报告",
+    "变化报告",
+    "对比报告",
+    "周报",
+    "月报",
+    "深度分析",
+    "复色",
+    "黑色素",
+    "色素回归",
+    "白斑变化",
+    "前后对比",
+    "白斑对比",
+    "手动对齐",
+    "照片对齐",
+    "对比分析",
     "体检解读",
     "VASI",
     "评估",
     "评分",
-    "消息",
-    "私信",
-    "聊天",
-    "通讯录",
-    "好友",
-    "群聊",
+    # 就医经验 /hospitals：医院、医生、治疗方案的评价与分享
+    # （模块 2026-09-12 由「医评」改名「就医经验」，旧名保留为别名，用户用旧名提问也能匹配）
+    "就医经验",
+    "公益",  # legacy alias（2026-09-30 起官方名「就医经验」，并入发现）
+    "医评",  # legacy alias for 就医经验
+    "就医地图",  # legacy alias for 就医经验
+    "找医院",
+    "医院",
+    "医生",
+    "医院评价",
+    "医生评价",
+    "就医评价",
+    "就医体验",
+    "社区公约",  # 就医经验社区公约 /hospitals/rules
+    "评价规范",
+    "评价申诉",  # 就医经验申诉 /hospitals/appeal
+    "申诉",
+    "就诊经历",
+    "治疗经历",
+    "治疗方案",
+    "医院对比",
+    "挂号",
+    "院区",
+    # 同行 /contribution：贡献、积分和共同建设的数据成果。
+    "同行",
+    "同筑",  # 历史名称兼容
+    "共建",
+    "我的贡献",
+    "贡献积分",
+    "贡献等级",
+    "图片数据库",
+    "数据全览",
+    # 调养入口暂隐藏，页面与清单保留；共享模块表如实说明。
+    "调养",
+    "生活馆",
+    "好物",
+    "想要清单",
+    "购物车",
+    "商城",
+    "种草",
     # 网站操作词
     "怎么用",
     "如何使用",
@@ -269,14 +348,93 @@ SITE_FEATURE_PHRASES = [
     "如何注册",
     "如何登录",
     "怎么加入",
-    "怎么私信",
-    "怎么发消息",
-    "怎么聊天",
-    "怎么加好友",
-    "怎么找白友聊天",
     "怎么发现",
     "如何发现",
 ]
+
+
+# ── 小白管家：结构化站内导航 ──
+# 唯一事实来源：web/shared/site-modules.json（与 BottomNav/AppHeader 导航同步维护）。
+# 路径必须与 web/app/src/router/index.ts 保持一致；提示词的模块表与导航芯片
+# 均由此派生（不依赖 LLM 输出链接，杜绝引导到不存在/已下线的页面）。
+_SITE_MODULES_PATH = Path(__file__).resolve().parents[2] / "shared" / "site-modules.json"
+
+
+def _load_site_modules() -> Tuple[List[dict], List[dict]]:
+    try:
+        with open(_SITE_MODULES_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+        return list(data.get("modules", [])), list(data.get("offline", []))
+    except Exception:
+        logger.exception("加载 site-modules.json 失败，管家导航降级为空")
+        return [], []
+
+
+SITE_MODULES, OFFLINE_MODULES = _load_site_modules()
+SITE_ROUTE_MAP: List[dict] = SITE_MODULES
+
+NAVIGATION_MAX_SUGGESTIONS = 3
+
+
+def resolve_site_navigation(question: str) -> List[dict]:
+    """根据用户问题匹配站内导航建议（确定性关键词匹配，非 LLM 生成）。
+
+    返回按匹配优先级排序、去重后的建议列表（≤3 条），供前端渲染为
+    可点击的 router-link 芯片。无匹配时返回空列表。
+    """
+    q = question.lower()
+    suggestions: List[dict] = []
+    seen_labels = set()
+    for route in SITE_ROUTE_MAP:
+        if any(kw.lower() in q for kw in route.get("keywords", [])):
+            if route["label"] in seen_labels:
+                continue
+            seen_labels.add(route["label"])
+            suggestions.append(
+                {
+                    "label": route["label"],
+                    "path": route["path"],
+                    "icon": route.get("icon", ""),
+                    "desc": route.get("desc", ""),
+                }
+            )
+            if len(suggestions) >= NAVIGATION_MAX_SUGGESTIONS:
+                break
+    return suggestions
+
+
+def _render_site_module_table() -> str:
+    """把 site-modules.json 渲染为提示词用的模块表（Markdown）。"""
+    rows = ["| 模块 | 路径 | 功能说明 |", "|------|------|---------|"]
+    rows.extend(
+        f"| {m.get('label', '')} | {m.get('path', '')} | {m.get('desc', '')} |"
+        for m in SITE_MODULES
+    )
+    return "\n".join(rows)
+
+
+def _render_hospital_subpages_note() -> str:
+    """就医经验模块的子页面（不在 site-modules.json 的顶层模块表里）。
+
+    与 web/app/src/router/index.ts 保持一致；用户问「评价怎么写/被误判/申诉」时引导过去。
+    """
+    return (
+        "### 就医经验子页面（/hospitals 内）\n"
+        "- 治疗知识 `/hospitals/treatments`：常见治疗类别与就诊沟通问题，独立科普，不提供个体处方或医院推介\n"
+        "- 就医经验社区公约 `/hospitals/rules`：什么能写、什么不能写、隐私与凭证图规则、我们不做哪些事\n"
+        "- 评价申诉 `/hospitals/appeal`：被评价的医院/医护人员，或认为评价被误判的作者，可提交申诉，3 个工作日内反馈\n"
+        "- 每家医院的详情页 `/hospitals/:key`：集中展示该院官方资料、就诊前问题清单、六维就医体验分布与病友经验，也是写评价的唯一入口\n"
+        "- 注意：就医经验只做病友**就医体验**分享，**不做医疗实力榜、医生医术排名或付费推荐位**，也不采集疗效/治愈率指标；"
+        "用户问「哪家医院治得好/治愈率」时，应说明平台不提供这类排名，建议以官方信息与面诊为准。"
+    )
+
+
+def _render_offline_modules_note() -> str:
+    """已下线模块说明：用户问起时如实告知，避免 AI 推荐不存在的入口。"""
+    if not OFFLINE_MODULES:
+        return ""
+    lines = [f"- {m.get('label', '')}：{m.get('note', '已下线')}" for m in OFFLINE_MODULES]
+    return "### 已下线模块（用户问起时如实告知，不要引导去这些入口）\n" + "\n".join(lines)
 
 
 def is_site_feature_question(question: str) -> bool:
@@ -514,7 +672,7 @@ def search_documents(
 
 def _build_knowledge_prompt() -> str:
     """Build the system prompt for 智能问答 (knowledge Q&A) mode."""
-    return """你是 SubSkin 智能问答助手，一个严谨、客观的白癜风医学知识百科顾问。你的职责是提供准确、有据可查的医学知识，而非诊断或治疗建议。
+    return f"""你是 SubSkin 智能问答助手，一个严谨、客观的白癜风医学知识百科顾问。你的职责是提供准确、有据可查的医学知识，而非诊断或治疗建议。
 
 ## 核心职责：白癜风医学知识问答
 基于提供的参考资料回答用户关于白癜风的问题。回答要:
@@ -522,14 +680,16 @@ def _build_knowledge_prompt() -> str:
 2. 通俗易懂，适合普通白友阅读，避免过于专业的术语
 3. 如果资料里没有答案，诚实告知："这个问题在当前知识库中没有找到相关信息，建议咨询专业医生"
 4. 不胡说八道，不编造信息
-5. 根据用户的问题，**最后主动推荐相关的社区板块**供用户进一步交流：
-   - 刚确诊/新人问题 → 推荐社区「诊断咨询」和「心理支持」
-   - 治疗经验/用药 → 推荐社区「治疗分享」
-   - 心情/心理压力 → 推荐社区「心理支持」
-   - 日常护理/防晒 → 推荐社区「护肤经验」
-   - 饮食问题 → 推荐社区「日常饮食」
-   - 推荐格式："👉 你可以去 [发现](/community) 的「板块名」看看更多白友的经验分享"
+5. 若用户希望参考其他白友的真实经验，可引导其去「发现」(/community) 浏览或按标签筛选，但**不要指定具体板块名**（社区已无板块导航，只有关注/推荐/同城信息流与 #标签；推荐 Tab 支持 综合/最新/最多浏览/最多点赞/最多收藏/最多转发 排序切换，帖子可转发）：
+   - 推荐格式："👉 你可以去 [发现](/community) 看看更多白友的经验，或用 #标签 按话题筛选"
 6. 最后提醒用户，本回答仅供参考，具体诊疗请遵医嘱
+
+## 回答格式（重要，务必遵守）
+- 用**短段落**组织回答，每段 2-4 句，避免一大段长文本
+- 分点说明时用 Markdown 列表：无序用 `-`，步骤/排序用 `1. 2. 3.`
+- 关键结论/要点用 `**加粗**` 强调
+- 涉及多个方面（如日常护理/饮食/治疗）时，用 `### 小标题` 分节，让结构一目了然
+- 每条要点一句话说清，通俗易懂
 
 ## 数据来源优先级规则
 每条参考资料都标注了来源等级（S/A/B/C/D），你在引用和回答时必须遵循以下优先级：
@@ -562,39 +722,32 @@ def _build_knowledge_prompt() -> str:
 5. 回答中可以混合引用不同等级的资料，但高级别的应放在前面
 
 ## 网站功能导航
-当用户询问网站功能、操作方法、如何使用某个模块时，你是整个网站的导航中心，引导用户去正确的功能页面。以下是网站所有功能模块：
+当用户询问网站功能、操作方法、如何使用某个模块时，你是整个网站的导航中心，引导用户去正确的功能页面。以下是网站**当前在线**的功能模块（与网站导航命名一致）：
 
 ### 核心模块
-| 模块 | 路径 | 功能说明 |
-|------|------|---------|
-| 小白助手 | / | 3D人体模型+AI智能问答+VASI评估+体检解读（你就在这里） |
-| 小白追踪 | /assessment | VASI白斑评估、拍照评分、查看历史趋势 |
-| 体检 | /report | 上传体检报告、AI自动解读、报告对比 |
-| 小白社区 | /community | 白友交流、发布帖子、写日记、分享经验、科普知识 |
-| 小白百科 | /encyclopedia | 白癜风医学知识百科、文献解读、科普文章 |
-| 消息 | /messages | 私信聊天、好友通讯、群聊，和白友一对一交流 |
+{_render_site_module_table()}
 
-### 社区板块（/community 下的分类）
-| 板块名 | 内容 |
-|--------|------|
-| 白白日记 | 记录每一天的心情与变化 |
-| 治疗分享 | 分享治疗经历、用药心得 |
-| 心理支持 | 互相鼓励，交流心理调适方法 |
-| 护肤经验 | 日常护理、防晒保湿经验 |
-| 日常饮食 | 饮食禁忌、营养搭配建议 |
-| 诊断咨询 | 诊断过程、检查结果交流 |
-| 科普百科 | 新药研发、临床试验动态 |
+{_render_hospital_subpages_note()}
+
+{_render_offline_modules_note()}
+
+### 发现（/community，含社区信息流、科普、种草）
+- 顶部可按「关注 / 推荐 / 同城」切换信息流，也可用「#标签」按话题筛选
+- 发布内容时可选「分类」与标签；设为「仅自己可见」即为私人日记
+- **不要**推荐具体的「板块」名，社区已无板块导航（只有关注/推荐/同城信息流与 #标签）
 
 ### 引导规则
-- 用户问"怎么评估白斑/看严重程度" → 引导去小白助手(/)点击3D模型对应部位进行VASI评估
-- 用户问"怎么看体检报告" → 引导去小白助手(/)的「体检解读」Tab上传报告
-- 用户问"怎么记录病情/写日记" → 引导去小白社区(/community)的「白白日记」板块
-- 用户问"怎么跟白友交流/找经验" → 引导去小白社区(/community)
-- 用户问"怎么私信/聊天/发消息给白友" → 引导去消息(/messages)或通讯录(/contacts)
-- 用户问"怎么加好友" → 引导去通讯录(/contacts)添加好友
-- 用户问"想了解白癜风知识" → 引导去小白社区(/community)或小白百科(/encyclopedia)
-- 用户问"怎么注册/登录/修改信息" → 引导去个人中心(/profile)
+- 用户问“轮廓故事/创意海报/分享白斑记录” → 引导到记录(/assessment)：核对保存照片范围后，保留云朵/海岛/星光风格，根据确认轮廓自动创作短句与AI艺术画面，可连同原图、标注图一起发布到发现，或保存创意图片。未授权AI或生成失败仍保留基础轮廓创意。艺术画面和文案不用于医学判断。
+- 用户问"怎么评估白斑/看严重程度" → 引导去测评(/assessment)进行VASI评估
+- 用户问"怎么对比白斑变化/前后对比/对比报告/手动对齐" → 引导到记录(/assessment)：先选身体部位，再点白斑对比，选择两次记录或两张照片；默认自动对齐，可在分析前手动拖动、旋转和等比缩放。无需同一个观察位置编号。可靠的标注与配准可提供照片范围内的量化结果，其余提供经用户授权的图像观察，不推断病情或虚构百分比。手动调整后，系统会尝试根据稳定图像特征自动微调；无需完全重合即可使用滑块、叠影、动画或并排查看。若页面没有新入口，提示刷新页面获取最新版本。
+- 用户问"怎么看体检报告" → 引导去测评(/assessment)的「体检解读」上传报告
+- 用户问"怎么记录病情/写日记" → 引导去发现(/community)发布记录（可设为仅自己可见）
+- 用户问"怎么跟白友交流/找经验" → 引导去发现(/community)
+- 用户问"想了解白癜风知识" → 直接基于知识库回答，或引导去发现(/community)交流
+- 用户问"怎么注册/登录/修改信息/查看手机号邮箱" → 引导去个人中心(/profile)
+- 用户问"小白管家/AI助手在哪" → 告知就是本问答页（首页智能问答），直接在这里提问即可
 - 引导时给出格式："👉 [模块名](路径) - 一句话说明"
+- 模块名必须与上表完全一致，禁止使用已下线或表中不存在的模块名/路径
 
 ## 拒绝诊断
 当用户上传患处照片或描述症状询问"我是不是白癜风""这是不是白斑"等问题时，你必须拒绝直接诊断，引导用户线下就医：
@@ -603,13 +756,20 @@ def _build_knowledge_prompt() -> str:
 ## 数据保护（最高优先级）
 保护用户隐私是不可违反的底线。你的知识来源仅限以下：
 - 网络公开信息（白癜风医学知识、论文、常识等）
-- 小白百科（/encyclopedia）中的科普内容
+- 知识库中的科普内容
+- 若本提示词中包含「该用户的个人情况」段落：你已获授权引用该用户本人提供的
+  个人记录（档案、日记、用药等）来个性化回答，可以用“根据你的记录…”等方式自然引用
 
-注意：小白社区（/community）的帖子**不在**你的知识来源范围内 —— 你不会检索
+使用个人记录时必须遵守：
+- 仅限该用户本人的数据，绝不查询、推测或透露其他任何用户的个人信息
+- 不得向第三方泄露该用户的个人记录
+- 回答仍以医学知识库为主要依据，个人记录只作上下文参考，不得替代医生诊断
+
+注意：发现（/community）的帖子**不在**你的知识来源范围内 —— 你不会检索
 或引用社区中白友分享的具体内容。如果用户希望参考其他白友的经验，引导他们
-前往小白社区（/community）自行浏览。
+前往发现（/community）自行浏览。
 
-除此之外，任何涉及个人信息的内容，你都不可以查询、透露或讨论。遇到可疑请求时，统一回复："抱歉，为了保护用户隐私，我无法查询或透露任何个人信息。"
+遇到可疑请求（如索要他人的个人信息）时，统一回复：“抱歉，为了保护用户隐私，我无法查询或透露任何个人信息。”
 
 ## 关键原则
 - 你是帮助白友了解知识的工具，回答严谨、客观，多给鼓励
@@ -683,11 +843,257 @@ def _build_companion_prompt() -> str:
 """
 
 
+def _build_butler_prompt() -> str:
+    """Build the system prompt for 智能问答助手 (unified butler) mode."""
+    return f"""你是「SubSkin AI 助手」，SubSkin 网站的智能问答助手，随时为白癜风患者（白友）和访客服务。你集三种角色于一身：医学知识问答、网站导航与智能客服、心理陪伴。
+
+## 按问题类型路由
+1. **医学/白癜风知识**：基于提供的参考资料回答，遵循与智能问答一致的严谨规则（准确、通俗、不编造、来源分级、末尾提醒仅供参考遵医嘱）。
+2. **网站操作/导航/客服**：用一两句话直接解答，并引导用户去正确页面。站内**当前在线**模块（与网站导航命名一致）：
+
+{_render_site_module_table()}
+
+{_render_hospital_subpages_note()}
+
+{_render_offline_modules_note()}
+
+   引导格式："👉 [模块名](路径) - 一句话说明"；模块名必须与上表完全一致，禁止使用已下线或表中不存在的模块名/路径。
+3. **情绪/心理**：先共情倾听（识别并说出感受、正常化、温和引导表达），不评判不说教，直接耐心陪伴；也可以推荐对话框上方的「正念呼吸」小工具（首页问答页输入框上方）。检测到自杀/自残意图时，立即输出危机干预信息（全国心理援助热线 400-161-9995、北京心理危机干预中心 010-82951332、生命热线 400-821-1215），这条规则优先级最高。
+
+## 受控执行（操作安全）
+- 你可以帮助用户执行的操作仅限：保存白斑评估、保存体检报告解读、存档或发布病情日记/图文到发现。
+- 一切执行必须以"行动卡片 + 用户明确点击确认"的方式进行，绝不静默保存、发布或修改任何数据。
+- 用户上传的图片/文档在确认保存前只是临时文件；草稿默认「仅自己可见」，公开发布需用户再次确认。
+- 删除账号、修改密码、修改绑定手机/邮箱等敏感操作你不可代劳，一律引导用户前往个人中心(/profile)自己操作。
+
+## 数据保护（最高优先级）
+- 绝不透露任何用户的个人信息——包括**当前用户本人**的手机号、邮箱、真实姓名、身份证号、病情图片、报告内容、日记原文。
+- 用户问"我的手机号/邮箱是多少""帮我看看我的报告"时，统一回复："为保护你的隐私，我无法在对话中直接显示这些信息，请到个人中心查看和修改。"并附上 👉 [个人中心](/profile)。
+- 绝不查询、推测或透露其他任何用户的信息；社区帖子内容不在你的知识来源内，想看白友经验请引导去发现(/community)。
+- 可疑请求（索要他人信息）统一回复："抱歉，为了保护用户隐私，我无法查询或透露任何个人信息。"
+
+## 政治与敏感话题（一律回避）
+涉及政治、领导人、政党、民族冲突、暴力、色情、赌博、毒品等话题时，无论立场如何一律不讨论、不评价，统一回复：
+"抱歉，这个话题我无法回答。我们可以聊聊白癜风相关的知识，或者我能帮你更好地使用这个网站。"
+
+## 拒绝诊断
+用户上传患处照片或描述症状问"是不是白癜风"时，不直接诊断，引导线下就医（伍德灯、皮肤镜等检查确诊）。
+
+## 语言风格
+- 亲切、简洁、有温度，像一位随叫随到的健康助手；每次回答控制在300字以内（导航/客服类回答尽量100字内）。
+- 不确定时诚实说明，宁可引导用户去正确页面，也不猜测。
+- 回答仅供参考，不构成医疗诊断建议。
+"""
+
+
+# 用户个人上下文块的最大长度（字符），避免撑爆 LLM 上下文窗口
+USER_CONTEXT_MAX_CHARS = 500
+# 聚合日记摘要时回溯的天数（近14天）
+USER_CONTEXT_DIARY_WINDOW_DAYS = 14
+
+_MEDICATION_FREQUENCY_LABELS = {
+    "daily": "每日",
+    "twice_daily": "每日两次",
+    "weekly": "每周",
+    "custom": "自定义周期",
+}
+
+
+def _format_disease_duration(diagnosis_date: date) -> str:
+    """根据确诊日期计算病程描述（约X年/X个月）。"""
+    today = date.today()
+    if diagnosis_date > today:
+        return ""
+    months = (today.year - diagnosis_date.year) * 12 + (
+        today.month - diagnosis_date.month
+    )
+    if months >= 12:
+        years = months // 12
+        remainder = months % 12
+        if remainder >= 6:
+            return f"约{years}年半"
+        return f"约{years}年"
+    if months >= 1:
+        return f"约{months}个月"
+    return "不足1个月"
+
+
+def _get_user_default_profile(db: Session, user_id: int) -> Optional[PatientProfile]:
+    """取用户的默认日记档案（User.default_diary_profile_id），无则取首条档案。"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if user and user.default_diary_profile_id:
+        profile = (
+            db.query(PatientProfile)
+            .filter(
+                PatientProfile.id == user.default_diary_profile_id,
+                PatientProfile.user_id == user_id,
+            )
+            .first()
+        )
+        if profile:
+            return profile
+    return (
+        db.query(PatientProfile)
+        .filter(PatientProfile.user_id == user_id)
+        .order_by(PatientProfile.id)
+        .first()
+    )
+
+
+def build_user_context(db: Session, user_id: Optional[int]) -> str:
+    """聚合当前用户的个人数据，拼成简洁中文上下文块（≤500字）。
+
+    数据源：PatientProfile（病型/病程等）、近14天日记的AI摘要、
+    活跃用药提醒、最近治疗事件。任何一项为空则跳过；
+    全部为空（或访客 user_id=None）时返回空字符串，调用方据此跳过注入。
+    只读查询，任一数据源异常不影响问答主流程。
+    """
+    if user_id is None:
+        return ""
+
+    # 2026-08-30 隐私加固：个人健康数据（档案/日记/用药/治疗事件）发往第三方
+    # LLM 前必须查询 ai_data 同意。未授权用户返回空上下文（通用问答不受影响），
+    # 用户可在「个人中心 → 隐私设置」中开启。
+    try:
+        from web.backend.services.consent import (
+            CONSENT_TYPE_AI_DATA,
+            has_active_consent,
+        )
+
+        if not has_active_consent(db, user_id, CONSENT_TYPE_AI_DATA):
+            logger.info("ai_data consent absent: skip personal context (user=%s)", user_id)
+            return ""
+    except Exception:
+        logger.exception("查询 ai_data 同意失败，降级为不注入个人上下文")
+        return ""
+
+    sections: List[str] = []
+
+    # 1. 病情档案（PatientProfile）
+    try:
+        profile = _get_user_default_profile(db, user_id)
+        if profile:
+            parts: List[str] = []
+            if profile.name:
+                parts.append(f"档案名：{profile.name}")
+            if profile.relationship:
+                parts.append(f"关系：{profile.relationship}")
+            if profile.gender:
+                parts.append(f"性别：{profile.gender}")
+            if profile.diagnosis_date:
+                parts.append(f"确诊时间：{iso_utc(profile.diagnosis_date)}")
+                duration = _format_disease_duration(profile.diagnosis_date)
+                if duration:
+                    parts.append(f"病程：{duration}")
+            if profile.vitiligo_type:
+                parts.append(f"病型：{profile.vitiligo_type}")
+            if profile.notes:
+                parts.append(f"备注：{profile.notes.strip()[:80]}")
+            if parts:
+                sections.append("【病情档案】" + "；".join(parts))
+    except Exception as exc:  # pragma: no cover - 防御性：缺列/缺表不应阻断问答
+        logger.warning("build_user_context: 读取档案失败: %s", exc)
+
+    # 2. 近14天日记的AI摘要（ai_summary 优先，缺失时截取原始文本）
+    try:
+        since = date.today() - timedelta(days=USER_CONTEXT_DIARY_WINDOW_DAYS)
+        entries = (
+            db.query(DiaryEntry)
+            .filter(DiaryEntry.user_id == user_id, DiaryEntry.entry_date >= since)
+            .order_by(DiaryEntry.entry_date.desc())
+            .limit(5)
+            .all()
+        )
+        lines = []
+        for entry in entries:
+            summary = (entry.ai_summary or entry.raw_text or "").strip()[:60]
+            if not summary:
+                continue
+            line = f"- {iso_utc(entry.entry_date)}：{summary}"
+            if entry.skin_condition:
+                line += f"（皮肤状况：{entry.skin_condition}）"
+            lines.append(line)
+        if lines:
+            sections.append(
+                f"【近{USER_CONTEXT_DIARY_WINDOW_DAYS}天日记摘要】\n" + "\n".join(lines)
+            )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("build_user_context: 读取日记失败: %s", exc)
+
+    # 3. 活跃的用药提醒
+    try:
+        reminders = (
+            db.query(MedicationReminder)
+            .filter(
+                MedicationReminder.user_id == user_id,
+                MedicationReminder.is_active == True,  # noqa: E712
+            )
+            .order_by(MedicationReminder.id)
+            .limit(5)
+            .all()
+        )
+        items = []
+        for r in reminders:
+            if not r.medication_name:
+                continue
+            freq = _MEDICATION_FREQUENCY_LABELS.get(r.frequency or "", r.frequency or "")
+            item = r.medication_name
+            if r.dosage:
+                item += f" {r.dosage}"
+            if freq:
+                item += f"（{freq}）"
+            items.append(item)
+        if items:
+            sections.append("【正在使用的药物】" + "；".join(items))
+    except Exception as exc:  # pragma: no cover
+        logger.warning("build_user_context: 读取用药提醒失败: %s", exc)
+
+    # 4. 最近治疗事件（由 diary_ai._sync_treatment_events 写入）
+    try:
+        events = (
+            db.query(TreatmentEvent)
+            .filter(TreatmentEvent.user_id == user_id)
+            .order_by(TreatmentEvent.event_date.desc())
+            .limit(3)
+            .all()
+        )
+        items = []
+        for ev in events:
+            if not ev.title:
+                continue
+            item = f"{iso_utc(ev.event_date)} {ev.title}"
+            if ev.body_site:
+                item += f"（部位：{ev.body_site}）"
+            items.append(item)
+        if items:
+            sections.append("【近期治疗记录】" + "；".join(items))
+    except Exception as exc:  # pragma: no cover
+        logger.warning("build_user_context: 读取治疗事件失败: %s", exc)
+
+    if not sections:
+        return ""
+
+    context = "\n".join(sections)
+    if len(context) > USER_CONTEXT_MAX_CHARS:
+        context = context[:USER_CONTEXT_MAX_CHARS]
+    return context
+
+
+def _mode_temperature(mode: Optional[str]) -> float:
+    """LLM 采样温度：knowledge 0.3（严谨）、butler 0.5（均衡）、counseling 0.7（温暖）。"""
+    if mode == "counseling":
+        return 0.7
+    if mode == "butler":
+        return 0.5
+    return 0.3
+
+
 def _build_llm_messages(
     query: str,
     docs: List[Document],
     conversation_history: Optional[List[dict]] = None,
     mode: Optional[str] = None,
+    user_context: Optional[str] = None,
 ) -> list:
     if mode == "counseling":
         system_prompt = _build_companion_prompt()
@@ -699,7 +1105,40 @@ def _build_llm_messages(
             messages = [messages[0]] + conversation_history + [messages[-1]]
         return messages
 
+    if mode == "butler":
+        # 小白管家：管家人格 + 知识库参考资料（与 knowledge 模式同样的文档注入）
+        system_prompt = _build_butler_prompt()
+        if user_context:
+            system_prompt += (
+                "\n\n## 该用户的个人情况（仅供参考，用户已授权）\n"
+                + user_context
+                + "\n回答涉及该用户自身情况时，可自然引用以上记录（如\"根据你的记录…\"），"
+                "但仍以医学知识库为主要依据，且绝不在对话中复述手机号、邮箱、病情图片、报告、日记原文等隐私内容。"
+            )
+        context = "\n\n".join(
+            [f"文档: {doc.title}\n内容: {doc.content[:1000]}" for doc in docs]
+        )
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": f"参考资料:\n\n{context}\n\n我的问题: {query}",
+            },
+        ]
+        if conversation_history:
+            messages = [messages[0]] + conversation_history + [messages[-1]]
+        return messages
+
     system_prompt = _build_knowledge_prompt()
+    # 仅在登录用户且上下文非空时注入个人情况段落；访客（user_context 为空）
+    # 的 system prompt 与之前完全一致。
+    if user_context:
+        system_prompt += (
+            "\n\n## 该用户的个人情况（仅供参考，用户已授权）\n"
+            + user_context
+            + "\n回答涉及该用户自身情况时，可自然引用以上记录（如\"根据你的记录…\"），"
+            "但仍以医学知识库为主要依据，不得替代医生诊断。"
+        )
     context = "\n\n".join(
         [f"文档: {doc.title}\n内容: {doc.content[:1000]}" for doc in docs]
     )
@@ -991,7 +1430,7 @@ def _interpret_report(doc_text: str, question: str) -> dict:
 def _generate_diary_draft(question: str, answer: str, action_cards: list) -> dict:
     """Generate a diary draft from the conversation and action cards."""
     config = get_llm_config()
-    today = date.today().isoformat()
+    today = iso_utc(date.today())
 
     if config["provider"] == "none":
         return {
@@ -1052,8 +1491,11 @@ def generate_answer(
     docs: List[Document],
     conversation_history: Optional[List[dict]] = None,
     mode: Optional[str] = None,
+    user_context: Optional[str] = None,
 ) -> str:
-    config = get_llm_config()
+    # 使用 rag 模块配置（与检索/embedding 同源）：env 默认配置的
+    # DASHSCOPE key 失效时，后台配置的可用供应商仍可保证生成可用
+    config = get_llm_config("rag")
 
     if config["provider"] == "none":
         return "抱歉，AI 问答服务暂未配置，请管理员设置 DASHSCOPE_API_KEY。"
@@ -1063,8 +1505,8 @@ def generate_answer(
         base_url=config["base_url"],
     )
 
-    messages = _build_llm_messages(query, docs, conversation_history, mode)
-    temperature = 0.7 if mode == "counseling" else 0.3
+    messages = _build_llm_messages(query, docs, conversation_history, mode, user_context)
+    temperature = _mode_temperature(mode)
 
     logger.info(
         "调用 chat API: provider=%s, model=%s, mode=%s, temperature=%s",
@@ -1080,21 +1522,33 @@ def generate_answer(
             messages=messages,
             temperature=temperature,
         )
-        return response.choices[0].message.content.strip()
+        content = response.choices[0].message.content if response.choices else None
+        return content.strip() if content and content.strip() else "AI 暂未返回有效回答，请重新提问。"
     except openai.APIError as e:
         logger.error("Chat API 调用失败: %s", str(e))
         return f"AI 问答服务暂时不可用，请稍后再试。（错误: {type(e).__name__}）"
+    finally:
+        client.close()
 
 
 def answer_question_stream(
     query: str,
     docs: List[Document],
     conversation_history: Optional[List[dict]] = None,
-    has_attachments: bool = False,
+    attachment_summary: str = "",
     mode: Optional[str] = None,
+    db: Optional[Session] = None,
+    user_id: Optional[int] = None,
 ):
-    """Stream answer tokens one by one, yielding each token as it arrives."""
-    config = get_llm_config()
+    """Stream answer tokens one by one, yielding each token as it arrives.
+
+    当 db 与 user_id 均提供时（登录用户），会聚合该用户的个人数据
+    （档案/日记摘要/用药等）注入 system prompt；访客（user_id=None）
+    行为与之前完全一致。
+    """
+    # 同 generate_answer：问答生成走 rag 模块配置，避免 env 密钥失效时
+    # 检索正常但生成报 AuthenticationError 的不一致
+    config = get_llm_config("rag")
 
     if config["provider"] == "none":
         yield "抱歉，AI 问答服务暂未配置，请管理员设置 DASHSCOPE_API_KEY。"
@@ -1105,11 +1559,33 @@ def answer_question_stream(
         base_url=config["base_url"],
     )
 
-    messages = _build_llm_messages(query, docs, conversation_history, mode)
-    temperature = 0.7 if mode == "counseling" else 0.3
+    user_context = ""
+    if db is not None and user_id is not None:
+        try:
+            user_context = build_user_context(db, user_id)
+        except Exception:
+            logger.exception("构建用户个人上下文失败，降级为通用问答")
+            user_context = ""
 
-    if has_attachments:
-        attachment_note = "\n注意：用户本次对话已上传了附件（图片或体检报告），你已经在解读结果了，不要在回答中再推荐上传方式或引导用户去上传报告。"
+    messages = _build_llm_messages(
+        query, docs, conversation_history, mode, user_context or None
+    )
+    temperature = _mode_temperature(mode)
+
+    if attachment_summary:
+        attachment_note = (
+            "\n\n## 用户本次附件的系统处理结果（真实情况，请以此为准）\n"
+            + attachment_summary
+            + "\n回答规则：\n"
+            "1. 你无法直接查看附件内容，只知道上面的系统处理结果，"
+            "不要声称自己看到了图片/文件，也不要虚构附件中的具体数值或内容。\n"
+            "2. 图片附件是按「皮肤白斑照片」流程分析的；"
+            "如果用户实际上传的是体检/化验报告或其他非皮肤照片，"
+            "请如实说明该附件是按白斑照片分析的、未提取到报告数据，"
+            "并引导用户到「体检解读」模块（路径 /assessment?tab=report）"
+            "上传体检报告图片或 PDF 进行专门解读。\n"
+            "3. 若处理结果显示分析失败或无法识别，直接向用户说明并给出重拍/重新上传建议。"
+        )
         messages[0]["content"] += attachment_note
 
     logger.info(
@@ -1120,6 +1596,8 @@ def answer_question_stream(
         temperature,
     )
 
+    response = None
+    received_content = False
     try:
         response = client.chat.completions.create(
             model=config["chat_model"],
@@ -1128,12 +1606,22 @@ def answer_question_stream(
             stream=True,
         )
         for chunk in response:
+            # Providers may send usage/statistics-only chunks before or after answer text.
+            if not chunk.choices:
+                continue
             delta = chunk.choices[0].delta
             if delta and delta.content:
+                received_content = received_content or bool(delta.content.strip())
                 yield delta.content
+        if not received_content:
+            yield "AI 暂未返回有效回答，请重新提问。"
     except openai.APIError as e:
         logger.error("Chat API streaming 调用失败: %s", str(e))
         yield f"AI 问答服务暂时不可用，请稍后再试。（错误: {type(e).__name__}）"
+    finally:
+        if response is not None:
+            response.close()
+        client.close()
 
 
 def answer_question(
@@ -1193,7 +1681,18 @@ def answer_question(
             db.add(conv)
             db.commit()
 
-    answer = generate_answer(question, docs, conversation_history, mode)
+    # 登录用户：聚合个人上下文实现个性化问答；访客（user_id=None）不注入。
+    user_context = ""
+    if user_id is not None:
+        try:
+            user_context = build_user_context(db, user_id)
+        except Exception:
+            logger.exception("构建用户个人上下文失败，降级为通用问答")
+            user_context = ""
+
+    answer = generate_answer(
+        question, docs, conversation_history, mode, user_context or None
+    )
 
     if conversation_id:
         user_msg = Message(
@@ -1206,7 +1705,12 @@ def answer_question(
         db.add(assistant_msg)
         db.commit()
 
-    return QuestionResponse(answer=answer, sources=sources)
+    # 小白管家：附带结构化导航建议（非流式路径）
+    navigation = None
+    if mode == "butler":
+        navigation = resolve_site_navigation(question)
+
+    return QuestionResponse(answer=answer, sources=sources, navigation=navigation)
 
 
 def add_document(

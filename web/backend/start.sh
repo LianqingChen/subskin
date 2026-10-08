@@ -19,4 +19,4 @@ RELOAD_FLAG=""
 if [ "${RELOAD:-1}" = "1" ]; then
   RELOAD_FLAG="--reload"
 fi
-uvicorn app.main:app --host "$HOST" --port 8000 $RELOAD_FLAG
+uvicorn app.main:app --host "$HOST" --port 8000 --proxy-headers --forwarded-allow-ips=127.0.0.1 $RELOAD_FLAG

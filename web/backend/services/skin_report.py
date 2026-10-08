@@ -649,6 +649,7 @@ def generate_comparison_report(
     profile_id: Optional[int] = None,
     report_row: Optional[Any] = None,
     vasi_ids: Optional[List[int]] = None,
+    manual_alignment: Optional[Dict[str, Any]] = None,
 ):
     """生成对比报告（第一期核心）。
 
@@ -738,20 +739,12 @@ def generate_comparison_report(
     from web.backend.services.spot_compare import resolve_image_bytes
 
     refs = [f"{ref_prefix}:{img.id}" for img in images]
-    first_last_pair = None
-    try:
-        from web.backend.services.spot_compare import compare_pair
-
-        first_last_pair = compare_pair(db, user_id, refs[0], refs[-1])
-    except Exception:
-        logger.warning("skin_report: 首末配对识别失败", exc_info=True)
-    if first_last_pair:
-        metrics["pair_metrics"] = first_last_pair.get("merged") or None
-        metrics["trend"] = (metrics["pair_metrics"] or {}).get("trend", "无法可靠比较")
-        metrics["comparison_status"] = (metrics["pair_metrics"] or {}).get("comparison_status", "not_comparable")
-
-    from web.backend.services.assessment_comparison import save_comparison_preview
-    metrics["pair_align"] = save_comparison_preview(db, user_id, first_last_pair)
+    from web.backend.services.comparison_alignment import compare_report_pair
+    first_last_pair, preview = compare_report_pair(db, user_id, refs[0], refs[-1], manual_alignment)
+    metrics["pair_metrics"] = first_last_pair.get("merged") or None
+    metrics["trend"] = (metrics["pair_metrics"] or {}).get("trend", "图像观察")
+    metrics["comparison_status"] = (metrics["pair_metrics"] or {}).get("comparison_status", "visual_only")
+    metrics["pair_align"] = preview
 
     # 时间轴帧：日期切换器的数据源（不再生成照片堆叠图）
     metrics["timeline_frames"] = [
@@ -775,6 +768,7 @@ def generate_comparison_report(
 
     title = f"{site_label}白斑变化报告 {d_start.strftime('%m.%d')}-{d_end.strftime('%m.%d')}"
 
+    metrics["generated_at"] = datetime.utcnow().isoformat() + "Z"
     if report_row is not None:
         # 异步生成：复用 generating 状态的行
         report = report_row
@@ -1556,6 +1550,7 @@ def generate_periodic_report(
         "treatment_events": treatment_ctx,
     }
 
+    metrics["generated_at"] = datetime.utcnow().isoformat() + "Z"
     if report_row is not None:
         report = report_row
         report.title = title
@@ -1735,6 +1730,7 @@ def synthesize_reports(db, user_id: int, report_ids: List[int]) -> SkinReport:
     title = f"历史报告对比 · {len(reports)}份"
 
     metrics = {
+        "generated_at": datetime.utcnow().isoformat() + "Z",
         "trend": "对比",
         "headline": llm_result.get("headline"),
         "sources": summaries,

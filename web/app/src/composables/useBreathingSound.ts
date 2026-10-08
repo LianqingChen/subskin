@@ -107,6 +107,7 @@ const fishPatterns: Record<number, number[]> = {
   0: [0, 1, 2, 3],                              // 吸气 4s：每秒一次
   1: [0, 1, 2, 3],                              // 屏息 4s：每秒一次
   2: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5], // 呼气 6s：每0.5秒一次
+  3: [0, 1, 2, 3],                              // 屏息 4s：每秒一次
 }
 
 function playFishRhythm(phaseIndex: number) {

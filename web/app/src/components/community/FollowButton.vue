@@ -44,10 +44,10 @@ async function toggleFollow() {
 <template>
   <button
     v-if="authStore.isLoggedIn"
-    class="text-xs px-3 py-1 rounded-full font-medium transition-colors flex-shrink-0"
+    class="text-xs px-2.5 py-0.5 min-h-[28px] rounded-full font-medium transition-colors flex-shrink-0"
     :class="followed
-      ? 'bg-gray-100  text-gray-500  hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500'
-      : 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50'"
+      ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 border border-primary-200/70 dark:border-primary-700/40 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 hover:border-red-200'
+      : 'bg-primary-500 text-white hover:bg-primary-600 dark:hover:bg-primary-400'"
     @click.stop="toggleFollow"
     :disabled="loading"
   >

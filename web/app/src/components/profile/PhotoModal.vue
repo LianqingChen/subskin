@@ -42,7 +42,7 @@ const autoCompressPhotos = createStoredBoolean(STORAGE_KEYS.autoCompressPhotos, 
             <div><h3 class="text-sm font-medium text-gray-900">照片自动压缩</h3><p class="text-xs text-gray-500  mt-1">上传前自动压缩图片以节省流量</p></div>
             <button type="button" class="setting-switch" :class="autoCompressPhotos.value ? 'setting-switch-on' : 'setting-switch-off'" @click="autoCompressPhotos.value = !autoCompressPhotos.value"><span class="setting-switch-thumb" :class="autoCompressPhotos.value ? 'translate-x-7' : 'translate-x-0'" /></button>
           </div>
-          <div class="rounded-xl bg-primary-50 dark:bg-primary-900/20 p-4 text-sm text-gray-600 leading-6">你的照片仅存储在你的账户中，不会公开显示（除非你主动分享）</div>
+          <div class="rounded-xl bg-primary-50 dark:bg-primary-900 p-4 text-sm text-gray-600 leading-6">你的照片仅存储在你的账户中，不会公开显示（除非你主动分享）</div>
         </div>
       </div>
     </div>

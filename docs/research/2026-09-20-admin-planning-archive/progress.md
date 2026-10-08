@@ -1,0 +1,9 @@
+# Progress
+
+2026-09-20: Inspected relevant project skills, archive locations, standalone admin navigation/build/API authentication, and deployment history. Prepared research records. No application code modified, no deployment or backend restart performed. Next: present written design with shared-backend scope for required confirmation.
+
+Prepared docs/specs/2026-09-20-admin-planning-archive-design.md, including alternatives, source allowlist, UI behavior, historical fidelity, protected API design, verification, and explicit staging/shared-backend activation scope. Actual backend entry point is web/backend/app/main.py. Design self-review complete; implementation waits for required user confirmation.
+
+2026-09-21 implementation: Added read-only planning service and authenticated API, metadata/redaction layer, route registration, admin navigation, search/filter/list/reader UI and safe Markdown rendering. 25 backend boundary/API tests passed. First TypeScript check caught markdown-it renderer signature; corrected and type-check/build passed. Admin preview was built into the dedicated staging subdirectory. New markdown dependencies were checked with npm audit and are being upgraded to available patch fixes; unrelated pre-existing dependencies are not mass-upgraded. Native browser tool timed out, so UI verification will use a separate automated Chrome session with intercepted synthetic authentication, without obtaining patient credentials.
+
+Completed 2026-09-21: 26 backend tests, admin and main-app type checks, staging+admin-preview builds, and four-width browser verification passed. Fixed expired-session re-login, chapter scroll offsets, cross-directory topic association and preview SW scope. Shared backend active since 08:56:04 CST; live unauthenticated endpoints return401; health/PWA/public assets pass. Both production frontends unchanged. Added verification.md and deployment-history entry.

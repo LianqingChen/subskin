@@ -1,0 +1,208 @@
+[
+  {
+    "query": "GloW-VSNet",
+    "items": [
+      {
+        "id": "41468636",
+        "source": "MED",
+        "title": "GloW-VSNet: A scribble-based weakly supervised framework for global-view vitiligo lesion segmentation.",
+        "pubYear": "2026",
+        "doi": "10.1016/j.media.2025.103920",
+        "isOpenAccess": "N"
+      },
+      {
+        "id": "42140962",
+        "source": "MED",
+        "title": "Artificial intelligence with deep learning driven entropy-curvature attention mechanism for detection and segmentation of skin lesions using biomedical images.",
+        "pubYear": "2026",
+        "doi": "10.1038/s41598-026-39925-2",
+        "isOpenAccess": "Y"
+      }
+    ]
+  },
+  {
+    "query": "vitiligo artificial intelligence segmentation VASI",
+    "items": [
+      {
+        "id": "42081176",
+        "source": "MED",
+        "title": "Automated Measurement of Depigmentation Extent with a New AI Tool Applied to the Example of Vitiligo.",
+        "pubYear": "2026",
+        "doi": "10.1007/s13555-026-01736-8",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42627938",
+        "source": "MED",
+        "title": "Scoring Systems in Vitiligo-A Narrative Review.",
+        "pubYear": "2026",
+        "doi": "10.4103/idoj.idoj_1220_25",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42633438",
+        "source": "MED",
+        "title": "From Mechanisms to Clinical Practice: Advances in Vitiligo Treatment Across Western Medicine and Traditional Chinese Medicine.",
+        "pubYear": "2026",
+        "doi": "10.2147/ccid.s620758",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42482466",
+        "source": "MED",
+        "title": "Quantitative CRFF-OCT Imaging Features for Characterization of Disease Activity in Non-Segmental Vitiligo: A Machine Learning-Assisted Study.",
+        "pubYear": "2026",
+        "doi": "10.1111/exd.70309",
+        "isOpenAccess": "N"
+      }
+    ]
+  },
+  {
+    "query": "vitiligo worldwide prevalence systematic review meta-analysis",
+    "items": [
+      {
+        "id": "42813184",
+        "source": "MED",
+        "title": "Prevalence of vitiligo in East Africa: systematic review and meta-analysis.",
+        "pubYear": "2026",
+        "doi": "10.1093/skinhd/vzag069",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42795406",
+        "source": "MED",
+        "title": "The Immunological Intersection of Psoriasis and Autoimmune Diseases: Shared Pathways and Clinical Implications.",
+        "pubYear": "2026",
+        "doi": "10.3390/life16091542",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42542894",
+        "source": "MED",
+        "title": "Targeted Thyroid Screening in Patients With Vitiligo: A Practical Narrative Review.",
+        "pubYear": "2026",
+        "doi": "10.7759/cureus.111952",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42511715",
+        "source": "MED",
+        "title": "Vitiligo-Current Treatment Options and Future Perspectives.",
+        "pubYear": "2026",
+        "doi": "10.3390/ijms27146374",
+        "isOpenAccess": "Y"
+      }
+    ]
+  },
+  {
+    "query": "VALIANT vitiligo",
+    "items": [
+      {
+        "id": "42824043",
+        "source": "MED",
+        "title": "Trial-derived body surface area rules may restrict access to topical precision therapies in vitiligo.",
+        "pubYear": "2026",
+        "doi": "10.1016/j.jdin.2026.08.006",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42298772",
+        "source": "MED",
+        "title": "Exploring and Comparing the Psychosocial Impacts of Vitiligo on a Broader Scale: An International Survey via the Use of Social Media.",
+        "pubYear": "2026",
+        "doi": "10.1111/ajd.70157",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "40613847",
+        "source": "MED",
+        "title": "Exploring Vitiligo History and Mental Health Burden Among People Within EU5 Countries: Findings from the Global VALIANT Study.",
+        "pubYear": "2025",
+        "doi": "10.1007/s13555-025-01451-w",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "40464715",
+        "source": "MED",
+        "title": "Depression and depressive symptoms among people living with vitiligo: findings from the cross-sectional, population-based global VALIANT survey.",
+        "pubYear": "2025",
+        "doi": "10.1080/09546634.2025.2504082",
+        "isOpenAccess": "N"
+      }
+    ]
+  },
+  {
+    "query": "British Association Dermatologists guidelines vitiligo 2021",
+    "items": [
+      {
+        "id": "41879910",
+        "source": "MED",
+        "title": "Validation of Self-Reported Vitiligo Prevalence among Adults in the USA and Europe Using the 2024 National Health and Wellness Survey.",
+        "pubYear": "2026",
+        "doi": "10.1007/s13555-026-01715-z",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42801089",
+        "source": "MED",
+        "title": "Hotspots and Emerging Trends in JAK Inhibitor Therapy for Vitiligo: A Bibliometric Analysis (2015-2025).",
+        "pubYear": "2026",
+        "doi": "10.2147/jir.s615315",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "38241398",
+        "source": "MED",
+        "title": "Vitiligo: Unmet Need, Management and Treatment Guidelines.",
+        "pubYear": "2023",
+        "doi": "10.5826/dpc.1304s2a316s",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "39844053",
+        "source": "MED",
+        "title": "Burden of Vitiligo in Canada: Retrospective Analysis of a Canadian Public Claims Database.",
+        "pubYear": "2025",
+        "doi": "10.1177/12034754241304683",
+        "isOpenAccess": "Y"
+      }
+    ]
+  },
+  {
+    "query": "Disparities in dermatology AI performance on a diverse curated clinical image set",
+    "items": [
+      {
+        "id": "35960806",
+        "source": "MED",
+        "title": "Disparities in dermatology AI performance on a diverse, curated clinical image set.",
+        "pubYear": "2022",
+        "doi": "10.1126/sciadv.abq6147",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42739227",
+        "source": "MED",
+        "title": "The Evolving Role of Artificial Intelligence in Dermatology: A Meta-Analysis of Diagnostic Performance, Clinical Applications, and Implementation Challenges (2003-2025).",
+        "pubYear": "2026",
+        "doi": "10.3390/diagnostics16172797",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42649821",
+        "source": "MED",
+        "title": "Effect of Fitzpatrick Skin Type Prompting on Diagnostic Accuracy in Multimodal Large Language Models: A Within-Image Experimental Study.",
+        "pubYear": "2026",
+        "doi": "10.3390/bioengineering13080932",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42075587",
+        "source": "MED",
+        "title": "Validation of a Dermatology-Focused Multimodal Image-and-Data Assistant in Diagnosis and Management of Common Dermatologic Conditions.",
+        "pubYear": "2026",
+        "doi": "10.3390/medicina62040715",
+        "isOpenAccess": "Y"
+      }
+    ]
+  }
+]

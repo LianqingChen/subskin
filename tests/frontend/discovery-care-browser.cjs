@@ -1,0 +1,141 @@
+// All API responses are synthetic and all API writes are intercepted.
+// No real account, patient content or backend write is used by this test.
+const { chromium } = require(process.env.SUBSKIN_PLAYWRIGHT_MODULE || 'playwright')
+const assert = require('node:assert/strict')
+const fs = require('node:fs')
+const root = process.env.SUBSKIN_TEST_URL || 'https://staging.subskin.cn'
+const out = process.env.SUBSKIN_TEST_OUTPUT || '/tmp/opencode/discovery-care-20261002'
+const results = []
+const post = { id: 900001, title: '合成测试分享', content: '合成测试：保持日常作息，记录生活体验。', content_preview: '合成测试：保持日常作息，记录生活体验。', post_type: 'text', author: { id: 900002, username: '测试病友', avatar: null, is_doctor: false, is_followed: false }, like_count: 0, comment_count: 0, bookmark_count: 0, view_count: 0, share_count: 0, images: [], tags: [], created_at: '2026-10-02T00:00:00Z', is_private: false }
+async function noOverflow(page, label) {
+  const sizes = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }))
+  assert.ok(sizes.scroll <= sizes.width + 1, `${label}: ${JSON.stringify(sizes)}`)
+}
+async function checkFocus(page) {
+  for (let i = 0; i < 12; i++) {
+    await page.keyboard.press('Tab')
+    assert.equal(await page.evaluate(() => !!document.activeElement?.closest('dialog')), true, 'focus remains in modal')
+  }
+}
+;(async () => {
+  fs.mkdirSync(out, { recursive: true })
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.SUBSKIN_CHROMIUM_PATH, args: ['--no-sandbox'] })
+  try {
+    for (const width of [375, 768, 1024, 1440]) for (const theme of ['light', 'dark']) {
+      const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' })
+      const page = await context.newPage()
+      const errors = []
+      const requests = []
+      page.on('pageerror', error => errors.push(error.message))
+      await context.addInitScript(theme => {
+        localStorage.setItem('subskin_theme_mode', theme)
+        if (!localStorage.getItem('discovery-care-test-seeded')) {
+          localStorage.setItem('subskin-care-cart-v1:guest', JSON.stringify({ 'food-sesame': 2 }))
+          localStorage.setItem('discovery-care-test-seeded', 'true')
+        }
+        localStorage.setItem('subskin_user_city', JSON.stringify({ city: '测试城', lat: null, lng: null, source: 'manual', timestamp: Date.now() }))
+      }, theme)
+      await page.route('**/api/**', async route => {
+        const request = route.request(), url = new URL(request.url())
+        requests.push({ method: request.method(), path: url.pathname, params: Object.fromEntries(url.searchParams) })
+        if (request.method() !== 'GET') return route.fulfill({ json: {} })
+        if (url.pathname === '/api/community/posts') return route.fulfill({ json: { items: [post], total: 1, next_cursor: null } })
+        if (url.pathname === '/api/community/categories') return route.fulfill({ json: [] })
+        if (url.pathname === '/api/community/tags') return route.fulfill({ json: [{ id: 1, name: '测试标签', usage_count: 1 }] })
+        if (url.pathname === '/api/community/user-location') return route.fulfill({ json: { city: '测试城' } })
+        return route.fulfill({ json: {} })
+      })
+      await page.goto(`${root}/care`)
+      await page.getByRole('searchbox', { name: '搜索用品' }).waitFor()
+      assert.equal(await page.locator('h1').evaluate(element => element.classList.contains('sr-only')), true)
+      assert.equal(await page.getByRole('button', { name: /购物清单/ }).count(), 0)
+      assert.equal(await page.locator('a[href="/care"] i.ri-shopping-cart-line').count(), await page.locator('a[href="/care"]').count())
+      assert.equal(await page.locator('article').count(), 15)
+      assert.match(await page.locator('article').first().innerText(), /防晒/)
+      assert.equal(await page.locator('a[href^="/discover/"]').count(), 0)
+      if (theme === 'dark') {
+        const background = await page.getByRole('button', { name: '全部用品，15 项', exact: true }).evaluate(element => getComputedStyle(element).backgroundColor)
+        assert.notEqual(background, 'rgb(246, 249, 249)', 'dark selected category must not retain pale light-mode background')
+        assert.ok(background.match(/\d+/g).slice(0, 3).map(Number).reduce((a, b) => a + b, 0) < 400, `dark category background: ${background}`)
+      }
+      await noOverflow(page, `${width}/${theme} catalog`)
+      await page.screenshot({ path: `${out}/catalog-${width}-${theme}.png`, fullPage: true })
+      await page.getByRole('button', { name: '日常食材，5 项', exact: true }).click()
+      assert.equal(await page.locator('article').count(), 5)
+      await page.getByRole('searchbox', { name: '搜索用品' }).fill('  黑芝麻  ')
+      await page.getByRole('button', { name: '搜索', exact: true }).click()
+      assert.equal(await page.getByRole('searchbox').inputValue(), '黑芝麻')
+      assert.equal(await page.locator('article').count(), 2)
+      await page.getByRole('searchbox').fill('  黑豆  ')
+      await page.getByRole('searchbox').press('Enter')
+      assert.equal(await page.getByRole('searchbox').inputValue(), '黑豆')
+      assert.equal(await page.locator('article').count(), 1)
+      await page.getByLabel('商品排序').selectOption('name')
+      await page.getByRole('button', { name: '清除筛选', exact: true }).click()
+      assert.equal(await page.locator('article').count(), 15)
+      assert.equal(new URL(page.url()).hash, '')
+      await page.getByRole('searchbox').fill('不存在的合成用品')
+      await page.getByText('没有找到相关用品', { exact: true }).waitFor()
+      await page.getByRole('button', { name: '清除筛选', exact: true }).last().click()
+      if (width >= 768) {
+        await page.getByRole('button', { name: '收起分类', exact: true }).click()
+        await page.getByRole('button', { name: '展开分类', exact: true }).click()
+      }
+      await page.locator('article a[href="/care/sun-mineral"]').click()
+      await page.getByRole('heading', { name: '物理防晒霜', exact: true }).waitFor()
+      await page.getByRole('button', { name: '购物清单，2 件', exact: true }).click()
+      const dialog = page.getByRole('dialog', { name: '购物清单', exact: true })
+      await dialog.waitFor()
+      assert.equal(await page.evaluate(() => !!document.querySelector('dialog:modal')), true)
+      assert.match(await dialog.innerText(), /仅保存在此设备/)
+      assert.doesNotMatch(await dialog.innerText(), /价格待定|已记录需求|结算/)
+      await noOverflow(page, `${width}/${theme} list`)
+      await checkFocus(page)
+      await page.screenshot({ path: `${out}/list-${width}-${theme}.png`, fullPage: true })
+      await page.keyboard.press('Escape')
+      await dialog.waitFor({ state: 'detached' })
+      assert.equal(await page.evaluate(() => document.body.style.overflow), '')
+      assert.match(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')), /购物清单/)
+      await page.getByRole('button', { name: '查看选购要点', exact: true }).filter({ visible: true }).waitFor()
+      await noOverflow(page, `${width}/${theme} detail`)
+      assert.equal(await page.getByRole('button', { name: '查看选购要点', exact: true }).filter({ visible: true }).count(), 1)
+      await page.getByRole('button', { name: '加入清单', exact: true }).filter({ visible: true }).click()
+      await page.getByRole('button', { name: '购物清单，3 件', exact: true }).click()
+      await page.getByRole('dialog').waitFor()
+      await page.getByRole('dialog').getByRole('link', { name: '黑芝麻', exact: true }).click()
+      await page.getByRole('heading', { name: '黑芝麻', exact: true }).waitFor()
+      assert.equal(await page.evaluate(() => document.body.style.overflow), '')
+      assert.equal(await page.locator('dialog').count(), 0)
+      await page.reload()
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('subskin-care-cart-v1:guest'))['food-sesame']), 2)
+      await page.screenshot({ path: `${out}/detail-${width}-${theme}.png`, fullPage: true })
+      await page.getByRole('link', { name: '返回调养', exact: true }).click()
+      await page.getByRole('searchbox', { name: '搜索用品' }).waitFor()
+      assert.equal(await page.locator('article').count(), 5)
+      await page.goto(`${root}/community`)
+      await page.getByText(post.content_preview, { exact: true }).waitFor()
+      assert.equal(await page.locator('a[href^="/discover/"]').count(), 0)
+      await noOverflow(page, `${width}/${theme} discovery`)
+      await page.screenshot({ path: `${out}/discovery-${width}-${theme}.png`, fullPage: true })
+      await Promise.all([page.waitForResponse(response => response.url().includes('feed_type=following')), page.getByRole('button', { name: '关注', exact: true }).click()])
+      await Promise.all([page.waitForResponse(response => response.url().includes('feed_type=local')), page.getByRole('button', { name: '测试城', exact: true }).click()])
+      assert.ok(requests.some(r => r.params.feed_type === 'local' && r.params.city === '测试城'))
+      await page.getByRole('button', { name: '搜索病友内容', exact: true }).click()
+      await page.getByRole('searchbox', { name: '搜索病友分享或标签' }).fill('测试标签')
+      await Promise.all([page.waitForResponse(response => response.url().includes('tag=')), page.getByRole('searchbox', { name: '搜索病友分享或标签' }).press('Enter')])
+      if (width < 768) await page.getByLabel('更多发现入口', { exact: true }).first().click()
+      assert.ok(await page.getByRole('link', { name: '就医经验', exact: true }).filter({ visible: true }).count())
+      await page.goto(`${root}/discover/science`)
+      await page.getByRole('heading', { name: '把日常过好：吃得稳、晒得对、记得准', exact: true }).waitFor()
+      await noOverflow(page, `${width}/${theme} legacy science`)
+      await page.goto(`${root}/discover/picks`)
+      await page.getByRole('heading', { name: '值得看看的日常好物', exact: true }).waitFor()
+      await noOverflow(page, `${width}/${theme} legacy picks`)
+      assert.deepEqual(errors, [])
+      results.push(`${width}px/${theme}: catalog, filters, sorting, empty state, detail, list persistence/modal/focus, discovery filters/search, legacy routes`)
+      console.log('PASS', results.at(-1))
+      await context.close()
+    }
+  } finally { await browser.close() }
+  fs.writeFileSync(`${out}/results.json`, JSON.stringify({ passed: results }, null, 2))
+})().catch(error => { console.error(error); process.exitCode = 1 })

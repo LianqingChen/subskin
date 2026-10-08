@@ -10,7 +10,6 @@
 import type { BaseTool, ToolContext, ToolName } from './BaseTool'
 
 const LESION_COLOR = 'rgba(244,114,182,1)'
-const SKIN_COLOR = 'rgba(96,165,250,1)'
 const PATH_COLOR = '#fbbf24'       // amber path while drawing
 const PATH_WIDTH = 2
 
@@ -53,7 +52,6 @@ export class LassoTool implements BaseTool {
 
     // Close the path
     const first = this.path[0]
-    const last = this.path[this.path.length - 1]
     this.path.push([first[0], first[1]])
 
     this.drawPath(ctx)

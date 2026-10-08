@@ -27,7 +27,7 @@ const tips = [
 </script>
 
 <template>
-  <div v-if="!dismissed" class="card p-4 mb-4 border border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-900/10">
+  <div v-if="!dismissed" class="card p-4 mb-4 border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900">
     <div class="flex items-center justify-between cursor-pointer select-none" @click="expanded = !expanded">
       <div class="flex items-center gap-2">
         <i class="ri-lightbulb-line text-primary-500"></i>

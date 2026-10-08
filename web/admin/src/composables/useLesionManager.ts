@@ -12,7 +12,7 @@
  */
 
 import { ref, computed } from 'vue'
-import type { AdminAnnotationItem } from '@/components/labeling/LabelingEditor.vue'
+import type { AdminAnnotationItem } from '@/components/labeling/types'
 
 export interface LesionData {
   regionIndex: number

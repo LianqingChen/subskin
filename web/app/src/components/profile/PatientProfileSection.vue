@@ -6,6 +6,8 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { patientProfileApi, type PatientProfile, type ModuleDefaults } from '@/api/patient-profile'
 import { useToast } from '@/composables/useToast'
+import { avatarInitial } from '@/utils/avatar'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 const props = defineProps<{
   profiles: PatientProfile[]
@@ -138,8 +140,21 @@ async function save() {
   }
 }
 
-async function deleteProfile(profile: PatientProfile) {
-  if (!confirm(`确定要删除白友档案 "${profile.name}" 吗？`)) return
+const confirmDeleteVisible = ref(false)
+const confirmDeleteMessage = ref('')
+const pendingDeleteProfile = ref<PatientProfile | null>(null)
+
+function deleteProfile(profile: PatientProfile) {
+  confirmDeleteMessage.value = `确定要删除白友档案 "${profile.name}" 吗？`
+  pendingDeleteProfile.value = profile
+  confirmDeleteVisible.value = true
+}
+
+async function onConfirmDelete() {
+  const profile = pendingDeleteProfile.value
+  confirmDeleteVisible.value = false
+  pendingDeleteProfile.value = null
+  if (!profile) return
   try {
     await patientProfileApi.delete(profile.id)
     toast.success('白友档案已删除')
@@ -156,6 +171,15 @@ function onDefaultsChange() {
 
 <template>
   <div class="card p-4">
+  <ConfirmDialog
+    :visible="confirmDeleteVisible"
+    title="删除确认"
+    :message="confirmDeleteMessage"
+    confirm-text="删除"
+    @confirm="onConfirmDelete"
+    @cancel="confirmDeleteVisible = false"
+  />
+
     <div class="flex items-center justify-between mb-3">
       <h3 class="font-medium text-gray-900"><i class="ri-team-line"></i> 白友档案</h3>
       <button class="btn-ghost text-sm" @click="openAdd">+ 添加</button>
@@ -167,12 +191,12 @@ function onDefaultsChange() {
       <div v-for="profile in profiles" :key="profile.id" class="flex items-center justify-between p-3 rounded-lg bg-gray-50">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-sm font-medium text-primary-700 dark:text-primary-300">
-            {{ profile.name.charAt(0) }}
+            {{ avatarInitial(profile.name) }}
           </div>
           <div>
             <div class="flex items-center gap-2">
               <span class="text-sm font-medium text-gray-900">{{ profile.name }}</span>
-              <span v-if="profile.is_self" class="text-xs bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 px-1.5 py-0.5 rounded">本人</span>
+              <span v-if="profile.is_self" class="text-xs bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 px-1.5 py-0.5 rounded">本人</span>
               <span v-else class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{{ profile.relationship }}</span>
             </div>
             <div class="text-xs text-gray-400 mt-0.5">
@@ -221,7 +245,7 @@ function onDefaultsChange() {
       class="fixed inset-0 bg-black/50 z-[100] flex items-end md:items-center justify-center"
       @click.self="showFormModal = false"
     >
-      <div class="bg-white w-full max-w-md rounded-t-2xl md:rounded-xl shadow-xl overflow-hidden mx-0 md:mx-4 max-h-[90dvh] overflow-y-auto">
+      <div class="bg-white w-full max-w-md rounded-t-2xl md:rounded-2xl shadow-xl overflow-hidden mx-0 md:mx-4 max-h-[90dvh] overflow-y-auto">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 class="text-lg font-semibold text-gray-900">{{ editingProfile ? '编辑白友' : '添加白友' }}</h2>
           <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl" @click="showFormModal = false">&times;</button>

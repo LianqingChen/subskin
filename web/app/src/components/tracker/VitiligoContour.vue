@@ -343,9 +343,9 @@ function contourFill(ci: number) {
     <div v-if="editable" class="absolute top-3 right-3 flex flex-col gap-1.5">
       <button
         v-for="tool in ([
-          { id: 'select', label: '⬚', tip: '选择/拖拽控制点' },
-          { id: 'draw', label: '✎', tip: '手绘新白斑区域' },
-          { id: 'move', label: '⤡', tip: '整体移动轮廓' },
+          { id: 'select', icon: 'ri-drag-move-2-line', tip: '选择/拖拽控制点' },
+          { id: 'draw', icon: 'ri-pencil-line', tip: '手绘新白斑区域' },
+          { id: 'move', icon: 'ri-expand-diagonal-line', tip: '整体移动轮廓' },
         ] as const)"
         :key="tool.id"
         class="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-200 shadow-lg"
@@ -354,7 +354,7 @@ function contourFill(ci: number) {
           : 'bg-white/90  text-gray-600 hover:bg-primary-50 dark:hover:bg-primary-900/30 backdrop-blur-sm'"
         :title="tool.tip"
         @click="mode = tool.id"
-      >{{ tool.label }}</button>
+      ><i :class="tool.icon" class="text-base"></i></button>
     </div>
 
     <!-- Selected contour actions -->

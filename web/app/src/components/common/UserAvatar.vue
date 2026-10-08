@@ -12,6 +12,7 @@
  */
 import { ref, computed, watch } from 'vue'
 import { toProtectedFileUrl } from '@/utils/file-url'
+import { avatarInitial } from '@/utils/avatar'
 
 const props = withDefaults(defineProps<{
   /** Full image URL (will be processed via toProtectedFileUrl) */
@@ -42,7 +43,7 @@ const emit = defineEmits<{
 const avatarLoadError = ref(false)
 const protectedUrl = computed(() => toProtectedFileUrl(props.imageUrl || ''))
 const showImage = computed(() => !!protectedUrl.value && !avatarLoadError.value)
-const initialChar = computed(() => (props.initial || 'U').charAt(0).toUpperCase())
+const initialChar = computed(() => avatarInitial(props.initial || 'U'))
 
 watch(() => props.imageUrl, () => {
   avatarLoadError.value = false

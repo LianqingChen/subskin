@@ -34,6 +34,7 @@ const form = reactive({
   code: '',
   password: '',
   confirmPassword: '',
+  oldPassword: '',
   resetMethod: 'phone' as 'phone' | 'email',
 })
 
@@ -158,8 +159,17 @@ async function submit() {
   errorMessage.value = ''
 
   if (props.mode === 'set-password' || props.mode === 'reset-password') {
-    if (form.password.trim().length < 6) {
-      errorMessage.value = '密码至少6个字符'
+    if (props.mode === 'set-password' && hasPasswordCredential.value && !form.oldPassword.trim()) {
+      errorMessage.value = '请先输入当前密码'
+      return
+    }
+    const pwd = form.password.trim()
+    if (pwd.length < 8) {
+      errorMessage.value = '密码至少8位字符'
+      return
+    }
+    if (!/[A-Za-z]/.test(pwd) || !/\d/.test(pwd)) {
+      errorMessage.value = '密码需同时包含字母和数字'
       return
     }
     if (form.password !== form.confirmPassword) {
@@ -193,7 +203,10 @@ async function submit() {
       await authStore.bindEmail(form.email.trim(), form.code.trim())
       toast.success('邮箱绑定成功')
     } else if (props.mode === 'set-password') {
-      await authStore.setPassword(form.password.trim())
+      await authStore.setPassword(
+        form.password.trim(),
+        hasPasswordCredential.value ? form.oldPassword.trim() : undefined,
+      )
       toast.success(hasPasswordCredential.value ? '密码已更新' : '密码设置成功')
     } else {
       if (!selectedResetCredential.value) {
@@ -371,6 +384,18 @@ const title = computed(() => {
               </div>
             </div>
 
+            <div v-if="mode === 'set-password' && hasPasswordCredential">
+              <label class="block text-sm font-medium text-gray-700 mb-1">当前密码</label>
+              <input
+                v-model="form.oldPassword"
+                type="password"
+                maxlength="128"
+                autocomplete="current-password"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900"
+                placeholder="请输入当前密码"
+              />
+            </div>
+
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">{{ mode === 'reset-password' ? '新密码' : '密码' }}</label>
               <input
@@ -378,7 +403,7 @@ const title = computed(() => {
                 type="password"
                 maxlength="128"
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white text-gray-900"
-                placeholder="至少6位字符"
+                placeholder="至少8位，需包含字母和数字"
               />
             </div>
 

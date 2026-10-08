@@ -1,7 +1,7 @@
 """
 SAM Promptable (point/box) segmentation service.
 
-The user clicks on a vitiligo patch and SAM returns a precise mask.
+The user clicks a candidate region and SAM returns masks requiring validation.
 Replaces the failed AutoMaskGenerator approach (which on CPU takes 15+s
 and frequently misses small vitiligo patches).
 
@@ -120,6 +120,8 @@ def predict_by_points(
     cache_key: str,
     points: list[tuple[float, float, int]],
     multimask: bool = True,
+    box: Optional[tuple[float, float, float, float]] = None,
+    return_candidates: bool = False,
 ) -> Optional[dict]:
     """Run point-prompt prediction on the cached image.
 
@@ -151,6 +153,11 @@ def predict_by_points(
         dtype=np.float32,
     )
     point_labels = np.array([int(p[2]) for p in points], dtype=np.int32)
+    box_coords = None
+    if box is not None:
+        if len(box) != 4 or not all(np.isfinite(v) and 0 <= v <= 1 for v in box) or box[0] >= box[2] or box[1] >= box[3]:
+            return None
+        box_coords = np.array([box[0]*w, box[1]*h, min(box[2]*w,w-1), min(box[3]*h,h-1)],dtype=np.float32)
 
     try:
         global _last_encoded_key
@@ -167,6 +174,7 @@ def predict_by_points(
                 point_coords=point_coords,
                 point_labels=point_labels,
                 multimask_output=multimask,
+                **({"box": box_coords} if box_coords is not None else {}),
             )
             predict_elapsed = time.time() - t0
             logger.info(
@@ -179,6 +187,13 @@ def predict_by_points(
             masks = masks.cpu().numpy()
         if hasattr(scores, "cpu"):
             scores = scores.cpu().numpy()
+        if return_candidates:
+            candidates = []
+            for candidate_mask, candidate_score in zip(masks, scores):
+                if np.isfinite(candidate_score):
+                    candidates.append({"mask_b64_png": _mask_to_b64_png(np.asarray(candidate_mask).astype(bool)),
+                                       "score": float(candidate_score)})
+            return {"candidates": candidates, "width": w, "height": h, "predict_time_s": round(elapsed, 3)}
         best_idx = int(np.argmax(scores))
         mask = np.asarray(masks[best_idx]).astype(bool)
         score = float(scores[best_idx])

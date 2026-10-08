@@ -9,18 +9,76 @@ const router = createRouter({
       component: () => import('@/views/ChatAssistantPage.vue'),
     },
     {
+      path: '/contribution',
+      name: 'contribution',
+      component: () => import('@/views/ContributionPage.vue'),
+      meta: { title: '同行' },
+    },
+    {
+      path: '/care',
+      name: 'care',
+      component: () => import('@/views/CarePage.vue'),
+      meta: { title: '调养' },
+    },
+    {
+      path: '/care/:id',
+      name: 'care-product',
+      component: () => import('@/views/CareProductPage.vue'),
+      meta: { title: '商品详情' },
+    },
+    {
+      path: '/discover/science',
+      name: 'discover-science',
+      component: () => import('@/views/DiscoverSciencePage.vue'),
+      meta: { title: '科普' },
+    },
+    {
+      path: '/discover/picks',
+      name: 'discover-picks',
+      component: () => import('@/views/DiscoverPicksPage.vue'),
+      meta: { title: '种草' },
+    },
+    {
+      path: '/hospitals',
+      name: 'hospitals',
+      component: () => import('@/views/HospitalsPage.vue'),
+      meta: { title: '就医经验' },
+    },
+    {
+      path: '/hospitals/treatments',
+      name: 'hospital-treatments',
+      component: () => import('@/views/HospitalTreatmentsPage.vue'),
+      meta: { title: '治疗知识' },
+    },
+    {
+      path: '/hospitals/rules',
+      name: 'hospital-rules',
+      component: () => import('@/views/HospitalRulesPage.vue'),
+      meta: { title: '就医经验社区公约' },
+    },
+    {
+      path: '/hospitals/appeal',
+      name: 'hospital-appeal',
+      component: () => import('@/views/HospitalAppealPage.vue'),
+      meta: { title: '评价申诉' },
+    },
+    {
+      path: '/hospitals/:key',
+      name: 'hospital-detail',
+      component: () => import('@/views/HospitalDetailPage.vue'),
+      meta: { title: '医院详情' },
+    },
+    {
       path: '/assessment',
       name: 'assessment',
       component: () => import('@/views/AssessmentPage.vue'),
+      beforeEnter: to => ['exam', 'report'].includes(String(to.query.tab)) ? { name: 'assessment-exam' } : true,
     },
     {
-      path: '/voice-call',
-      name: 'voice-call',
-      component: () => import('@/views/VoiceCallPage.vue'),
-    },
-    {
-      path: '/chat',
-      redirect: '/',
+      path: '/assessment/exam',
+      name: 'assessment-exam',
+      component: () => import('@/views/AssessmentExamPage.vue'),
+      meta: { title: '体检解读' },
     },
     {
       path: '/assessment/vasi/:id',
@@ -33,8 +91,10 @@ const router = createRouter({
       component: () => import('@/views/VasiComparePage.vue'),
     },
     {
-      path: '/tracker',
-      redirect: '/assessment',
+      path: '/assessment/photo-compare',
+      name: 'assessment-photo-compare',
+      component: () => import('@/views/QuickPhotoComparePage.vue'),
+      meta: { title: '白斑对比' },
     },
     {
       path: '/photo-guide',
@@ -47,12 +107,43 @@ const router = createRouter({
       component: () => import('@/views/ReportDetailPage.vue'),
     },
     {
+      // 原「报告」顶层模块已移除：白斑对比在测评页评估历史，报告详情走 /community/reports/:id
       path: '/report',
-      name: 'report',
-      component: () => import('@/views/ReportPage.vue'),
+      redirect: '/assessment',
     },
     {
-      path: '/report/compare',
+      path: '/diary',
+      redirect: '/community',
+    },
+    // 白斑对比/报告详情沿用 /community/reports/*；列表入口 = 测评页评估历史
+    {
+      path: '/community/reports',
+      redirect: '/assessment',
+    },
+    {
+      path: '/community/reports/new',
+      name: 'skin-report-new',
+      component: () => import('@/views/SkinReportCreatePage.vue'),
+      meta: { title: '生成报告' },
+    },
+    {
+      path: '/community/reports/:id',
+      name: 'skin-report-view',
+      component: () => import('@/views/SkinReportViewPage.vue'),
+      meta: { title: '白斑变化报告' },
+    },
+    // 兼容旧 /diary/reports/* 链接
+    { path: '/diary/reports', redirect: '/assessment' },
+    { path: '/diary/reports/new', redirect: '/community/reports/new' },
+    { path: '/diary/reports/:id', redirect: (to: any) => `/community/reports/${to.params.id}` },
+    {
+      path: '/share/report/:token',
+      name: 'skin-report-shared',
+      component: () => import('@/views/SkinReportSharedPage.vue'),
+      meta: { title: '白斑变化报告', public: true },
+    },
+    {
+      path: '/assessment/report-compare',
       name: 'ReportCompare',
       component: () => import('@/views/ReportComparePage.vue'),
       meta: { title: '报告对比' }
@@ -93,26 +184,23 @@ const router = createRouter({
       component: () => import('@/views/ProfilePage.vue'),
     },
     {
+      path: '/profile/data',
+      name: 'profile-data',
+      component: () => import('@/views/DataContributionPage.vue'),
+    },
+    {
       path: '/user/:userId',
       name: 'user-profile',
       component: () => import('@/views/UserProfilePage.vue'),
     },
     {
+      // 小白百科已下线：百科内容已融入智能问答/小白管家，访问旧链接统一回首页
       path: '/encyclopedia',
-      name: 'encyclopedia',
-      component: () => import('@/views/EncyclopediaNewPage.vue'),
-      meta: { title: '小白百科' },
+      redirect: '/',
     },
     {
       path: '/encyclopedia/:slug(.*)*',
-      name: 'encyclopedia-article',
-      component: () => import('@/views/EncyclopediaNewPage.vue'),
-      meta: { title: '小白百科' },
-    },
-    {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: () => import('@/views/DashboardPage.vue'),
+      redirect: '/',
     },
     {
       path: '/privacy',
@@ -125,24 +213,10 @@ const router = createRouter({
       component: () => import('@/views/TermsOfServicePage.vue'),
     },
     {
-      path: '/messages',
-      name: 'messages',
-      component: () => import('@/views/MessagesPage.vue'),
-    },
-    {
-      path: '/chat/:id',
-      name: 'chat-room',
-      component: () => import('@/views/ChatRoomPage.vue'),
-    },
-    {
-      path: '/contacts',
-      name: 'contacts',
-      component: () => import('@/views/ContactsPage.vue'),
-    },
-    {
-      path: '/group/:id',
-      name: 'group-info',
-      component: () => import('@/views/GroupInfoPage.vue'),
+      path: '/:catchAll(.*)*',
+      name: 'not-found',
+      component: () => import('@/views/NotFoundPage.vue'),
+      meta: { title: '页面不存在' },
     },
   ],
   scrollBehavior(to, _from, savedPosition) {

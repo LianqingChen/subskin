@@ -1,0 +1,230 @@
+[
+  {
+    "query_id": "guideline",
+    "query": "TITLE:\"British Association of Dermatologists guidelines for the management of people with vitiligo 2021\"",
+    "items": [
+      {
+        "id": "34160061",
+        "source": "MED",
+        "title": "British Association of Dermatologists guidelines for the management of people with vitiligo 2021.",
+        "pubYear": "2022",
+        "firstPublicationDate": "2021-09-07",
+        "doi": "10.1111/bjd.20596",
+        "isOpenAccess": "N"
+      }
+    ]
+  },
+  {
+    "query_id": "prevalence",
+    "query": "TITLE:\"Estimating the burden of vitiligo\" AND FIRST_PDATE:[1900-01-01 TO 2026-10-06]",
+    "items": [
+      {
+        "id": "38552651",
+        "source": "MED",
+        "title": "Estimating the burden of vitiligo: a systematic review and modelling study.",
+        "pubYear": "2024",
+        "firstPublicationDate": "2024-03-26",
+        "doi": "10.1016/s2468-2667(24)00026-4",
+        "isOpenAccess": "N"
+      }
+    ]
+  },
+  {
+    "query_id": "valiant",
+    "query": "TITLE:VALIANT AND vitiligo AND FIRST_PDATE:[1900-01-01 TO 2026-10-06]",
+    "items": [
+      {
+        "id": "40613847",
+        "source": "MED",
+        "title": "Exploring Vitiligo History and Mental Health Burden Among People Within EU5 Countries: Findings from the Global VALIANT Study.",
+        "pubYear": "2025",
+        "firstPublicationDate": "2025-07-04",
+        "doi": "10.1007/s13555-025-01451-w",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "40325321",
+        "source": "MED",
+        "title": "Mental Health and Psychosocial Burden Among Patients with Skin of Color Living with Vitiligo: Findings from the Global VALIANT Study.",
+        "pubYear": "2025",
+        "firstPublicationDate": "2025-05-05",
+        "doi": "10.1007/s13555-025-01412-3",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "40464715",
+        "source": "MED",
+        "title": "Depression and depressive symptoms among people living with vitiligo: findings from the cross-sectional, population-based global VALIANT survey.",
+        "pubYear": "2025",
+        "firstPublicationDate": "2025-06-04",
+        "doi": "10.1080/09546634.2025.2504082",
+        "isOpenAccess": "N"
+      },
+      {
+        "id": "37647073",
+        "source": "MED",
+        "title": "Mental Health and Psychosocial Quality-of-Life Burden Among Patients With Vitiligo: Findings From the Global VALIANT Study.",
+        "pubYear": "2023",
+        "firstPublicationDate": "2023-10-01",
+        "doi": "10.1001/jamadermatol.2023.2787",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "37705206",
+        "source": "MED",
+        "title": "Global VALIANT study: 'lifting the lid' on disappointment and frustration with the lack of effective treatment for vitiligo.",
+        "pubYear": "2023",
+        "firstPublicationDate": "2023-11-01",
+        "doi": "10.1093/bjd/ljad336",
+        "isOpenAccess": "N"
+      }
+    ]
+  },
+  {
+    "query_id": "ddi",
+    "query": "TITLE:\"Disparities in dermatology AI performance on a diverse, curated clinical image set\"",
+    "items": [
+      {
+        "id": "35960806",
+        "source": "MED",
+        "title": "Disparities in dermatology AI performance on a diverse, curated clinical image set.",
+        "pubYear": "2022",
+        "firstPublicationDate": "2022-08-12",
+        "doi": "10.1126/sciadv.abq6147",
+        "isOpenAccess": "Y"
+      }
+    ]
+  },
+  {
+    "query_id": "glow",
+    "query": "DOI:10.1016/j.media.2025.103920",
+    "items": [
+      {
+        "id": "41468636",
+        "source": "MED",
+        "title": "GloW-VSNet: A scribble-based weakly supervised framework for global-view vitiligo lesion segmentation.",
+        "pubYear": "2026",
+        "firstPublicationDate": "2025-12-21",
+        "doi": "10.1016/j.media.2025.103920",
+        "isOpenAccess": "N"
+      }
+    ]
+  },
+  {
+    "query_id": "ruxolitinib",
+    "query": "TITLE:\"Two Phase 3, Randomized, Controlled Trials of Ruxolitinib Cream for Vitiligo\"",
+    "items": [
+      {
+        "id": "36652364",
+        "source": "MED",
+        "title": "Two Phase 3, Randomized, Controlled Trials of Ruxolitinib Cream for Vitiligo.",
+        "pubYear": "2023",
+        "firstPublicationDate": "2023-01-01",
+        "doi": "10.1056/nejmc2215181",
+        "isOpenAccess": "N"
+      },
+      {
+        "id": "36652365",
+        "source": "MED",
+        "title": "Two Phase 3, Randomized, Controlled Trials of Ruxolitinib Cream for Vitiligo. Reply.",
+        "pubYear": "2023",
+        "firstPublicationDate": "2023-01-01",
+        "doi": "10.1056/nejmc2215181",
+        "isOpenAccess": "N"
+      },
+      {
+        "id": "36260792",
+        "source": "MED",
+        "title": "Two Phase 3, Randomized, Controlled Trials of Ruxolitinib Cream for Vitiligo.",
+        "pubYear": "2022",
+        "firstPublicationDate": "2022-10-01",
+        "doi": "10.1056/nejmoa2118828",
+        "isOpenAccess": "N"
+      }
+    ]
+  },
+  {
+    "query_id": "vitiligoAI",
+    "query": "vitiligo AND (\"artificial intelligence\" OR \"deep learning\") AND FIRST_PDATE:[1900-01-01 TO 2026-10-06]",
+    "items": [
+      {
+        "id": "42497363",
+        "source": "MED",
+        "title": "Clinically Interpretable Deep Learning for Differentiating Vitiligo and Postinflammatory Hypopigmentation: Diagnostic Accuracy Study.",
+        "pubYear": "2026",
+        "firstPublicationDate": "2026-07-24",
+        "doi": "10.2196/81942",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42627938",
+        "source": "MED",
+        "title": "Scoring Systems in Vitiligo-A Narrative Review.",
+        "pubYear": "2026",
+        "firstPublicationDate": "2026-08-21",
+        "doi": "10.4103/idoj.idoj_1220_25",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42081176",
+        "source": "MED",
+        "title": "Automated Measurement of Depigmentation Extent with a New AI Tool Applied to the Example of Vitiligo.",
+        "pubYear": "2026",
+        "firstPublicationDate": "2026-05-04",
+        "doi": "10.1007/s13555-026-01736-8",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42708162",
+        "source": "MED",
+        "title": "The Potency of Artificial Intelligence in Diagnosing and Evaluating the Severity of Vitiligo: A Systematic Review and Meta-Analysis.",
+        "pubYear": "2026",
+        "firstPublicationDate": "2026-08-31",
+        "doi": "10.4103/ijd.ijd_430_25",
+        "isOpenAccess": "Y"
+      },
+      {
+        "id": "42739227",
+        "source": "MED",
+        "title": "The Evolving Role of Artificial Intelligence in Dermatology: A Meta-Analysis of Diagnostic Performance, Clinical Applications, and Implementation Challenges (2003-2025).",
+        "pubYear": "2026",
+        "firstPublicationDate": "2026-08-31",
+        "doi": "10.3390/diagnostics16172797",
+        "isOpenAccess": "Y"
+      }
+    ]
+  },
+  {
+    "query": "DOI:10.1056/NEJMoa2118828",
+    "items": [
+      {
+        "id": "36260792",
+        "title": "Two Phase 3, Randomized, Controlled Trials of Ruxolitinib Cream for Vitiligo.",
+        "doi": "10.1056/nejmoa2118828",
+        "firstPublicationDate": "2022-10-01"
+      }
+    ]
+  },
+  {
+    "query": "EXT_ID:36260792",
+    "items": [
+      {
+        "id": "36260792",
+        "title": "Two Phase 3, Randomized, Controlled Trials of Ruxolitinib Cream for Vitiligo.",
+        "doi": "10.1056/nejmoa2118828",
+        "firstPublicationDate": "2022-10-01"
+      }
+    ]
+  },
+  {
+    "query": "TITLE:\"Two Phase 3, Randomized, Controlled Trials of Ruxolitinib Cream for Vitiligo\" AND PUB_YEAR:2022",
+    "items": [
+      {
+        "id": "36260792",
+        "title": "Two Phase 3, Randomized, Controlled Trials of Ruxolitinib Cream for Vitiligo.",
+        "doi": "10.1056/nejmoa2118828",
+        "firstPublicationDate": "2022-10-01"
+      }
+    ]
+  }
+]

@@ -598,7 +598,7 @@ _learner: Optional[OnlineLearner] = None
 
 
 # ═══ SELF-EVOLVING DISABLED (2026-06-13) — data insufficient for effective RL ═══
-def get_rl_learner() -> OnlineLearner:
+def get_rl_learner() -> Optional[OnlineLearner]:
     return None  # DISABLED — insufficient training data
 
     """获取全局 OnlineLearner 单例（懒加载）"""

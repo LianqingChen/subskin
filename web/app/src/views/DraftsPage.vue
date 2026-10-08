@@ -72,23 +72,23 @@ const protectedUrl = (url: string) => toProtectedFileUrl(url)
 </script>
 
 <template>
-  <div class="min-h-[calc(100dvh-3.5rem)] bg-[#F5F7FA] pb-20 md:pb-6">
-    <div class="sticky top-0 z-10 bg-[#F5F7FA]/80  backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
-      <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <button class="p-2 -ml-2 rounded-lg hover:bg-gray-100 text-gray-600" @click="router.back()">
-            <i class="ri-arrow-left-s-line text-xl"></i>
+  <div class="pb-8">
+    <div class="sticky top-14 z-20 border-b border-gray-200/80 bg-gray-50 dark:border-gray-800 dark:bg-gray-950">
+      <div class="page-narrow py-2 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <button class="-ml-2 flex h-10 w-10 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800" aria-label="返回" @click="router.back()">
+            <i class="ri-arrow-left-s-line text-xl" aria-hidden="true"></i>
           </button>
-          <h1 class="text-lg font-semibold text-gray-900">我的草稿</h1>
+          <h1 class="text-base font-semibold text-gray-900 dark:text-gray-100">我的草稿</h1>
           <span v-if="draftCount > 0" class="text-xs text-gray-400">{{ draftCount }}篇</span>
         </div>
-        <button v-if="hasDrafts" class="text-sm text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300" @click="handleClearAll">清空</button>
+        <button v-if="hasDrafts" class="min-h-10 px-2 text-sm text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300" @click="handleClearAll">清空</button>
       </div>
     </div>
 
-    <div class="max-w-4xl mx-auto px-4 pt-4">
+    <div class="page-narrow pt-4">
       <div v-if="!hasDrafts" class="card p-8 text-center">
-        <div class="text-4xl mb-3"><i class="ri-draft-line"></i></div>
+        <div class="text-4xl mb-3 text-gray-300 dark:text-gray-600"><i class="ri-draft-line" aria-hidden="true"></i></div>
         <div class="text-sm text-gray-400 ">暂无草稿</div>
         <div class="text-xs text-gray-300  mt-1">编辑帖子时，内容会自动保存为草稿</div>
       </div>
@@ -97,22 +97,22 @@ const protectedUrl = (url: string) => toProtectedFileUrl(url)
         <div
           v-for="draft in drafts"
           :key="draft.key"
-          class="card p-4 flex items-start gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+          class="card p-4 flex items-start gap-3 cursor-pointer hover:border-primary-200 dark:hover:border-gray-600 transition-colors"
           @click="openDraft(draft)"
         >
           <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0"
             :class="{
-              'bg-primary-50 dark:bg-primary-900/30': draft.type === 'image',
-              'bg-rose-50 dark:bg-rose-900/30': draft.type === 'video',
-              'bg-sky-50 dark:bg-sky-900/30': draft.type === 'text',
-              'bg-amber-50 dark:bg-amber-900/30': draft.type === 'long',
+              'bg-primary-50 dark:bg-gray-700': draft.type === 'image',
+              'bg-rose-50 dark:bg-gray-700': draft.type === 'video',
+              'bg-sky-50 dark:bg-gray-700': draft.type === 'text',
+              'bg-amber-50 dark:bg-gray-700': draft.type === 'long',
             }"
           >
             <i :class="draft.icon"></i>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
-              <span class="text-sm font-medium text-gray-900">{{ draft.title || '（无标题）' }}</span>
+              <span class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ draft.title || '（无标题）' }}</span>
               <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 ">{{ draft.typeName }}</span>
             </div>
             <p class="text-xs text-gray-500  mt-1 line-clamp-2">{{ excerpt(draft.content.replace(/<[^>]+>/g, '')) }}</p>
@@ -127,7 +127,8 @@ const protectedUrl = (url: string) => toProtectedFileUrl(url)
             </div>
           </div>
           <button
-            class="p-2 -mr-2 rounded-lg text-gray-300  hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
+            aria-label="删除草稿"
+            class="p-2 -mr-2 rounded-lg text-gray-300 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
             @click.stop="handleDelete(draft.key)"
           >
             <i class="ri-delete-bin-line text-base"></i>
@@ -143,11 +144,11 @@ const protectedUrl = (url: string) => toProtectedFileUrl(url)
       </Transition>
       <Transition name="dialog">
         <div v-if="showClearConfirm" class="fixed inset-x-0 top-1/3 z-[71] max-w-sm mx-auto px-6">
-          <div class="bg-[#F5F7FA] rounded-2xl shadow-2xl p-6">
-            <h3 class="text-base font-semibold text-gray-900 mb-2">清空所有草稿？</h3>
-            <p class="text-sm text-gray-500  mb-5">此操作将删除全部 {{ draftCount }} 篇草稿，且无法恢复。</p>
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6">
+            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">清空所有草稿？</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">此操作将删除全部 {{ draftCount }} 篇草稿，且无法恢复。</p>
             <div class="flex gap-3">
-              <button class="flex-1 py-2.5 text-sm font-medium rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" @click="showClearConfirm = false">取消</button>
+              <button class="flex-1 py-2.5 text-sm font-medium rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" @click="showClearConfirm = false">取消</button>
               <button class="flex-1 py-2.5 text-sm font-medium rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors" @click="confirmClearAll">确认清空</button>
             </div>
           </div>

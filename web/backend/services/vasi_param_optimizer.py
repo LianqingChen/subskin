@@ -10,6 +10,7 @@ VASI 参数自适应优化器 (Phase 3)
   - 从用户修正数据中持续学习：参数 → 准确率 的映射
   - 使用高斯过程回归 (Gaussian Process) 建模，EI (Expected Improvement) 推荐
 """
+from web.backend.utils.timeutils import iso_utc
 
 import json
 import logging
@@ -167,7 +168,7 @@ class SimpleBayesianOptimizer:
         self.observations.append(Observation(
             params=params,
             score=score,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=iso_utc(datetime.utcnow()),
         ))
         # 只保留最近 100 条
         if len(self.observations) > 100:

@@ -42,7 +42,7 @@ SAFETY_PROMPT = """你是内容安全审核员。请判断以下用户发布的�
 - safe: 安全
 
 返回JSON格式：
-{"risk_level":"safe","risk_categories":[],"reason":"","confidence":0.0}
+{{"risk_level":"safe","risk_categories":[],"reason":"","confidence":0.0}}
 
 confidence范围 0.0~1.0，0.0表示完全安全，1.0表示确信违规。
 
@@ -183,6 +183,55 @@ def moderate_profile_field(user_id: int, field_name: str, field_value: str):
     except Exception as e:
         logger.error(f"Moderate profile for user {user_id} failed: {e}")
         db.rollback()
+    finally:
+        db_gen.close()
+
+
+def moderate_text(
+    content_type: str,
+    content: str,
+    user_id: int,
+    title: str = "",
+) -> dict:
+    """通用文本审核入口（社区外的新发布场景，如医评的医院/医生/治疗方案评价）。
+
+    行为与帖子/评论审核一致：安全内容直接放行（不写风控记录），命中风险则写入
+    ContentModeration 并按等级自动处罚。返回 ``{"risk_level": ..., "action": ...}``，
+    调用方据此决定自己内容的可见状态。本函数不抛异常（审核失败按 flagged 处理）。
+    """
+    db_gen = get_db()
+    db: Session = next(db_gen)
+    try:
+        result = check_content_safety(title, content)
+        risk_level = result["risk_level"]
+
+        if risk_level == "safe":
+            return {"risk_level": "safe", "action": "none"}
+
+        auto_action = determine_auto_action(risk_level, result["confidence"])
+
+        moderation = ContentModeration(
+            user_id=user_id,
+            content_type=content_type[:20],
+            content_snapshot=content[:500],
+            risk_level=risk_level,
+            risk_categories=result["risk_categories"],
+            auto_action=auto_action,
+            ai_reason=result["reason"],
+            ai_confidence=result["confidence"],
+            status="pending",
+        )
+        db.add(moderation)
+
+        if auto_action == "blocked":
+            _apply_auto_penalty(db, user_id, risk_level, moderation.id)
+
+        db.commit()
+        return {"risk_level": risk_level, "action": auto_action}
+    except Exception as e:
+        logger.error("Moderate %s for user %s failed: %s", content_type, user_id, e)
+        db.rollback()
+        return {"risk_level": "flagged", "action": "flagged"}
     finally:
         db_gen.close()
 

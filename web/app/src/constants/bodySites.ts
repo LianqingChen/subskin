@@ -1,14 +1,16 @@
 /**
  * SINGLE SOURCE OF TRUTH for body-site identifiers across the VASI assessment stack.
- * Consumers: DigitalHuman, BodyPartCamera, AssessmentSection, backend `body_site` field.
+ * Consumers: DigitalHuman, BodyPartCamera, backend `body_site` field.
  * `bsaPercent` follows the modified VASI hand-unit system (Hamzavi et al. 2004).
  */
 
 export type BodySite =
+  | 'head'
   | 'face'
   | 'neck'
   | 'chest'
   | 'abdomen'
+  | 'back'
   | 'upper_back'
   | 'lower_back'
   | 'left_arm'
@@ -30,10 +32,12 @@ export interface BodySiteMeta {
 }
 
 export const BODY_SITES: Record<BodySite, BodySiteMeta> = {
+  head:        { id: 'head',        label: '头部',   side: 'center', group: 'head',  bsaPercent: 4.5,  view: 'both' },
   face:        { id: 'face',        label: '面部',   side: 'center', group: 'head',  bsaPercent: 4.5,  view: 'both' },
-  neck:        { id: 'neck',        label: '颈部',   side: 'center', group: 'head',  bsaPercent: 1.0,  view: 'both' },
+  neck:        { id: 'neck',        label: '脖子',   side: 'center', group: 'head',  bsaPercent: 1.0,  view: 'both' },
   chest:       { id: 'chest',       label: '胸部',   side: 'center', group: 'torso', bsaPercent: 9.0,  view: 'front' },
   abdomen:     { id: 'abdomen',     label: '腹部',   side: 'center', group: 'torso', bsaPercent: 9.0,  view: 'front' },
+  back:        { id: 'back',        label: '背部',   side: 'center', group: 'torso', bsaPercent: 18.0, view: 'back' },
   upper_back:  { id: 'upper_back',  label: '上背部', side: 'center', group: 'torso', bsaPercent: 9.0,  view: 'back' },
   lower_back:  { id: 'lower_back',  label: '下背部', side: 'center', group: 'torso', bsaPercent: 9.0,  view: 'back' },
   left_arm:    { id: 'left_arm',    label: '左臂',   side: 'left',   group: 'arm',   bsaPercent: 4.5,  view: 'both' },
@@ -71,11 +75,11 @@ export function getCameraShapeKey(site: string): CameraShapeKey {
     case 'leg':  return 'leg'
     case 'foot': return 'foot'
     case 'head':
-      return site === 'face' ? 'face' : 'neck'
+      return site === 'neck' ? 'neck' : 'face'
     case 'torso':
       if (site === 'chest') return 'chest'
       if (site === 'abdomen') return 'abdomen'
-      if (site === 'upper_back') return 'upper_back'
+      if (site === 'back' || site === 'upper_back') return 'upper_back'
       return 'lower_back'
   }
 }

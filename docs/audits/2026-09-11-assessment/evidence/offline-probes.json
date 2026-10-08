@@ -1,0 +1,529 @@
+{
+  "scope": "Synthetic module-level probes, NOT clinical accuracy and NOT full online VLM/SAM system",
+  "runtime": {
+    "opencv": "4.11.0",
+    "numpy": "2.3.5"
+  },
+  "source_sha256": {
+    "web/backend/services/vasi_quality.py": "c9b71d833cf006e1a43c84682b4017b0e1ee2813a5389f6f341bbe141adcad48",
+    "web/backend/services/vasi_edge_segmentation.py": "00fab34cf7c238fda5184549a8c368734d2c790f81390c416cecb8e8ca13f177",
+    "web/backend/services/assessment_measurement.py": "625bedc8a1a6894669219cf8a0367760943b95294b55ee7f727d1beb276a968e",
+    "web/backend/services/assessment_comparison.py": "5f590976cb83f9246163db988e404a7cb152b5fcf2111fd00f3f3d3f6a43d76e",
+    "scripts/assessment_benchmark.py": "9e85c1cda91c72f46767688be3a9085bb656453390d60fa8c278fe3b314f9641"
+  },
+  "cases": [
+    {
+      "id": "clear_control",
+      "input": "Textured artificial skin ellipse and high contrast circular target",
+      "quality": {
+        "overall": "good",
+        "blur_score": 319.6,
+        "blur_ok": true,
+        "skin_ratio": 0.505,
+        "skin_ok": true,
+        "brightness_mean": 118.6,
+        "lighting_ok": true,
+        "resolution": [
+          800,
+          640
+        ],
+        "size_ok": true,
+        "suggestions": []
+      },
+      "formal_gate_allows": true,
+      "offline_segmentation": {
+        "dice": 0.9844774468757406,
+        "iou": 0.9694294270934619,
+        "boundary_f1_2px": 0.9438118646334939,
+        "hd95_px": 2.196899890899658,
+        "area_error_px": -230,
+        "area_error_percent": -0.9043368851492156,
+        "false_positive_pixels": 278,
+        "predicted_area_px": 25203,
+        "pixel_precision": 0.988969567115026,
+        "pixel_recall": 0.9800259505367043
+      },
+      "source": "edge-aware",
+      "online_model_tested": false,
+      "roi": "supplied synthetic region; not production end-to-end"
+    },
+    {
+      "id": "blur_sigma8",
+      "input": "Gaussian blur sigma=8; geometry unchanged",
+      "quality": {
+        "overall": "poor",
+        "blur_score": 0.6,
+        "blur_ok": false,
+        "skin_ratio": 0.566,
+        "skin_ok": true,
+        "brightness_mean": 118.5,
+        "lighting_ok": true,
+        "resolution": [
+          800,
+          640
+        ],
+        "size_ok": true,
+        "suggestions": [
+          "照片模糊，请保持手机稳定后重新拍摄"
+        ]
+      },
+      "formal_gate_allows": false,
+      "offline_segmentation": {
+        "dice": 0.9352602644014194,
+        "iou": 0.878393313531809,
+        "boundary_f1_2px": 0.0,
+        "hd95_px": 6.396899700164795,
+        "area_error_px": 3521,
+        "area_error_percent": 13.844218141784296,
+        "false_positive_pixels": 3521,
+        "predicted_area_px": 28954,
+        "pixel_precision": 0.878393313531809,
+        "pixel_recall": 1.0
+      },
+      "source": "edge-aware",
+      "online_model_tested": false,
+      "roi": "supplied synthetic region; not production end-to-end"
+    },
+    {
+      "id": "dark_20pct",
+      "input": "RGB multiplied by 0.2",
+      "quality": {
+        "overall": "poor",
+        "blur_score": 13.4,
+        "blur_ok": false,
+        "skin_ratio": 0.505,
+        "skin_ok": true,
+        "brightness_mean": 23.4,
+        "lighting_ok": false,
+        "resolution": [
+          800,
+          640
+        ],
+        "size_ok": true,
+        "suggestions": [
+          "照片模糊，请保持手机稳定后重新拍摄",
+          "光线过暗，请在自然光或充足照明下拍摄"
+        ]
+      },
+      "formal_gate_allows": false,
+      "offline_segmentation": {
+        "dice": 0.9868480370058214,
+        "iou": 0.9740375314374153,
+        "boundary_f1_2px": 1.0,
+        "hd95_px": 2.0,
+        "area_error_px": 153,
+        "area_error_percent": 0.6015806235992608,
+        "false_positive_pixels": 412,
+        "predicted_area_px": 25586,
+        "pixel_precision": 0.9838974439146408,
+        "pixel_recall": 0.9898163802933198
+      },
+      "source": "edge-aware",
+      "online_model_tested": false,
+      "roi": "supplied synthetic region; not production end-to-end"
+    },
+    {
+      "id": "overexposure_clipped",
+      "input": "RGB clipped after strong exposure increase",
+      "quality": {
+        "overall": "acceptable",
+        "blur_score": 166.5,
+        "blur_ok": true,
+        "skin_ratio": 0.0,
+        "skin_ok": false,
+        "brightness_mean": 206.7,
+        "lighting_ok": true,
+        "resolution": [
+          800,
+          640
+        ],
+        "size_ok": true,
+        "suggestions": [
+          "画面中皮肤区域较少，请让患处更靠近相机或确保画面内皮肤完整可见"
+        ]
+      },
+      "formal_gate_allows": true,
+      "offline_segmentation": {
+        "dice": 0.0,
+        "iou": 0.0,
+        "boundary_f1_2px": 0.0,
+        "hd95_px": null,
+        "area_error_px": -25433,
+        "area_error_percent": -100.0,
+        "false_positive_pixels": 0,
+        "predicted_area_px": 0,
+        "pixel_precision": null,
+        "pixel_recall": 0.0
+      },
+      "source": "edge-aware",
+      "online_model_tested": false,
+      "roi": "supplied synthetic region; not production end-to-end"
+    },
+    {
+      "id": "hard_shadow",
+      "input": "Left half multiplied by .35",
+      "quality": {
+        "overall": "good",
+        "blur_score": 209.4,
+        "blur_ok": true,
+        "skin_ratio": 0.505,
+        "skin_ok": true,
+        "brightness_mean": 79.7,
+        "lighting_ok": true,
+        "resolution": [
+          800,
+          640
+        ],
+        "size_ok": true,
+        "suggestions": []
+      },
+      "formal_gate_allows": true,
+      "offline_segmentation": {
+        "dice": 0.44456237054282144,
+        "iou": 0.2858117626342666,
+        "boundary_f1_2px": 0.20043386521367015,
+        "hd95_px": 178.0,
+        "area_error_px": 7551,
+        "area_error_percent": 29.689773129398812,
+        "false_positive_pixels": 19999,
+        "predicted_area_px": 32984,
+        "pixel_precision": 0.39367572156196945,
+        "pixel_recall": 0.510557150159242
+      },
+      "source": "edge-aware",
+      "online_model_tested": false,
+      "roi": "supplied synthetic region; not production end-to-end"
+    },
+    {
+      "id": "glare_on_target",
+      "input": "Saturated disk covering target evidence",
+      "quality": {
+        "overall": "good",
+        "blur_score": 315.6,
+        "blur_ok": true,
+        "skin_ratio": 0.505,
+        "skin_ok": true,
+        "brightness_mean": 119.3,
+        "lighting_ok": true,
+        "resolution": [
+          800,
+          640
+        ],
+        "size_ok": true,
+        "suggestions": []
+      },
+      "formal_gate_allows": true,
+      "offline_segmentation": {
+        "dice": 0.9845175559856234,
+        "iou": 0.9695072148107814,
+        "boundary_f1_2px": 0.9438118646334939,
+        "hd95_px": 2.196899890899658,
+        "area_error_px": -228,
+        "area_error_percent": -0.896473086147918,
+        "false_positive_pixels": 278,
+        "predicted_area_px": 25205,
+        "pixel_precision": 0.9889704423725452,
+        "pixel_recall": 0.9801045885267172
+      },
+      "source": "edge-aware",
+      "online_model_tested": false,
+      "roi": "supplied synthetic region; not production end-to-end"
+    },
+    {
+      "id": "small_target_9px",
+      "input": "Tiny target with otherwise clear texture",
+      "quality": {
+        "overall": "good",
+        "blur_score": 301.8,
+        "blur_ok": true,
+        "skin_ratio": 0.554,
+        "skin_ok": true,
+        "brightness_mean": 115.3,
+        "lighting_ok": true,
+        "resolution": [
+          800,
+          640
+        ],
+        "size_ok": true,
+        "suggestions": []
+      },
+      "formal_gate_allows": true,
+      "offline_segmentation": {
+        "dice": 0.0,
+        "iou": 0.0,
+        "boundary_f1_2px": 0.0,
+        "hd95_px": null,
+        "area_error_px": -249,
+        "area_error_percent": -100.0,
+        "false_positive_pixels": 0,
+        "predicted_area_px": 0,
+        "pixel_precision": null,
+        "pixel_recall": 0.0
+      },
+      "source": "edge-aware",
+      "online_model_tested": false,
+      "roi": "supplied synthetic region; not production end-to-end"
+    },
+    {
+      "id": "large_target",
+      "input": "Large target; surrounding normal artificial skin remains",
+      "quality": {
+        "overall": "good",
+        "blur_score": 355.6,
+        "blur_ok": true,
+        "skin_ratio": 0.16,
+        "skin_ok": true,
+        "brightness_mean": 141.7,
+        "lighting_ok": true,
+        "resolution": [
+          800,
+          640
+        ],
+        "size_ok": true,
+        "suggestions": []
+      },
+      "formal_gate_allows": true,
+      "offline_segmentation": {
+        "dice": 0.7952150587008493,
+        "iou": 0.6600473092262826,
+        "boundary_f1_2px": 0.7372580932756844,
+        "hd95_px": 125.22327423095703,
+        "area_error_px": -67011,
+        "area_error_percent": -33.12702375361495,
+        "false_positive_pixels": 1058,
+        "predicted_area_px": 135274,
+        "pixel_precision": 0.992178837027071,
+        "pixel_recall": 0.6634995180067726
+      },
+      "source": "edge-aware",
+      "online_model_tested": false,
+      "roi": "supplied synthetic region; not production end-to-end"
+    },
+    {
+      "id": "diffuse_low_contrast",
+      "input": "Boundary reference is generator geometry, not clinical consensus",
+      "quality": {
+        "overall": "good",
+        "blur_score": 299.9,
+        "blur_ok": true,
+        "skin_ratio": 0.555,
+        "skin_ok": true,
+        "brightness_mean": 116.5,
+        "lighting_ok": true,
+        "resolution": [
+          800,
+          640
+        ],
+        "size_ok": true,
+        "suggestions": []
+      },
+      "formal_gate_allows": true,
+      "offline_segmentation": {
+        "dice": 0.8864711033274956,
+        "iou": 0.7960916918963551,
+        "boundary_f1_2px": 0.0,
+        "hd95_px": 13.181398391723633,
+        "area_error_px": -5186,
+        "area_error_percent": -20.390830810364488,
+        "false_positive_pixels": 0,
+        "predicted_area_px": 20247,
+        "pixel_precision": 1.0,
+        "pixel_recall": 0.7960916918963551
+      },
+      "source": "edge-aware",
+      "online_model_tested": false,
+      "roi": "supplied synthetic region; not production end-to-end"
+    },
+    {
+      "id": "hair_occlusion",
+      "input": "Artificial dark lines; hidden target is NOT recoverable evidence",
+      "quality": {
+        "overall": "good",
+        "blur_score": 1463.5,
+        "blur_ok": true,
+        "skin_ratio": 0.494,
+        "skin_ok": true,
+        "brightness_mean": 114.9,
+        "lighting_ok": true,
+        "resolution": [
+          800,
+          640
+        ],
+        "size_ok": true,
+        "suggestions": []
+      },
+      "formal_gate_allows": true,
+      "offline_segmentation": {
+        "dice": 0.0,
+        "iou": 0.0,
+        "boundary_f1_2px": 0.0,
+        "hd95_px": null,
+        "area_error_px": -25433,
+        "area_error_percent": -100.0,
+        "false_positive_pixels": 0,
+        "predicted_area_px": 0,
+        "pixel_precision": null,
+        "pixel_recall": 0.0
+      },
+      "source": "edge-aware",
+      "online_model_tested": false,
+      "roi": "supplied synthetic region; not production end-to-end"
+    },
+    {
+      "id": "normal_control",
+      "input": "No target; false-positive control",
+      "quality": {
+        "overall": "good",
+        "blur_score": 299.8,
+        "blur_ok": true,
+        "skin_ratio": 0.555,
+        "skin_ok": true,
+        "brightness_mean": 115.2,
+        "lighting_ok": true,
+        "resolution": [
+          800,
+          640
+        ],
+        "size_ok": true,
+        "suggestions": []
+      },
+      "formal_gate_allows": true,
+      "offline_segmentation": {
+        "dice": 1.0,
+        "iou": 1.0,
+        "boundary_f1_2px": 1.0,
+        "hd95_px": null,
+        "area_error_px": 0,
+        "area_error_percent": null,
+        "false_positive_pixels": 0,
+        "predicted_area_px": 0,
+        "pixel_precision": null,
+        "pixel_recall": null
+      },
+      "source": "edge-aware",
+      "online_model_tested": false,
+      "roi": "supplied synthetic region; not production end-to-end"
+    },
+    {
+      "id": "non_skin_checkerboard",
+      "input": "No skin; checks whether texture passes skin gate",
+      "quality": {
+        "overall": "acceptable",
+        "blur_score": 13873.0,
+        "blur_ok": true,
+        "skin_ratio": 0.0,
+        "skin_ok": false,
+        "brightness_mean": 115.0,
+        "lighting_ok": true,
+        "resolution": [
+          800,
+          640
+        ],
+        "size_ok": true,
+        "suggestions": [
+          "画面中皮肤区域较少，请让患处更靠近相机或确保画面内皮肤完整可见"
+        ]
+      },
+      "formal_gate_allows": true,
+      "offline_segmentation": {
+        "dice": 1.0,
+        "iou": 1.0,
+        "boundary_f1_2px": 1.0,
+        "hd95_px": null,
+        "area_error_px": 0,
+        "area_error_percent": null,
+        "false_positive_pixels": 0,
+        "predicted_area_px": 0,
+        "pixel_precision": null,
+        "pixel_recall": null
+      },
+      "source": "edge-aware",
+      "online_model_tested": false,
+      "roi": "supplied synthetic region; not production end-to-end"
+    },
+    {
+      "id": "bright_normal_distractor",
+      "input": "Artificial brighter normal region, not lesion",
+      "quality": {
+        "overall": "good",
+        "blur_score": 313.4,
+        "blur_ok": true,
+        "skin_ratio": 0.555,
+        "skin_ok": true,
+        "brightness_mean": 118.4,
+        "lighting_ok": true,
+        "resolution": [
+          800,
+          640
+        ],
+        "size_ok": true,
+        "suggestions": []
+      },
+      "formal_gate_allows": true,
+      "offline_segmentation": {
+        "dice": 0.0,
+        "iou": 0.0,
+        "boundary_f1_2px": 0.0,
+        "hd95_px": null,
+        "area_error_px": 25196,
+        "area_error_percent": null,
+        "false_positive_pixels": 25196,
+        "predicted_area_px": 25196,
+        "pixel_precision": 0.0,
+        "pixel_recall": null
+      },
+      "source": "edge-aware",
+      "online_model_tested": false,
+      "roi": "supplied synthetic region; not production end-to-end"
+    },
+    {
+      "id": "low_resolution",
+      "input": "320x256",
+      "quality": {
+        "overall": "poor",
+        "blur_score": 299.7,
+        "blur_ok": true,
+        "skin_ratio": 0.508,
+        "skin_ok": true,
+        "brightness_mean": 118.5,
+        "lighting_ok": true,
+        "resolution": [
+          320,
+          256
+        ],
+        "size_ok": false,
+        "suggestions": [
+          "照片分辨率过低（当前 320×256，最低需要 640×480），请使用更高像素的手机拍照"
+        ]
+      },
+      "formal_gate_allows": false,
+      "offline_segmentation": {
+        "dice": 0.9694720459715073,
+        "iou": 0.9407527881040892,
+        "boundary_f1_2px": 0.9895683986750383,
+        "hd95_px": 2.0,
+        "area_error_px": 255,
+        "area_error_percent": 6.297851321313905,
+        "false_positive_pixels": 255,
+        "predicted_area_px": 4304,
+        "pixel_precision": 0.9407527881040892,
+        "pixel_recall": 1.0
+      },
+      "source": "edge-aware",
+      "online_model_tested": false,
+      "roi": "supplied synthetic region; not production end-to-end"
+    }
+  ],
+  "controls": {
+    "empty_reference_and_prediction": {
+      "dice": 1.0,
+      "iou": 1.0,
+      "boundary_f1_2px": 1.0,
+      "hd95_px": null,
+      "area_error_px": 0,
+      "area_error_percent": null,
+      "false_positive_pixels": 0,
+      "predicted_area_px": 0
+    }
+  }
+}

@@ -1,6 +1,7 @@
 """
 内容相关 API
 """
+from web.backend.utils.timeutils import iso_utc
 
 import os
 import glob
@@ -46,8 +47,8 @@ async def get_latest(
             "source": doc.source,
             "source_url": doc.source_url,
             "category": doc.category,
-            "created_at": doc.created_at.isoformat(),
-            "updated_at": doc.updated_at.isoformat(),
+            "created_at": iso_utc(doc.created_at),
+            "updated_at": iso_utc(doc.updated_at),
         })
     
     return {

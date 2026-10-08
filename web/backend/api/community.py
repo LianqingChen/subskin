@@ -1,3 +1,4 @@
+from web.backend.utils.timeutils import iso_utc
 # pyright: reportArgumentType=false, reportGeneralTypeIssues=false, reportUndefinedVariable=false
 
 import json
@@ -11,6 +12,7 @@ from web.backend.database.database import get_db
 from web.backend.database.models import User, Tag, PostTag, PostAudio, PostAttachment
 from web.backend.services.auth import auth, get_current_user, get_current_user_optional
 from web.backend.services.community import CommunityService
+from web.backend.utils.pii_detect import detect_pii, redact_pii
 from web.backend.services.recommendation import RecommendationService
 from web.backend.services.audit import AuditLogService
 from web.backend.services.content_safety import moderate_comment
@@ -35,6 +37,7 @@ from web.backend.models.community import (
     PostAttachment as PostAttachmentModel,
     Tag as TagModel,
     LikeResponse,
+    ShareResponse,
     ImageUploadResponse,
     AudioUploadResponse,
     FileUploadResponse,
@@ -62,11 +65,33 @@ router = APIRouter()
 
 # ─── IP 地理定位端点（同城页面快速定位） ───
 
+import asyncio
 import time as _time
 import requests as _requests
 
 _IP_LOCATION_CACHE_TTL = 3600
 _ip_location_cache: dict[str, tuple[float, dict[str, object]]] = {}
+
+
+def _fetch_ip_location(ip: str) -> Optional[dict]:
+    """同步调用 ipwho.is（HTTPS；2026-08-30 加固，原 ip-api.com 为明文 HTTP）"""
+    try:
+        resp = _requests.get(
+            f"https://ipwho.is/{ip}?lang=zh-CN",
+            timeout=3,
+        )
+        if resp.ok:
+            data = resp.json()
+            if data.get("success") and data.get("city"):
+                return {
+                    "city": str(data["city"]).replace("市", ""),
+                    "latitude": data.get("latitude"),
+                    "longitude": data.get("longitude"),
+                    "region": (data.get("region") or {}).get("code") if isinstance(data.get("region"), dict) else data.get("region"),
+                }
+    except Exception as e:
+        logger.warning("IP定位服务调用失败: %s", str(e))
+    return None
 
 
 def _get_client_ip(request: Request) -> str:
@@ -102,26 +127,22 @@ async def get_user_location(request: Request):
         return cached[1]
 
     # 调用 ip-api.com（免费、无需密钥、支持中文、响应~50ms）
+    # 注意：requests 是同步阻塞调用，必须放入线程池，否则会卡死单 worker 事件循环
     try:
-        resp = _requests.get(
-            f"http://ip-api.com/json/{ip}?lang=zh-CN&fields=status,city,regionName,lat,lon",
-            timeout=3,
-        )
-        if resp.ok:
-            data = resp.json()
-            if data.get("status") == "success" and data.get("city"):
-                city_name = data["city"].replace("市", "")
-                result = {
-                    "city": city_name,
-                    "latitude": data.get("lat"),
-                    "longitude": data.get("lon"),
-                    "region": data.get("regionName"),
-                    "source": "ip",
-                }
-                _ip_location_cache[ip] = (_time.time(), result)
-                return result
+        data = await asyncio.to_thread(_fetch_ip_location, ip)
     except Exception as e:
         logger.warning("IP定位服务调用失败: %s", str(e))
+        data = None
+    if data:
+        result = {
+            "city": data["city"],
+            "latitude": data["latitude"],
+            "longitude": data["longitude"],
+            "region": data["region"],
+            "source": "ip",
+        }
+        _ip_location_cache[ip] = (_time.time(), result)
+        return result
 
     return {"city": None, "latitude": None, "longitude": None, "region": None, "source": "ip"}
 
@@ -214,6 +235,22 @@ async def create_post(
             hours = int(remaining.total_seconds() / 3600)
             raise HTTPException(status_code=403, detail=f"账号已被禁言，剩余{hours}小时")
 
+    # ── 2026-08-30 隐私加固：公开帖 PII 检测 ──
+    # 命中手机号/邮箱/身份证等且用户未显式确认（confirm_pii）时，自动脱敏后发布，
+    # 防止隐私信息在公开 feed 中泄露；用户确认保留原文时记录审计。
+    pii_hits: list = []
+    if not post_data.is_private:
+        pii_hits = detect_pii(f"{post_data.title}\n{post_data.content}")
+        if pii_hits and not post_data.confirm_pii:
+            red_title, _t = redact_pii(post_data.title)
+            red_content, _c = redact_pii(post_data.content)
+            post_data = post_data.model_copy(
+                update={"title": red_title, "content": red_content}
+            )
+            logger.info(
+                "Post PII auto-redacted: user=%s types=%s", current_user.id, pii_hits
+            )
+
     service = CommunityService(db)
     exaggerated = check_exaggerated_claims(post_data.title, post_data.content)
     if exaggerated:
@@ -221,6 +258,11 @@ async def create_post(
             "User %s used exaggerated claims: %s in post '%s'",
             current_user.id, exaggerated, post_data.title[:50],
         )
+    treatment_share_json: Optional[str] = None
+    if post_data.treatment_share is not None:
+        treatment_data = post_data.treatment_share.model_dump()
+        treatment_data = service.enrich_treatment_share(current_user.id, treatment_data)
+        treatment_share_json = service.serialize_treatment_share(treatment_data)
     post = service.create_post(
         user_id=current_user.id,
         title=post_data.title,
@@ -228,6 +270,11 @@ async def create_post(
         category_id=post_data.category_id,
         content_json=post_data.content_json,
         image_urls=post_data.images,
+        image_metas=(
+            [m.model_dump() for m in post_data.image_metas]
+            if post_data.image_metas
+            else None
+        ),
         tag_names=post_data.tag_names,
         is_private=post_data.is_private,
         diary_date=post_data.diary_date,
@@ -238,6 +285,7 @@ async def create_post(
         video_url=post_data.video_url,
         video_thumbnail=post_data.video_thumbnail,
         city=post_data.city,
+        treatment_share_json=treatment_share_json,
     )
     # Flag post with exaggerated claims for moderation review
     if exaggerated:
@@ -251,19 +299,56 @@ async def create_post(
             target_type="post",
             target_id=post.id,
             scope="private" if post.is_private else "public",
-            detail=json.dumps({"title": post_data.title[:100]}, ensure_ascii=False),
+            detail=json.dumps(
+                {
+                    "title": post_data.title[:100],
+                    "public_ack": bool(post_data.public_ack),
+                    "pii_redacted": bool(pii_hits) and not post_data.confirm_pii,
+                },
+                ensure_ascii=False,
+            ),
             ip_address=request.client.host if request.client else None,
         )
+        if pii_hits and post_data.confirm_pii:
+            # 用户显式确认保留含 PII 的原文发布 — 留不可篡改审计记录
+            AuditLogService(db).create_log(
+                user_id=current_user.id,
+                action="community.pii_confirm",
+                target_type="post",
+                target_id=post.id,
+                scope="public",
+                detail=json.dumps({"pii_types": pii_hits}, ensure_ascii=False),
+                ip_address=request.client.host if request.client else None,
+            )
     except Exception:
         logger.warning("Audit log failed for post creation %s", post.id, exc_info=True)
 
-    try:
-        import threading
-        from web.backend.services.content_safety import moderate_post
-        t = threading.Thread(target=moderate_post, args=(post.id,), daemon=True)
-        t.start()
-    except Exception:
-        logger.warning("Content moderation launch failed for post %s", post.id, exc_info=True)
+    # ── 2026-08-30 隐私加固：私密帖不外送第三方 LLM ──
+    # 内容安全审核（LLM）与 AI 增强（正文提取 + 视觉模型）都会把帖子内容发往
+    # 第三方模型。私密日记/帖子属于 L3 健康数据，未经单独同意不外送，
+    # 仅公开帖保留审核与 AI 增强。
+    if post.is_private:
+        logger.info("Private post %s: skip external LLM moderation/enhancement", post.id)
+    else:
+        try:
+            import threading
+            from web.backend.services.content_safety import moderate_post
+            t = threading.Thread(target=moderate_post, args=(post.id,), daemon=True)
+            t.start()
+        except Exception:
+            logger.warning("Content moderation launch failed for post %s", post.id, exc_info=True)
+
+        # AI 增强：异步提取正文结构化信息 + 图片轻量视觉分析
+        try:
+            import threading as _t
+            from web.backend.services.post_ai import (
+                analyze_post_images_async,
+                extract_post_structure,
+            )
+            _t.Thread(target=extract_post_structure, args=(post.id,), daemon=True).start()
+            _t.Thread(target=analyze_post_images_async, args=(post.id,), daemon=True).start()
+        except Exception:
+            logger.warning("Post AI enhancement launch failed for post %s", post.id, exc_info=True)
 
     return _post_to_model(post, current_user.id, db)
 
@@ -275,6 +360,7 @@ async def list_posts(
     tag: Optional[str] = None,
     post_type: Optional[str] = None,
     feed_type: Optional[str] = None,
+    sort: Optional[str] = None,
     city: Optional[str] = None,
     user_lat: Optional[float] = None,
     user_lng: Optional[float] = None,
@@ -290,8 +376,30 @@ async def list_posts(
     if is_private is True and user_id is None:
         raise HTTPException(status_code=401, detail="请先登录后查看私密帖子")
 
+    # 显式排序（分享页排序胶囊）：综合/最新/最多浏览/最多点赞/最多收藏/最多转发。
+    # 走 CommunityService 的确定性排序；关注/同城 Tab 同样支持显式排序，
+    # 排序范围限定在对应 feed 子集内（无关注对象时按全局范围排序，与推荐服务
+    # 的 hot 回退一致）；未指定 sort 时保持原有 feed_type 行为。
+    VALID_SORTS = ("hot", "newest", "views", "likes", "bookmarks", "shares")
+
     next_cursor: Optional[str] = None
-    if feed_type and feed_type in ("recommend", "hot", "following", "local"):
+    if sort in VALID_SORTS:
+        service = CommunityService(db)
+        scoped_feed = feed_type if feed_type in ("following", "local") else None
+        total, posts, next_cursor = service.get_posts(
+            category_id=category_id,
+            tag_name=tag,
+            post_type=post_type,
+            feed_type=scoped_feed,
+            sort=sort,
+            city=city,
+            limit=limit,
+            offset=offset,
+            user_id=user_id,
+            is_private=is_private,
+            after=after,
+        )
+    elif feed_type and feed_type in ("recommend", "hot", "following", "local"):
         rec_svc = RecommendationService(db)
         page = 0 if after else (offset // max(limit, 1))
         total, posts, next_cursor = rec_svc.get_feed(
@@ -404,7 +512,7 @@ async def get_diary_calendar(
     # Group by date
     calendar_data = {}
     for post in posts:
-        date_str = post.diary_date.isoformat()
+        date_str = iso_utc(post.diary_date)
         if date_str not in calendar_data:
             calendar_data[date_str] = []
         calendar_data[date_str].append({
@@ -442,6 +550,38 @@ async def update_post(
     db: Session = Depends(get_db),
 ):
     service = CommunityService(db)
+    # 2026-08-30 隐私加固：公开帖编辑同样过 PII 检测，未显式确认时自动脱敏
+    if post_data.title is not None or post_data.content is not None:
+        from web.backend.database.models import Post as _ProbePost
+        _probe_row = (
+            db.query(_ProbePost)
+            .filter(_ProbePost.id == post_id, _ProbePost.user_id == current_user.id)
+            .first()
+        )
+        if _probe_row is None:
+            raise HTTPException(status_code=404, detail="帖子不存在")
+        _current_private = bool(_probe_row.is_private)
+        will_be_public = not (
+            post_data.is_private if post_data.is_private is not None else _current_private
+        )
+        if will_be_public:
+            probe = "\n".join(x for x in (post_data.title, post_data.content) if x)
+            if detect_pii(probe):
+                updates = {}
+                if post_data.title is not None:
+                    updates["title"] = redact_pii(post_data.title)[0]
+                if post_data.content is not None:
+                    updates["content"] = redact_pii(post_data.content)[0]
+                post_data = post_data.model_copy(update=updates)
+                logger.info(
+                    "Post update PII auto-redacted: user=%s post=%s",
+                    current_user.id, post_id,
+                )
+    update_treatment_json: Optional[str] = None
+    if post_data.treatment_share is not None:
+        treatment_data = post_data.treatment_share.model_dump()
+        treatment_data = service.enrich_treatment_share(current_user.id, treatment_data)
+        update_treatment_json = service.serialize_treatment_share(treatment_data) or ""
     try:
         post = service.update_post(
             post_id=post_id,
@@ -461,6 +601,7 @@ async def update_post(
             video_thumbnail=post_data.video_thumbnail,
             image_urls=post_data.images,
             city=post_data.city,
+            treatment_share_json=update_treatment_json,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -549,6 +690,35 @@ async def toggle_like(
         return LikeResponse(liked=liked, like_count=like_count)
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
+
+
+@router.post("/posts/{post_id}/share", response_model=ShareResponse)
+async def share_post(
+    request: Request,
+    post_id: int,
+    current_user: User = Depends(auth),
+    db: Session = Depends(get_db),
+):
+    """记录一次转发：转发数 +1 并写入交互日志（热度排序数据源）。"""
+    await limit_write_for_user(request, current_user.id)
+    service = CommunityService(db)
+    try:
+        count = service.share_post(post_id=post_id, user_id=current_user.id)
+        try:
+            AuditLogService.log(
+                db=db,
+                action="community.share",
+                actor_id=current_user.id,
+                target_type="post",
+                target_id=post_id,
+                details={"share_count": count},
+                revokeable=False,
+            )
+        except Exception:
+            pass
+        return ShareResponse(share_count=count)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -571,11 +741,18 @@ async def add_comment(
         from datetime import datetime, timezone
         if muted_until and muted_until > datetime.now(timezone.utc):
             raise HTTPException(status_code=403, detail="账号处于禁言状态，无法评论")
+    # 2026-08-30 隐私加固：评论一律做 PII 自动脱敏（评论区无保留原文的确认流程）
+    safe_content, pii_hit = redact_pii(comment_data.content)
+    if pii_hit:
+        logger.info(
+            "Comment PII auto-redacted: user=%s post=%s types=%s",
+            current_user.id, post_id, pii_hit,
+        )
     try:
         comment = service.add_comment(
             post_id=post_id,
             user_id=current_user.id,
-            content=comment_data.content,
+            content=safe_content,
         )
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))

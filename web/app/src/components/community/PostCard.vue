@@ -1,30 +1,41 @@
 <script setup lang="ts">
 import type { Post } from '@/types'
 import { toProtectedFileUrl } from '@/utils/file-url'
+import { avatarInitial } from '@/utils/avatar'
+import { getMoodMeta } from '@/utils/mood'
 import { communityApi } from '@/api/community'
 import { useAuthStore } from '@/stores/auth'
+import { timeAgo as formatRelative } from '@/utils/date'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import PageShareSheet from '@/components/common/PageShareSheet.vue'
 
 const props = defineProps<{
   post: Post
 }>()
 
 const authStore = useAuthStore()
+const router = useRouter()
 
 const localLiked = ref(props.post.is_liked)
 const localLikeCount = ref(props.post.like_count)
+const localShareCount = ref(props.post.share_count ?? 0)
+const showShare = ref(false)
+
+async function onShared() {
+  // 未登录用户仍可复制链接/系统分享，但转发计数需登录（与点赞/收藏一致）
+  if (!authStore.isLoggedIn) return
+  try {
+    const res = await communityApi.sharePost(props.post.id)
+    localShareCount.value = res.share_count
+    props.post.share_count = res.share_count
+  } catch {
+    // silently fail — 分享动作本身已成功，计数失败不影响用户
+  }
+}
 
 function timeAgo(dateStr: string): string {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diffMs = now - then
-  const minutes = Math.floor(diffMs / 60000)
-  if (minutes < 60) return minutes <= 0 ? '刚刚' : `${minutes}分钟前`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}小时前`
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}天前`
-  return `${Math.floor(days / 30)}个月前`
+  return formatRelative(dateStr) || dateStr
 }
 
 function formatTimeCity(post: Post): string {
@@ -34,15 +45,9 @@ function formatTimeCity(post: Post): string {
 }
 
 // Mood tag: prefer API mood field, fallback to category-based
-const MOOD_MAP: Record<string, { icon: string; label: string; color: string }> = {
-  '💪坚持中': { icon: 'ri-boxing-line', label: '坚持中', color: 'bg-orange-500/80 text-white' },
-  '😔低落': { icon: 'ri-emotion-sad-line', label: '低落', color: 'bg-purple-500/80 text-white' },
-  '🎉好转': { icon: 'ri-emotion-happy-line', label: '好转', color: 'bg-green-500/80 text-white' },
-  '🤔疑问': { icon: 'ri-question-line', label: '疑问', color: 'bg-cyan-500/80 text-white' },
-}
-
 function getMoodTag(post: Post): { icon: string; label: string; color: string } | null {
-  if (post.mood && MOOD_MAP[post.mood]) return MOOD_MAP[post.mood]
+  const moodMeta = getMoodMeta(post.mood)
+  if (moodMeta) return moodMeta
   if (post.diary_date) return { icon: 'ri-book-3-line', label: '日记', color: 'bg-amber-500/80 text-white' }
   const name = post.category?.name || ''
   if (name === '心理支持') return { icon: 'ri-heart-2-line', label: '倾诉', color: 'bg-purple-500/80 text-white' }
@@ -86,7 +91,7 @@ async function toggleLike(e: MouseEvent) {
 <template>
   <router-link
     :to="`/community/${post.id}`"
-    class="block no-underline break-inside-avoid mb-2 rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow duration-200 group"
+    class="block no-underline rounded-xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow duration-200 group"
   >
     <!-- Cover Image -->
     <div class="relative aspect-[3/4] bg-gray-100 overflow-hidden">
@@ -151,30 +156,60 @@ async function toggleLike(e: MouseEvent) {
         {{ post.title }}
       </h3>
 
+      <!-- 治疗分享结构化摘要 -->
+      <div v-if="post.treatment_share" class="flex flex-wrap items-center gap-1.5 mb-2">
+        <span class="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300">
+          <i class="ri-capsule-line"></i> 治疗经验
+        </span>
+        <span v-if="post.treatment_share.duration" class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300">
+          <i class="ri-time-line"></i> {{ post.treatment_share.duration }}
+        </span>
+        <span v-if="post.treatment_share.effect_rating" class="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/40 text-amber-500">
+          <i v-for="n in post.treatment_share.effect_rating" :key="n" class="ri-star-fill"></i>
+        </span>
+        <span v-if="post.treatment_share.cost_range" class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300">
+          <i class="ri-money-cny-circle-line"></i> {{ post.treatment_share.cost_range }}
+        </span>
+      </div>
+
       <!-- Author row: avatar + nickname + verified icon -->
       <router-link :to="`/user/${post.author.id}`" @click.stop class="flex items-center gap-1.5 min-w-0 no-underline">
         <div class="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 text-[9px] font-bold flex-shrink-0">
-          {{ post.author.username.charAt(0) }}
+          {{ avatarInitial(post.author.username) }}
         </div>
-        <span class="text-[11px] text-gray-500  truncate max-w-[70px]">{{ post.author.username }}</span>
-        <svg v-if="post.author.is_doctor" class="w-3 h-3 text-primary-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" title="认证医生">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
-        </svg>
+        <span class="text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-[70px]">{{ post.author.username }}</span>
+        <i v-if="post.author.is_doctor" class="ri-verified-badge-fill text-primary-500 text-xs flex-shrink-0" title="认证医生" aria-label="认证医生"></i>
         <i v-if="post.author.is_verified" class="ri-shield-check-line text-primary-500 text-xs flex-shrink-0" title="实名认证"></i>
       </router-link>
 
-      <!-- Bottom row: time+city · like heart -->
+      <!-- Bottom row: time+city · like · share -->
       <div class="flex items-center justify-between mt-1">
         <span class="text-[10px] text-gray-400 ">{{ formatTimeCity(post) }}</span>
-        <button class="flex items-center gap-0.5" :class="localLiked ? 'text-red-500' : 'text-red-400 dark:text-red-400'" @click.prevent.stop="toggleLike">
-          <svg class="w-3.5 h-3.5 transition-colors" viewBox="0 0 20 20" :fill="localLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.5">
-            <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
-          </svg>
-          <span class="text-[11px] text-red-500">{{ formatCount(localLikeCount) }}</span>
-        </button>
+        <div class="flex items-center gap-0.5">
+          <button class="flex items-center gap-0.5 p-1.5 -m-1.5" :class="localLiked ? 'text-red-500' : 'text-red-400 dark:text-red-400'" @click.prevent.stop="toggleLike" aria-label="点赞">
+            <svg class="w-3.5 h-3.5 transition-colors" viewBox="0 0 20 20" :fill="localLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.5">
+              <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
+            </svg>
+            <span class="text-[11px] text-red-500">{{ formatCount(localLikeCount) }}</span>
+          </button>
+          <button class="flex items-center gap-0.5 p-1.5 -m-1.5 text-gray-400 hover:text-primary-600" @click.prevent.stop="showShare = true" aria-label="转发">
+            <i class="ri-share-forward-line text-sm"></i>
+            <span class="text-[11px]">{{ formatCount(localShareCount) }}</span>
+          </button>
+        </div>
       </div>
     </div>
   </router-link>
+
+  <!-- 转发面板（Teleport 到 body；生成海报跳转详情页） -->
+  <PageShareSheet
+    v-if="showShare"
+    :visible="showShare"
+    :post="post"
+    @close="showShare = false"
+    @shared="onShared"
+    @generate-poster="showShare = false; router.push(`/community/${post.id}`)"
+  />
 </template>
 
 <style scoped>

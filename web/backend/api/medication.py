@@ -1,6 +1,7 @@
 """
 用药提醒 API
 """
+from web.backend.utils.timeutils import iso_utc
 
 import json
 import logging
@@ -75,7 +76,7 @@ def _reminder_to_response(reminder: MedicationReminder) -> dict:
         "reminder_days": json.loads(reminder.reminder_days) if reminder.reminder_days else None,
         "notes": reminder.notes,
         "is_active": reminder.is_active,
-        "created_at": reminder.created_at.isoformat() if reminder.created_at else None,
+        "created_at": iso_utc(reminder.created_at) if reminder.created_at else None,
     }
 
 

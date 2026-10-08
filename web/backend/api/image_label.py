@@ -9,11 +9,12 @@
   - 训练数据导出
   - 隐私保护：用户删除的图片仍保留但标记不可展示
 """
+from web.backend.utils.timeutils import iso_utc
 
 import hashlib
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
@@ -131,6 +132,15 @@ class ImageLabelListItem(BaseModel):
     training_eligible: bool = False
     created_at: Optional[str] = None
     labeled_at: Optional[str] = None
+    # 筛选与展示扩展字段（仅管理后台可见）
+    original_user_id: Optional[int] = None
+    username: Optional[str] = None
+    source: Optional[str] = None  # user=用户上传(测评) / admin=管理员上传
+    photo_date: Optional[str] = None  # 拍摄/评估日期（无评估时为创建时间）
+    has_user_annotation: bool = False
+    has_admin_annotation: bool = False
+    has_admin_composite: bool = False
+    in_training_set: bool = False
 
 
 class ImageLabelListResponse(BaseModel):
@@ -172,13 +182,14 @@ class TrainingExportResponse(BaseModel):
     val_count: int
     test_count: int
     export_url: Optional[str] = None
+    excluded_no_consent: int = 0  # 因用户未授权“改进识别”而被排除的条数
 
 
 # ── Helpers ────────────────────────────────────────────────────────
 
 
 def _format_dt(dt: Optional[datetime]) -> Optional[str]:
-    return dt.isoformat() if dt else None
+    return iso_utc(dt) if dt else None
 
 
 def _label_to_detail(label: ImageLabel) -> ImageLabelDetail:
@@ -275,11 +286,36 @@ async def list_image_labels(
     body_site: Optional[str] = Query(None, description="身体部位筛选"),
     training_eligible: Optional[bool] = Query(None, description="是否适合训练"),
     is_user_deleted: Optional[bool] = Query(None, description="是否用户已删除"),
+    source: Optional[str] = Query(None, description="图片来源: user=用户上传(测评) / admin=管理员上传"),
+    date_from: Optional[str] = Query(None, description="照片日期起 YYYY-MM-DD"),
+    date_to: Optional[str] = Query(None, description="照片日期止 YYYY-MM-DD"),
+    user_id: Optional[int] = Query(None, description="用户 ID 精确筛选"),
+    username: Optional[str] = Query(None, description="用户昵称模糊筛选"),
     admin_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db),
 ):
     """管理员获取图片打标列表 — 支持多维度筛选和分页"""
-    query = db.query(ImageLabel)
+    if source is not None and source not in ("user", "admin"):
+        raise HTTPException(status_code=400, detail="source must be 'user' or 'admin'")
+
+    date_from_dt = None
+    date_to_dt = None
+    try:
+        if date_from:
+            # 输入日期按中国时区解释，转 UTC 后与 created_at（UTC 存储）比较
+            date_from_dt = datetime.strptime(date_from, "%Y-%m-%d") - timedelta(hours=8)
+        if date_to:
+            date_to_dt = datetime.strptime(date_to, "%Y-%m-%d").replace(
+                hour=23, minute=59, second=59
+            ) - timedelta(hours=8)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="日期格式错误，应为 YYYY-MM-DD")
+
+    query = (
+        db.query(ImageLabel, User.username, VASIAssessment.assessment_date)
+        .outerjoin(VASIAssessment, ImageLabel.assessment_id == VASIAssessment.id)
+        .outerjoin(User, ImageLabel.original_user_id == User.id)
+    )
 
     if label_status is not None:
         query = query.filter(ImageLabel.label_status == label_status)
@@ -290,12 +326,27 @@ async def list_image_labels(
             or_(
                 ImageLabel.ai_body_site == body_site,
                 ImageLabel.admin_body_site == body_site,
+                ImageLabel.user_body_site == body_site,
             )
         )
     if training_eligible is not None:
         query = query.filter(ImageLabel.training_eligible == training_eligible)
     if is_user_deleted is not None:
         query = query.filter(ImageLabel.is_user_deleted == is_user_deleted)
+    if source == "user":
+        query = query.filter(ImageLabel.assessment_id.isnot(None))
+    elif source == "admin":
+        query = query.filter(ImageLabel.assessment_id.is_(None))
+    if date_from_dt is not None or date_to_dt is not None:
+        photo_date_expr = func.coalesce(VASIAssessment.assessment_date, ImageLabel.created_at)
+        if date_from_dt is not None:
+            query = query.filter(photo_date_expr >= date_from_dt)
+        if date_to_dt is not None:
+            query = query.filter(photo_date_expr <= date_to_dt)
+    if user_id is not None:
+        query = query.filter(ImageLabel.original_user_id == user_id)
+    if username:
+        query = query.filter(User.username.ilike(f"%{username}%"))
 
     total = query.count()
     rows = query.order_by(
@@ -303,8 +354,30 @@ async def list_image_labels(
         ImageLabel.created_at.desc(),
     ).offset(offset).limit(limit).all()
 
+    # 批量取标注来源/训练集标记，避免 N+1
+    label_ids = [r[0].id for r in rows]
+    anno_sources: dict = {}
+    training_label_ids: set = set()
+    if label_ids:
+        for lid, src in (
+            db.query(ImageLabelAnnotation.image_label_id, ImageLabelAnnotation.source)
+            .filter(ImageLabelAnnotation.image_label_id.in_(label_ids))
+            .distinct()
+            .all()
+        ):
+            anno_sources.setdefault(lid, set()).add(src)
+        from web.backend.models.vasi import VasiTrainingSample
+        training_label_ids = {
+            row[0]
+            for row in db.query(VasiTrainingSample.image_label_id)
+            .filter(VasiTrainingSample.image_label_id.in_(label_ids))
+            .all()
+            if row[0] is not None
+        }
+
     items = []
-    for r in rows:
+    for r, uname, assessment_date in rows:
+        sources = anno_sources.get(r.id, set())
         items.append(ImageLabelListItem(
             id=r.id,
             assessment_id=r.assessment_id,
@@ -322,6 +395,14 @@ async def list_image_labels(
             training_eligible=r.training_eligible,
             created_at=_format_dt(r.created_at),
             labeled_at=_format_dt(r.labeled_at),
+            original_user_id=r.original_user_id,
+            username=anonymize_label_username(uname),
+            source="user" if r.assessment_id else "admin",
+            photo_date=_format_dt(assessment_date or r.created_at),
+            has_user_annotation="user" in sources,
+            has_admin_annotation="admin" in sources,
+            has_admin_composite=bool(r.annotated_image_path),
+            in_training_set=r.id in training_label_ids,
         ))
 
     return ImageLabelListResponse(total=total, items=items)
@@ -355,7 +436,7 @@ async def get_label_stats(
     }
 
 
-@router.get("/admin/image-labels/{label_id}", response_model=ImageLabelDetail)
+@router.get("/admin/image-labels/{label_id:int}", response_model=ImageLabelDetail)
 async def get_image_label_detail(
     label_id: int,
     admin_user: User = Depends(get_current_admin_user),
@@ -441,7 +522,7 @@ def _generate_annotated_image(
             "label_id": label.id,
             "image_url": label.image_url,
             "image_hash": label.image_hash,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": iso_utc(datetime.utcnow()),
             "original_size": [orig_w, orig_h],
             "skin_masks": [],
             "lesion_masks": [],
@@ -567,6 +648,58 @@ def _load_image_from_label(label: ImageLabel):
     return None
 
 
+def _ensure_image_hash(label: ImageLabel, db: Session) -> bool:
+    """历史数据回填：image_hash 缺失时从原图文件计算 SHA-256 并写回。
+
+    训练样本以 image_hash 去重，缺失则无法入库。仅处理本地文件；
+    哈希冲突（同内容图片已有其他标注）时放弃回填，返回 False。
+    """
+    import hashlib as _hashlib
+    import re as _re
+    from pathlib import Path as _Path
+
+    if label.image_hash:
+        return True
+
+    image_url: str = label.image_url or ""
+    path_in_url: Optional[str] = None
+    api_match = _re.search(r"/api/files/serve/(.+?)(?:\?|$)", image_url)
+    if api_match:
+        path_in_url = api_match.group(1)
+    elif "data/uploads" in image_url:
+        idx = image_url.find("data/uploads")
+        path_in_url = image_url[idx + len("data/uploads/"):]
+    elif image_url.startswith("/data/"):
+        path_in_url = image_url[len("/data/"):]
+    if not path_in_url:
+        return False
+
+    safe_path = path_in_url.split("?")[0].split("#")[0]
+    if ".." in safe_path or safe_path.startswith("/"):
+        return False
+    candidate = _Path("/root/subskin/data/uploads") / safe_path
+    if not candidate.exists() or not candidate.is_file():
+        return False
+
+    sha256_hash = _hashlib.sha256(candidate.read_bytes()).hexdigest()
+    collision = (
+        db.query(ImageLabel)
+        .filter(ImageLabel.image_hash == sha256_hash, ImageLabel.id != label.id)
+        .first()
+    )
+    if collision:
+        logger.warning(
+            "Image hash collision for label %s (same content as label %s), skip backfill",
+            label.id, collision.id,
+        )
+        return False
+
+    label.image_hash = sha256_hash
+    db.commit()
+    logger.info("Backfilled image_hash for label %s: %s", label.id, sha256_hash[:16])
+    return True
+
+
 def _decode_data_url_image(data_url: str):
     """Decode a base64 PNG data URL into a PIL Image."""
     import base64 as _b64
@@ -588,7 +721,7 @@ def _decode_data_url_image(data_url: str):
         return None
 
 
-@router.post("/admin/image-labels/{label_id}/label")
+@router.post("/admin/image-labels/{label_id:int}/label")
 async def admin_label_image(
     label_id: int,
     request: AdminLabelRequest,
@@ -604,6 +737,17 @@ async def admin_label_image(
     annotations_data: Optional[list] = update_data.pop("annotations", None)
     annotated_image_data_url: Optional[str] = update_data.pop("annotated_image", None)
     training_eligible: Optional[bool] = update_data.pop("training_eligible", None)
+    from web.backend.services.rgb_segmentation.label_sync import is_rgb_label
+    from web.backend.services.rgb_segmentation.label_review import save_admin_reference
+    from web.backend.exceptions import RGBSegmentationError
+
+    if is_rgb_label(label):
+        try:
+            update_data["area_percentage"] = save_admin_reference(db, label, admin_user.id, annotations_data, request.draft_mode)
+        except RGBSegmentationError as exc:
+            raise HTTPException(status_code=exc.http_status, detail=str(exc))
+        training_eligible = False  # A versioned, authorized dataset release is separate.
+
 
     changes = []
     column_map = {
@@ -736,8 +880,9 @@ async def admin_label_image(
             joinedload(ImageLabel.assessment),
         ).filter(ImageLabel.id == label_id).first()
         if label:
-            from web.backend.services.vasi_feedback import get_feedback_collector
-            collector = get_feedback_collector(db)
+            _ensure_image_hash(label, db)
+            from web.backend.services.vasi_feedback import VasiFeedbackCollector
+            collector = VasiFeedbackCollector(db)
             sample = collector.upsert_from_admin_label(label)
             if sample:
                 logger.info(
@@ -755,7 +900,7 @@ async def admin_label_image(
     }
 
 
-@router.get("/admin/image-labels/{label_id}/annotated-image")
+@router.get("/admin/image-labels/{label_id:int}/annotated-image")
 async def get_annotated_image(
     label_id: int,
     request: Request,
@@ -853,6 +998,237 @@ async def get_annotated_image(
     raise HTTPException(status_code=404, detail="合成图生成失败，请重试")
 
 
+@router.get("/admin/image-labels/{label_id:int}/user-annotated-image")
+async def get_user_annotated_image(
+    label_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """返回用户标注合成图（原始照片 + 用户填涂蒙层叠加）
+
+    与 get_annotated_image 同构：header 优先鉴权、query token 兜底，
+    文件缓存（固定名覆盖式）。无用户填涂数据时返回 404。
+    """
+    from fastapi.responses import StreamingResponse
+    from pathlib import Path
+    from web.backend.services.auth import get_user_from_access_token
+
+    admin_user = None
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Bearer "):
+        admin_user = get_user_from_access_token(auth_header[7:], db)
+    if admin_user is None:
+        token = request.query_params.get("access_token", "") or request.query_params.get("token", "")
+        if token:
+            admin_user = get_user_from_access_token(token, db)
+    if admin_user is None or not admin_user.is_active or not admin_user.is_admin:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
+    if not label:
+        raise HTTPException(status_code=404, detail="标注记录不存在")
+
+    output_dir = Path("/root/subskin/data/uploads/vasi/annotated")
+    composite_path = output_dir / f"user_{label_id}_composite.jpg"
+
+    def _file_response(p: Path):
+        def file_iter(fp: Path = p):
+            with open(fp, "rb") as f:
+                chunk = f.read(64 * 1024)
+                while chunk:
+                    yield chunk
+                    chunk = f.read(64 * 1024)
+        return StreamingResponse(
+            file_iter(),
+            media_type="image/jpeg",
+            headers={"Cache-Control": "private, max-age=300"},
+        )
+
+    # ── 先取用户标注记录（缓存失效判断 + 合成共用） ──
+    user_ann = (
+        db.query(ImageLabelAnnotation)
+        .filter(
+            ImageLabelAnnotation.image_label_id == label_id,
+            ImageLabelAnnotation.source == "user",
+        )
+        .order_by(ImageLabelAnnotation.region_index.asc())
+        .first()
+    )
+
+    # ── 缓存命中且晚于用户标注最后更新 → 直接返回（否则重新合成） ──
+    if composite_path.exists() and composite_path.is_file():
+        stale = False
+        if user_ann and user_ann.updated_at:
+            import calendar
+            ann_epoch = calendar.timegm(user_ann.updated_at.timetuple())
+            if composite_path.stat().st_mtime < ann_epoch:
+                stale = True
+        if not stale:
+            return _file_response(composite_path)
+
+    # ── 收集用户蒙层数据（annotation 优先，评估表兜底）──
+    lesion_mask = user_ann.mask_data if user_ann else None
+    skin_mask = user_ann.skin_mask_data if user_ann else None
+
+    if (not lesion_mask or len(lesion_mask) < 100) and label.assessment_id:
+        assessment = db.query(VASIAssessment).filter(VASIAssessment.id == label.assessment_id).first()
+        if assessment:
+            lesion_mask = lesion_mask or assessment.user_lesion_layer
+            skin_mask = skin_mask or assessment.user_skin_layer
+
+    if not lesion_mask or len(lesion_mask) < 100:
+        raise HTTPException(status_code=404, detail="该图片没有用户填涂数据")
+
+    try:
+        original_img = _load_image_from_label(label)
+        if not original_img:
+            raise HTTPException(status_code=404, detail="原始图片加载失败")
+
+        from PIL import Image
+
+        if original_img.mode != "RGBA":
+            original_img = original_img.convert("RGBA")
+        orig_w, orig_h = original_img.size
+        composite_img = original_img.copy()
+
+        for mask_b64, alpha in ((skin_mask, 0.4), (lesion_mask, 0.55)):
+            if not mask_b64 or len(mask_b64) < 100:
+                continue
+            mask_img = _decode_data_url_image(mask_b64)
+            if not mask_img:
+                continue
+            if mask_img.mode != "RGBA":
+                mask_img = mask_img.convert("RGBA")
+            if mask_img.size != (orig_w, orig_h):
+                mask_img = mask_img.resize((orig_w, orig_h), Image.LANCZOS)
+            faded = mask_img.copy()
+            r, g, b, a = faded.split()
+            a = a.point(lambda v: int(v * alpha))
+            faded.putalpha(a)
+            composite_img = Image.alpha_composite(composite_img, faded)
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        composite_img.convert("RGB").save(str(composite_path), "JPEG", quality=85)
+        return _file_response(composite_path)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning("User annotated image generation failed for label %s: %s", label_id, e)
+        raise HTTPException(status_code=404, detail="用户标注合成图生成失败")
+
+
+def anonymize_label_username(username: Optional[str]) -> Optional[str]:
+    """打标/训练界面的用户身份脱敏（2026-08-30 隐私加固）。
+
+    管理员工作台默认只展示匿名编号（U***abcd），避免病情图片与
+    用户真实昵称/手机号长期并排展示形成身份关联。筛选仍用原始值。
+    """
+    if not username:
+        return None
+    s = str(username)
+    if len(s) <= 2:
+        return "U**"
+    return "U***" + s[-4:]
+
+
+def _add_label_to_training(label_id: int, admin_user: User, db: Session) -> dict:
+    """单张图片添加训练样本的共用逻辑。
+
+    Returns: {"ok": True, "sample_id": int} 或 {"ok": False, "status_code": int, "detail": str}
+    """
+    label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
+    if not label:
+        return {"ok": False, "status_code": 404, "detail": f"标注 {label_id} 不存在"}
+    # 2026-08-30 隐私合规：用户已删除的测评不得加入训练集
+    if getattr(label, "is_user_deleted", False):
+        return {"ok": False, "status_code": 400, "detail": f"标注 {label_id} 对应用户已删除该测评，不能加入训练集"}
+    if label.label_status != "labeled":
+        return {"ok": False, "status_code": 400, "detail": f"标注 {label_id} 请先完成标注提交"}
+    # 分用途授权：用户来源的图片必须有有效的“改进识别”授权才能加入训练集
+    from web.backend.services.data_consent import label_training_decision
+    if not label_training_decision(db, label).allowed:
+        return {"ok": False, "status_code": 403, "detail": f"标注 {label_id} 用户未授权用于模型训练，不能加入训练集"}
+
+    admin_ann = (
+        db.query(ImageLabelAnnotation)
+        .filter(
+            ImageLabelAnnotation.image_label_id == label_id,
+            ImageLabelAnnotation.source == "admin",
+            ImageLabelAnnotation.mask_data.isnot(None),
+        )
+        .first()
+    )
+    if not admin_ann:
+        return {"ok": False, "status_code": 400, "detail": f"标注 {label_id} 没有管理员蒙层"}
+
+    label.training_eligible = True
+    _ensure_image_hash(label, db)
+    _log_change(db, label.id, admin_user.id, "add_training_sample", "training_eligible",
+                "False", "True")
+    db.commit()
+
+    sample = None
+    try:
+        label = db.query(ImageLabel).options(
+            joinedload(ImageLabel.annotations),
+            joinedload(ImageLabel.assessment),
+        ).filter(ImageLabel.id == label_id).first()
+        from web.backend.services.vasi_feedback import VasiFeedbackCollector
+        collector = VasiFeedbackCollector(db)
+        sample = collector.upsert_from_admin_label(label)
+        if sample and not sample.image_label_id:
+            sample.image_label_id = label.id
+            db.commit()
+    except Exception as e:
+        logger.warning("Training sample sync failed for label %s: %s", label_id, e)
+        db.rollback()
+        return {"ok": False, "status_code": 500, "detail": f"标注 {label_id} 样本同步失败"}
+
+    if not sample:
+        return {"ok": False, "status_code": 500, "detail": f"标注 {label_id} 无有效管理员蒙层"}
+
+    return {"ok": True, "sample_id": sample.id}
+
+
+@router.post("/admin/image-labels/{label_id:int}/training-sample")
+async def add_to_training_samples(
+    label_id: int,
+    admin_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db),
+):
+    """将该标注加入训练样本 — 标记 training_eligible 并同步到 VasiTrainingSample"""
+    result = _add_label_to_training(label_id, admin_user, db)
+    if not result["ok"]:
+        raise HTTPException(status_code=result["status_code"], detail=result["detail"])
+    return {"status": "ok", "label_id": label_id, "sample_id": result["sample_id"]}
+
+
+class BulkTrainingSampleRequest(BaseModel):
+    label_ids: List[int] = Field(..., description="要添加的标注 ID 列表（单次最多 200 个）")
+
+
+@router.post("/admin/image-labels/training-sample/batch")
+async def add_to_training_samples_bulk(
+    req: BulkTrainingSampleRequest,
+    admin_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db),
+):
+    """批量将已完成标注加入训练样本"""
+    ids = list(dict.fromkeys(req.label_ids))
+    if len(ids) > 200:
+        raise HTTPException(status_code=400, detail="单次最多处理 200 个标注")
+
+    added, skipped = [], []
+    for label_id in ids:
+        result = _add_label_to_training(label_id, admin_user, db)
+        if result["ok"]:
+            added.append(label_id)
+        else:
+            skipped.append({"label_id": label_id, "reason": result["detail"]})
+
+    return {"added": len(added), "added_ids": added, "skipped": skipped}
+
+
 @router.post("/admin/image-labels/batch-status")
 async def batch_update_status(
     request: BatchStatusRequest,
@@ -869,7 +1245,10 @@ async def batch_update_status(
     for row in rows:
         row.label_status = request.label_status
         if request.training_eligible is not None:
-            row.training_eligible = request.training_eligible
+            from web.backend.services.data_consent import label_training_decision
+            # 只能把有授权的标注置为可训练；置为 False 不受限
+            if not request.training_eligible or label_training_decision(db, row).allowed:
+                row.training_eligible = request.training_eligible
         _log_change(db, row.id, admin_user.id, request.label_status)
         updated += 1
 
@@ -1023,6 +1402,11 @@ async def sync_from_assessments(
     user_annotations_synced = 0
 
     for a in assessments:
+        if a.assessment_source == "rgb-tools-v1":
+            from web.backend.services.rgb_segmentation.label_sync import sync_rgb_label
+            if sync_rgb_label(db, a):
+                user_annotations_synced += 1
+            continue
         if a.id in existing_assessment_ids:
             skipped += 1
             continue
@@ -1148,15 +1532,27 @@ async def export_training_data(
     import random
 
     query = db.query(ImageLabel).filter(ImageLabel.label_status == "labeled")
+    # RGB datasets need subject-separated manifests and explicit authorization.
+    query = query.filter(~ImageLabel.assessment.has(VASIAssessment.assessment_source == "rgb-tools-v1"))
+
+    # 2026-08-30 隐私合规：用户已删除的测评不进入训练导出
+    query = query.filter(ImageLabel.is_user_deleted == False)  # noqa: E712
 
     if request.only_admin_labeled:
         query = query.filter(ImageLabel.admin_is_vitiligo.isnot(None))
 
     labels = query.all()
 
+    # 分用途授权：没有有效“改进识别”授权的用户来源图片不进入导出
+    from web.backend.services.data_consent import label_training_decision
+    consented = [lb for lb in labels if label_training_decision(db, lb).allowed]
+    excluded_no_consent = len(labels) - len(consented)
+    labels = consented
+
     if not labels:
         return TrainingExportResponse(
             total_count=0, train_count=0, val_count=0, test_count=0,
+            excluded_no_consent=excluded_no_consent,
         )
 
     parts = request.split_ratio.split("/")
@@ -1235,13 +1631,24 @@ async def export_training_data(
     manifest_path = os.path.join(manifest_dir, f"manifest_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json")
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump({
-            "export_time": datetime.utcnow().isoformat(),
+            "export_time": iso_utc(datetime.utcnow()),
             "split_ratio": request.split_ratio,
             "total_count": n,
             "include_ai": request.include_ai,
             "include_user": request.include_user,
             "items": manifest_items,
         }, f, ensure_ascii=False, indent=2)
+
+    # 2026-08-30 隐私合规：manifest 含可回溯的图片路径，7 天后自动清理
+    try:
+        import time as _time
+        cutoff = _time.time() - 7 * 86400
+        for old in os.listdir(manifest_dir):
+            old_path = os.path.join(manifest_dir, old)
+            if os.path.isfile(old_path) and os.path.getmtime(old_path) < cutoff:
+                os.remove(old_path)
+    except Exception:
+        logger.warning("training manifest TTL cleanup failed", exc_info=True)
 
     train_count = sum(1 for m in manifest_items if m["split"] == "train")
     val_count = sum(1 for m in manifest_items if m["split"] == "val")
@@ -1253,6 +1660,7 @@ async def export_training_data(
         val_count=val_count,
         test_count=test_count,
         export_url=f"/api/vasi/admin/image-labels/training-manifest?path={manifest_path}",
+        excluded_no_consent=excluded_no_consent,
     )
 
 
@@ -1295,11 +1703,13 @@ async def export_labels_data(
 
     labels = query.order_by(ImageLabel.created_at.asc()).all()
 
+    # 2026-08-30 隐私合规：导出剥离 assessment_id（可经 VASIAssessment 回溯到用户），
+    # 并排除用户已删除的测评
+    labels = [r for r in labels if not getattr(r, "is_user_deleted", False)]
     rows = []
     for r in labels:
         rows.append({
             "id": r.id,
-            "assessment_id": r.assessment_id,
             "image_url": r.image_url,
             "label_status": r.label_status,
             "ai_body_site": r.ai_body_site,
@@ -1444,7 +1854,7 @@ async def _download_image_to_bytes(image_url: str, base_url: str = "http://127.0
     raise HTTPException(status_code=400, detail=f"无法解析图片 URL: {image_url}")
 
 
-@router.post("/admin/image-labels/{label_id}/ai-pretrain", response_model=AiPretrainResponse)
+@router.post("/admin/image-labels/{label_id:int}/ai-pretrain", response_model=AiPretrainResponse)
 async def admin_ai_pretrain(
     label_id: int,
     request: Request,
@@ -1543,7 +1953,7 @@ async def admin_ai_pretrain(
     )
 
 
-@router.get("/admin/image-labels/{label_id}/image")
+@router.get("/admin/image-labels/{label_id:int}/image")
 async def get_image_label_image(
     label_id: int,
     request: Request,
@@ -1672,7 +2082,7 @@ async def get_image_label_image(
     )
 
 
-@router.get("/admin/image-labels/{label_id}/annotations")
+@router.get("/admin/image-labels/{label_id:int}/annotations")
 async def get_admin_annotations(
     label_id: int,
     admin_user: User = Depends(get_current_admin_user),
@@ -1722,7 +2132,7 @@ async def get_admin_annotations(
     }
 
 
-@router.get("/admin/image-labels/{label_id}/user-annotations")
+@router.get("/admin/image-labels/{label_id:int}/user-annotations")
 async def get_user_annotations_for_admin(
     label_id: int,
     admin_user: User = Depends(get_current_admin_user),
@@ -1844,7 +2254,7 @@ async def get_user_annotations_for_admin(
     return result
 
 
-@router.delete("/admin/image-labels/{label_id}/annotations")
+@router.delete("/admin/image-labels/{label_id:int}/annotations")
 async def delete_admin_annotations(
     label_id: int,
     admin_user: User = Depends(get_current_admin_user),
@@ -1867,7 +2277,7 @@ async def delete_admin_annotations(
     return {"status": "ok", "deleted": deleted}
 
 
-@router.get("/admin/image-labels/{label_id}/history")
+@router.get("/admin/image-labels/{label_id:int}/history")
 async def get_label_history(
     label_id: int,
     admin_user: User = Depends(get_current_admin_user),
@@ -1908,34 +2318,34 @@ async def get_training_dashboard(
     admin_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db),
 ):
-    """训练数据管理面板 — 样本统计 + 模型版本"""
-    from web.backend.models.vasi import VasiTrainingSample, VasiModelVersion
+    """训练数据管理面板 — 样本统计 + 模型版本 + 训练状态"""
+    from web.backend.models.vasi import VasiModelVersion, VasiTrainingRun, VasiTrainingSample
+    from web.backend.services.vasi_model_trainer import is_training_active
 
-    total = db.query(VasiTrainingSample).filter(VasiTrainingSample.is_active == True).count()
-    train_count = db.query(VasiTrainingSample).filter(
-        VasiTrainingSample.is_active == True,
-        VasiTrainingSample.sample_source == "admin_labeling",
+    total = db.query(VasiTrainingSample).filter(VasiTrainingSample.is_active == True).count()  # noqa: E712
+    usable = db.query(VasiTrainingSample).filter(
+        VasiTrainingSample.is_active == True,  # noqa: E712
+        VasiTrainingSample.admin_mask_b64.isnot(None),
+        VasiTrainingSample.image_label_id.isnot(None),
+        VasiTrainingSample.admin_mask_b64 != "",
     ).count()
-    val_count = max(0, int(train_count * 0.15))
-    test_count = max(0, int(train_count * 0.15))
 
     # Count labeled but not yet synced
-    pending_sync = db.query(ImageLabel).filter(
-        ImageLabel.label_status == "labeled",
-        ImageLabel.training_eligible == True,
-    ).count()
-
-    # Get synced label IDs to subtract
     synced_label_ids = {
-        s.admin_label_id for s in db.query(VasiTrainingSample.admin_label_id).filter(
-            VasiTrainingSample.admin_label_id.isnot(None)
+        s.image_label_id for s in db.query(VasiTrainingSample.image_label_id).filter(
+            VasiTrainingSample.image_label_id.isnot(None)
         ).all()
     }
     pending_sync = db.query(ImageLabel).filter(
         ImageLabel.label_status == "labeled",
-        ImageLabel.training_eligible == True,
+        ImageLabel.training_eligible == True,  # noqa: E712
         ~ImageLabel.id.in_(synced_label_ids) if synced_label_ids else True,
     ).count()
+
+    # Latest run provides the real train/test split sizes
+    latest_run = db.query(VasiTrainingRun).order_by(VasiTrainingRun.id.desc()).first()
+    train_count = latest_run.train_size if latest_run and latest_run.train_size else usable
+    test_count = latest_run.test_size if latest_run and latest_run.test_size else 0
 
     # Model versions
     model_versions = db.query(VasiModelVersion).order_by(
@@ -1944,17 +2354,22 @@ async def get_training_dashboard(
 
     return {
         "total_samples": total,
+        "usable_samples": usable,
         "train_count": train_count,
-        "val_count": val_count,
         "test_count": test_count,
         "pending_sync": pending_sync,
+        "training_running": is_training_active(),
         "last_export_at": None,
         "model_versions": [
             {
+                "id": mv.id,
                 "version_tag": mv.version_tag,
+                "description": mv.description,
+                "evolution_layer": mv.evolution_layer,
                 "metrics": json.loads(mv.metrics_json) if mv.metrics_json else {},
                 "sample_count": mv.sample_count,
                 "is_active": mv.is_active,
+                "deployed_at": _format_dt(mv.deployed_at),
                 "created_at": _format_dt(mv.created_at),
             }
             for mv in model_versions
@@ -1975,11 +2390,18 @@ async def sync_training_samples(
         ImageLabel.training_eligible == True,
     ).all()
 
+    from web.backend.services.data_consent import label_training_decision
+
     synced = 0
+    skipped_no_consent = 0
     for label in eligible_labels:
+        if not label_training_decision(db, label).allowed:
+            skipped_no_consent += 1
+            continue
+        _ensure_image_hash(label, db)
         # Check if already synced
         existing = db.query(VasiTrainingSample).filter(
-            VasiTrainingSample.admin_label_id == label.id,
+            VasiTrainingSample.image_label_id == label.id,
         ).first()
         if existing:
             continue
@@ -1990,6 +2412,26 @@ async def sync_training_samples(
             ImageLabelAnnotation.source == "admin",
         ).first()
 
+        # 历史遗留样本（旧同步流程产生，缺 image_label_id）按 image_hash 回填，
+        # 避免同一张图重复插入
+        legacy = None
+        if label.image_hash:
+            legacy = db.query(VasiTrainingSample).filter(
+                VasiTrainingSample.image_label_id.is_(None),
+                VasiTrainingSample.image_hash == label.image_hash,
+            ).first()
+        if legacy:
+            legacy.image_label_id = label.id
+            if admin_ann and admin_ann.mask_data:
+                legacy.admin_mask_b64 = admin_ann.mask_data
+                legacy.admin_label_id = admin_ann.id
+                legacy.body_site = label.admin_body_site or label.ai_body_site or legacy.body_site
+                legacy.vitiligo_type = label.admin_vitiligo_type or legacy.vitiligo_type
+                legacy.stage = label.admin_vitiligo_stage or legacy.stage
+                legacy.is_active = True
+            synced += 1
+            continue
+
         sample = VasiTrainingSample(
             image_hash=label.image_hash or f"label_{label.id}",
             image_key=label.image_key or "",
@@ -1998,7 +2440,8 @@ async def sync_training_samples(
             vitiligo_type=label.admin_vitiligo_type,
             stage=label.admin_vitiligo_stage,
             admin_mask_b64=admin_ann.mask_data if admin_ann else None,
-            admin_label_id=label.id,
+            admin_label_id=admin_ann.id if admin_ann else None,
+            image_label_id=label.id,
             quality_level="good" if admin_ann and admin_ann.mask_data else "acceptable",
             is_active=True,
         )
@@ -2006,7 +2449,7 @@ async def sync_training_samples(
         synced += 1
 
     db.commit()
-    return {"synced": synced}
+    return {"synced": synced, "skipped_no_consent": skipped_no_consent}
 
 
 @router.get("/admin/image-labels/queue")

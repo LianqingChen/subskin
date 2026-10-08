@@ -1,24 +1,45 @@
 <script setup lang="ts">
 import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useRemoteMaskSelection } from '@/composables/useRemoteMaskSelection'
+import type { RGBSelector } from '@/api/rgb-segmentation'
+import MaskEditorToolbar from '@/components/tracker/MaskEditorToolbar.vue'
+import { useToast } from '@/composables/useToast'
+import { measureMaskPixels, type MaskMeasurement } from '@/utils/maskMeasurement'
+import {
+  buildEdgeMap,
+  magicWandSelect,
+  refineLesionMask,
+  paintMask,
+  readMask,
+  type EdgeMap,
+} from '@/utils/lesionMaskTools'
 
 const props = defineProps<{
   imageUrl: string
+  selectRegion?: RGBSelector
   editable?: boolean
+  measurementVerified?: boolean
   fullHeight?: boolean
   initialSkinLayerUrl?: string | null
   initialLesionLayerUrl?: string | null
+  initialUncertainLayerUrl?: string | null
 }>()
 
 const emit = defineEmits<{
   confirm: [payload: { skinMaskDataUrl: string; lesionMaskDataUrl: string }]
   cancel: []
 }>()
-type Tool = 'skin-brush' | 'lesion-brush' | 'eraser'
+type Tool = 'magic-wand' | 'skin-brush' | 'lesion-brush' | 'eraser' | 'exclude'
 
 const tool = ref<Tool>('lesion-brush')
 const brushSize = ref(32)
 const layerOpacity = ref(0.55)
 const showOnboardingTooltip = ref(true)
+const toast = useToast()
+
+/** 智能选斑颜色容差（0-100，越大选中范围越大） */
+const wandTolerance = ref(30)
+const isSnapping = ref(false)
 
 // Auto-dismiss onboarding tooltip after 8 seconds
 let onboardingTimer: ReturnType<typeof setTimeout> | null = null
@@ -39,7 +60,7 @@ watch(() => [props.initialSkinLayerUrl, props.initialLesionLayerUrl], () => {
 })
 
 const SKIN_COLOR = 'rgba(96,165,250,1)'
-const LESION_COLOR = 'rgba(244,114,182,1)'
+const LESION_COLOR = 'rgba(0,170,100,1)'
 
 const containerRef = ref<HTMLDivElement | null>(null)
 const imgContainerRef = ref<HTMLDivElement | null>(null)
@@ -88,9 +109,7 @@ let _pinchStartPanX = 0
 let _pinchStartPanY = 0
 
 const isPainting = ref(false)
-const skinAreaPct = ref(0)
-const lesionAreaPct = ref(0)
-const regionAreaPct = ref(0)
+const maskMeasurement = ref<MaskMeasurement>({ areaPercentage: null, skinPixels: 0, lesionPixels: 0, outsidePixels: 0, reason: '请先核对标注' })
 
 // Use shallowRef for history — ImageData objects are ~3MB each and should
 // NOT be wrapped in Vue's deep reactive proxy. shallowRef tracks the array
@@ -110,10 +129,7 @@ function workingDims(natW: number, natH: number): [number, number] {
   return [Math.round(natW * scale), Math.round(natH * scale)]
 }
 
-const areaPercent = computed(() => {
-  if (regionAreaPct.value < 0.01) return 0
-  return Math.round((lesionAreaPct.value / regionAreaPct.value) * 1000) / 10
-})
+const areaPercent = computed(() => maskMeasurement.value.areaPercentage)
 
 /** Get context for mask canvases that need getImageData (read-heavy). */
 function getCtx(canvas: HTMLCanvasElement | null) {
@@ -186,6 +202,127 @@ function activeCanvas(): HTMLCanvasElement | null {
   return skinCanvasRef.value
 }
 
+// ── 逐像素颜色 / 邻域色差缓存（智能选斑 + 边缘吸附共用）──
+// 只在首次使用时计算一次 Sobel 梯度图（1M 像素约 60-120ms），
+// 之后每次点选/吸附都是毫秒级，保证交互跟手。
+let _sourceData: ImageData | null = null
+let _edgeMap: EdgeMap | null = null
+
+function invalidatePixelCache() {
+  _sourceData = null
+  _edgeMap = null
+}
+
+/** 确保原图像素与梯度图已就绪（工作分辨率，与掩膜画布同尺寸）。 */
+function ensurePixelCache(): boolean {
+  const skin = skinCanvasRef.value
+  const img = imgRef.value
+  if (!skin || !img) return false
+  const w = skin.width
+  const h = skin.height
+  if (w === 0 || h === 0) return false
+  if (_sourceData && _edgeMap && _sourceData.width === w && _sourceData.height === h) return true
+  try {
+    const off = document.createElement('canvas')
+    off.width = w
+    off.height = h
+    const ctx = off.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return false
+    ctx.drawImage(img, 0, 0, w, h)
+    _sourceData = ctx.getImageData(0, 0, w, h)
+    _edgeMap = buildEdgeMap(_sourceData)
+    return true
+  } catch (e) {
+    console.error('MaskEditor pixel cache failed:', e)
+    return false
+  }
+}
+
+/**
+ * 智能选斑：以点击点为种子做边缘感知区域生长。
+ * 结果仅写入浅色层并受现有皮肤范围约束；不能自动扩大皮肤分母。
+ */
+const remoteSelection = useRemoteMaskSelection({
+  selector: () => props.selectRegion,
+  skin: () => skinCanvasRef.value,
+  lesion: () => lesionCanvasRef.value,
+  changed: () => { drawOverlay(); snapshot(); updateAreasDebounced(); rebuildEdgeCaches() },
+})
+function runMagicWand(x: number, y: number) {
+  if (props.selectRegion) { void remoteSelection.select(x, y); return }
+  if (!ensurePixelCache() || !_sourceData || !_edgeMap) return
+  const skin = skinCanvasRef.value
+  const lesion = lesionCanvasRef.value
+  if (!skin || !lesion) return
+  const mask = magicWandSelect(_sourceData, _edgeMap, x, y, {
+    tolerance: wandTolerance.value,
+    allowedMask: readMask(skin),
+  })
+  let painted = 0
+  const lesionCtx = getCtx(lesion)
+  if (lesionCtx) painted = paintMask(lesionCtx, mask, lesion.width, lesion.height, LESION_COLOR)
+  drawOverlay()
+  snapshot()
+  updateAreasDebounced()
+  rebuildEdgeCaches()
+  if (painted === 0) {
+    toast.warning('请先核对蓝色皮肤范围，再点选其中的浅色区域')
+  }
+}
+
+/**
+ * 边缘吸附：把当前白斑层边界吸附到真实色差边界
+ * （逐像素比较「更像白斑」还是「更像周围皮肤」，并被邻域色差约束）。
+ */
+async function snapEdges() {
+  if (isSnapping.value) return
+  const lesion = lesionCanvasRef.value
+  const skin = skinCanvasRef.value
+  if (!lesion || !skin) return
+  const mask = readMask(lesion)
+  if (!mask.some((v) => v === 1)) {
+    toast.warning('请先圈出白斑范围（可用「智能选斑」点一下），再执行边缘吸附')
+    return
+  }
+  if (!ensurePixelCache() || !_sourceData || !_edgeMap) {
+    toast.error('照片像素尚未就绪，请稍后重试')
+    return
+  }
+  isSnapping.value = true
+  try {
+    // 让「吸附中」状态先渲染出来，避免长任务看起来像卡死
+    await nextTick()
+    const refined = refineLesionMask(_sourceData, _edgeMap, mask, {
+      tolerance: wandTolerance.value,
+    allowedMask: readMask(skin),
+      iterations: 4,
+    })
+    const lesionCtx = getCtx(lesion)
+    if (lesionCtx) {
+      lesionCtx.clearRect(0, 0, lesion.width, lesion.height)
+      paintMask(lesionCtx, refined, lesion.width, lesion.height, LESION_COLOR)
+    }
+    drawOverlay()
+    snapshot()
+    updateAreas()
+    rebuildEdgeCaches()
+    toast.success('已尝试贴合色差边缘，请核对结果；可撤销')
+  } catch (e) {
+    console.error('MaskEditor snapEdges failed:', e)
+    toast.error('边缘吸附失败，请重试')
+  } finally {
+    isSnapping.value = false
+  }
+}
+
+function clearLesionLayer() {
+  clearLayer('lesion')
+}
+
+function onWandTolerance(value: number) {
+  wandTolerance.value = value
+}
+
 let lastPos: [number, number] = [0, 0]
 
 function onPointerDown(e: PointerEvent) {
@@ -203,6 +340,7 @@ function onPointerDown(e: PointerEvent) {
     _pinchStartPanY = panY.value
     isPanning.value = true
     isPainting.value = false
+    hideBrushPreview()
     e.preventDefault()
     return
   }
@@ -211,6 +349,7 @@ function onPointerDown(e: PointerEvent) {
 
   if (e.button === 1 || e.button === 2) {
     isPanning.value = true
+    hideBrushPreview()
     _panStartX = e.clientX
     _panStartY = e.clientY
     _panStartPanX = panX.value
@@ -221,6 +360,7 @@ function onPointerDown(e: PointerEvent) {
 
   if (e.button === 0 && (e.metaKey || e.ctrlKey)) {
     isPanning.value = true
+    hideBrushPreview()
     _panStartX = e.clientX
     _panStartY = e.clientY
     _panStartPanX = panX.value
@@ -234,10 +374,18 @@ function onPointerDown(e: PointerEvent) {
   e.preventDefault()
   const [x, y] = clientToCanvas(e.clientX, e.clientY)
 
-  if (tool.value === 'eraser') {
+  // 智能选斑：单击即选中，无需拖拽
+  if (tool.value === 'magic-wand') {
+    updateBrushPreview(x, y)
+    runMagicWand(x, y)
+    return
+  }
+
+  if (tool.value === 'eraser' || tool.value === 'exclude') {
     isPainting.value = true
     lastPos = [x, y]
-    if (skinCanvasRef.value) paintAt(skinCanvasRef.value, x, y, x, y, SKIN_COLOR, true)
+    updateBrushPreview(x, y)
+    if (tool.value === 'exclude' && skinCanvasRef.value) paintAt(skinCanvasRef.value, x, y, x, y, SKIN_COLOR, true)
     if (lesionCanvasRef.value) paintAt(lesionCanvasRef.value, x, y, x, y, LESION_COLOR, true)
     drawOverlay()
     return
@@ -248,11 +396,11 @@ function onPointerDown(e: PointerEvent) {
   if (!target) return
   isPainting.value = true
   lastPos = [x, y]
+  updateBrushPreview(x, y)
   paintAt(target, x, y, x, y, color, false)
   if (tool.value === 'skin-brush' && lesionCanvasRef.value) {
+    // 皮肤笔 = 「这里是健康皮肤」，同时抹掉该处的白斑标注
     paintAt(lesionCanvasRef.value, x, y, x, y, LESION_COLOR, true)
-  } else if (tool.value === 'lesion-brush' && skinCanvasRef.value) {
-    paintAt(skinCanvasRef.value, x, y, x, y, SKIN_COLOR, true)
   }
   drawOverlay()
 }
@@ -286,9 +434,10 @@ function onPointerMove(e: PointerEvent) {
   if (!props.editable || !isPainting.value) return
   e.preventDefault()
   const [x, y] = clientToCanvas(e.clientX, e.clientY)
+  updateBrushPreview(x, y)
 
-  if (tool.value === 'eraser') {
-    if (skinCanvasRef.value) paintAt(skinCanvasRef.value, x, y, lastPos[0], lastPos[1], SKIN_COLOR, true)
+  if (tool.value === 'eraser' || tool.value === 'exclude') {
+    if (tool.value === 'exclude' && skinCanvasRef.value) paintAt(skinCanvasRef.value, x, y, lastPos[0], lastPos[1], SKIN_COLOR, true)
     if (lesionCanvasRef.value) paintAt(lesionCanvasRef.value, x, y, lastPos[0], lastPos[1], LESION_COLOR, true)
   } else {
     const target = activeCanvas()
@@ -296,8 +445,6 @@ function onPointerMove(e: PointerEvent) {
     if (target) paintAt(target, x, y, lastPos[0], lastPos[1], color, false)
     if (tool.value === 'skin-brush' && lesionCanvasRef.value) {
       paintAt(lesionCanvasRef.value, x, y, lastPos[0], lastPos[1], LESION_COLOR, true)
-    } else if (tool.value === 'lesion-brush' && skinCanvasRef.value) {
-      paintAt(skinCanvasRef.value, x, y, lastPos[0], lastPos[1], SKIN_COLOR, true)
     }
   }
   lastPos = [x, y]
@@ -311,6 +458,7 @@ function onPointerUp(e: PointerEvent) {
   }
   if (isPainting.value) {
     isPainting.value = false
+    hideBrushPreview()
     snapshot()
     updateAreasDebounced()
   }
@@ -425,8 +573,8 @@ function rebuildContourBuffers() {
   const ctxB = _contourBufB.getContext('2d')!
   ctxA.clearRect(0, 0, canvasW, canvasH)
   ctxB.clearRect(0, 0, canvasW, canvasH)
-  ctxA.fillStyle = '#f472b6'
-  ctxB.fillStyle = '#f472b6'
+  ctxA.fillStyle = '#00aa64'
+  ctxB.fillStyle = '#00aa64'
 
   for (const [x, y] of edgePixelsLesion) {
     // At offset 0, determine which phase this dot belongs to
@@ -520,37 +668,14 @@ function invalidateOverlayCache() {
   _overlayCtx = null
 }
 
-function countAlpha(canvas: HTMLCanvasElement): number {
-  const ctx = getCtx(canvas)
-  if (!ctx) return 0
-  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data
-  let count = 0
-  for (let i = 3; i < data.length; i += 4) {
-    if (data[i] > 32) count++
-  }
-  return count
-}
-
-function countUnionAlpha(skinCanvas: HTMLCanvasElement, lesionCanvas: HTMLCanvasElement): number {
-  const skinCtx = getCtx(skinCanvas)
-  const lesionCtx = getCtx(lesionCanvas)
-  if (!skinCtx || !lesionCtx) return 0
-  const skinData = skinCtx.getImageData(0, 0, skinCanvas.width, skinCanvas.height).data
-  const lesionData = lesionCtx.getImageData(0, 0, lesionCanvas.width, lesionCanvas.height).data
-  let count = 0
-  for (let i = 3; i < skinData.length; i += 4) {
-    if (skinData[i] > 32 || lesionData[i] > 32) count++
-  }
-  return count
-}
-
 function updateAreas() {
-  if (!skinCanvasRef.value || !lesionCanvasRef.value) return
-  const total = skinCanvasRef.value.width * skinCanvasRef.value.height
-  if (total === 0) return
-  skinAreaPct.value = (countAlpha(skinCanvasRef.value) / total) * 100
-  lesionAreaPct.value = (countAlpha(lesionCanvasRef.value) / total) * 100
-  regionAreaPct.value = (countUnionAlpha(skinCanvasRef.value, lesionCanvasRef.value) / total) * 100
+  const skin = skinCanvasRef.value, lesion = lesionCanvasRef.value
+  const skinCtx = getCtx(skin), lesionCtx = getCtx(lesion)
+  if (!skin || !lesion || !skinCtx || !lesionCtx || !skin.width || skin.width !== lesion.width || skin.height !== lesion.height) return
+  maskMeasurement.value = measureMaskPixels(
+    skinCtx.getImageData(0, 0, skin.width, skin.height).data,
+    lesionCtx.getImageData(0, 0, lesion.width, lesion.height).data,
+  )
 }
 
 /** Debounced version of updateAreas — prevents rapid successive calls
@@ -597,16 +722,13 @@ function applySnapshot(idx: number) {
 }
 
 function undo() { if (canUndo.value) { historyIndex.value--; applySnapshot(historyIndex.value) } }
-// @ts-expect-error TS6133 — kept for future toolbar use
 function redo() { if (canRedo.value) { historyIndex.value++; applySnapshot(historyIndex.value) } }
 
-// @ts-expect-error TS6133 — kept for future toolbar use
 function clearLayer(layer: 'skin' | 'lesion' | 'all') {
   const targets: HTMLCanvasElement[] = []
-  if (layer === 'skin' || layer === 'all') targets.push(skinCanvasRef.value!)
-  if (layer === 'lesion' || layer === 'all') targets.push(lesionCanvasRef.value!)
+  if ((layer === 'skin' || layer === 'all') && skinCanvasRef.value) targets.push(skinCanvasRef.value)
+  if ((layer === 'lesion' || layer === 'all') && lesionCanvasRef.value) targets.push(lesionCanvasRef.value)
   for (const c of targets) {
-    if (!c) continue
     getCtx(c)?.clearRect(0, 0, c.width, c.height)
   }
   drawOverlay()
@@ -662,6 +784,7 @@ async function onImgLoad() {
     }
     // Canvas resize invalidates cached contexts and contour buffers
     invalidateOverlayCache()
+    invalidatePixelCache()
     _contourBufDirty = true
     await nextTick()
 
@@ -795,24 +918,79 @@ function onWheel(e: WheelEvent) {
   clampPan()
 }
 
+// ── 沉浸全屏标注模式（自定义 fixed 覆盖层，非原生 Fullscreen API）──
+// 原生 Fullscreen API 在 iPhone Safari 不支持网页元素，且全屏后工具栏样式受限；
+// 用 Teleport 把整个编辑器搬到 <body> 顶层并铺满视口，canvas DOM 原样移动、
+// 像素数据不丢，全平台（iOS/安卓/桌面）体验一致。
 const isFullscreen = ref(false)
 
-// @ts-expect-error TS6133 — kept for future toolbar use
-function toggleFullscreen() {
-  const el = imgContainerRef.value
-  if (!el) return
-  if (document.fullscreenElement) {
-    document.exitFullscreen()
-  } else {
-    el.requestFullscreen().catch(() => {})
-  }
-}
-
-function onFullscreenChange() {
-  isFullscreen.value = !!document.fullscreenElement
+function enterFullscreen() {
+  if (isFullscreen.value) return
+  isFullscreen.value = true
+  // 锁定背景滚动（iOS 触链），退出时恢复
+  document.body.style.overflow = 'hidden'
   nextTick(() => {
     if (imageLoaded.value) zoomToFit()
   })
+}
+
+function exitFullscreen() {
+  if (!isFullscreen.value) return
+  isFullscreen.value = false
+  document.body.style.overflow = ''
+  nextTick(() => {
+    if (imageLoaded.value) zoomToFit()
+  })
+}
+
+/** Esc 键退出全屏（桌面端） */
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') exitFullscreen()
+}
+
+watch(isFullscreen, (val) => {
+  if (val) document.addEventListener('keydown', onKeydown)
+  else document.removeEventListener('keydown', onKeydown)
+})
+
+// ── 笔刷足迹圈（绘画时跟随指针，显示画笔/橡皮真实覆盖范围）──
+const brushPreviewVisible = ref(false)
+const brushPreviewX = ref(0)
+const brushPreviewY = ref(0)
+const brushPreviewR = ref(16)
+
+const brushPreviewColor = computed(() => {
+  if (tool.value === 'lesion-brush') return '0, 170, 100'
+  if (tool.value === 'skin-brush') return '96, 165, 250'
+  return '255, 255, 255'
+})
+
+const brushPreviewStyle = computed(() => {
+  const r = brushPreviewR.value
+  const rgb = brushPreviewColor.value
+  return {
+    left: `${brushPreviewX.value - r}px`,
+    top: `${brushPreviewY.value - r}px`,
+    width: `${r * 2}px`,
+    height: `${r * 2}px`,
+    borderColor: `rgba(${rgb}, 0.95)`,
+    background: tool.value === 'eraser' ? 'rgba(255, 255, 255, 0.25)' : `rgba(${rgb}, 0.28)`,
+  }
+})
+
+/** 工作分辨率坐标 → 展示层 CSS 坐标，并显示笔刷足迹圈 */
+function updateBrushPreview(x: number, y: number) {
+  const skin = skinCanvasRef.value
+  if (!skin || skin.width === 0) return
+  const scale = canvasWidth.value / skin.width
+  brushPreviewX.value = x * scale
+  brushPreviewY.value = y * scale
+  brushPreviewR.value = brushSize.value * scale
+  brushPreviewVisible.value = true
+}
+
+function hideBrushPreview() {
+  brushPreviewVisible.value = false
 }
 
 const zoomPercent = computed(() => Math.round(zoom.value * 100))
@@ -839,8 +1017,6 @@ onMounted(() => {
     onImgError()
   }
   imgContainerRef.value?.addEventListener('contextmenu', (e) => e.preventDefault())
-  document.addEventListener('fullscreenchange', onFullscreenChange)
-  document.addEventListener('webkitfullscreenchange', onFullscreenChange)
   document.addEventListener('visibilitychange', onVisibilityChange)
 })
 
@@ -849,20 +1025,23 @@ onBeforeUnmount(() => {
   if (_resizeRafId) cancelAnimationFrame(_resizeRafId)
   stopAnimation()
   invalidateOverlayCache()
+  invalidatePixelCache()
   // Clean up contour buffers
   _contourBufA = null
   _contourBufB = null
   _contourBufDirty = true
   if (_updateAreasTimer) { clearTimeout(_updateAreasTimer); _updateAreasTimer = null }
   if (onboardingTimer) clearTimeout(onboardingTimer)
-  document.removeEventListener('fullscreenchange', onFullscreenChange)
-  document.removeEventListener('webkitfullscreenchange', onFullscreenChange)
+  // 全屏残留清理：恢复背景滚动 + 移除 Esc 监听
+  document.body.style.overflow = ''
+  document.removeEventListener('keydown', onKeydown)
   document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 
 watch(() => props.imageUrl, async () => {
   history.value = []
   historyIndex.value = -1
+  invalidatePixelCache()
   imageLoaded.value = false
   imageError.value = false
   imageErrorMsg.value = ''
@@ -926,12 +1105,25 @@ watch(
 // Expose areaPercent for parent components to display
 // confirmMasks: generate data URLs from both canvases and emit confirm event
 function confirmMasks() {
+  if (remoteSelection.pending.value) { toast.warning('请等待点选区域精修完成后再保存'); return }
+  if (props.measurementVerified === false) { toast.warning('请先完成范围核对'); return }
   const skin = skinCanvasRef.value
   const lesion = lesionCanvasRef.value
   if (!skin || !lesion) return
+  updateAreas()
+  if (maskMeasurement.value.areaPercentage == null) { toast.warning(maskMeasurement.value.reason); return }
   const skinMaskDataUrl = skin.toDataURL('image/png')
   const lesionMaskDataUrl = lesion.toDataURL('image/png')
   emit('confirm', { skinMaskDataUrl, lesionMaskDataUrl })
+}
+
+// ── Toolbar event handlers ──
+function onToolChange(t: Tool) {
+  tool.value = t
+}
+
+function onBrushSizeChange(s: number) {
+  brushSize.value = s
 }
 
 /**
@@ -970,21 +1162,30 @@ defineExpose({ areaPercent, confirmMasks, getAnnotatedImageDataUrl })
 </script>
 
 <template>
-  <div ref="containerRef" class="w-full select-none relative" :class="{ 'h-full flex flex-col': fullHeight }">
+  <Teleport to="body" :disabled="!isFullscreen">
+    <div
+      ref="containerRef"
+      class="w-full select-none relative"
+      :class="isFullscreen ? 'mask-editor-fullscreen bg-gray-900' : fullHeight ? 'h-full flex flex-col' : ''"
+    >
 
     <!-- Image + Canvas viewport -->
     <div
       ref="imgContainerRef"
-      class="mask-editor-viewport relative rounded-2xl bg-gray-300"
-      :class="{ 'flex-1': fullHeight }"
-      :style="{ minHeight: isFullscreen || fullHeight ? '0' : '280px', maxHeight: isFullscreen || fullHeight ? 'none' : 'calc(100dvh - 200px)', touchAction: 'none' }"
+      class="mask-editor-viewport relative"
+      :class="[
+        { 'flex-1 min-h-0': fullHeight || isFullscreen },
+        { 'mask-editor-viewport--unbounded': isFullscreen || fullHeight },
+        isFullscreen ? 'rounded-none bg-gray-800' : 'rounded-2xl bg-gray-300',
+      ]"
+      :style="{ minHeight: isFullscreen || fullHeight ? '0' : '280px', touchAction: 'none' }"
       @wheel="onWheel"
     >
       <!-- Onboarding Tooltip - compact, inside viewport at top -->
-      <div v-if="showOnboardingTooltip && editable && imageLoaded" class="absolute top-3 left-1/2 -translate-x-1/2 z-40 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800/50 max-w-[260px] shadow-lg">
+      <div v-if="showOnboardingTooltip && editable && imageLoaded && !isFullscreen" class="absolute top-3 left-1/2 -translate-x-1/2 z-40 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800/50 max-w-[260px] shadow-lg">
         <div class="flex items-center gap-2">
           <i class="ri-lightbulb-line text-amber-500 text-sm shrink-0"></i>
-          <p class="text-[11px] text-amber-700 dark:text-amber-400 flex-1">粉色=白斑 · 蓝色=皮肤 · 8秒后自动关闭</p>
+          <p class="text-[11px] text-amber-700 dark:text-amber-400 flex-1">绿色=浅色候选 · 蓝色=皮肤 · 用「智能选斑」点一下白斑即可自动圈选，8秒后关闭</p>
           <button class="w-5 h-5 flex items-center justify-center text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/40 shrink-0" @click="showOnboardingTooltip = false" aria-label="关闭提示">
             <i class="ri-close-line text-xs"></i>
           </button>
@@ -1007,6 +1208,28 @@ defineExpose({ areaPercent, confirmMasks, getAnnotatedImageDataUrl })
           <p class="text-xs mt-1 max-w-xs mx-auto">{{ imageErrorMsg || '请检查网络连接或图片是否已删除' }}</p>
         </div>
       </div>
+
+      <!-- Fullscreen enter button (top-right) -->
+      <button
+        v-if="imageLoaded && editable && !isFullscreen"
+        type="button"
+        class="absolute top-2 right-2 z-40 w-10 h-10 rounded-xl bg-white/80 backdrop-blur flex items-center justify-center text-gray-600 hover:bg-white dark:hover:bg-gray-300 shadow"
+        title="全屏标注"
+        aria-label="全屏标注"
+        @click="enterFullscreen"
+      >
+        <i class="ri-fullscreen-line text-lg"></i>
+      </button>
+
+      <!-- Fullscreen exit button (top-right, only in immersive mode) -->
+      <button
+        v-if="isFullscreen"
+        type="button"
+        class="absolute top-3 right-3 z-40 h-11 px-3 rounded-xl bg-white/15 border border-white/20 backdrop-blur-md flex items-center gap-1.5 text-white text-sm hover:bg-white/25 transition-colors"
+        @click="exitFullscreen"
+      >
+        <i class="ri-fullscreen-exit-line"></i>退出全屏
+      </button>
 
       <!-- Image + canvas wrapper with zoom + pan transform -->
       <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -1041,108 +1264,90 @@ defineExpose({ areaPercent, confirmMasks, getAnnotatedImageDataUrl })
             @pointercancel="onPointerUp"
             @pointerleave="onPointerUp"
           />
+          <img v-if="initialUncertainLayerUrl" :src="initialUncertainLayerUrl" alt="橙色待核对参考区域" class="pointer-events-none absolute left-0 top-0" :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px', opacity: 0.35, zIndex: 12 }" />
+          <!-- Brush footprint preview (follows pointer while painting) -->
+          <div
+            v-show="brushPreviewVisible"
+            class="absolute top-0 left-0 rounded-full pointer-events-none border-2 shadow-[0_0_0_1px_rgba(0,0,0,0.35)] z-20"
+            :style="brushPreviewStyle"
+          ></div>
         </div>
       </div>
 
       <!-- Area % badge at top-left -->
       <div v-if="imageLoaded" class="absolute top-3 left-3 z-30">
         <span
-          class="text-xs font-medium px-2 py-1 rounded-lg backdrop-blur-sm"
-          :class="areaPercent > 50 ? 'bg-red-100/80 text-red-700 dark:bg-red-900/50 dark:text-red-300' : areaPercent > 25 ? 'bg-amber-100/80 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300' : 'bg-primary-100/80 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300'"
+          class="text-xs font-medium px-2 py-1 rounded-lg backdrop-blur-sm bg-primary-100/90 text-primary-900 dark:bg-primary-900/90 dark:text-primary-100"
         >
-          白斑占比 {{ areaPercent.toFixed(1) }}%
+          {{ measurementVerified === false ? '核对范围后显示测量值' : areaPercent == null ? maskMeasurement.reason : `当前参考占比 ${areaPercent.toFixed(1)}%` }}
         </span>
       </div>
 
-      <!-- Mobile hint at top-right -->
-      <div v-if="imageLoaded" class="absolute top-3 right-3 z-30">
-        <span class="text-[10px] text-gray-400 dark:text-gray-500 bg-white/60 dark:bg-gray-800/60 backdrop-blur px-2 py-0.5 rounded-full md:hidden">
-          双指缩放 · 单指绘画 · 长按拖拽
-        </span>
-        <span class="text-[10px] text-gray-400 dark:text-gray-500 bg-white/60 dark:bg-gray-800/60 backdrop-blur px-2 py-0.5 rounded-full hidden md:inline">
-          滚轮缩放 · 右键拖拽
-        </span>
-      </div>
-
-      <!-- Zoom controls - hidden on mobile, minimal on desktop -->
-      <div v-if="imageLoaded" class="hidden md:flex absolute bottom-12 left-3 items-center gap-1 z-30">
+      <!-- Zoom controls - hidden on mobile, minimal on desktop; hidden in fullscreen (toolbar has them) -->
+      <div v-if="imageLoaded && !isFullscreen" class="hidden md:flex absolute bottom-12 left-3 items-center gap-1 z-30">
         <button class="w-7 h-7 rounded-lg bg-white/80 backdrop-blur flex items-center justify-center text-gray-600 hover:bg-white dark:hover:bg-gray-300 shadow text-xs" title="放大" @click="zoomIn">
           <i class="ri-zoom-in-line"></i>
         </button>
         <button class="w-7 h-7 rounded-lg bg-white/80 backdrop-blur flex items-center justify-center text-gray-600 hover:bg-white dark:hover:bg-gray-300 shadow text-xs" title="缩小" @click="zoomOut">
           <i class="ri-zoom-out-line"></i>
         </button>
+        <button class="w-7 h-7 rounded-lg bg-white/80 backdrop-blur flex items-center justify-center text-gray-600 hover:bg-white dark:hover:bg-gray-300 shadow text-xs" title="适应屏幕" @click="zoomToFit">
+          <i class="ri-aspect-ratio-line"></i>
+        </button>
         <span class="text-xs text-gray-500 bg-white/80 backdrop-blur px-1.5 py-0.5 rounded shadow tabular-nums">{{ zoomPercent }}%</span>
       </div>
     </div>
 
-    <!-- Floating toolbar at bottom - moved outside viewport to avoid overflow:hidden clipping -->
-    <div v-if="imageLoaded && editable" class="sticky bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-700/50 px-3 py-2 pb-[env(safe-area-inset-bottom)]">
-      <div class="flex items-center gap-3">
-        <!-- Tool selector: skin / lesion / eraser -->
-        <div class="flex items-center gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-700">
-          <button
-            class="w-10 h-10 rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
-            :class="tool === 'skin-brush' ? 'bg-blue-500 text-white shadow-sm' : 'text-blue-600 dark:text-blue-300'"
-            @click="tool = 'skin-brush'"
-            title="皮肤画笔"
-          ><i class="ri-hand-heart-line"></i></button>
-          <button
-            class="w-10 h-10 rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
-            :class="tool === 'lesion-brush' ? 'bg-pink-500 text-white shadow-sm' : 'text-pink-600 dark:text-pink-300'"
-            @click="tool = 'lesion-brush'"
-            title="白斑画笔"
-          ><i class="ri-virus-line"></i></button>
-          <button
-            class="w-10 h-10 rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
-            :class="tool === 'eraser' ? 'bg-gray-500 text-white shadow-sm' : 'text-gray-600 dark:text-gray-300'"
-            @click="tool = 'eraser'"
-            title="橡皮擦"
-          ><i class="ri-eraser-line"></i></button>
-        </div>
-
-        <!-- Brush size slider - compact -->
-        <div class="flex items-center gap-1.5 flex-1 max-w-[140px]">
-          <i class="ri-ruler-line text-xs text-gray-400"></i>
-          <input type="range" min="8" max="80" step="4" v-model.number="brushSize" class="flex-1 accent-primary-500 h-1" />
-          <span class="text-xs text-gray-500 w-6 text-right tabular-nums">{{ brushSize }}</span>
-        </div>
-
-        <!-- Undo button only -->
-        <button
-          class="w-10 h-10 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30"
-          :disabled="!canUndo || !editable"
-          title="撤销"
-          @click="undo"
-        >
-          <i class="ri-arrow-go-back-line text-lg"></i>
-        </button>
-      </div>
+    <!-- Toolbar — 普通模式页内轻量条 / 全屏模式沉浸双行面板 -->
+    <p v-if="remoteSelection.pending.value" role="status" class="absolute bottom-20 left-3 z-30 rounded-lg bg-white/95 px-3 py-2 text-xs text-primary-800 dark:bg-gray-800 dark:text-primary-200">正在精修点选区域…</p>
+    <MaskEditorToolbar
+      v-if="imageLoaded && editable"
+      :tool="tool"
+      :brush-size="brushSize"
+      :wand-tolerance="wandTolerance"
+      :can-undo="canUndo"
+      :can-redo="canRedo"
+      :fullscreen="isFullscreen"
+      :snapping="isSnapping"
+      @update:tool="onToolChange"
+      @update:brush-size="onBrushSizeChange"
+      @update:wand-tolerance="onWandTolerance"
+      @undo="undo"
+      @redo="redo"
+      @snap-edges="snapEdges"
+      @clear-lesion="clearLesionLayer"
+      @zoom-in="zoomIn"
+      @zoom-out="zoomOut"
+      @zoom-fit="zoomToFit"
+    />
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped>
-input[type='range'] {
-  height: 4px;
-}
-
 .mask-editor-viewport {
   overflow: hidden;
   position: relative;
+  max-height: calc(100vh - 200px);
+  max-height: calc(100dvh - 200px);
 }
 
-.mask-editor-viewport:fullscreen {
-  max-height: none !important;
-  min-height: 100vh !important;
-  border-radius: 0;
-  background: #1a1a1a;
+.mask-editor-viewport--unbounded {
+  max-height: none;
 }
 
-.mask-editor-viewport:-webkit-full-screen {
-  max-height: none !important;
-  min-height: 100vh !important;
-  border-radius: 0;
-  background: #1a1a1a;
+/* 沉浸全屏层：铺满视口、盖住全局导航（BottomNav z-50 / AppHeader z-50） */
+.mask-editor-fullscreen {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
 }
 </style>

@@ -1,268 +1,34 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { vasiApi } from '@/api/vasi'
-import type { VasiAssessmentResponse, VasiHistoryItem } from '@/api/vasi'
-import { PART_LABELS } from '@/constants/bodySites'
-import { usePrivacyStore } from '@/stores/privacy'
-import BeforeAfterSlider from '@/components/tracker/BeforeAfterSlider.vue'
+import { useObservationCompare } from '@/composables/useObservationCompare'
+import ComparisonAlignmentControls from '@/components/report/ComparisonAlignmentControls.vue'
+import type { AlignmentTransform } from '@/types/comparison-alignment'
 import { toProtectedFileUrl } from '@/utils/file-url'
-
 const route = useRoute()
 const router = useRouter()
-const privacyStore = usePrivacyStore()
-
-const loading = ref(true)
-const errorMsg = ref('')
-const before = ref<VasiAssessmentResponse | null>(null)
-const after = ref<VasiAssessmentResponse | null>(null)
-const sameSiteMatch = ref<VasiHistoryItem | null>(null)
-const showMatchSuggestion = ref(false)
-
-const ids = computed(() => {
-  const raw = (route.query.ids as string) || ''
-  return raw.split(',').map(s => Number(s)).filter(n => Number.isFinite(n) && n > 0)
+const compare = useObservationCompare()
+const manualAlignment = ref<AlignmentTransform | null>(null), manualReady = ref(false)
+watch(() => compare.items.value.map(item => item.id).join(','), () => { manualAlignment.value = null })
+const ids = computed(() => [...new Set(String(route.query.ids || '').split(',').map(Number).filter(id => Number.isInteger(id) && id > 0))])
+watch([ids, () => route.query.site], () => compare.load(ids.value, typeof route.query.site === 'string' ? route.query.site : undefined), { immediate: true })
+const samePosition = computed(() => {
+  const first = compare.items.value[0]?.observation
+  return !!first?.id && compare.items.value.every(i => i.observation?.id === first.id && i.observation?.view === first.view)
 })
-
-async function load() {
-  loading.value = true
-  errorMsg.value = ''
-  if (ids.value.length < 2) {
-    errorMsg.value = '请至少选择 2 条评估记录进行对比'
-    loading.value = false
-    return
-  }
-  try {
-    const [a, b] = await Promise.all([
-      vasiApi.getAssessment(ids.value[0]),
-      vasiApi.getAssessment(ids.value[1]),
-    ])
-    const ta = new Date(a.assessment_date).getTime()
-    const tb = new Date(b.assessment_date).getTime()
-    if (ta <= tb) {
-      before.value = a
-      after.value = b
-    } else {
-      before.value = b
-      after.value = a
-    }
-    // Auto same-site matching: if different body sites, find a match
-    if (before.value.body_site !== after.value.body_site) {
-      await findSameSiteMatch(after.value.body_site, after.value.id)
-    }
-  } catch {
-    errorMsg.value = '加载评估记录失败'
-  } finally {
-    loading.value = false
-  }
-}
-
-async function findSameSiteMatch(bodySite: string, excludeId: number) {
-  try {
-    const history = await vasiApi.getHistory(10, 0, bodySite)
-    // Find the most recent assessment of the same body site (excluding current)
-    const match = history.items.find(item => item.id !== excludeId)
-    if (match) {
-      sameSiteMatch.value = match
-      showMatchSuggestion.value = true
-    }
-  } catch {
-    // Silently fail - suggestion is optional
-  }
-}
-
-function applySameSiteMatch() {
-  if (!sameSiteMatch.value || !after.value) return
-  // Replace 'before' with the same-site match
-  router.replace({ name: 'vasi-compare', query: { ids: `${sameSiteMatch.value.id},${after.value.id}` } })
-  showMatchSuggestion.value = false
-  load()
-}
-
-const dateDiffText = computed(() => {
-  if (!before.value || !after.value) return ''
-  const ms = new Date(after.value.assessment_date).getTime() - new Date(before.value.assessment_date).getTime()
-  const days = Math.round(ms / 86400000)
-  if (days === 0) return '同日'
-  if (days < 30) return `相隔 ${days} 天`
-  if (days < 365) return `相隔 ${Math.round(days / 30)} 个月`
-  return `相隔 ${(days / 365).toFixed(1)} 年`
-})
-
-function displayScore(a: VasiAssessmentResponse | null) {
-  if (!a) return 0
-  return a.final_vasi_score != null ? a.final_vasi_score : a.vasi_score
-}
-
-function displayArea(a: VasiAssessmentResponse | null) {
-  if (!a) return 0
-  return a.final_area_percentage != null ? a.final_area_percentage : a.area_percentage
-}
-
-const scoreDelta = computed(() => {
-  if (!before.value || !after.value) return 0
-  return Math.round((displayScore(after.value) - displayScore(before.value)) * 10) / 10
-})
-const areaDelta = computed(() => {
-  if (!before.value || !after.value) return 0
-  return Math.round((displayArea(after.value) - displayArea(before.value)) * 10) / 10
-})
-
-function trendBadge(delta: number) {
-  if (delta < -0.5) return { label: '改善', color: 'text-green-700 bg-green-100 dark:bg-green-900/30 dark:text-green-300', icon: 'ri-arrow-down-line' }
-  if (delta > 0.5) return { label: '加重', color: 'text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-300', icon: 'ri-arrow-up-line' }
-  return { label: '稳定', color: 'text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300', icon: 'ri-subtract-line' }
-}
-
-const scoreTrend = computed(() => trendBadge(scoreDelta.value))
-const areaTrend = computed(() => trendBadge(areaDelta.value))
-
-function formatDate(d: string) {
-  return d?.slice(0, 10) || ''
-}
-
-const authedBeforeUrl = computed(() => toProtectedFileUrl(before.value?.image_url))
-const authedAfterUrl = computed(() => toProtectedFileUrl(after.value?.image_url))
-
-onMounted(load)
+async function generate() { const id = await compare.generate(manualAlignment.value); if (id) router.push({ name: 'skin-report-view', params: { id } }) }
 </script>
-
 <template>
-  <div class="min-h-dvh bg-[#F5F7FA] pb-20 md:pb-8">
-    <header class="sticky top-0 z-30 bg-[#F5F7FA]/80  backdrop-blur border-b border-gray-200 dark:border-gray-700">
-      <div class="max-w-6xl mx-auto flex items-center gap-3 px-4 h-12">
-        <button @click="router.back()" class="p-1 -ml-1 text-gray-600 hover:text-gray-900 dark:hover:text-gray-100">
-          <i class="ri-arrow-left-s-line text-xl"></i>
-        </button>
-        <h1 class="text-base font-semibold text-gray-900 truncate">评估对比</h1>
-      </div>
+  <div class="page space-y-5 py-5 pb-8 text-gray-900 dark:text-gray-100 md:py-6 md:pb-10 lg:max-w-5xl">
+    <!-- 标题区：桌面端主操作放在标题右侧，手机端独占一行 -->
+    <header class="flex flex-wrap items-center gap-x-2 gap-y-3">
+      <router-link to="/assessment" class="-ml-2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800" aria-label="返回记录"><i class="ri-arrow-left-line text-xl" aria-hidden="true"></i></router-link>
+      <h1 class="page-title">白斑对比</h1>
+      <button class="btn-primary min-h-[48px] w-full rounded-xl disabled:opacity-40 md:ml-auto md:w-auto md:min-h-[44px] md:px-5" :disabled="compare.loading.value || compare.generating.value || compare.items.value.length !== 2 || (!!manualAlignment && !manualReady)" @click="generate">{{ compare.generating.value ? '正在创建对比…' : manualAlignment ? '确认对齐并分析' : '检查可比性并生成结果' }}</button>
     </header>
-
-    <main class="max-w-6xl mx-auto px-4 py-4">
-      <div v-if="loading" class="text-center py-16 text-gray-400 ">
-        <div class="text-4xl mb-3 animate-pulse"><i class="ri-image-2-line"></i></div>
-        <p>加载中...</p>
-      </div>
-
-      <div v-else-if="errorMsg" class="text-center py-16 text-gray-400 ">
-        <div class="text-4xl mb-3"><i class="ri-file-damage-line"></i></div>
-        <p>{{ errorMsg }}</p>
-        <button @click="router.push({ name: 'assessment' })" class="mt-4 text-sm text-primary-500 hover:underline">返回测评</button>
-      </div>
-
-      <template v-else-if="before && after">
-        <!-- Same-site match suggestion -->
-        <div v-if="showMatchSuggestion && sameSiteMatch" class="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-          <div class="flex items-start gap-3">
-            <i class="ri-lightbulb-line text-amber-500 text-lg mt-0.5"></i>
-            <div class="flex-1">
-              <p class="text-sm text-amber-800 dark:text-amber-200">
-                检测到两次评估部位不同。发现同部位「{{ PART_LABELS[sameSiteMatch.body_site] || sameSiteMatch.body_site }}」的历史记录，是否切换为同部位对比？
-              </p>
-              <div class="flex gap-2 mt-2">
-                <button @click="applySameSiteMatch" class="px-3 py-1.5 text-xs font-medium bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">
-                  切换同部位对比
-                </button>
-                <button @click="showMatchSuggestion = false" class="px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800/30 rounded-lg transition-colors">
-                  保持当前
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex flex-col lg:flex-row gap-6 lg:items-start">
-          <div class="w-full lg:w-1/2 flex flex-col gap-3">
-            <BeforeAfterSlider
-              :before-url="authedBeforeUrl"
-              :after-url="authedAfterUrl"
-              :before-label="formatDate(before.assessment_date)"
-              :after-label="formatDate(after.assessment_date)"
-            />
-            <p class="text-xs text-gray-500  text-center">
-              <i class="ri-information-line"></i> 拖动中间滑块对比两次评估的差异
-            </p>
-          </div>
-
-          <div class="w-full lg:w-1/2 flex flex-col gap-4">
-            <div class="card p-4">
-              <div class="flex items-center justify-between">
-                <h2 class="font-semibold text-gray-900">
-                  {{ PART_LABELS[after.body_site] || after.body_site }} · 趋势对比
-                </h2>
-                <span class="text-xs text-gray-500 ">{{ dateDiffText }}</span>
-              </div>
-            </div>
-
-            <div class="card p-4">
-              <div class="grid grid-cols-3 gap-3">
-                <div class="text-center">
-                  <div class="text-xs text-gray-500  mb-1">VASI 评分</div>
-                  <div class="flex items-baseline justify-center gap-2">
-                    <span class="text-sm text-gray-400 line-through">
-                      {{ privacyStore.privacyMode ? displayScore(before) : '**' }}
-                    </span>
-                    <span class="text-xl font-bold text-gray-900">
-                      {{ privacyStore.privacyMode ? displayScore(after) : '**' }}
-                    </span>
-                  </div>
-                </div>
-                <div class="text-center">
-                  <div class="text-xs text-gray-500  mb-1">变化</div>
-                  <span class="badge inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full" :class="scoreTrend.color">
-                    <i :class="scoreTrend.icon"></i>
-                    <template v-if="privacyStore.privacyMode">
-                      {{ scoreDelta > 0 ? '+' : '' }}{{ scoreDelta }}
-                    </template>
-                    <template v-else>**</template>
-                  </span>
-                </div>
-                <div class="text-center">
-                  <div class="text-xs text-gray-500  mb-1">趋势</div>
-                  <div class="text-sm font-semibold" :class="scoreTrend.color.split(' ')[0]">{{ scoreTrend.label }}</div>
-                </div>
-              </div>
-              <div class="border-t border-gray-100 dark:border-gray-800 my-3"></div>
-              <div class="grid grid-cols-3 gap-3">
-                <div class="text-center">
-                  <div class="text-xs text-gray-500  mb-1">白斑面积</div>
-                  <div class="flex items-baseline justify-center gap-2">
-                    <span class="text-sm text-gray-400 line-through">
-                      {{ privacyStore.privacyMode ? displayArea(before) + '%' : '**%' }}
-                    </span>
-                    <span class="text-xl font-bold text-gray-900">
-                      {{ privacyStore.privacyMode ? displayArea(after) + '%' : '**%' }}
-                    </span>
-                  </div>
-                </div>
-                <div class="text-center">
-                  <div class="text-xs text-gray-500  mb-1">变化</div>
-                  <span class="badge inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full" :class="areaTrend.color">
-                    <i :class="areaTrend.icon"></i>
-                    <template v-if="privacyStore.privacyMode">
-                      {{ areaDelta > 0 ? '+' : '' }}{{ areaDelta }}%
-                    </template>
-                    <template v-else>**</template>
-                  </span>
-                </div>
-                <div class="text-center">
-                  <div class="text-xs text-gray-500  mb-1">趋势</div>
-                  <div class="text-sm font-semibold" :class="areaTrend.color.split(' ')[0]">{{ areaTrend.label }}</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="card p-4 text-sm text-gray-600 space-y-1">
-<div><i class="ri-history-line text-primary-500"></i> <strong>之前</strong>：{{ formatDate(before.assessment_date) }} · {{ before.stage }} · {{ before.classification || '未分型' }}</div>
-<div><i class="ri-time-line text-primary-500"></i> <strong>现在</strong>：{{ formatDate(after.assessment_date) }} · {{ after.stage }} · {{ after.classification || '未分型' }}</div>
-            </div>
-
-            <p class="text-xs text-gray-400  text-center">
-              <i class="ri-error-warning-line"></i> 以上对比仅供参考，不构成医疗诊断建议
-            </p>
-          </div>
-        </div>
-      </template>
-    </main>
+    <p v-if="compare.loading.value" role="status" class="text-sm text-gray-500 dark:text-gray-400">正在加载照片…</p><p v-if="compare.error.value" role="alert" class="rounded-xl bg-primary-50 p-4 dark:bg-primary-900">{{ compare.error.value }}</p>
+    <ComparisonAlignmentControls v-if="compare.items.value.length === 2" v-model="manualAlignment" :before-url="compare.items.value[0].image_url" :after-url="compare.items.value[1].image_url" :disabled="compare.generating.value" @ready="manualReady = $event" />
+    <div class="grid gap-4 md:grid-cols-2"><figure v-for="item in compare.items.value" :key="item.id" class="card p-4"><img :src="toProtectedFileUrl(item.image_url)" alt="参与比较的观察照片" class="max-h-[45dvh] w-full rounded-xl object-contain" /><figcaption class="mt-3 text-sm"><strong>{{ item.observation?.label || item.body_site }}</strong><p class="mt-1 text-gray-500 dark:text-gray-400">{{ item.assessment_date.slice(0,10) }} · {{ item.observation?.view || '视角未记录' }}</p></figcaption></figure></div>
+    <p v-if="compare.items.value.length && !samePosition" class="rounded-2xl border border-gray-200/80 bg-white p-4 text-sm leading-6 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">这些记录可直接尝试对比；若画面位置不同，可以先手动调整叠影。</p>
   </div>
 </template>

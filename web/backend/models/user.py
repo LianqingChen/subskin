@@ -18,13 +18,13 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(min_length=8, max_length=128)
 
 
 class UserCreateByPhone(BaseModel):
     phone: str = Field(pattern=r"^1[3-9]\d{9}$")
     code: str = Field(min_length=6, max_length=6)
-    password: Optional[str] = None
+    password: Optional[str] = Field(default=None, min_length=8, max_length=128)
 
 
 class PhoneLogin(BaseModel):
@@ -46,7 +46,7 @@ class EmailRegister(BaseModel):
     email: EmailStr
     code: str = Field(min_length=6, max_length=6)
     username: str = Field(default="", max_length=20)
-    password: str = Field(min_length=6, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
 
 
 class SendSMSCode(BaseModel):
@@ -73,14 +73,16 @@ class BindEmailRequest(BaseModel):
 
 
 class SetPasswordRequest(BaseModel):
-    password: str = Field(min_length=6, max_length=128)
+    # 已设有密码的用户必须提供 old_password（见 /set-password 端点校验）
+    old_password: Optional[str] = Field(default=None, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
 
 
 class ResetPasswordRequest(BaseModel):
     credential_id: str
     cred_type: str = Field(pattern=r"^(phone|email)$")
     code: str = Field(min_length=6, max_length=6)
-    new_password: str = Field(min_length=6, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 class EmailPasswordLogin(BaseModel):
@@ -135,3 +137,28 @@ class Token(BaseModel):
     refresh_token: Optional[str] = None
     token_type: str = "bearer"
     user: Optional[User] = None
+
+
+# ── 小白管家外观偏好 ──
+
+from typing import Literal, Optional as _Optional
+
+
+class AssistantPreferenceUpdate(BaseModel):
+    mascot: _Optional[
+        Literal["real"]
+    ] = None
+    style: _Optional[Literal["circle", "rounded"]] = None
+    size: _Optional[Literal["small", "medium", "large"]] = None
+    position: _Optional[Literal["right", "left"]] = None
+    greeting: _Optional[str] = Field(default=None, max_length=100)
+    enabled: _Optional[bool] = None
+
+
+class AssistantPreferenceResponse(BaseModel):
+    mascot: str = "real"
+    style: str = "circle"
+    size: str = "medium"
+    position: str = "right"
+    greeting: str = "我是小白管家，有什么可以帮你？"
+    enabled: bool = True

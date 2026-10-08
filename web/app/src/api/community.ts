@@ -58,7 +58,7 @@ export const communityApi = {
     return data
   },
 
-  async getPosts(params?: { category_id?: number; tag?: string; post_type?: string; feed_type?: string; limit?: number; offset?: number; after?: string | null }): Promise<PostListResponse> {
+  async getPosts(params?: { category_id?: number; tag?: string; post_type?: string; feed_type?: string; sort?: string; limit?: number; offset?: number; after?: string | null }): Promise<PostListResponse> {
     const { data } = await apiClient.get('/community/posts', { params })
     return data
   },
@@ -101,6 +101,11 @@ export const communityApi = {
 
   async toggleLike(postId: number): Promise<LikeResponse> {
     const { data } = await apiClient.post(`/community/posts/${postId}/like`)
+    return data
+  },
+
+  async sharePost(postId: number): Promise<{ share_count: number }> {
+    const { data } = await apiClient.post(`/community/posts/${postId}/share`)
     return data
   },
 

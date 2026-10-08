@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { confirmPublish } from './publishConfirm'
 import { ref, computed, watch, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -6,6 +7,7 @@ import { useToast } from '@/composables/useToast'
 import { useDrafts } from '@/composables/useDrafts'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { communityApi } from '@/api/community'
+import { normalizeMoodValue } from '@/utils/mood'
 import type { Category } from '@/types'
 import TagSelector from '@/components/community/TagSelector.vue'
 import CityPicker from '@/components/community/CityPicker.vue'
@@ -37,10 +39,10 @@ const charCount = computed(() => content.value.length)
 const isValid = computed(() => content.value.trim().length > 0 && categoryId.value !== null)
 
 const MOOD_OPTIONS = [
-  { value: '💪坚持中', icon: 'ri-boxing-line', label: '坚持中' },
-  { value: '😔低落', icon: 'ri-emotion-sad-line', label: '低落' },
-  { value: '🎉好转', icon: 'ri-emotion-happy-line', label: '好转' },
-  { value: '🤔疑问', icon: 'ri-question-line', label: '疑问' },
+  { value: '坚持中', icon: 'ri-boxing-line', label: '坚持中' },
+  { value: '低落', icon: 'ri-emotion-sad-line', label: '低落' },
+  { value: '好转', icon: 'ri-emotion-happy-line', label: '好转' },
+  { value: '疑问', icon: 'ri-question-line', label: '疑问' },
 ]
 
 let draftTimer: ReturnType<typeof setTimeout> | null = null
@@ -88,7 +90,7 @@ const loadPost = async () => {
     content.value = post.content
     categoryId.value = post.category_id
     isAnonymous.value = post.is_anonymous
-    mood.value = post.mood || ''
+    mood.value = normalizeMoodValue(post.mood)
     tags.value = post.tags.map(t => t.name)
   } catch {
     toast.error('加载帖子失败')
@@ -112,7 +114,7 @@ onMounted(async () => {
           content.value = d.content || ''
           categoryId.value = d.categoryId || null
           tags.value = d.tags || []
-          mood.value = d.mood || ''
+          mood.value = normalizeMoodValue(d.mood)
           isAnonymous.value = d.isAnonymous ?? false
           draftKey.value = dk
           draftServerId.value = d.serverId
@@ -130,6 +132,9 @@ const goBack = () => {
 
 const handlePublish = async () => {
   if (!isValid.value) return
+  // 公开发布前隐私确认（含 PII 检测提示）
+  const decision = await confirmPublish({ title: '', content: content.value })
+  if (!decision) return
   publishing.value = true
   try {
     const firstCat = categories.value.find(c => c.name === '心理支持') || categories.value[0]
@@ -140,6 +145,8 @@ const handlePublish = async () => {
       post_type: 'text' as const,
       tag_names: tags.value,
       is_anonymous: false,
+      confirm_pii: decision.confirmPii,
+      public_ack: true,
       mood: mood.value || undefined,
       city: showCity.value ? (geo.city.value || undefined) : null,
       latitude: showCity.value ? (geo.lat.value ?? undefined) : undefined,
@@ -166,17 +173,20 @@ const handlePublish = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col">
-    <header class="h-12 bg-white border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 sticky top-0 z-30">
+  <div class="flex flex-col pb-4">
+    <header class="sticky top-14 z-20 h-12 border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+      <div class="mx-auto flex h-full w-full max-w-2xl items-center justify-between px-4">
       <button @click="goBack" class="text-sm text-gray-600  hover:text-gray-900 dark:hover:text-gray-100">取消</button>
       <span class="text-sm font-medium text-gray-900">写文字</span>
       <button @click="handlePublish" class="btn-primary px-5 py-1 rounded-full text-sm font-medium" :disabled="publishing || !isValid">
         {{ publishing ? '发布中...' : (isEdit ? '更新' : '发布') }}
       </button>
+      </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto pb-8">
-      <div class="max-w-2xl mx-auto px-4 py-4 space-y-5">
+    <main class="flex-1 pb-8">
+      <!-- 平板/桌面：正文放进白色卡片，与全站卡片风格一致 -->
+      <div class="w-full max-w-2xl mx-auto px-4 py-4 space-y-5 md:mt-5 md:rounded-2xl md:border md:border-gray-200/80 md:bg-white md:p-6 md:dark:border-gray-700 md:dark:bg-gray-900">
         <textarea
           v-model="content"
           placeholder="此刻在想什么？"
@@ -205,7 +215,7 @@ const handlePublish = async () => {
             <button v-for="cat in categories" :key="cat.id" @click="categoryId = cat.id" type="button"
               class="px-3 py-1.5 rounded-full text-sm border transition-all"
               :class="categoryId === cat.id ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300 shadow-sm' : 'border-gray-200 dark:border-gray-600 text-gray-500  hover:border-gray-300'">
-              {{ cat.icon }} {{ cat.name }}
+              <i :class="cat.icon" aria-hidden="true"></i> {{ cat.name }}
             </button>
           </div>
         </div>

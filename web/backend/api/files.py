@@ -1,3 +1,4 @@
+import html as html_module
 import json
 import logging
 import mimetypes
@@ -20,7 +21,6 @@ from web.backend.models.image_label import ImageLabel
 from web.backend.models.vasi import VASIAssessment
 from web.backend.services.auth import (
     auth,
-    create_access_token,
     create_file_access_token,
     get_current_user_optional,
     get_user_from_access_token,
@@ -112,12 +112,17 @@ def _parse_owner_id_from_filename(stored_name: str) -> Optional[int]:
         return None
 
 
+def _escape_like(value: str) -> str:
+    """转义 LIKE 通配符，避免 filename 中的 %/_ 扩大匹配范围。"""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def _community_image_is_public(db: Session, file_path: str) -> bool:
     """True if the community image is referenced by a public, non-blocked post."""
     filename = file_path.rsplit("/", 1)[-1]
     rows = (
         db.query(PostImage)
-        .filter(PostImage.image_url.like(f"%{filename}"))
+        .filter(PostImage.image_url.like(f"%{_escape_like(filename)}", escape="\\"))
         .all()
     )
     for img in rows:
@@ -126,6 +131,25 @@ def _community_image_is_public(db: Session, file_path: str) -> bool:
             continue
         if not bool(post.is_private) and post.moderation_status != "blocked":
             return True
+    return False
+
+
+def _is_anonymous_accessible(file_path: str, db: Session) -> bool:
+    """未登录用户可访问的文件范围（支持未登录浏览公开分享内容）。
+
+    仅允许：公开且未被封禁帖子的社区图片（`_community_image_is_public`），
+    以及头像（公开资料/社区卡片展示）。其余 bucket（体检报告/病情图/IM/
+    私密内容等 L3 数据）仍必须登录且校验归属。
+    """
+    parts = file_path.split("/", 1)
+    bucket = parts[0] if parts else ""
+    if bucket == "community":
+        return _community_image_is_public(db, file_path)
+    if bucket == "hospital":
+        # v3：凭证图含敏感个人信息，未登录一律不可读
+        return False
+    if bucket == "avatar":
+        return True
     return False
 
 
@@ -152,6 +176,19 @@ def _assert_path_ownership(file_path: str, user: User, db: Session) -> None:
             return
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="无权访问该文件"
+        )
+
+    if bucket == "hospital":
+        # v3（2026-09-11）：医评凭证图不再公开，仅作者本人可读。
+        # 费用单/挂号单/处方/检查单常含姓名、手机号、病历号，属《个人信息保护法》
+        # 第 28 条敏感个人信息，且可能被认定为「利用患者形象作证明」
+        # （《医疗广告管理办法》第 7 条第（六）项）。公开层只显示
+        # 「已上传挂号单/费用单」徽标（credential_labels，不回 URL）。
+        owner_id = _parse_owner_id_from_filename(rest)
+        if owner_id is not None and owner_id == user.id:
+            return
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="凭证图仅本人可见"
         )
 
     if bucket == "reports":
@@ -311,23 +348,44 @@ async def serve_file(
             )
 
     if not _is_public_path(file_path):
-        user = _authenticate_file_request(access_token, current_user, db)
-        _assert_path_ownership(file_path, user, db)
+        if current_user is None and not access_token:
+            # 匿名请求：仅放行公开帖子社区图片与头像（未登录可浏览公开分享），
+            # 其余文件仍要求登录（401）。
+            if not _is_anonymous_accessible(file_path, db):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="无法验证凭据",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+        else:
+            user = _authenticate_file_request(access_token, current_user, db)
+            _assert_path_ownership(file_path, user, db)
     requested_path = _resolve_requested_file(file_path)
-    # Force attachment for PDFs (browsers like WeChat can't render them inline);
-    # images and other formats use their natural content-type for inline viewing.
-    if requested_path.suffix.lower() == ".pdf":
-        return FileResponse(
-            requested_path,
-            filename=requested_path.name,
-            media_type="application/octet-stream",
-        )
-    return FileResponse(requested_path)
+    # 2026-08-30 加固：仅白名单图片格式允许内联渲染；PDF 与其他一切格式强制
+    # attachment 下载。Starlette 会按扩展名猜 Content-Type，若放任 .html/.svg
+    # 等以 text/html、image/svg+xml 内联返回，将造成同源存储型 XSS。
+    _INLINE_MEDIA_TYPES = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+        ".gif": "image/gif",
+    }
+    suffix = requested_path.suffix.lower()
+    if suffix in _INLINE_MEDIA_TYPES:
+        return FileResponse(requested_path, media_type=_INLINE_MEDIA_TYPES[suffix])
+    return FileResponse(
+        requested_path,
+        filename=requested_path.name,
+        media_type="application/octet-stream",
+    )
 
 
 @router.delete("/cleanup-temp")
 async def cleanup_temp_files(current_user: User = Depends(auth)):
-    _ = current_user
+    # 全站临时文件清理属管理操作，普通用户不得触发（2026-08-30 加固）
+    if not bool(getattr(current_user, "is_admin", False)):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权执行该操作")
     deleted_count = cleanup_temp_uploads()
     return {"deleted_count": deleted_count}
 
@@ -378,10 +436,14 @@ async def view_file_as_html(
     file_name = cast(str, cast(object, db_file.file_name))
     file_type = cast(Optional[str], cast(object, db_file.file_type))
     username = cast(str, cast(object, user.username))
+    # HTML 转义文件名，防止上传文件名含 <script> 等导致的自伤型 XSS
+    safe_file_name = html_module.escape(file_name or "文件预览", quote=True)
 
     viewer_token = access_token
     if not viewer_token:
-        viewer_token = create_access_token({"sub": username})
+        # 预览页内的图片 URL 会携带该 token（可能落入日志/历史记录），
+        # 因此只签发 5 分钟、仅限文件读取的 file token，绝不签发完整 API token。
+        viewer_token = create_file_access_token(username)
 
     page_dir = Path("data/uploads/pages") / str(file_id)
     page_urls: List[str] = []
@@ -401,7 +463,7 @@ async def view_file_as_html(
         # PDF with pre-converted pages → paginated viewer
         template_path = Path(__file__).parent.parent / "services" / "viewer_template.html"
         html = template_path.read_text(encoding="utf-8")
-        html = html.replace("__FILENAME__", file_name or "文件预览")
+        html = html.replace("__FILENAME__", safe_file_name)
         html = html.replace("__PAGE_INFO__", f"共 {len(page_urls)} 页")
         html = html.replace("__PAGES__", json.dumps(page_urls))
         html = html.replace("__TOKEN__", viewer_token or "")
@@ -415,7 +477,7 @@ async def view_file_as_html(
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{file_name}</title>
+<title>{safe_file_name}</title>
 <style>
 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
 html, body {{ width: 100%; height: 100%; background: #000; }}
@@ -429,10 +491,10 @@ img {{ max-width: 100%; max-height: 100%; object-fit: contain; }}
 <body>
 <div class="header">
   <button onclick="history.back()">&times;</button>
-  <span class="filename">{file_name}</span>
+  <span class="filename">{safe_file_name}</span>
 </div>
 <div class="container">
-  <img src="{img_url}" alt="{file_name}" onclick="history.back()">
+  <img src="{img_url}" alt="{safe_file_name}" onclick="history.back()">
 </div>
 </body>
 </html>"""
@@ -446,7 +508,7 @@ img {{ max-width: 100%; max-height: 100%; object-fit: contain; }}
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{file_name}</title>
+<title>{safe_file_name}</title>
 <style>
 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
 html, body {{ width: 100%; height: 100%; background: #f5f5f5; font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; }}
@@ -458,7 +520,7 @@ html, body {{ width: 100%; height: 100%; background: #f5f5f5; font-family: -appl
 </head>
 <body>
 <div class="card">
-  <h2>{file_name}</h2>
+  <h2>{safe_file_name}</h2>
   <p>此文件格式暂不支持在线预览<br>请下载后用对应应用打开</p>
   <a href="{download_url}">下载文件</a>
 </div>
@@ -475,12 +537,18 @@ async def upload_im_image(
 ):
     import hashlib
 
+    from web.backend.utils.upload_validation import validate_image_upload
+
     upload_dir = Path("data/uploads/im") / str(current_user.id)
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     content = await file.read()
+    try:
+        ext = validate_image_upload(file.filename or "image.jpg", content)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
     file_hash = hashlib.sha256(content).hexdigest()[:16]
-    ext = Path(file.filename or "image.jpg").suffix
     new_filename = f"{current_user.id}_{file_hash}{ext}"
     file_path = upload_dir / new_filename
 

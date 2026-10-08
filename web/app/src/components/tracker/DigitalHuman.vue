@@ -6,8 +6,11 @@ interface BodyPart {
   id: string
   label: string
   bodySite: string
+  /** 标签所在列：left = 图左侧（文字右对齐），right = 图右侧 */
+  side: 'left' | 'right'
   hits: { cx: number; cy: number; rx: number; ry: number }[]
-  anchors: { x: number; y: number }[]
+  /** 引导线在身体上的锚点（位于部位外缘，保证连线只穿过空白背景） */
+  anchor: { x: number; y: number }
   labelX: number
   labelY: number
 }
@@ -16,26 +19,15 @@ const props = withDefaults(defineProps<{
   mode?: 'rain' | 'wave'
   showParts?: boolean
   activePart?: string | null
-  view?: 'front' | 'back'
-  showViewToggle?: boolean
 }>(), {
   mode: 'rain',
   showParts: true,
   activePart: null,
-  view: 'front',
-  showViewToggle: true,
 })
 
 const emit = defineEmits<{
   'select-part': [bodySite: string]
-  'update:view': [view: 'front' | 'back']
 }>()
-
-const currentView = ref<'front' | 'back'>(props.view)
-function toggleView() {
-  currentView.value = currentView.value === 'front' ? 'back' : 'front'
-  emit('update:view', currentView.value)
-}
 
 const imageAreaRef = ref<HTMLDivElement>()
 const isRainMode = computed(() => props.mode === 'rain')
@@ -102,37 +94,50 @@ function scheduleNext() {
 
 const waveBars = [{ delay: '0s', duration: '2.5s' }]
 
+// ── 部位标定（坐标系 = butterfly_mascot.png 原图像素 1280×1280）──
+// viewBox 与图片同为正方形，object-contain 与 SVG meet 的 letterbox 完全一致，
+// 任何容器形状下标注都不漂移。坐标基于图像素轮廓逐部位标定（2026-08 校准）：
+// 锚点取部位朝向标签一侧的外缘，引导线为水平直线、只穿过空白背景，互不交叉。
+// 背部在正面图上不可见，取躯干左侧（腰侧）作近似锚点；头部取头顶（头皮），
+// 面部取五官区，两者命中区在额头重叠时面部优先。
+// 数组顺序即命中优先级（后者覆盖前者）：手部与面部/手臂命中区重叠，故手部最后渲染。
+// 右侧标签 labelX=1032：为选中后的「 ✓」对号预留宽度（标签2字+空格+对号 ≤ 3.5em，
+// 配合 labelFont 封顶 64，总宽 ≤ 224，不超出 1280 画布被裁剪）。
 const frontParts: BodyPart[] = [
-  {"id": "face", "label": "面部", "bodySite": "face", "hits": [{"cx": 760, "cy": 132, "rx": 60, "ry": 60}], "anchors": [{"x": 720, "y": 132}], "labelX": 120, "labelY": 120},
-  {"id": "right_hand", "label": "右手", "bodySite": "right_hand", "hits": [{"cx": 365, "cy": 140, "rx": 52, "ry": 50}], "anchors": [{"x": 395, "y": 140}], "labelX": 120, "labelY": 255},
-  {"id": "neck", "label": "脖子", "bodySite": "neck", "hits": [{"cx": 700, "cy": 218, "rx": 30, "ry": 22}], "anchors": [{"x": 672, "y": 218}], "labelX": 120, "labelY": 400},
-  {"id": "right_arm", "label": "右臂", "bodySite": "right_arm", "hits": [{"cx": 440, "cy": 320, "rx": 55, "ry": 90}], "anchors": [{"x": 425, "y": 300}], "labelX": 120, "labelY": 560},
-  {"id": "right_leg", "label": "右腿", "bodySite": "right_leg", "hits": [{"cx": 608, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 552, "y": 806}], "labelX": 120, "labelY": 780},
-  {"id": "right_foot", "label": "右脚", "bodySite": "right_foot", "hits": [{"cx": 606, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 544, "y": 1242}], "labelX": 120, "labelY": 1235},
-  {"id": "left_hand", "label": "左手", "bodySite": "left_hand", "hits": [{"cx": 816, "cy": 192, "rx": 52, "ry": 48}], "anchors": [{"x": 866, "y": 192}], "labelX": 1280, "labelY": 175},
-  {"id": "left_arm", "label": "左臂", "bodySite": "left_arm", "hits": [{"cx": 842, "cy": 282, "rx": 44, "ry": 112}], "anchors": [{"x": 884, "y": 282}], "labelX": 1280, "labelY": 295},
-  {"id": "abdomen", "label": "腹部", "bodySite": "abdomen", "hits": [{"cx": 700, "cy": 500, "rx": 95, "ry": 75}], "anchors": [{"x": 804, "y": 500}], "labelX": 1280, "labelY": 425},
-  {"id": "chest", "label": "胸部", "bodySite": "chest", "hits": [{"cx": 700, "cy": 380, "rx": 90, "ry": 50}], "anchors": [{"x": 802, "y": 380}], "labelX": 1280, "labelY": 555},
-  {"id": "left_leg", "label": "左腿", "bodySite": "left_leg", "hits": [{"cx": 792, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 848, "y": 806}], "labelX": 1280, "labelY": 800},
-  {"id": "left_foot", "label": "左脚", "bodySite": "left_foot", "hits": [{"cx": 794, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 856, "y": 1242}], "labelX": 1280, "labelY": 1235}
+  { id: 'head', label: '头部', bodySite: 'head', side: 'right',
+    hits: [{ cx: 665, cy: 70, rx: 78, ry: 42 }], anchor: { x: 738, y: 78 }, labelX: 1032, labelY: 70 },
+  { id: 'face', label: '面部', bodySite: 'face', side: 'right',
+    hits: [{ cx: 672, cy: 138, rx: 80, ry: 52 }], anchor: { x: 750, y: 140 }, labelX: 1032, labelY: 140 },
+  { id: 'neck', label: '脖子', bodySite: 'neck', side: 'left',
+    hits: [{ cx: 648, cy: 185, rx: 34, ry: 22 }], anchor: { x: 612, y: 190 }, labelX: 185, labelY: 190 },
+  { id: 'right_arm', label: '右臂', bodySite: 'right_arm', side: 'left',
+    hits: [{ cx: 400, cy: 262, rx: 78, ry: 48 }, { cx: 282, cy: 230, rx: 52, ry: 82 }],
+    anchor: { x: 252, y: 285 }, labelX: 185, labelY: 275 },
+  { id: 'chest', label: '胸部', bodySite: 'chest', side: 'left',
+    hits: [{ cx: 642, cy: 292, rx: 102, ry: 88 }], anchor: { x: 534, y: 360 }, labelX: 185, labelY: 345 },
+  { id: 'back', label: '背部', bodySite: 'back', side: 'left',
+    hits: [{ cx: 487, cy: 470, rx: 28, ry: 60 }], anchor: { x: 508, y: 470 }, labelX: 185, labelY: 470 },
+  { id: 'abdomen', label: '腹部', bodySite: 'abdomen', side: 'right',
+    hits: [{ cx: 618, cy: 478, rx: 98, ry: 92 }], anchor: { x: 730, y: 470 }, labelX: 1032, labelY: 470 },
+  { id: 'left_arm', label: '左臂', bodySite: 'left_arm', side: 'right',
+    hits: [{ cx: 762, cy: 298, rx: 62, ry: 100 }], anchor: { x: 832, y: 368 }, labelX: 1032, labelY: 368 },
+  { id: 'right_leg', label: '右腿', bodySite: 'right_leg', side: 'left',
+    hits: [{ cx: 530, cy: 685, rx: 62, ry: 95 }, { cx: 498, cy: 925, rx: 66, ry: 135 }],
+    anchor: { x: 443, y: 930 }, labelX: 185, labelY: 930 },
+  { id: 'left_leg', label: '左腿', bodySite: 'left_leg', side: 'right',
+    hits: [{ cx: 646, cy: 695, rx: 62, ry: 105 }, { cx: 658, cy: 940, rx: 64, ry: 130 }],
+    anchor: { x: 718, y: 930 }, labelX: 1032, labelY: 930 },
+  { id: 'right_foot', label: '右脚', bodySite: 'right_foot', side: 'left',
+    hits: [{ cx: 462, cy: 1148, rx: 100, ry: 80 }], anchor: { x: 362, y: 1180 }, labelX: 185, labelY: 1180 },
+  { id: 'left_foot', label: '左脚', bodySite: 'left_foot', side: 'right',
+    hits: [{ cx: 672, cy: 1148, rx: 100, ry: 78 }], anchor: { x: 768, y: 1180 }, labelX: 1032, labelY: 1180 },
+  { id: 'right_hand', label: '右手', bodySite: 'right_hand', side: 'left',
+    hits: [{ cx: 258, cy: 88, rx: 68, ry: 78 }], anchor: { x: 218, y: 85 }, labelX: 185, labelY: 85 },
+  { id: 'left_hand', label: '左手', bodySite: 'left_hand', side: 'right',
+    hits: [{ cx: 654, cy: 148, rx: 66, ry: 60 }], anchor: { x: 718, y: 185 }, labelX: 1032, labelY: 230 },
 ]
 
-const backParts: BodyPart[] = [
-  {"id": "face", "label": "后脑", "bodySite": "face", "hits": [{"cx": 700, "cy": 132, "rx": 60, "ry": 60}], "anchors": [{"x": 660, "y": 132}], "labelX": 120, "labelY": 120},
-  {"id": "left_hand", "label": "左手", "bodySite": "left_hand", "hits": [{"cx": 365, "cy": 140, "rx": 52, "ry": 50}], "anchors": [{"x": 395, "y": 140}], "labelX": 120, "labelY": 255},
-  {"id": "neck", "label": "颈后", "bodySite": "neck", "hits": [{"cx": 700, "cy": 218, "rx": 30, "ry": 22}], "anchors": [{"x": 672, "y": 218}], "labelX": 120, "labelY": 400},
-  {"id": "left_arm", "label": "左臂", "bodySite": "left_arm", "hits": [{"cx": 440, "cy": 320, "rx": 55, "ry": 90}], "anchors": [{"x": 425, "y": 300}], "labelX": 120, "labelY": 560},
-  {"id": "left_leg", "label": "左腿", "bodySite": "left_leg", "hits": [{"cx": 608, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 552, "y": 806}], "labelX": 120, "labelY": 780},
-  {"id": "left_foot", "label": "左脚", "bodySite": "left_foot", "hits": [{"cx": 606, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 544, "y": 1242}], "labelX": 120, "labelY": 1235},
-  {"id": "right_hand", "label": "右手", "bodySite": "right_hand", "hits": [{"cx": 816, "cy": 192, "rx": 52, "ry": 48}], "anchors": [{"x": 866, "y": 192}], "labelX": 1280, "labelY": 175},
-  {"id": "right_arm", "label": "右臂", "bodySite": "right_arm", "hits": [{"cx": 842, "cy": 282, "rx": 44, "ry": 112}], "anchors": [{"x": 884, "y": 282}], "labelX": 1280, "labelY": 295},
-  {"id": "upper_back", "label": "上背部", "bodySite": "upper_back", "hits": [{"cx": 700, "cy": 410, "rx": 95, "ry": 60}], "anchors": [{"x": 804, "y": 410}], "labelX": 1280, "labelY": 425},
-  {"id": "lower_back", "label": "下背部", "bodySite": "lower_back", "hits": [{"cx": 700, "cy": 580, "rx": 90, "ry": 60}], "anchors": [{"x": 802, "y": 580}], "labelX": 1280, "labelY": 555},
-  {"id": "right_leg", "label": "右腿", "bodySite": "right_leg", "hits": [{"cx": 792, "cy": 806, "rx": 58, "ry": 140}], "anchors": [{"x": 848, "y": 806}], "labelX": 1280, "labelY": 800},
-  {"id": "right_foot", "label": "右脚", "bodySite": "right_foot", "hits": [{"cx": 794, "cy": 1242, "rx": 64, "ry": 36}], "anchors": [{"x": 856, "y": 1242}], "labelX": 1280, "labelY": 1235}
-]
-
-const visibleParts = computed(() => currentView.value === 'back' ? backParts : frontParts)
+const visibleParts = computed(() => frontParts)
 
 function onPartClick(part: BodyPart) {
   emit('select-part', part.bodySite)
@@ -140,6 +145,29 @@ function onPartClick(part: BodyPart) {
 
 let onTouchStart: (() => void) | null = null
 let onTouchEnd: (() => void) | null = null
+
+// ── 部位标签随渲染尺寸自适应 ──
+// 小人整体随容器缩放，若标签字号固定在 viewBox 坐标系里，小人变小时标签会跟着变小到看不清。
+// 这里按实际渲染尺寸把标签锁定在 15-22px（渲染值），换算回 1280 坐标系。
+const svgRef = ref<SVGSVGElement | null>(null)
+const renderedSize = ref(320)
+let resizeObserver: ResizeObserver | null = null
+
+/** 标签字号（viewBox 单位）：目标渲染 15-22px，封顶 64 保证「标签+对号」不超出画布 */
+const labelFont = computed(() => {
+  const px = Math.min(22, Math.max(15, renderedSize.value * 0.05))
+  return Math.min(64, Math.round((px * 1280) / Math.max(1, renderedSize.value)))
+})
+/** 标签白描边宽度 */
+const labelHalo = computed(() => Math.max(5, Math.round(labelFont.value * 0.15)))
+/** 引导虚线宽度 */
+const lineStroke = computed(() => Math.max(2, Math.round(labelFont.value * 0.05)))
+/** 锚点圆半径 */
+const anchorR = computed(() => Math.max(7, Math.round(labelFont.value * 0.17)))
+/** 引导线与标签的间距 */
+const labelGap = computed(() => Math.max(10, Math.round(labelFont.value * 0.22)))
+/** 引导线指向标签的竖直中心（相对基线上移） */
+const labelMidOffset = computed(() => Math.round(labelFont.value * 0.32))
 
 onMounted(() => {
   const el = imageAreaRef.value
@@ -150,6 +178,13 @@ onMounted(() => {
   el.addEventListener('touchend', onTouchEnd, { passive: true })
   el.addEventListener('touchcancel', onTouchEnd, { passive: true })
   showPartsInternal.value = props.showParts
+  if (svgRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver((entries) => {
+      const r = entries[0]?.contentRect
+      if (r) renderedSize.value = Math.max(120, Math.floor(Math.min(r.width, r.height)))
+    })
+    resizeObserver.observe(svgRef.value)
+  }
 })
 
 defineExpose({ triggerRain })
@@ -158,6 +193,7 @@ onUnmounted(() => {
   if (rainTimer) clearTimeout(rainTimer)
   if (curtainTimer) clearTimeout(curtainTimer)
   if (cycleTimer) clearTimeout(cycleTimer)
+  resizeObserver?.disconnect()
   nextTick()
   const el = imageAreaRef.value
   if (el) {
@@ -171,10 +207,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="relative w-full h-full min-h-[280px]" style="aspect-ratio: 1400 / 1500;">
+  <div class="relative w-full h-full">
     <div
       ref="imageAreaRef"
-      class="relative w-full h-full"
+      class="absolute inset-0"
       :style="{ touchAction: 'none' }"
       data-swipe-ignore
     >
@@ -182,20 +218,10 @@ onUnmounted(() => {
         <img
           :src="butterflyMascot"
           alt="小金 - 身体部位参考图"
-          :class="['w-full h-full object-contain select-none relative z-10', { 'scale-x-[-1]': currentView === 'back' }]"
+          class="w-full h-full object-contain select-none relative z-10"
           draggable="false"
         />
       </div>
-
-      <button
-        v-if="showViewToggle && showParts"
-        type="button"
-        class="absolute top-2 right-2 z-30 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/70 dark:bg-gray-800/70 backdrop-blur text-xs font-medium text-primary-700 dark:text-primary-300 hover:bg-white dark:hover:bg-gray-800 transition-colors shadow-sm"
-        @click="toggleView"
-      >
-        <i class="ri-flip-horizontal-line"></i>
-        {{ currentView === 'front' ? '正面' : '背面' }}
-      </button>
 
       <div v-if="isWaveMode" :key="1" class="absolute inset-0 pointer-events-none overflow-hidden" :style="{ zIndex: 12 }">
         <div
@@ -209,26 +235,16 @@ onUnmounted(() => {
       <Transition name="parts-fade">
         <div v-if="showPartsInternal" class="absolute inset-0" :style="{ zIndex: 20, pointerEvents: 'none' }">
           <svg
-            viewBox="0 0 1400 1500"
+            ref="svgRef"
+            viewBox="0 0 1280 1280"
             class="w-full h-full"
-            :style="{ pointerEvents: 'auto', overflow: 'visible' }"
+            :style="{ pointerEvents: 'auto' }"
             preserveAspectRatio="xMidYMid meet"
           >
-            <defs>
-              <filter id="dash-glow">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-
             <g
               v-for="part in visibleParts"
               :key="part.id"
               class="body-part-group"
-              :class="{ 'body-part-active': activePart === part.bodySite }"
               role="button"
               tabindex="0"
               :aria-label="part.label"
@@ -240,59 +256,50 @@ onUnmounted(() => {
                 :key="'hit-' + hi"
                 :cx="hit.cx"
                 :cy="hit.cy"
-                :rx="hit.rx + 10"
-                :ry="hit.ry + 10"
+                :rx="hit.rx + 20"
+                :ry="hit.ry + 20"
                 fill="transparent"
                 stroke="transparent"
                 class="cursor-pointer"
                 @click.stop="onPartClick(part)"
               />
-              <g v-for="(anc, ai) in part.anchors" :key="'line-' + ai">
-                <line
-                  :x1="anc.x"
-                  :y1="anc.y"
-                  :x2="part.labelX < 700 ? anc.x - 25 : anc.x + 25"
-                  :y2="anc.y"
-                  :stroke="activePart === part.bodySite ? '#ffffff' : '#26A69A'"
-                  stroke-width="2"
-                  stroke-dasharray="6 4"
-                  stroke-linecap="round"
-                  filter="url(#dash-glow)"
-                  :opacity="activePart === part.bodySite ? 1 : 0.7"
-                />
-                <line
-                  :x1="part.labelX < 700 ? anc.x - 25 : anc.x + 25"
-                  :y1="anc.y"
-                  :x2="part.labelX < 700 ? part.labelX + 30 : part.labelX - 30"
-                  :y2="part.labelY"
-                  :stroke="activePart === part.bodySite ? '#ffffff' : '#26A69A'"
-                  stroke-width="2"
-                  stroke-dasharray="6 4"
-                  stroke-linecap="round"
-                  filter="url(#dash-glow)"
-                  :opacity="activePart === part.bodySite ? 1 : 0.7"
-                />
-                <circle
-                  :cx="anc.x"
-                  :cy="anc.y"
-                  :r="activePart === part.bodySite ? 8 : 6"
-                  :fill="activePart === part.bodySite ? '#ffffff' : '#26A69A'"
-                  opacity="0.9"
-                  filter="url(#dash-glow)"
-                />
-              </g>
+              <!-- 引导线：锚点 → 标签，一条水平虚线（锚点取部位外缘，线不穿过身体） -->
+              <line
+                :x1="part.anchor.x"
+                :y1="part.anchor.y"
+                :x2="part.side === 'left' ? part.labelX + labelGap : part.labelX - labelGap"
+                :y2="part.labelY - labelMidOffset"
+                stroke="#26A69A"
+                :stroke-width="lineStroke"
+                stroke-dasharray="7 5"
+                stroke-linecap="round"
+                opacity="0.75"
+              />
+              <circle
+                :cx="part.anchor.x"
+                :cy="part.anchor.y"
+                :r="anchorR"
+                fill="#26A69A"
+                opacity="0.9"
+                class="cursor-pointer"
+                @click.stop="onPartClick(part)"
+              />
               <text
                 :x="part.labelX"
                 :y="part.labelY"
-                :text-anchor="part.labelX < 700 ? 'end' : 'start'"
-                :fill="activePart === part.bodySite ? '#ffffff' : '#26A69A'"
-                font-size="52"
+                :text-anchor="part.side === 'left' ? 'end' : 'start'"
+                fill="#0f9d8f"
+                :font-size="labelFont"
                 font-family="system-ui, -apple-system, sans-serif"
                 font-weight="600"
+                stroke="#ffffff"
+                :stroke-width="labelHalo"
+                stroke-linejoin="round"
+                paint-order="stroke"
                 class="select-none part-label cursor-pointer"
-                :style="activePart === part.bodySite ? 'text-shadow: 0 0 12px rgba(38,166,154,0.8), 0 0 24px rgba(38,166,154,0.4);' : 'text-shadow: 0 0 6px rgba(38,166,154,0.35);'"
+                :class="{ 'part-label--active': activePart === part.bodySite }"
                 @click.stop="onPartClick(part)"
-              >{{ part.label }}</text>
+                >{{ part.label }}<tspan v-if="activePart === part.bodySite" class="part-label__check"> ✓</tspan></text>
             </g>
           </svg>
         </div>
@@ -319,6 +326,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.curtain-sweep-enter-active{animation:curtain-slide .5s ease-out forwards}.curtain-sweep-leave-active{transition:opacity .15s ease-in}.curtain-sweep-leave-to{opacity:0}@keyframes curtain-slide{0%{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}.rain-fade-enter-active{transition:opacity .3s ease-out}.rain-fade-leave-active{transition:opacity .4s ease-in}.rain-fade-enter-from,.rain-fade-leave-to{opacity:0}.rain-column{position:absolute;top:-5%;font-family:Courier New,monospace;font-weight:700;color:#26a69a;text-shadow:0 0 6px rgba(38,166,154,.6);white-space:pre;line-height:1.3;animation-name:rain-fall;animation-timing-function:linear;animation-fill-mode:forwards}.rain-column:first-line{color:#fff;text-shadow:0 0 14px rgba(38,166,154,1),0 0 28px rgba(38,166,154,.8)}@keyframes rain-fall{0%{transform:translateY(-5%)}to{transform:translateY(105vh)}}.wave-bar{position:absolute;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,rgba(38,166,154,.15) 20%,rgba(38,166,154,.5) 45%,rgba(38,166,154,.7) 50%,rgba(38,166,154,.5) 55%,rgba(38,166,154,.15) 80%,transparent 100%);box-shadow:0 0 20px #26a69a66,0 0 40px #26a69a26;animation-name:wave-scan;animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate;top:-10px}@keyframes wave-scan{0%{top:-2%;opacity:0}5%{opacity:.8}10%{opacity:1}90%{opacity:1}95%{opacity:.5}to{top:102%;opacity:0}}.parts-fade-enter-active{transition:opacity .5s ease-out}.parts-fade-leave-active{transition:opacity .2s ease-in}.parts-fade-enter-from,.parts-fade-leave-to{opacity:0}.body-part-group:hover text.part-label{fill:#fff;filter:drop-shadow(0 0 6px rgba(38,166,154,.6))}.body-part-active text.part-label{fill:#fff!important;filter:drop-shadow(0 0 10px rgba(38,166,154,.7))}.body-part-group:hover circle{fill:#fff;r:7}.body-part-active circle{fill:#fff!important}.body-part-group{transition:opacity .2s;outline:none}.body-part-group:focus-visible{outline:none}.body-part-group:focus-visible text.part-label{fill:#fff;filter:drop-shadow(0 0 8px rgba(38,166,154,.8))}.body-part-group:active{opacity:.7}.body-part-active{opacity:1!important}
+.curtain-sweep-enter-active{animation:curtain-slide .5s ease-out forwards}.curtain-sweep-leave-active{transition:opacity .15s ease-in}.curtain-sweep-leave-to{opacity:0}@keyframes curtain-slide{0%{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}.rain-fade-enter-active{transition:opacity .3s ease-out}.rain-fade-leave-active{transition:opacity .4s ease-in}.rain-fade-enter-from,.rain-fade-leave-to{opacity:0}.rain-column{position:absolute;top:-5%;font-family:Courier New,monospace;font-weight:700;color:#26a69a;text-shadow:0 0 6px rgba(38,166,154,.6);white-space:pre;line-height:1.3;animation-name:rain-fall;animation-timing-function:linear;animation-fill-mode:forwards}.rain-column:first-line{color:#fff;text-shadow:0 0 14px rgba(38,166,154,1),0 0 28px rgba(38,166,154,.8)}@keyframes rain-fall{0%{transform:translateY(-5%)}to{transform:translateY(105vh)}}.wave-bar{position:absolute;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,rgba(38,166,154,.15) 20%,rgba(38,166,154,.5) 45%,rgba(38,166,154,.7) 50%,rgba(38,166,154,.5) 55%,rgba(38,166,154,.15) 80%,transparent 100%);box-shadow:0 0 20px #26a69a66,0 0 40px #26a69a26;animation-name:wave-scan;animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate;top:-10px}@keyframes wave-scan{0%{top:-2%;opacity:0}5%{opacity:.8}10%{opacity:1}90%{opacity:1}95%{opacity:.5}to{top:102%;opacity:0}}.parts-fade-enter-active{transition:opacity .5s ease-out}.parts-fade-leave-active{transition:opacity .2s ease-in}.parts-fade-enter-from,.parts-fade-leave-to{opacity:0}.body-part-group{transition:opacity .2s;outline:none}.body-part-group:focus-visible{outline:none}.body-part-group:active{opacity:.7}.part-label--active{font-weight:700;filter:drop-shadow(0 0 9px rgba(38,166,154,.95)) drop-shadow(0 0 3px rgba(255,255,255,.7))}.part-label__check{fill:#0d9488;font-weight:700}
 
 </style>

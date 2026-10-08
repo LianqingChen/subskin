@@ -60,7 +60,7 @@ function onShareClick() {
           <i class="ri-lock-line mr-0.5"></i>仅自己存档
         </button>
         <button type="button" class="px-3 py-1.5 min-h-[36px] rounded-lg text-xs border border-primary-300 dark:border-primary-700 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/40 transition-colors" @click="onShareClick">
-          <i class="ri-global-line mr-0.5"></i>{{ confirmingShare ? '确认公开分享？' : '发布到分享' }}
+          <i class="ri-global-line mr-0.5"></i>{{ confirmingShare ? '确认公开分享？' : '发布到发现' }}
         </button>
         <button type="button" class="px-3 py-1.5 min-h-[36px] rounded-lg text-xs text-gray-400 hover:text-gray-600 transition-colors" @click="emit('confirm', 'discard')">
           不保存

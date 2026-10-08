@@ -1,0 +1,9 @@
+{
+  "synthetic_only": true,
+  "left_hand_complete_depig_100pct": 10.0,
+  "standard_hand_units_times_depig_for_same_input": 1,
+  "same_lesion_photo_ratio_10pct": 1.0,
+  "same_lesion_tighter_crop_ratio_20pct": 2.0,
+  "left_foot_english_full": 17.5,
+  "left_foot_chinese_full": 90.0
+}

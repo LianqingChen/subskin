@@ -1,10 +1,13 @@
 """
 VASI评估API
 """
+from web.backend.utils.timeutils import iso_utc
 
 import logging
+import json
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta, date
+from uuid import uuid4
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -14,6 +17,7 @@ from web.backend.services.auth import get_current_user
 from web.backend.services.unified_auth import get_current_admin_user
 from web.backend.services.vasi import VASIService, VASIAssessmentError
 from web.backend.models.vasi import VASIAssessment, ImageQualityTag
+from web.backend.services.assessment_measurement import measurement_for, context_for, read_details, measure_layers, normalize_capture
 from web.backend.database.models import User
 from web.backend.api.models import (
     VASIAssessmentResponse,
@@ -41,12 +45,26 @@ def _require_evolution_service(obj, name: str):
     return obj
 
 
+@router.get("/annotation-protocol")
+def get_annotation_protocol():
+    """Public capability declaration; does not expose model config or credentials."""
+    return {"protocol": "skin-outline-v1", "manual_review_required": True, "refinement_version": "pixel-refine-v2"}
+
+
 @router.post("/assess", response_model=VASIAssessmentResponse)
 async def create_assessment(
     image: UploadFile = File(...),
     body_site: str = Form(...),
     precision: str = Form("quick"),
     has_reference: str = Form("false"),
+    intent: str = Form("discovery"),
+    observation_label: str = Form(""),
+    view: str = Form(""),
+    capture_date: Optional[str] = Form(None),
+    baseline_id: Optional[int] = Form(None),
+    background: str = Form(""),
+    calibration: str = Form(""),
+    annotation_protocol: str = Form(""),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -61,6 +79,37 @@ async def create_assessment(
         image_filename = image.filename or "upload.jpg"
 
         service = VASIService(db)
+        if annotation_protocol not in ("", "skin-outline-v1"):
+            raise VASIAssessmentError("不支持的标注协议，请更新页面")
+        if intent not in ("discovery", "tracking") or len(observation_label) > 60 or len(view) > 40 or len(background) > 600:
+            raise VASIAssessmentError("请检查观察位置和补充信息")
+        try:
+            captured = date.fromisoformat(capture_date) if capture_date else date.today()
+        except ValueError:
+            raise VASIAssessmentError("拍摄日期无效")
+        if captured > date.today():
+            raise VASIAssessmentError("拍摄日期不能晚于今天")
+        baseline = service.get_assessment_by_id(baseline_id, current_user.id) if baseline_id else None
+        if baseline_id and (not baseline or baseline.status != "active"):
+            raise VASIAssessmentError("找不到可用的基线记录")
+        if baseline and baseline.body_site != service.BODY_SITE_LABELS.get(body_site, body_site):
+            raise VASIAssessmentError("请选择与基线相同的身体部位")
+        if len(calibration) > 1000:
+            raise VASIAssessmentError("参照物信息过长")
+        try:
+            scale_reference = json.loads(calibration) if calibration else None
+            if scale_reference is not None and not isinstance(scale_reference, dict):
+                raise ValueError()
+        except ValueError:
+            raise VASIAssessmentError("参照物信息无效")
+        prior = context_for(baseline) if baseline else {}
+        observation = {
+            "id": prior.get("id") or (f"legacy-{baseline.id}" if baseline else uuid4().hex),
+            "label": prior.get("label") or observation_label.strip(),
+            "view": prior.get("view") or view.strip(), "intent": intent,
+            "capture_date": captured.isoformat(), "date_confirmed": capture_date is not None,
+            "baseline_id": baseline.id if baseline else None, "background": background.strip(),
+        }
         assessment = await service.assess_vasi(
             user_id=current_user.id,
             image_file=image_bytes,
@@ -68,7 +117,17 @@ async def create_assessment(
             image_type=image_type,
             image_filename=image_filename,
             precision=precision,
+            **({"annotation_protocol": annotation_protocol} if annotation_protocol else {}),
         )
+
+        details = read_details(assessment.details)
+        details["observation"] = observation
+        if scale_reference:
+            details["scale_reference"] = scale_reference
+            details["measurement"] = measure_layers(assessment.ai_skin_layer, assessment.ai_lesion_layer, normalize_capture(image_bytes), scale_reference)
+        assessment.details = json.dumps(details, ensure_ascii=False)
+        assessment.assessment_date = datetime.combine(captured, datetime.min.time())
+        db.commit()
 
         if has_reference and has_reference.lower() in ("true", "1", "yes"):
             try:
@@ -84,7 +143,6 @@ async def create_assessment(
         assessment_source = getattr(assessment, "assessment_source", None)
         if assessment.details:
             try:
-                import json
                 details_data = json.loads(assessment.details)
                 contours = details_data.get("contours", [])
                 skin_layer_data_url = details_data.get("skin_layer_data_url")
@@ -95,7 +153,6 @@ async def create_assessment(
         # Extract suspected_lesions from raw_api_response (VLM stores them there)
         if assessment.raw_api_response:
             try:
-                import json
                 raw = json.loads(assessment.raw_api_response)
                 suspected_lesions = raw.get("suspected_lesions")
                 if not assessment_source:
@@ -112,6 +169,17 @@ async def create_assessment(
             except (json.JSONDecodeError, TypeError):
                 pass
 
+        # ── 全自动自循环：共识详情 + 自动终审标志 ──
+        consensus = None
+        cons_json = getattr(assessment, "consensus_json", None)
+        if cons_json:
+            try:
+                consensus = json.loads(cons_json)
+            except (json.JSONDecodeError, TypeError):
+                pass
+        auto_finalized = bool(getattr(assessment, "auto_finalized", False))
+        patient_model_version = getattr(assessment, "patient_model_version", None)
+
         # Extract reference_objects and skin_fitzpatrick from raw_api_response
         reference_objects = None
         skin_fitzpatrick = None
@@ -125,6 +193,7 @@ async def create_assessment(
                 pass
 
         return VASIAssessmentResponse(
+            record_status=assessment.status, measurement=measurement_for(assessment), observation=context_for(assessment),
             id=assessment.id,
             user_id=assessment.user_id,
             image_url=assessment.image_url,
@@ -146,10 +215,13 @@ async def create_assessment(
             depigmentation_level=getattr(assessment, "depigmentation_level", None),
             reference_objects=reference_objects,
             skin_fitzpatrick=skin_fitzpatrick,
-            assessment_date=assessment.assessment_date.isoformat()
+            auto_finalized=auto_finalized,
+            consensus=consensus,
+            patient_model_version=patient_model_version,
+            assessment_date=iso_utc(assessment.assessment_date)
             if assessment.assessment_date
             else "",
-            created_at=assessment.created_at.isoformat()
+            created_at=iso_utc(assessment.created_at)
             if assessment.created_at
             else "",
             precision_level=precision,
@@ -176,7 +248,10 @@ async def finalize_assessment(
     considered abandoned and cleaned up later.
     """
     service = VASIService(db)
-    ok = service.finalize_assessment(assessment_id, current_user.id)
+    try:
+        ok = service.finalize_assessment(assessment_id, current_user.id)
+    except VASIAssessmentError as error:
+        raise HTTPException(status_code=400, detail=str(error))
     if not ok:
         raise HTTPException(status_code=404, detail="评估记录不存在或无权访问")
     return {"success": True, "assessment_id": assessment_id, "status": "active"}
@@ -234,13 +309,15 @@ async def get_history(
 
         items = [
             {
+                "measurement": measurement_for(a),
+                "observation": {k: v for k, v in context_for(a).items() if k != "background"},
                 "id": a.id,
                 "image_url": a.image_url,
                 "vasi_score": a.final_vasi_score if a.final_vasi_score is not None else a.vasi_score,
                 "area_percentage": a.final_area_percentage if a.final_area_percentage is not None else a.area_percentage,
                 "body_site": a.body_site,
                 "stage": a.stage,
-                "assessment_date": a.assessment_date.isoformat(),
+                "assessment_date": iso_utc(a.assessment_date),
                 "final_vasi_score": a.final_vasi_score,
                 "final_area_percentage": a.final_area_percentage,
                 "is_user_corrected": bool(a.is_user_corrected),
@@ -280,8 +357,8 @@ async def get_assessment(
             import json as _json
             details_data = _json.loads(assessment.details)
             contours = details_data.get("contours", [])
-            skin_layer_data_url = details_data.get("skin_layer_data_url")
-            lesion_layer_data_url = details_data.get("lesion_layer_data_url")
+            skin_layer_data_url = assessment.user_skin_layer or details_data.get("skin_layer_data_url")
+            lesion_layer_data_url = assessment.user_lesion_layer or details_data.get("lesion_layer_data_url")
         except (Exception,):
             pass
     # Mirror the create endpoint: pull suspected_lesions / reference_objects /
@@ -318,7 +395,18 @@ async def get_assessment(
         except (Exception,):
             pass
 
+    # ── 全自动自循环：共识详情 + 自动终审标志 ──
+    consensus = None
+    cons_json_val = getattr(assessment, "consensus_json", None)
+    if cons_json_val:
+        try:
+            import json as _json
+            consensus = _json.loads(cons_json_val)
+        except (Exception,):
+            pass
+
     return VASIAssessmentResponse(
+        record_status=assessment.status, measurement=measurement_for(assessment), observation=context_for(assessment),
         id=assessment.id,
         user_id=assessment.user_id,
         image_url=assessment.image_url,
@@ -335,10 +423,13 @@ async def get_assessment(
         skin_fitzpatrick=skin_fitzpatrick,
         assessment_source=assessment_source,
         visual_features=visual_features,
-        assessment_date=assessment.assessment_date.isoformat()
+        auto_finalized=bool(getattr(assessment, "auto_finalized", False)),
+        consensus=consensus,
+        patient_model_version=getattr(assessment, "patient_model_version", None),
+        assessment_date=iso_utc(assessment.assessment_date)
         if assessment.assessment_date
         else "",
-        created_at=assessment.created_at.isoformat() if assessment.created_at else "",
+        created_at=iso_utc(assessment.created_at) if assessment.created_at else "",
         precision_level="quick",
         precise_available=True,
         confidence=getattr(assessment, "confidence", None),
@@ -471,7 +562,102 @@ async def get_trend(
         raise HTTPException(status_code=500, detail="服务暂时不可用，请稍后重试")
 
 
+@router.get("/assess/{assessment_id}/tracks")
+async def get_assessment_tracks(
+    assessment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """获取该评估关联的白斑病灶轨迹（每处白斑的身份与面积变化）。
+
+    同一患者同部位在统一画布上按 IoU 匹配病灶身份，输出每处白斑的
+    new/grew/shrunk/disappeared 轨迹。仅评估所有者可访问。
+    """
+    from web.backend.models.vasi import VASIAssessment, LesionTrack
+
+    assessment = db.query(VASIAssessment).filter(VASIAssessment.id == assessment_id).first()
+    if not assessment or assessment.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="评估记录不存在")
+
+    rows = (
+        db.query(LesionTrack)
+        .filter(LesionTrack.user_id == current_user.id,
+                LesionTrack.body_site == assessment.body_site)
+        .order_by(LesionTrack.photo_date.asc(), LesionTrack.id.asc())
+        .all()
+    )
+    tracks: Dict[str, List[Dict[str, Any]]] = {}
+    for r in rows:
+        item = {
+            "photo_ref": r.photo_ref,
+            "photo_date": iso_utc(r.photo_date) if r.photo_date else None,
+            "area_canvas_px": r.area_canvas_px,
+            "area_normalized": r.area_normalized,
+            "status": r.status,
+            "source": r.source,
+            "confidence": r.confidence,
+        }
+        tracks.setdefault(r.track_key, []).append(item)
+    # 只返回与本次评估相关（同图或更早）的轨迹
+    return {"assessment_id": assessment_id, "tracks": tracks}
+
+
+@router.get("/self-learning/status")
+async def get_self_learning_status(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """当前用户的白斑识别自学习状态（患者模型/样本数/共识统计）。
+
+    完全自动：无需任何用户操作，这里只作透明展示。
+    """
+    from web.backend.models.vasi import PatientModel, VASIAssessment
+
+    models = (
+        db.query(PatientModel)
+        .filter(PatientModel.user_id == current_user.id, PatientModel.is_active.is_(True))
+        .all()
+    )
+    model_list = []
+    for m in models:
+        try:
+            metrics = json.loads(m.metrics_json or "{}")
+        except Exception:
+            metrics = {}
+        model_list.append({
+            "body_site": m.body_site,
+            "version": m.version,
+            "training_source": m.training_source,
+            "sample_count": m.sample_count,
+            "shadow_dice": metrics.get("shadow_dice"),
+            "trained_at": iso_utc(m.created_at) if m.created_at else None,
+        })
+
+    recent = (
+        db.query(VASIAssessment)
+        .filter(VASIAssessment.user_id == current_user.id,
+                VASIAssessment.status == "active",
+                VASIAssessment.assessment_date >= datetime.utcnow() - timedelta(days=90))
+        .all()
+    )
+    total = len(recent)
+    auto_count = sum(1 for a in recent if getattr(a, "auto_finalized", False))
+    corrected_count = sum(1 for a in recent if getattr(a, "is_user_corrected", False))
+
+    return {
+        "patient_models": model_list,
+        "stats": {
+            "recent_assessments": total,
+            "auto_finalized": auto_count,
+            "auto_finalize_rate": round(auto_count / total, 2) if total else None,
+            "user_corrected": corrected_count,
+        },
+        "note": "识别引擎会随每次修正与随访自动学习，无需人工操作",
+    }
+
+
 class ContourSubmitRequest(BaseModel):
+    uncertainty_reviewed: bool = False
     contours: List[Dict[str, Any]]
     mask_image: Optional[str] = None  # legacy single-layer mask (deprecated, kept for compat)
     skin_mask_image: Optional[str] = None  # 肤色层 data URL — defines the evaluation region (denominator)
@@ -559,6 +745,25 @@ async def submit_contour_correction(
     if not assessment:
         raise HTTPException(status_code=404, detail="评估记录不存在")
 
+    annotation = read_details(assessment.details).get("annotation") or {}
+    if annotation.get("protocol") == "skin-seg-v2":
+        raise HTTPException(status_code=409, detail="请更新页面后通过新版标注流程保存")
+    if annotation.get("protocol") == "skin-outline-v1" or (annotation.get("refine") or {}).get("status") == "cv-fallback":
+        from web.backend.services.annotation_review import apply_review
+        from web.backend.services.annotation_contract import AnnotationContractError
+        from web.backend.services.spot_compare import resolve_image_bytes
+        try:
+            image_bytes = resolve_image_bytes(assessment.image_url, assessment.image_key)
+            measured = apply_review(assessment, request.skin_mask_image, request.lesion_mask_image,
+                                    request.uncertainty_reviewed, image_bytes)
+        except AnnotationContractError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        db.commit()
+        # A user's reference is never automatically exported as clinical training data.
+        return {"status": "ok", "assessment_id": assessment.id, "diff_summary": {"match": False, "modified": True},
+                "measurement": measurement_for(assessment), "final_area_percentage": measured["area_percentage"],
+                "final_vasi_score": 0.0}
+
     user_contours = request.contours
     assessment.user_contours = json.dumps(user_contours)
 
@@ -594,7 +799,7 @@ async def submit_contour_correction(
                     assessment.depigmentation_level = float(
                         max(0.0, min(1.0, request.depigmentation_level))
                     )
-                depig = assessment.depigmentation_level or 1.0
+                depig = assessment.depigmentation_level if assessment.depigmentation_level is not None else 1.0
                 final_vasi_score = compute_vasi_v2(
                     body_site=assessment.body_site,
                     area_pct_in_region=final_area_pct,
@@ -635,7 +840,7 @@ async def submit_contour_correction(
                     assessment.depigmentation_level = float(
                         max(0.0, min(1.0, request.depigmentation_level))
                     )
-                depig = assessment.depigmentation_level or 1.0
+                depig = assessment.depigmentation_level if assessment.depigmentation_level is not None else 1.0
                 final_vasi_score = compute_vasi_v2(
                     body_site=assessment.body_site,
                     area_pct_in_region=final_area_pct,
@@ -665,7 +870,26 @@ async def submit_contour_correction(
             diff.get("user_pixels", 0),
         )
 
+    if request.skin_mask_image and request.lesion_mask_image:
+        if final_area_pct is None:
+            db.rollback()
+            raise HTTPException(status_code=400, detail="请确认白斑范围在皮肤范围以内")
+        details = read_details(assessment.details)
+        details["measurement"] = measure_layers(request.skin_mask_image, request.lesion_mask_image, calibration=details.get("scale_reference"))
+        assessment.details = json.dumps(details, ensure_ascii=False)
     db.commit()
+
+    # ── 全自动自循环：用户修正 → 患者训练样本 + 重训队列（2026-08-27）──
+    try:
+        from web.backend.services.vasi_autoloop import queue_correction_sample
+        if queue_correction_sample(db, assessment_id):
+            logger.info(
+                "assmt=%d user correction queued for patient model training",
+                assessment_id,
+            )
+    except Exception as e:
+        db.rollback()
+        logger.warning("queue_correction_sample failed: %s", e)
 
     # Phase 1: Record feedback signal and export training sample
     try:
@@ -706,17 +930,20 @@ async def submit_contour_correction(
 
             if image_bytes:
                 learner = get_rl_learner()
-                triggered = learner.record_correction(
-                    image_bytes=image_bytes,
-                    pipeline_params=None,  # Use defaults for now
-                    actual_dice=dice_score,
-                )
-                if triggered:
-                    logger.info(
-                        "RL training triggered: assmt=%d dice=%.3f buffer=%d updates=%d",
-                        assessment_id, dice_score,
-                        len(learner.buffer), learner.policy.total_updates,
+                if learner is None:
+                    logger.debug("RL learner disabled; skipping correction record: assmt=%d", assessment_id)
+                else:
+                    triggered = learner.record_correction(
+                        image_bytes=image_bytes,
+                        pipeline_params=None,  # Use defaults for now
+                        actual_dice=dice_score,
                     )
+                    if triggered:
+                        logger.info(
+                            "RL training triggered: assmt=%d dice=%.3f buffer=%d updates=%d",
+                            assessment_id, dice_score,
+                            len(learner.buffer), learner.policy.total_updates,
+                        )
             else:
                 logger.debug("No image bytes available for RL training: assmt=%d", assessment_id)
     except Exception as e:
@@ -724,6 +951,7 @@ async def submit_contour_correction(
 
     response: Dict[str, Any] = {
         "status": "ok",
+        "measurement": measurement_for(assessment),
         "assessment_id": assessment_id,
         "ai_contour_count": len(ai_contours),
         "user_contour_count": len(user_contours),
@@ -928,7 +1156,7 @@ async def list_assessments_admin(
             has_user_layers=bool(a.user_skin_layer or a.user_lesion_layer),
             quality_tag=tag_row.quality_tag if tag_row else None,
             quality_notes=tag_row.notes if tag_row else None,
-            assessment_date=a.assessment_date.isoformat() if a.assessment_date else "",
+            assessment_date=iso_utc(a.assessment_date) if a.assessment_date else "",
         ))
 
     return AdminAssessmentListResponse(total=total, items=items)
@@ -1161,7 +1389,7 @@ async def list_training_samples(
                 "area_error_pct": s.area_error_pct,
                 "confidence": s.confidence,
                 "usage_count": s.usage_count,
-                "created_at": s.created_at.isoformat() if s.created_at else None,
+                "created_at": iso_utc(s.created_at) if s.created_at else None,
             }
             for s in samples
         ],
@@ -1414,3 +1642,35 @@ async def export_training_dataset(
         "samples": data,
         "ready_for_nnunet": len(data) >= 200,
     }
+
+
+@router.post("/photo-align")
+async def photo_align(
+    files: List[UploadFile] = File(...),
+    body_site: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
+):
+    """照片对齐参数（按部位锚点归一化：面部=瞳距 / 手部=掌宽 / 躯干四肢=肩宽），供滑块对比使用。
+
+    接收 2-4 张照片，返回每张照片的缩放/旋转/锚点参数（不落盘、不存储，
+    处理完成即丢弃，仅返回数值参数）。
+    """
+    from starlette.concurrency import run_in_threadpool
+
+    from web.backend.services.photo_align import compute_align_params
+
+    if not 2 <= len(files) <= 4:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="需 2-4 张照片")
+    data: List[bytes] = []
+    for f in files:
+        b = await f.read()
+        if len(b) > 20 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="单张照片不能超过 20MB",
+            )
+        if not b:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="照片为空")
+        data.append(b)
+    # CPU 密集（MediaPipe），线程池执行避免阻塞事件循环
+    return await run_in_threadpool(compute_align_params, data, body_site)

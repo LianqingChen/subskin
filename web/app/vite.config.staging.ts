@@ -37,7 +37,7 @@ export default defineConfig({
       manifest: {
         name: 'SubSkin [STAGING]',
         short_name: 'SubSkin-STG',
-        description: 'SubSkin Staging — 测试环境。AI赋能的白癜风知识库与社区平台',
+        description: 'SubSkin Staging — 测试环境。白癜风病友的AI记录和分享社区',
         theme_color: '#1e293b',
         background_color: '#ffffff',
         display: 'standalone',
@@ -57,34 +57,13 @@ export default defineConfig({
           { src: './icons/maskable-512x512.png?v=c7f3a2', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: {
-        clientsClaim: true,
-        navigateFallbackDenylist: [/^\/wiki-content/, /^\/version\.json/],
+      workbox: undefined,
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      injectManifest: {
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https?:\/\/.*\/version\.json/i,
-            handler: 'NetworkOnly',
-          },
-          {
-            urlPattern: /^https?:\/\/.*\/api\/(community|user|vasi|medical-reports)\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 5 },
-              networkTimeoutSeconds: 5,
-            },
-          },
-          {
-            urlPattern: /^https?:\/\/.*\/uploads\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'uploads-cache',
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 },
-            },
-          },
-        ],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
       },
     }),
   ],

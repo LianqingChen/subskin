@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import os
 import time
 import secrets
@@ -7,6 +8,8 @@ from typing import Optional
 import requests
 from fastapi import APIRouter, Query, HTTPException, status
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -26,20 +29,27 @@ def _get_access_token() -> str:
     app_secret = os.getenv("WECHAT_APP_SECRET", "")
     if not app_id or not app_secret:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="微信配置缺失 (WECHAT_APP_ID / WECHAT_APP_SECRET)",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="微信分享配置未启用",
         )
     url = "https://api.weixin.qq.com/cgi-bin/token"
-    resp = requests.get(url, params={
-        "grant_type": "client_credential",
-        "appid": app_id,
-        "secret": app_secret,
-    }, timeout=10)
-    data = resp.json()
+    try:
+        resp = requests.get(url, params={
+            "grant_type": "client_credential",
+            "appid": app_id,
+            "secret": app_secret,
+        }, timeout=10)
+        data = resp.json()
+    except Exception as e:
+        logger.error("WeChat access_token request failed: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="微信分享服务暂时不可用，请稍后重试",
+        )
     if "access_token" not in data:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"获取微信access_token失败: {data.get('errmsg', 'unknown')}",
+            detail="微信分享服务暂时不可用，请稍后重试",
         )
     return data["access_token"]
 
@@ -51,15 +61,22 @@ def _get_jsapi_ticket() -> str:
 
     access_token = _get_access_token()
     url = "https://api.weixin.qq.com/cgi-bin/ticket/getticket"
-    resp = requests.get(url, params={
-        "access_token": access_token,
-        "type": "jsapi",
-    }, timeout=10)
-    data = resp.json()
+    try:
+        resp = requests.get(url, params={
+            "access_token": access_token,
+            "type": "jsapi",
+        }, timeout=10)
+        data = resp.json()
+    except Exception as e:
+        logger.error("WeChat jsapi_ticket request failed: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="微信分享服务暂时不可用，请稍后重试",
+        )
     if data.get("errcode") != 0:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"获取jsapi_ticket失败: {data.get('errmsg', 'unknown')}",
+            detail="微信分享服务暂时不可用，请稍后重试",
         )
 
     _cached_ticket = data["ticket"]
@@ -77,8 +94,8 @@ async def get_jssdk_config(url: str = Query(..., description="当前页面完整
     app_id = os.getenv("WECHAT_APP_ID", "")
     if not app_id:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="WECHAT_APP_ID 未配置",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="微信分享配置未启用",
         )
     ticket = _get_jsapi_ticket()
     nonce_str = secrets.token_urlsafe(16)

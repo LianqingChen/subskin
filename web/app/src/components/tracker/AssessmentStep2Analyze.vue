@@ -5,7 +5,6 @@
  */
 import { ref, computed } from 'vue'
 import MaskEditor from '@/components/tracker/MaskEditor.vue'
-import VisualFeaturesCard from '@/components/tracker/VisualFeaturesCard.vue'
 import type { VisualFeatures } from '@/api/vasi'
 
 const props = defineProps<{
@@ -18,12 +17,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{ maskConfirm: [skinMask: string, lesionMask: string, annotatedImage: string | null]; skipContourEdit: []; cancelAssessment: [] }>()
 
-const showAiInfo = ref(false)
-// Default COLLAPSED: when expanded, the VisualFeaturesCard takes up the entire
-// mobile viewport, leaving 0 height for the MaskEditor (flex-1 min-h-0).
-// Users must see the annotation canvas first; they can expand the card to
-// view visual features if interested.
-const showVisualFeatures = ref(false)
 const lesionSummary = computed(() => {
   const l = props.suspectedLesions; if (!l?.length) return null
   return { total: l.length, highConf: l.filter((x: any) => x.confidence >= 0.6).length }
@@ -55,37 +48,22 @@ let _pendingAnnotatedImage: string | null = null
 </script>
 
 <template>
-  <!-- Bottom padding accounts for global BottomNav (~54px + safe-area) so
-       MaskEditor toolbar and action bar aren't obscured on mobile. -->
-  <div class="flex flex-col bg-white dark:bg-gray-800 h-full pb-[calc(54px+env(safe-area-inset-bottom,0px))]">
+  <!-- BottomNav 避让已由全站 GlobalFooter 的 spacer 承担，这里不再加底部内边距，
+       避免与页脚重复留白、把画布高度还给 MaskEditor。 -->
+  <div class="flex flex-col bg-white dark:bg-gray-800 h-full">
 
     <template v-if="showContourEditor && imagePreview">
-      <!-- Info bar -->
+      <!-- Compact info bar -->
       <div class="shrink-0 px-3 pt-1.5 pb-1">
         <div class="flex items-center gap-2 text-xs">
           <span v-if="assessmentResult" class="font-medium text-gray-700 dark:text-gray-300">VASI {{ assessmentResult.vasiScore }} · {{ assessmentResult.stage }}</span>
-          <span v-if="lesionSummary" class="text-gray-400 dark:text-gray-500">{{ lesionSummary.total }}处白斑<span v-if="lesionSummary.highConf" class="text-green-600 ml-0.5">{{ lesionSummary.highConf }}高置信</span></span>
-          <button class="text-primary-500 text-xs min-h-[36px] px-1 ml-auto" @click="showAiInfo=!showAiInfo">{{ showAiInfo?'收起':'详情' }}</button>
-        </div>
-        <div v-if="showAiInfo" class="mt-1 p-2 rounded-lg bg-primary-50/50 dark:bg-primary-900/10 text-xs text-gray-500 dark:text-gray-400">
-          蓝色=皮肤 · 粉色=AI识别白斑 · 可手动修正
-          <span v-if="assessmentResult?.confidence !== undefined"> · AI信心度{{ Math.round((assessmentResult.confidence||0)*100) }}%</span>
+          <span v-if="lesionSummary" class="text-gray-400 dark:text-gray-500">{{ lesionSummary.total }}处白斑</span>
+          <span v-if="assessmentResult?.confidence !== undefined" class="text-gray-400 dark:text-gray-500">· AI信心度{{ Math.round((assessmentResult.confidence||0)*100) }}%</span>
         </div>
       </div>
 
-      <!-- Visual features card (collapsible) -->
-      <div v-if="visualFeatures" class="shrink-0 px-3 pb-1">
-        <button class="w-full flex items-center justify-between py-1.5 px-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-xs text-gray-500 dark:text-gray-400" @click="showVisualFeatures = !showVisualFeatures">
-          <span class="flex items-center gap-1"><i class="ri-search-eye-line text-primary-500"></i>白斑视觉特征分析</span>
-          <i :class="showVisualFeatures ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'" class="text-gray-400"></i>
-        </button>
-        <div v-if="showVisualFeatures" class="mt-1">
-          <VisualFeaturesCard :visual-features="visualFeatures" />
-        </div>
-      </div>
-
-      <!-- MaskEditor — fills ALL remaining space -->
-      <div class="flex-1 min-h-0 mx-2 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+      <!-- MaskEditor — fills ALL remaining space（全幅无边距，照片最大化放大） -->
+      <div class="flex-1 min-h-0 overflow-hidden">
         <MaskEditor
           ref="maskEditorRef"
           :image-url="imagePreview" :editable="true"

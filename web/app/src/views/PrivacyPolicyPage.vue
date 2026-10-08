@@ -11,7 +11,7 @@ const sections = [
   { id: 'storage', title: '存储与保护' },
   { id: 'sharing', title: '信息共享' },
   { id: 'rights', title: '用户权利' },
-  { id: 'cookies', title: 'Cookie 政策' },
+  { id: 'cookies', title: 'Cookie 与本地存储' },
   { id: 'children', title: '未成年人保护' },
   { id: 'changes', title: '政策变更' },
   { id: 'contact', title: '联系我们' },
@@ -23,10 +23,10 @@ function scrollTo(id: string) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#F5F7FA] ">
+  <div class="bg-gray-50 dark:bg-gray-950">
     <!-- Header -->
-    <div class="sticky top-0 z-10 bg-[#F5F7FA]/80  backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
-      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+    <div class="sticky top-14 z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+      <div class="page max-w-5xl py-2.5 flex items-center gap-3">
         <button
           class="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 "
           @click="router.back()"
@@ -39,15 +39,15 @@ function scrollTo(id: string) {
       </div>
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 py-6 flex gap-6">
+    <div class="page max-w-5xl pt-6 pb-20 lg:pb-10 flex gap-10">
       <!-- Sidebar TOC (desktop) -->
-      <nav class="hidden lg:block w-48 shrink-0">
-        <div class="sticky top-20 space-y-1">
+      <nav class="hidden lg:block w-44 shrink-0" aria-label="目录">
+        <div class="sticky top-32 space-y-0.5">
           <p class="text-xs font-medium text-gray-400  uppercase tracking-wider mb-2">目录</p>
           <button
             v-for="s in sections"
             :key="s.id"
-            class="block w-full text-left text-sm px-3 py-1.5 rounded-md text-gray-600  hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition"
+            class="block w-full text-left text-sm px-3 py-1.5 rounded-md text-gray-600  hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900 transition"
             @click="scrollTo(s.id)"
           >
             {{ s.title }}
@@ -56,17 +56,17 @@ function scrollTo(id: string) {
       </nav>
 
       <!-- Content -->
-      <article class="flex-1 min-w-0 prose prose-sm dark:prose-invert max-w-none">
+      <article class="flex-1 min-w-0 max-w-3xl prose prose-sm md:prose-base dark:prose-invert prose-headings:scroll-mt-32 rounded-2xl border border-gray-200/80 bg-white px-5 py-6 dark:border-gray-800 dark:bg-gray-900 md:px-10 md:py-8">
         <p class="text-sm text-gray-500 ">最近更新日期：2026年4月18日 &nbsp;|&nbsp; 生效日期：2026年4月18日</p>
 
-        <div id="overview" class="pt-4">
+        <div id="overview" class="pt-4 scroll-mt-32">
           <h2>概述</h2>
           <p>SubSkin（以下简称"我们"）深知个人隐私的重要性。本隐私政策旨在帮助您了解我们收集哪些信息、为什么收集这些信息，以及您如何更新、管理和导出您的个人信息。</p>
           <p>我们承诺：您个人信息的隐私和安全是我们的<strong>第一优先级</strong>。违反本政策的任何行为在我们团队内部都是零容忍的。</p>
           <p>使用 SubSkin 服务即表示您同意本隐私政策。如果您不同意本政策，请停止使用我们的服务。</p>
         </div>
 
-        <div id="collection" class="pt-4">
+        <div id="collection" class="pt-4 scroll-mt-32">
           <h2>信息收集</h2>
           <h3>我们收集的信息</h3>
           <p>我们仅收集为提供核心功能所必需的信息，遵循<strong>最小化数据收集</strong>原则：</p>
@@ -113,7 +113,7 @@ function scrollTo(id: string) {
           </ul>
         </div>
 
-        <div id="classification" class="pt-4">
+        <div id="classification" class="pt-4 scroll-mt-32">
           <h2>数据分级</h2>
           <p>我们对所有用户数据实行四级分类管理，确保不同敏感级别的信息获得对应等级的保护：</p>
 
@@ -121,17 +121,17 @@ function scrollTo(id: string) {
             <!-- L4 -->
             <div class="rounded-lg border-2 border-red-500/30 bg-red-50 dark:bg-red-950/30 p-4">
               <div class="flex items-center gap-2 mb-1">
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white">🔴 L4 极高</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white">L4 极高</span>
                 <span class="font-semibold text-red-700 dark:text-red-400">绝密级</span>
               </div>
               <p class="text-sm text-red-800 dark:text-red-300">密码（bcrypt 哈希存储）、JWT Token、银行卡号</p>
-              <p class="text-xs text-red-600 dark:text-red-400 mt-1">⚡ 任何情况下不得出现在 API 响应、日志、前端代码、公开页面或 Git 仓库中</p>
+              <p class="text-xs text-red-600 dark:text-red-400 mt-1"><i class="ri-alarm-warning-line mr-1"></i>任何情况下不得出现在 API 响应、日志、前端代码、公开页面或 Git 仓库中</p>
             </div>
 
             <!-- L3 -->
             <div class="rounded-lg border-2 border-orange-500/30 bg-orange-50 dark:bg-orange-950/30 p-4">
               <div class="flex items-center gap-2 mb-1">
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-500 text-white">🟠 L3 高</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-500 text-white">L3 高</span>
                 <span class="font-semibold text-orange-700 dark:text-orange-400">机密级</span>
               </div>
               <p class="text-sm text-orange-800 dark:text-orange-300">手机号、邮箱、病情图片、个人照片、音频、视频、体检报告、真实姓名、家庭住址</p>
@@ -141,7 +141,7 @@ function scrollTo(id: string) {
             <!-- L2 -->
             <div class="rounded-lg border-2 border-yellow-500/30 bg-yellow-50 dark:bg-yellow-950/30 p-4">
               <div class="flex items-center gap-2 mb-1">
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-yellow-500 text-white">🟡 L2 中</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-yellow-500 text-white">L2 中</span>
                 <span class="font-semibold text-yellow-700 dark:text-yellow-400">内部级</span>
               </div>
               <p class="text-sm text-yellow-800 dark:text-yellow-300">用户昵称、头像、发表内容、收藏、评估历史摘要</p>
@@ -151,16 +151,16 @@ function scrollTo(id: string) {
             <!-- L1 -->
             <div class="rounded-lg border-2 border-green-500/30 bg-green-50 dark:bg-green-950/30 p-4">
               <div class="flex items-center gap-2 mb-1">
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-500 text-white">🟢 L1 低</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-500 text-white">L1 低</span>
                 <span class="font-semibold text-green-700 dark:text-green-400">公开级</span>
               </div>
-              <p class="text-sm text-green-800 dark:text-green-300">百科内容、公开帖子、匿名统计数据</p>
-              <p class="text-xs text-green-600 dark:text-green-400 mt-1">🌐 可公开访问，但数据采集需注明来源</p>
+              <p class="text-sm text-green-800 dark:text-green-300">知识库内容、公开帖子、匿名统计数据</p>
+              <p class="text-xs text-green-600 dark:text-green-400 mt-1"><i class="ri-global-line mr-1"></i>可公开访问，但数据采集需注明来源</p>
             </div>
           </div>
         </div>
 
-        <div id="usage" class="pt-4">
+        <div id="usage" class="pt-4 scroll-mt-32">
           <h2>信息使用</h2>
           <p>我们收集的信息仅用于以下目的：</p>
           <ol>
@@ -177,7 +177,7 @@ function scrollTo(id: string) {
           </ul>
         </div>
 
-        <div id="storage" class="pt-4">
+        <div id="storage" class="pt-4 scroll-mt-32">
           <h2>存储与保护</h2>
           <h3>数据存储</h3>
           <ul>
@@ -205,7 +205,7 @@ function scrollTo(id: string) {
           </ul>
         </div>
 
-        <div id="sharing" class="pt-4">
+        <div id="sharing" class="pt-4 scroll-mt-32">
           <h2>信息共享与公开</h2>
           <h3>我们不会主动共享</h3>
           <p>我们<strong>不会主动</strong>将您的个人信息共享给任何第三方，除非：</p>
@@ -236,11 +236,30 @@ function scrollTo(id: string) {
           <ul>
             <li>云存储服务商（用于图片存储）</li>
             <li>短信/邮件服务商（用于验证码发送）</li>
+            <li>人工智能服务提供商（用于智能问答、体检报告解读、日记智能整理、白斑照片分析等功能。
+              <strong>仅当您在「个人中心 → 隐私设置」中开启相应授权后</strong>，您的健康记录
+              或报告才会用于个性化 AI 功能；关闭授权后数据不再外送。发送内容仅限于完成
+              该功能所必需的最小范围）</li>
+            <li>地图与定位服务商（用于同城内容展示。反向地理编码仅使用约 1 公里精度的
+              模糊坐标，不发送精确位置）</li>
+            <li>IP 归属地查询服务（用于展示同城内容，经加密通道传输）</li>
           </ul>
           <p>所有服务提供商均签署严格的数据保护协议，仅可在提供服务所必需的范围内处理数据。</p>
+
+          <h3>AI 训练与病情照片</h3>
+          <p>为提升白斑识别准确率，我们可能在管理员对照片完成匿名化打标后将其用于模型训练与评估：</p>
+          <ul>
+            <li>训练数据与您的账户身份（昵称、手机号等）<strong>强制隔离</strong>，打标工作台仅显示匿名编号；</li>
+            <li><strong>删除测评即退出训练</strong>：您删除白斑测评后，对应照片立即退出训练集并停止使用；</li>
+            <li>您可在「个人中心 → 隐私设置」中随时关闭 AI 数据授权。</li>
+          </ul>
+
+          <h3>账户注销</h3>
+          <p>您可随时在「个人中心 → 隐私设置 → 注销账户」中申请注销。注销将在验证您的身份后
+          删除您的全部个人数据（帖子与图片、日记、测评记录、体检报告、病情档案等），该操作不可恢复。</p>
         </div>
 
-        <div id="rights" class="pt-4">
+        <div id="rights" class="pt-4 scroll-mt-32">
           <h2>您的权利</h2>
           <p>根据相关法律法规，您享有以下权利：</p>
 
@@ -267,7 +286,7 @@ function scrollTo(id: string) {
               </div>
             </div>
             <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 ">
-              <span class="text-xl">📥</span>
+              <span class="text-xl"><i class="ri-download-2-line"></i></span>
               <div>
                 <p class="font-medium text-gray-900 ">数据可携带权</p>
                 <p class="text-sm text-gray-600 ">导出您的个人数据（JSON格式）</p>
@@ -285,18 +304,18 @@ function scrollTo(id: string) {
           <p>行使上述权利，请前往<strong>个人中心 → 隐私设置</strong>，或联系 <a href="mailto:lianqing_chan@126.com" class="text-primary-600 dark:text-primary-400 hover:underline">lianqing_chan@126.com</a>。</p>
         </div>
 
-        <div id="cookies" class="pt-4">
-          <h2>Cookie 政策</h2>
-          <p>SubSkin 使用以下 Cookie：</p>
+        <div id="cookies" class="pt-4 scroll-mt-32">
+          <h2>Cookie 与本地存储政策</h2>
+          <p>SubSkin 采用极简的本地存储方案：</p>
           <ul>
-            <li><strong>认证 Token</strong>：用于维持登录状态（存储于 localStorage，非 Cookie）</li>
-            <li><strong>主题偏好</strong>：记录您的深色/浅色模式选择</li>
+            <li><strong>认证凭证</strong>：登录后我们将 JWT Token 存储于浏览器的 localStorage（而非 Cookie）中，用于维持登录状态</li>
+            <li><strong>主题偏好</strong>：记录您选择的深色/浅色模式（本地存储）</li>
             <li><strong>分析统计</strong>：匿名的页面访问统计（不关联个人身份）</li>
           </ul>
           <p>我们不使用第三方跟踪 Cookie 或广告 Cookie。</p>
         </div>
 
-        <div id="children" class="pt-4">
+        <div id="children" class="pt-4 scroll-mt-32">
           <h2>未成年人保护</h2>
           <p>SubSkin 高度重视未成年人个人信息保护：</p>
           <ul>
@@ -306,7 +325,7 @@ function scrollTo(id: string) {
           </ul>
         </div>
 
-        <div id="changes" class="pt-4">
+        <div id="changes" class="pt-4 scroll-mt-32">
           <h2>政策变更</h2>
           <p>我们可能会不时更新本隐私政策。更新后，我们将：</p>
           <ol>
@@ -317,7 +336,7 @@ function scrollTo(id: string) {
           <p>版本历史将在此页面底部记录。</p>
         </div>
 
-        <div id="contact" class="pt-4">
+        <div id="contact" class="pt-4 scroll-mt-32">
           <h2>联系我们</h2>
           <p>如果您对本隐私政策有任何疑问、建议或投诉，请通过以下方式联系我们：</p>
           <ul>
@@ -333,8 +352,8 @@ function scrollTo(id: string) {
     </div>
 
     <!-- Mobile TOC (bottom bar) -->
-    <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-[#F5F7FA]/90  backdrop-blur-md border-t border-gray-200 dark:border-gray-700 px-4 py-2 z-20 safe-bottom">
-      <div class="flex overflow-x-auto gap-2 scrollbar-hide">
+    <div class="lg:hidden fixed left-0 right-0 bottom-[calc(54px+env(safe-area-inset-bottom,0px))] md:bottom-0 md:pb-[max(env(safe-area-inset-bottom,0px),0.5rem)] bg-white/95 dark:bg-gray-900/95 border-t border-gray-200 dark:border-gray-800 px-4 py-2 z-30">
+      <div class="flex overflow-x-auto gap-2 no-scrollbar">
         <button
           v-for="s in sections"
           :key="s.id"

@@ -1,6 +1,7 @@
 """
 社交关系 API：关注/取关/拉黑/举报
 """
+from web.backend.utils.timeutils import iso_utc
 
 import logging
 from typing import List
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from web.backend.database.database import get_db
 from web.backend.database.models import User, UserFollow, UserBlock, UserReport
+from web.backend.utils.redact import safe_public_username
 from web.backend.services.auth import auth, get_current_user_optional
 from web.backend.services.audit import AuditLogService
 from web.backend.api.notifications import create_notification
@@ -122,9 +124,9 @@ async def list_following(
         if user:
             result.append({
                 "id": user.id,
-                "username": user.username,
+                "username": safe_public_username(user.username, user.phone),
                 "avatar": user.avatar_url,
-                "followed_at": f.created_at.isoformat() if f.created_at else None,
+                "followed_at": iso_utc(f.created_at) if f.created_at else None,
             })
     return {"items": result, "total": len(result)}
 
@@ -147,9 +149,9 @@ async def list_followers(
         if user:
             result.append({
                 "id": user.id,
-                "username": user.username,
+                "username": safe_public_username(user.username, user.phone),
                 "avatar": user.avatar_url,
-                "followed_at": f.created_at.isoformat() if f.created_at else None,
+                "followed_at": iso_utc(f.created_at) if f.created_at else None,
             })
     return {"items": result, "total": len(result)}
 
@@ -234,9 +236,9 @@ async def list_blocked(
         if user:
             result.append({
                 "id": user.id,
-                "username": user.username,
+                "username": safe_public_username(user.username, user.phone),
                 "avatar": user.avatar_url,
-                "blocked_at": b.created_at.isoformat() if b.created_at else None,
+                "blocked_at": iso_utc(b.created_at) if b.created_at else None,
             })
     return {"items": result, "total": len(result)}
 
@@ -291,7 +293,7 @@ async def get_public_profile(
 
     return {
         "id": target.id,
-        "username": target.username,
+        "username": safe_public_username(target.username, target.phone),
         "avatar_url": target.avatar_url,
         "is_doctor": getattr(target, "is_doctor", False),
         "patient_relation": target.patient_relation,
@@ -299,7 +301,7 @@ async def get_public_profile(
         "following_count": following_count,
         "follower_count": follower_count,
         "is_followed": is_followed,
-        "created_at": target.created_at.isoformat() if target.created_at else None,
+        "created_at": iso_utc(target.created_at) if target.created_at else None,
     }
 
 

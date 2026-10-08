@@ -1,0 +1,20 @@
+{
+  "web/backend/api/vasi.py": "515d18b8ab701f674116935d4e133eeedb03819dad5ed5fbe6421df22b9d7cf9",
+  "web/backend/services/annotation_prompt.py": "6a514e5f34cae950e64bb5e42608dfb279dbcbfc31ed192868dc46e463e5a35d",
+  "web/backend/services/annotation_review.py": "4c863df4cc73dd686ee737873ff61161165a2d82b55df2f49c4ca9ac1fa7ea8d",
+  "web/backend/services/annotation_provider.py": "140d045d83cf38aae5c57ecd41887c2b90671cae9aace923f209f0c5cca47100",
+  "web/backend/services/assessment_measurement.py": "eed15ecf537060a0b69675822787428264c6a1f5f0de895b59b7cc8dbe6a89c3",
+  "web/backend/services/vasi.py": "9ff700ff7a5ab178eeb4d2f282769156be97adec996e2e1ee38cb3f066daf427",
+  "web/backend/services/vasi_promptable.py": "c4cd7b5fcd36040a15e96f07013a5140724edc8ecaa23b8320c707cd41d890d5",
+  "web/backend/services/vasi_pixel_refine.py": "528ce359164ba25a5ac28cb025b6c1bed6b9eb0cabda53c5b140985bd05d4a5c",
+  "web/backend/services/__pycache__/vasi_pixel_refine.cpython-39.pyc": "3dfce4c12583c352c4e42e9bb422e450fea0fb6eedf2693e9ca7c968011d721b",
+  "web/app/src/types/assessment.ts": "e003a75e61be35edfa2f6b08810ef631ce075b1678f8f0bc9ab26aa91e5a1875",
+  "web/app/src/components/tracker/AnnotationReviewPanel.vue": "7732d1579bad081a252baf8627cb59bbb49313ff0535f43cbdabba20f1e8905f",
+  "web/app/src/components/tracker/MaskEditor.vue": "3773de9d7581bb2c64df1fad19583c57d25898bf64ff3de747ea476d75741b12",
+  "web/app/src/components/tracker/AnnotationEvidence.vue": "146d309825ec61c3ebdcf5b673f2da772c78dbd6ff21baff456a324c1dba4069",
+  "web/app/src/components/tracker/AssessmentObservationResult.vue": "f774b9492fe06e9393136f0024e05e0c3a2ba52316b9d6d7e2cf6e1fb2012b67",
+  "tests/backend/services/test_vasi_pixel_refine.py": "c4c88d4f579f1ee93a9fa61dadaad1e9183a45be5b2dea154f70617128e794be",
+  "web/backend/services/vasi_pixel_evidence.py": "d9e3107401db5b4e73232e7fa510767aff9f5ccb6346f9e77222616973ea3df9",
+  "web/backend/services/annotation_measurement_policy.py": "e900e559f02201a2298f8679896176386247ec4d69369235886f548627f51db3",
+  "tests/assessment/test_refinement_safety.py": "55585fc60ddba77f7cf661ccf813e30456de013749c3068305a7d8d8c546eabf"
+}

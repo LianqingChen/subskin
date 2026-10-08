@@ -1,0 +1,17 @@
+{
+  "web/app/src/composables/useVasiUpload.ts": "9cf1328d67f2ccea5418f8a14a1880bd4ff2697a8bdc4166331b7a38c6dff8e1",
+  "web/backend/api/vasi.py": "d01f11f94f548ecc343c0739a20bbc3f690f73fe10e6afa1529175691cddf6e6",
+  "web/app/src/components/tracker/AssessmentCapture.vue": "a267327c992dccd852914ecffacaeb25d488f43b963d7a77ac12245c0517a55b",
+  "web/backend/services/vasi_quality.py": "c9b71d833cf006e1a43c84682b4017b0e1ee2813a5389f6f341bbe141adcad48",
+  "web/backend/services/llm_prompt_service.py": "5d2fbd935bc92086b3501ed68205fde90c2ffd2037aec81487a05cee6ed3ef14",
+  "web/backend/services/vasi_consensus.py": "762ce74ced04795568399999321dae48e0ebbe7caf81b29d3d887434e46715b6",
+  "web/backend/services/vasi_autoloop.py": "0746e4748bf42d071aa7c5e976c326a4a097eef170ecd76fb602ef3eeec5f9cb",
+  "web/backend/services/vasi_model_trainer.py": "fea8b38fa4950dec35c18cab9c1cfe73233a444af50e2f3677a5ca2b61c12a70",
+  "web/app/src/composables/useVasiAssess.ts": "83ffb7d9841d205ac1201c0a77bbf9272014cdb97e5b92b3b2de415c9e9e05e7",
+  "web/app/src/components/tracker/AssessmentObservationResult.vue": "c71e7554e000565611f481d81ddabd02f93b13163d3f74aaf91be5ec2addd27b",
+  "web/backend/services/assessment_measurement.py": "625bedc8a1a6894669219cf8a0367760943b95294b55ee7f727d1beb276a968e",
+  "web/backend/services/vasi.py": "74c0911a81e988c00f038b7b0771067da4ccaeb36a5a77c09fab2733709147be",
+  "web/backend/services/spot_compare.py": "d31b742cb1fd05760a99b02653d174927403aab43844e86b1a3267c0c3ec0ed5",
+  "web/app/src/components/tracker/BodyPartCamera.vue": "40ed72d7f2190a49f45220aa087f92a5702927f310a6ad76d42ac0d7acf5b8f8",
+  "web/app/src/views/PrivacyPolicyPage.vue": "c23b18b4a44fbfb715f1c2626a1aed47a4501ff1d939e6a2e396cf6e94a3bae4"
+}

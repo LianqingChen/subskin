@@ -2,14 +2,15 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick, reactive } from 'vue'
 import { useCanvasTools } from '@/composables/useCanvasTools'
 import { useLabelHistory } from '@/composables/useLabelHistory'
-import { ALL_TOOLS, type ToolName, type ToolContext } from '@/components/labeling/tools/BaseTool'
-import { FloodFillTool } from '@/components/labeling/tools/FloodFillTool'
+import { type ToolName, type ToolContext } from '@/components/labeling/tools/BaseTool'
 
 const props = defineProps<{
   imageUrl: string
   editable?: boolean
   initialSkinLayerUrl?: string | null
   initialLesionLayerUrl?: string | null
+  /** 工具白名单 — 传入后仅暴露这些工具（如工作区只保留白斑画笔+橡皮） */
+  tools?: ToolName[]
 }>()
 
 const emit = defineEmits<{
@@ -18,10 +19,19 @@ const emit = defineEmits<{
 }>()
 
 // ── Tool system ──
-const { activeToolName, activeTool, availableTools, setTool, setContext, handleToolShortcut, getFloodFillTool } = useCanvasTools()
+const { activeToolName, activeTool, availableTools, setTool, setContext, handleToolShortcut, getFloodFillTool } = useCanvasTools(props.tools)
 
 const brushSize = ref(32)
 const layerOpacity = ref(0.55)
+
+// 皮肤画笔不可用（受限工具模式）时，白斑占比依赖皮肤层会失真，统计栏只显示白斑面积
+const hasSkinBrush = computed(() => availableTools.value.some(t => t.name === 'skin-brush'))
+
+const brushPresets = [
+  { label: '细', value: 12 },
+  { label: '中', value: 32 },
+  { label: '粗', value: 64 },
+]
 
 // ── Flood fill tolerance (only relevant when flood-fill tool active) ──
 const fillTolerance = computed({
@@ -451,7 +461,6 @@ const areaPercent = computed(() => {
 })
 
 const toolHint = computed(() => {
-  const tool = ALL_TOOLS.find(t => t.name === activeToolName.value)
   const hints: Record<string, string> = {
     'skin-brush': '涂抹整个待测评的皮肤区域（蓝色涂层）',
     'lesion-brush': '在皮肤区域上涂出白斑范围（粉色涂层）',
@@ -464,13 +473,6 @@ const toolHint = computed(() => {
 })
 
 const zoomPercent = computed(() => Math.round(transform.scale * 100))
-
-const overlayCursor = computed(() => {
-  if (!props.editable) return 'default'
-  if (spaceHeld) return isPanning.value ? 'grabbing' : 'grab'
-  if (isPanning.value) return 'grabbing'
-  return 'crosshair'
-})
 
 const imageStyle = computed(() => ({
   transform: `translate(${transform.offsetX}px, ${transform.offsetY}px) scale(${transform.scale * baseFitScale.value})`,
@@ -501,7 +503,7 @@ function getAnnotatedImageDataUrl(): string {
 defineExpose({
   getLesionDataUrl: () => canvasToDataUrl(lesionCanvasRef.value),
   getSkinDataUrl: () => canvasToDataUrl(skinCanvasRef.value),
-  getAreaPercent: () => areaPercent.value,
+  getAreaPercent: () => hasSkinBrush.value ? areaPercent.value : lesionAreaPct.value,
   getAnnotatedImageDataUrl,
   loadMaskLayers,
 })
@@ -536,6 +538,16 @@ defineExpose({
         <i class="ri-ruler-line"></i>
         <input type="range" min="8" max="80" step="2" v-model.number="brushSize" :style="{ width: '60px', height: '4px', accentColor: '#6366f1' }" :disabled="!editable" />
         <span :style="{ width: '22px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }">{{ brushSize }}</span>
+        <button
+          v-for="preset in brushPresets" :key="preset.value"
+          :style="{ padding: '2px 8px', borderRadius: '5px', fontSize: '11px', cursor: editable ? 'pointer' : 'not-allowed',
+            background: brushSize === preset.value ? 'rgba(99,102,241,0.35)' : 'transparent',
+            color: brushSize === preset.value ? '#c7d2fe' : '#94a3b8',
+            border: '1px solid rgba(148,163,184,0.2)' }"
+          :disabled="!editable"
+          :title="`画笔粗细: ${preset.label} (${preset.value}px)`"
+          @click="brushSize = preset.value"
+        >{{ preset.label }}</button>
       </div>
 
       <!-- Flood fill tolerance (only when that tool is active) -->
@@ -589,8 +601,8 @@ defineExpose({
       <canvas ref="lesionCanvasRef" style="position: absolute; left: -9999px; top: -9999px;" />
 
       <!-- Image layer -->
-      <img v-show="imageLoaded" ref="imgRef" :key="imgKey" :src="imageUrl"
-        :style="{ ...imageStyle, maxWidth: 'none', maxHeight: 'none', display: 'block', position: 'absolute', top: 0, left: 0, userSelect: 'none', WebkitUserDrag: 'none' }"
+      <img v-show="imageLoaded" ref="imgRef" :key="imgKey" class="mask-img" :src="imageUrl"
+        :style="{ ...imageStyle, maxWidth: 'none', maxHeight: 'none', display: 'block', position: 'absolute', top: 0, left: 0, userSelect: 'none' }"
         draggable="false" alt="" @load="onImgLoad" @error="onImgError" />
 
       <!-- Overlay canvas -->
@@ -616,13 +628,13 @@ defineExpose({
       <!-- Hint -->
       <div v-if="imageLoaded" :style="{ position: 'absolute', bottom: '10px', right: '10px', zIndex: 20, pointerEvents: 'none' }">
         <span :style="{ display: 'inline-block', fontSize: '10px', background: 'rgba(15,23,42,0.85)', color: '#94a3b8', padding: '4px 8px', borderRadius: '6px', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', border: '1px solid rgba(148,163,184,0.2)' }">
-          滚轮缩放 · 空格拖拽 · R 适应 · F 全屏 · 1-6 切换工具
+          滚轮缩放 · 空格拖拽 · R 适应 · F 全屏 · 1-{{ availableTools.length }} 切换工具
         </span>
       </div>
     </div>
 
     <!-- Stats bar -->
-    <div :style="{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', padding: '8px 0 0', flexShrink: 0 }">
+    <div v-if="hasSkinBrush" :style="{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', padding: '8px 0 0', flexShrink: 0 }">
       <div :style="{ background: 'rgba(59,130,246,0.15)', borderRadius: '8px', padding: '8px', textAlign: 'center' }">
         <div :style="{ fontSize: '11px', color: '#93c5fd' }">评估区域</div>
         <div :style="{ fontSize: '14px', fontWeight: 600, color: '#60a5fa' }">{{ regionAreaPct.toFixed(1) }}%</div>
@@ -634,6 +646,12 @@ defineExpose({
       <div :style="{ background: 'rgba(99,102,241,0.15)', borderRadius: '8px', padding: '8px', textAlign: 'center' }">
         <div :style="{ fontSize: '11px', color: '#a5b4fc' }">白斑占比</div>
         <div :style="{ fontSize: '14px', fontWeight: 600, color: '#818cf8' }">{{ areaPercent.toFixed(1) }}%</div>
+      </div>
+    </div>
+    <div v-else :style="{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', padding: '8px 0 0', flexShrink: 0 }">
+      <div :style="{ background: 'rgba(236,72,153,0.15)', borderRadius: '8px', padding: '8px', textAlign: 'center' }">
+        <div :style="{ fontSize: '11px', color: '#f9a8d4' }">白斑面积（占整图 %）</div>
+        <div :style="{ fontSize: '14px', fontWeight: 600, color: '#f472b6' }">{{ lesionAreaPct.toFixed(1) }}%</div>
       </div>
     </div>
 
@@ -655,6 +673,7 @@ defineExpose({
 
 <style scoped>
 @keyframes spin { to { transform: rotate(360deg); } }
+.mask-img { user-select: none; -webkit-user-drag: none; }
 .mask-zoom-btn {
   width: 26px; height: 26px;
   display: flex; align-items: center; justify-content: center;

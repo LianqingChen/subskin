@@ -1,0 +1,60 @@
+[
+  {
+    "id": "MedSigLIP",
+    "url": "https://developers.google.com/health-ai-developer-foundations/medsiglip",
+    "status": 200
+  },
+  {
+    "id": "MedSigLIPHF",
+    "url": "https://huggingface.co/google/medsiglip-448",
+    "status": 200
+  },
+  {
+    "id": "DermFoundationCard",
+    "url": "https://developers.google.com/health-ai-developer-foundations/derm-foundation/model-card",
+    "status": 200
+  },
+  {
+    "id": "SCINLicense",
+    "url": "https://raw.githubusercontent.com/google-research-datasets/scin/main/LICENSE",
+    "status": 200
+  },
+  {
+    "id": "VRFBiobank",
+    "url": "https://vrfoundation.org/projects",
+    "status": 404
+  },
+  {
+    "id": "NICE_DERM",
+    "url": "https://www.nice.org.uk/guidance/htg746",
+    "status": 200
+  },
+  {
+    "id": "FDA_Ruxolitinib",
+    "url": "https://www.fda.gov/apology_objects/abuse-detection-apology.html",
+    "status": 404
+  },
+  {
+    "id": "Ethics",
+    "url": "https://www.gov.cn/zhengce/zhengceku/2023-02/28/content_5743658.htm",
+    "status": 200
+  },
+  {
+    "id": "MiiskinPro",
+    "url": "https://miiskin.com/pro/plans-pricing/",
+    "status": 200
+  },
+  {
+    "id": "NICERecommendations",
+    "url": "https://www.nice.org.uk/guidance/htg746/chapter/1-Recommendations",
+    "status": 200
+  },
+  {
+    "url": "https://vrfoundation.org/tools",
+    "status": 200
+  },
+  {
+    "url": "https://vrfoundation.org/researchers_opportunities",
+    "status": 200
+  }
+]

@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { chatApi, type ConversationListItem } from '@/api/chat'
-import type { ActionCard, ChatAttachment } from '@/types'
+import { chatApi, sanitizeAssistantText, type ConversationListItem } from '@/api/chat'
+import type { ActionCard, ChatAttachment, NavSuggestion } from '@/types'
+import { timeAgo } from '@/utils/date'
 
 interface Message {
   id: string
@@ -23,6 +24,17 @@ export const useChatStore = defineStore('chat', () => {
   const conversationId = ref<string>(`conv_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`)
   const isLoading = ref(false)
   const conversations = ref<ConversationListItem[]>([])
+
+  // 结构化导航建议（后端确定性解析下发，非 LLM 生成链接）
+  const navSuggestions = ref<NavSuggestion[]>([])
+
+  function setNavSuggestions(items: NavSuggestion[]) {
+    navSuggestions.value = items
+  }
+
+  function clearNavSuggestions() {
+    navSuggestions.value = []
+  }
 
   function addMessage(
     role: 'user' | 'assistant',
@@ -85,7 +97,9 @@ export const useChatStore = defineStore('chat', () => {
     if (msg) {
       msg.isSkeleton = false
       msg.isLoading = false
-      msg.content += token
+      // 后端在 LLM 调用失败时会把带原始异常类名的提示作为 token 下发，
+      // 展示前需清洗，避免暴露 AuthenticationError 等内部信息
+      msg.content = sanitizeAssistantText(msg.content + token)
     }
   }
 
@@ -114,7 +128,11 @@ export const useChatStore = defineStore('chat', () => {
 
   async function loadConversations() {
     try {
-      conversations.value = await chatApi.listConversations()
+      const items = await chatApi.listConversations()
+      conversations.value = items.map(item => ({
+        ...item,
+        date: timeAgo(item.date || item.created_at) || item.date,
+      }))
     } catch {
       conversations.value = []
     }
@@ -126,7 +144,7 @@ export const useChatStore = defineStore('chat', () => {
       messages.value = msgs.map(m => ({
         id: `msg_${m.id}`,
         role: m.role as 'user' | 'assistant',
-        content: m.content,
+        content: m.role === 'assistant' ? sanitizeAssistantText(m.content) : m.content,
         timestamp: new Date(m.created_at).getTime(),
       }))
       conversationId.value = convId
@@ -145,6 +163,9 @@ export const useChatStore = defineStore('chat', () => {
     conversationId,
     isLoading,
     conversations,
+    navSuggestions,
+    setNavSuggestions,
+    clearNavSuggestions,
     addMessage,
     addActionCard,
     addThinkingMessage,

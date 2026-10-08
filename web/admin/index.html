@@ -5,14 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SubSkin 管理后台</title>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"SubSkin 管理后台","url":"https://admin.subskin.cn/","applicationCategory":"BusinessApplication","operatingSystem":"Web"}</script>
   </head>
   <body>
     <div id="app"></div>
     <!-- 清理残留 Service Worker (防止主站 PWA 覆盖管理后台域名) -->
-    <script>
+    <script type="module">
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(regs) {
-          regs.forEach(function(r) { r.unregister() })
+          const adminScope = new URL(import.meta.env.BASE_URL, location.origin).href
+          regs.filter(function(r) { return r.scope.startsWith(adminScope) })
+            .forEach(function(r) { r.unregister() })
         })
       }
     </script>

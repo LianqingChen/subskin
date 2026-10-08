@@ -1,0 +1,155 @@
+{
+  "status": "not_run_missing_test_account_and_authorized_real_images",
+  "cases": [
+    {
+      "category": "清晰照片",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    },
+    {
+      "category": "模糊照片",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    },
+    {
+      "category": "暗光照片",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    },
+    {
+      "category": "强光照片",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    },
+    {
+      "category": "阴影照片",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    },
+    {
+      "category": "反光照片",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    },
+    {
+      "category": "小面积白斑",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    },
+    {
+      "category": "大面积白斑",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    },
+    {
+      "category": "边缘不明显白斑",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    },
+    {
+      "category": "手部",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    },
+    {
+      "category": "面部",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    },
+    {
+      "category": "四肢",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    },
+    {
+      "category": "躯干",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    },
+    {
+      "category": "毛发区域",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    },
+    {
+      "category": "混淆皮肤区域",
+      "input_id": null,
+      "ai_output": null,
+      "obvious_error": null,
+      "attribution": null,
+      "should_reject": null,
+      "page_handling": null,
+      "test_status": "not_run"
+    }
+  ]
+}

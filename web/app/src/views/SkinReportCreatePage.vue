@@ -317,7 +317,7 @@ onMounted(load)
           v-if="allImages.length === 0"
           icon="ri-image-2-line"
           title="还没有照片"
-          description="在下方上传白斑照片，或到分享发布「仅自己可见」的图文记录"
+          description="在下方上传白斑照片，或到发现发布「仅自己可见」的图文记录"
         />
 
         <!-- 照片墙：2 列（每行 2 张）；长按拖动排序（微信朋友圈式）、点日期改日期、右上角 × 删除 -->
@@ -429,44 +429,43 @@ onMounted(load)
 
 <style scoped>
 .create-page {
+  /* 背景沿用全站底色（App.vue 的 gray-50 / dark gray-950），并撑满剩余高度，避免出现色块分层 */
+  flex: 1;
   min-height: 0;
-  min-height: 0;
-  background: #f5f7fa;
   padding-bottom: 100px;
-}
-
-html.dark .create-page {
-  background: #0f172a;
 }
 
 .create-header {
   position: sticky;
-  top: 0;
+  /* 吸附在全站顶栏（56px）下方；实色背景，滚动时不透出内容 */
+  top: 56px;
   z-index: 20;
-  background: rgba(245, 247, 250, 0.85);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.8);
 }
 
 html.dark .create-header {
-  background: rgba(15, 23, 42, 0.85);
-  border-color: #1e293b;
+  background: #111827;
+  border-color: #1f2937;
 }
 
+/* 与全站 .page 容器同宽同边距（max-w-6xl + px-4/6/8），保证与顶栏左右对齐 */
 .create-header__inner {
-  max-width: 896px;
+  max-width: 72rem;
   margin: 0 auto;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 12px;
-  height: 48px;
+  padding: 0 0.5rem;
+  height: 52px;
 }
+@media (min-width: 640px) { .create-header__inner { padding: 0 1rem; } }
+@media (min-width: 1024px) { .create-header__inner { padding: 0 1.5rem; } }
 
 .create-back {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   border: none;
   background: transparent;
   color: #475569;
@@ -511,10 +510,14 @@ html.dark .create-header__site {
   color: var(--color-primary-300);
 }
 
+/* 选图步骤为聚焦型单栏：主体用 48rem 居中，避免 2 列 1:1 照片在宽屏下变成巨幅方块 */
 .create-main {
-  max-width: 896px;
+  max-width: 48rem;
   margin: 0 auto;
   padding: 16px;
+}
+@media (min-width: 768px) {
+  .create-main { padding: 24px; }
 }
 
 .create-intro {
@@ -756,7 +759,7 @@ html.dark .create-grid__item {
   position: fixed;
   /* 移动端 BottomNav 固定高 54px，底栏需整体避开，否则"生成报告"按钮被遮挡 */
   bottom: calc(54px + env(safe-area-inset-bottom, 0px));
-  left: 0;
+  left: var(--app-sidebar-w);
   right: 0;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
@@ -786,6 +789,10 @@ html.dark .create-footer {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  /* 与上方内容区同宽对齐，桌面端不再贴着两侧 */
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
 }
 
 .create-footer__count {
@@ -802,10 +809,11 @@ html.dark .create-footer__count {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-height: 44px;
   padding: 10px 24px;
-  border-radius: 22px;
+  border-radius: 12px;
   border: none;
-  background: var(--color-primary-500);
+  background: var(--color-primary-600);
   color: white;
   font-size: 15px;
   font-weight: 600;

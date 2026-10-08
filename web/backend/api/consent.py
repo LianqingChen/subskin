@@ -2,6 +2,7 @@
 用户同意记录 API
 记录用户对隐私政策、服务条款等的同意行为
 """
+from web.backend.utils.timeutils import iso_utc
 
 import logging
 from datetime import datetime, timezone
@@ -15,6 +16,7 @@ from web.backend.database.database import get_db
 from web.backend.database.models import UserConsent
 from web.backend.services.auth import get_current_user, get_current_user_optional
 from web.backend.database.models import User as DBUser
+from web.backend.services.consent import latest_consent
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -150,24 +152,46 @@ async def get_consent_status(
     """查询当前用户的同意状态"""
     result = ConsentStatusResponse()
     for consent_type in ["terms", "privacy", "ai_data", "medical_photo"]:
-        latest = (
-            db.query(UserConsent)
-            .filter(
-                UserConsent.user_id == current_user.id,
-                UserConsent.consent_type == consent_type,
-                UserConsent.is_active == True,
-            )
-            .order_by(UserConsent.consented_at.desc())
-            .first()
-        )
-        if latest:
+        latest = latest_consent(db, current_user.id, consent_type)
+        if latest and latest.is_active:
             setattr(result, consent_type, {
                 "version": latest.consent_version,
-                "consented_at": latest.consented_at.isoformat(),
+                "consented_at": iso_utc(latest.consented_at),
                 "platform": latest.platform,
                 "source": latest.source,
             })
     return result
+
+
+class ConsentRevokeRequest(BaseModel):
+    consent_type: str
+
+
+@router.post("/revoke")
+async def revoke_user_consent(
+    data: ConsentRevokeRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_user),
+):
+    """撤销某项授权（2026-08-30）：写入一条 is_active=False 的记录，
+    后续 has_active_consent 查询即不再命中，数据外送立即停止。"""
+    if data.consent_type not in ("terms", "privacy", "ai_data", "medical_photo"):
+        raise HTTPException(status_code=400, detail="未知的授权类型")
+    consent = UserConsent(
+        user_id=current_user.id,
+        consent_type=data.consent_type,
+        consent_version="revoked",
+        consented_at=datetime.now(timezone.utc),
+        ip_address=get_client_ip(request),
+        user_agent=(request.headers.get("User-Agent") or "")[:500] or None,
+        platform="web",
+        source="manual",
+        is_active=False,
+    )
+    db.add(consent)
+    db.commit()
+    return {"success": True, "consent_type": data.consent_type, "is_active": False}
 
 
 @router.get("/versions")

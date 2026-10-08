@@ -13,7 +13,6 @@
 import type { BaseTool, ToolContext, ToolName } from './BaseTool'
 
 const LESION_COLOR = 'rgba(244,114,182,1)'
-const SKIN_COLOR = 'rgba(96,165,250,1)'
 const VERTEX_COLOR = '#fbbf24'
 const EDGE_COLOR = '#fbbf24'
 const VERTEX_RADIUS = 4

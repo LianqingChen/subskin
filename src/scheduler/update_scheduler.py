@@ -202,8 +202,30 @@ class UpdateScheduler:
             row = cursor.fetchone()
             
             if row and not row["enabled"]:
-                logger.debug(f"Schedule {schedule_id} is disabled in database")
-                return False
+                # 熔断自动恢复：被禁用的调度若已超过 7 天（一个完整周期），
+                # 自动重新启用并重试，避免一次性故障导致数据采集永久静默停止
+                try:
+                    last_run = datetime.fromisoformat(row["last_run"]) if row["last_run"] else None
+                except ValueError:
+                    last_run = None
+                if last_run and (datetime.now() - last_run) > timedelta(days=7):
+                    logger.warning(
+                        "Auto re-enabling schedule %s after circuit-breaker cooldown "
+                        "(disabled since %s)", schedule_id, row["last_run"]
+                    )
+                    next_run = self.calculate_next_run(datetime.now())
+                    self._conn.execute(
+                        """
+                        UPDATE schedule_state
+                        SET enabled = 1, consecutive_failures = 0, next_run = ?
+                        WHERE schedule_id = ?
+                        """,
+                        (next_run.isoformat(), schedule_id),
+                    )
+                    self._conn.commit()
+                else:
+                    logger.debug(f"Schedule {schedule_id} is disabled in database")
+                    return False
             
             if row and row["next_run"]:
                 next_run = datetime.fromisoformat(row["next_run"])
@@ -254,7 +276,9 @@ class UpdateScheduler:
             ("medical_content", self._run_medical_content_crawler),
         ]
         
-        CRAWLER_TIMEOUT_SECONDS = 3600  # 60 minutes max per crawler (PubMed needs ~55min)
+        # PubMed 爬取近期常超过 60 分钟（2026-08 连续三次在 3600s 处超时，
+        # 触发熔断导致调度被永久禁用），放宽到 90 分钟，仍在 2h 运行预算内
+        CRAWLER_TIMEOUT_SECONDS = 5400
 
         for crawler_name, crawler_func in crawlers_to_run:
             result = None

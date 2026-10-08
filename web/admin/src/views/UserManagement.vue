@@ -411,7 +411,7 @@ async function fetchUsers() {
     if (filter.value.status) {
       params.status = filter.value.status
     }
-    const res = await request.get<UsersResponse>('/users', { params })
+    const res = await request.get<UsersResponse>('/admin/users', { params })
     const data = res.data
     users.value = data.items || []
     pagination.value.itemCount = data.total || 0
@@ -460,7 +460,7 @@ async function confirmBan() {
   }
   banModal.value.loading = true
   try {
-    await request.put(`/users/${banModal.value.userId}/status`, {
+    await request.put(`/admin/users/${banModal.value.userId}/status`, {
       action: 'ban',
       reason: banModal.value.reason,
     })
@@ -487,7 +487,7 @@ function openMuteModal(user: User) {
 async function confirmMute() {
   muteModal.value.loading = true
   try {
-    await request.put(`/users/${muteModal.value.userId}/status`, {
+    await request.put(`/admin/users/${muteModal.value.userId}/status`, {
       action: 'mute',
       hours: muteModal.value.hours,
       reason: muteModal.value.reason,
@@ -507,7 +507,7 @@ async function confirmMute() {
 
 async function handleUnmute(user: User) {
   try {
-    await request.put(`/users/${user.id}/status`, {
+    await request.put(`/admin/users/${user.id}/status`, {
       action: 'unmute',
     })
     message.success('解除禁言成功')
@@ -522,7 +522,7 @@ async function handleUnmute(user: User) {
 
 async function handleUnban(user: User) {
   try {
-    await request.put(`/users/${user.id}/status`, {
+    await request.put(`/admin/users/${user.id}/status`, {
       action: 'unban',
     })
     message.success('解除封号成功')

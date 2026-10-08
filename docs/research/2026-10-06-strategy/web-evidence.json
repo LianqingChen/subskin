@@ -1,0 +1,142 @@
+[
+  {
+    "id": "SkinAnalytics",
+    "requested_url": "https://skin-analytics.com/",
+    "url": "https://skin-analytics.com/",
+    "status": 403,
+    "title": "Attention Required! | Cloudflare"
+  },
+  {
+    "id": "SkinVision",
+    "requested_url": "https://www.skinvision.com/",
+    "url": "https://www.skinvision.com/",
+    "status": 200,
+    "title": "SkinVision | Skin Cancer Detection App"
+  },
+  {
+    "id": "Miiskin",
+    "requested_url": "https://miiskin.com/",
+    "url": "https://miiskin.com/",
+    "status": 200,
+    "title": "Online Dermatologists | Fast, Trusted Skin Care with Miiskin"
+  },
+  {
+    "id": "PatientsLikeMe",
+    "requested_url": "https://support.patientslikeme.com/hc/en-us/articles/201245750-How-does-PatientsLikeMe-make-money",
+    "url": "https://support.patientslikeme.com/hc/en-us/articles/201245750-How-does-PatientsLikeMe-make-money",
+    "status": 403,
+    "title": "Just a moment..."
+  },
+  {
+    "id": "VRF",
+    "requested_url": "https://vrfoundation.org/",
+    "url": "https://vrfoundation.org/",
+    "status": 200,
+    "title": "Vitiligo Research Foundation"
+  },
+  {
+    "id": "VIRdb",
+    "requested_url": "https://github.com/samuelbharti/VIRdb",
+    "url": "https://github.com/samuelbharti/VIRdb",
+    "status": 200,
+    "title": "GitHub - samuelbharti/VIRdb: Vitiligo Information resource (VIRdb) is a comprehensive database which systematically mounts all the information relating to vitiligo in terms of potential protein targets and differentially expressed genes in a user-friendly database. · GitHub"
+  },
+  {
+    "id": "DermNetVitiligo",
+    "requested_url": "https://dermnetnz.org/topics/vitiligo",
+    "url": "https://dermnetnz.org/topics/vitiligo",
+    "status": 200,
+    "title": "Vitiligo: Causes, Types, and Treatment — DermNet"
+  },
+  {
+    "id": "FDAOpzelura",
+    "requested_url": "https://www.fda.gov/news-events/press-announcements/fda-approves-topical-treatment-addressing-repigmentation-vitiligo",
+    "url": "https://www.fda.gov/apology_objects/abuse-detection-apology.html",
+    "status": 404,
+    "title": ""
+  },
+  {
+    "id": "SCIN",
+    "requested_url": "https://research.google/blog/scin-a-new-resource-for-representative-dermatology-images/",
+    "url": "https://research.google/blog/scin-a-new-resource-for-representative-dermatology-images/",
+    "status": 200,
+    "title": "SCIN: A new resource for representative dermatology images"
+  },
+  {
+    "id": "DermFoundation",
+    "requested_url": "https://developers.google.com/health-ai-developer-foundations/derm-foundation",
+    "url": "https://developers.google.com/health-ai-developer-foundations/derm-foundation",
+    "status": 200,
+    "title": "Derm Foundation Model  |  Health AI Developer Foundations  |  Google for Developers"
+  },
+  {
+    "id": "DDI",
+    "requested_url": "https://ddi-dataset.github.io/",
+    "url": "https://ddi-dataset.github.io/",
+    "status": 200,
+    "title": "Diverse Dermatology Images"
+  },
+  {
+    "id": "ISIC",
+    "requested_url": "https://www.isic-archive.com/",
+    "url": "https://www.isic-archive.com/",
+    "status": 200,
+    "title": "ISIC | International Skin Imaging Collaboration"
+  },
+  {
+    "id": "HAM10000",
+    "requested_url": "https://www.nature.com/articles/sdata2018161",
+    "url": "https://www.nature.com/articles/sdata2018161",
+    "status": 200,
+    "title": "The HAM10000 dataset, a large collection of multi-source dermatoscopic images of common pigmented skin lesions | Scientific Data"
+  },
+  {
+    "id": "PIPL",
+    "requested_url": "https://www.cac.gov.cn/2021-08/20/c_1631050028355286.htm",
+    "url": "https://www.cac.gov.cn/2021-08/20/c_1631050028355286.htm",
+    "status": 200,
+    "title": "中华人民共和国个人信息保护法_中央网络安全和信息化委员会办公室"
+  },
+  {
+    "id": "ClinicalTrials",
+    "requested_url": "https://clinicaltrials.gov/data-api/api",
+    "url": "https://clinicaltrials.gov/data-api/api",
+    "status": 200,
+    "title": "ClinicalTrials.gov"
+  },
+  {
+    "id": "LabelStudio",
+    "requested_url": "https://labelstud.io/guide/",
+    "url": "https://labelstud.io/guide/",
+    "status": 200,
+    "title": "Label Studio Documentation — Data Labeling"
+  },
+  {
+    "id": "UMassVitiligo",
+    "requested_url": "https://www.umassmed.edu/vitiligo/",
+    "url": "https://www.umassmed.edu/vitiligo/",
+    "status": 403,
+    "title": "Attention Required! | Cloudflare"
+  },
+  {
+    "id": "HautAI",
+    "requested_url": "https://haut.ai/",
+    "url": "https://haut.ai/",
+    "status": 200,
+    "title": "AI Skin Analysis & Skincare AI Platform for Beauty Brands"
+  },
+  {
+    "id": "Skinive",
+    "requested_url": "https://skinive.com/",
+    "url": "https://skinive.com/",
+    "status": 200,
+    "title": "AI Skin Scanner, Mole Checker & Tracker | Skinive"
+  },
+  {
+    "id": "BADGuideline",
+    "requested_url": "https://pubmed.ncbi.nlm.nih.gov/34160061/",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/34160061/",
+    "status": 203,
+    "title": "pubmed.ncbi.nlm.nih.gov"
+  }
+]

@@ -13,9 +13,6 @@
 
 import type { BaseTool, ToolContext, ToolName } from './BaseTool'
 
-const LESION_COLOR = 'rgba(244,114,182,1)'
-const SKIN_COLOR = 'rgba(96,165,250,1)'
-
 /** Max flood fill iterations before timeout (safety valve for huge images) */
 const MAX_ITERATIONS = 5_000_000
 
@@ -23,7 +20,6 @@ export class FloodFillTool implements BaseTool {
   readonly name: ToolName = 'flood-fill'
   tolerance = 24  // 0-128, default 24
   private imageData: ImageData | null = null
-  private imageCanvas: HTMLCanvasElement | null = null
 
   onActivate(ctx: ToolContext): void {
     // Build a snapshot of the original image for color sampling
@@ -32,11 +28,10 @@ export class FloodFillTool implements BaseTool {
 
   onDeactivate(): void {
     this.imageData = null
-    this.imageCanvas = null
   }
 
   /** Sample the original photo into a hidden canvas for pixel reading */
-  private cacheImageData(ctx: ToolContext): void {
+  cacheImageData(ctx: ToolContext): void {
     const w = ctx.naturalSize.width
     const h = ctx.naturalSize.height
     if (w === 0 || h === 0) return
@@ -57,7 +52,6 @@ export class FloodFillTool implements BaseTool {
       if (imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
         tempCtx.drawImage(imgEl, 0, 0, w, h)
         this.imageData = tempCtx.getImageData(0, 0, w, h)
-        this.imageCanvas = tempCanvas
       }
     } catch {
       this.imageData = null
@@ -78,14 +72,7 @@ export class FloodFillTool implements BaseTool {
 
     if (ix < 0 || iy < 0 || ix >= w || iy >= h) return
 
-    const targetCanvas = ctx.skinCanvas  // default: skin
-    const fillColor = SKIN_COLOR
-    // Shift key → fill as lesion instead
-    // We'll handle the shift modifier outside — for now, we always fill lesion
-    // since that's the primary use case. The caller (MaskEditorAdmin) passes
-    // the target based on which modifier is held.
-
-    this.floodFill(ix, iy, w, h, ctx, ctx.lesionCanvas, LESION_COLOR)
+    this.floodFill(ix, iy, w, h, ctx.lesionCanvas)
     ctx.drawOverlay()
     ctx.snapshot()
     ctx.updateAreas()
@@ -95,9 +82,9 @@ export class FloodFillTool implements BaseTool {
   fillLesion(ix: number, iy: number, ctx: ToolContext): void {
     const w = ctx.naturalSize.width
     const h = ctx.naturalSize.height
-    this.floodFill(ix, iy, w, h, ctx, ctx.lesionCanvas, LESION_COLOR)
+    this.floodFill(ix, iy, w, h, ctx.lesionCanvas)
     // Also erase from skin layer in the filled region
-    this.floodFillErase(ix, iy, w, h, ctx, ctx.skinCanvas)
+    this.floodFillErase(ix, iy, w, h, ctx.skinCanvas)
     ctx.drawOverlay()
     ctx.snapshot()
     ctx.updateAreas()
@@ -107,8 +94,8 @@ export class FloodFillTool implements BaseTool {
   fillSkin(ix: number, iy: number, ctx: ToolContext): void {
     const w = ctx.naturalSize.width
     const h = ctx.naturalSize.height
-    this.floodFill(ix, iy, w, h, ctx, ctx.skinCanvas, SKIN_COLOR)
-    this.floodFillErase(ix, iy, w, h, ctx, ctx.lesionCanvas)
+    this.floodFill(ix, iy, w, h, ctx.skinCanvas)
+    this.floodFillErase(ix, iy, w, h, ctx.lesionCanvas)
     ctx.drawOverlay()
     ctx.snapshot()
     ctx.updateAreas()
@@ -117,9 +104,7 @@ export class FloodFillTool implements BaseTool {
   private floodFill(
     startX: number, startY: number,
     w: number, h: number,
-    ctx: ToolContext,
     targetCanvas: HTMLCanvasElement,
-    fillColor: string,
   ): void {
     if (!this.imageData) return
 
@@ -185,7 +170,6 @@ export class FloodFillTool implements BaseTool {
   private floodFillErase(
     startX: number, startY: number,
     w: number, h: number,
-    ctx: ToolContext,
     targetCanvas: HTMLCanvasElement,
   ): void {
     if (!this.imageData) return

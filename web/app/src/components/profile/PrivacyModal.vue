@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { usePrivacyStore } from '@/stores/privacy'
+import PrivacyAiConsent from './PrivacyAiConsent.vue'
 
 const STORAGE_KEYS = {
   defaultPostPrivate: 'subskin_default_post_private',
@@ -104,6 +105,7 @@ async function togglePhoneDiscoverable() {
               <span class="setting-switch-thumb" :class="shareTracking ? 'translate-x-7' : 'translate-x-0'" />
             </button>
           </div>
+          <PrivacyAiConsent :active="modelValue" />
         </div>
       </div>
     </div>

@@ -82,7 +82,7 @@ onUnmounted(() => {
               'border-gray-200 dark:border-gray-700',
               'text-gray-600 ',
               'hover:bg-primary-50 hover:text-primary-600 hover:border-primary-200',
-              'dark:hover:bg-primary-900/30 dark:hover:text-primary-300 dark:hover:border-primary-700',
+              'dark:hover:bg-primary-900 dark:hover:text-primary-300 dark:hover:border-primary-700',
             ]"
             @click="handleOption(option)"
           >

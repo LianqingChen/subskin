@@ -3,6 +3,7 @@ JWT认证服务
 支持访问令牌及刷新令牌
 """
 
+import hashlib
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -21,7 +22,9 @@ SECRET_KEY = os.environ["SECRET_KEY"]  # 必须通过环境变量设置，不再
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
-ADMIN_TOKEN_EXPIRE_DAYS = int(os.getenv("ADMIN_TOKEN_EXPIRE_DAYS", "365"))  # 管理员token几乎永不过期
+# 管理员 token 过期时间（2026-08-30 安全加固：365 天 → 14 天，可用环境变量覆盖）。
+# 配合 User.token_version 撤销机制，改密/登出全部设备可立即作废存量 token。
+ADMIN_TOKEN_EXPIRE_DAYS = int(os.getenv("ADMIN_TOKEN_EXPIRE_DAYS", "14"))
 # Short-lived, file-serving-only token: scoped to ``scope="files"`` and never
 # accepted by general API endpoints. Limits the blast radius of a leaked URL
 # token (logs/referrer) to file reads, and expires within minutes.
@@ -43,17 +46,24 @@ def get_password_hash(password: str) -> str:
 def create_access_token(
     data: dict[str, Any], expires_delta: Optional[timedelta] = None,
     is_admin: bool = False,
+    token_version: int = 0,
 ) -> str:
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     elif is_admin:
-        # 管理员token使用极长过期时间（默认365天），确保不因闲置被踢出
         expire = datetime.now(timezone.utc) + timedelta(days=ADMIN_TOKEN_EXPIRE_DAYS)
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire, "type": "access", "is_admin": is_admin})
+    # tv = 用户 token 版本号：改密 / 重置密码 / 登出全部设备 / 注销账户时 +1，
+    # 校验侧比对 User.token_version 即可即时作废所有存量 access token。
+    to_encode.update({"exp": expire, "type": "access", "is_admin": is_admin, "tv": token_version})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def _hash_refresh_token(token: str) -> str:
+    """Refresh token 仅存 SHA-256 摘要 — 数据库文件泄露也无法盗用会话。"""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def create_file_access_token(username: str) -> str:
@@ -104,7 +114,7 @@ def create_refresh_token(data: dict[str, Any], db: Session, is_admin: bool = Fal
 
     expire_days = ADMIN_TOKEN_EXPIRE_DAYS if is_admin else REFRESH_TOKEN_EXPIRE_DAYS
     expired_at = datetime.now(timezone.utc) + timedelta(days=expire_days)
-    refresh_token = RefreshToken(token=token, user_id=user.id, expired_at=expired_at)
+    refresh_token = RefreshToken(token=_hash_refresh_token(token), user_id=user.id, expired_at=expired_at)
     db.add(refresh_token)
     db.commit()
     return token
@@ -114,7 +124,7 @@ def verify_refresh_token(token: str, db: Session) -> Optional[User]:
     now = datetime.now(timezone.utc)
     refresh_token = (
         db.query(RefreshToken)
-        .filter(RefreshToken.token == token)
+        .filter(RefreshToken.token == _hash_refresh_token(token))
         .filter(RefreshToken.revoked == False)
         .filter(RefreshToken.expired_at > now)
         .first()
@@ -127,14 +137,25 @@ def verify_refresh_token(token: str, db: Session) -> Optional[User]:
 
 
 def revoke_refresh_token(token: str, db: Session) -> bool:
-    refresh_token = db.query(RefreshToken).filter(RefreshToken.token == token).first()
+    token_hash = _hash_refresh_token(token)
+    refresh_token = db.query(RefreshToken).filter(RefreshToken.token == token_hash).first()
     if refresh_token:
-        db.query(RefreshToken).filter(RefreshToken.token == token).update(
+        db.query(RefreshToken).filter(RefreshToken.token == token_hash).update(
             {"revoked": True}
         )
         db.commit()
         return True
     return False
+
+
+def bump_token_version(user_id: int, db: Session) -> None:
+    """作废某用户所有存量 access token（改密/重置/注销等场景调用）。"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        return
+    current = getattr(user, "token_version", 0) or 0
+    user.token_version = current + 1  # type: ignore[attr-defined]
+    db.commit()
 
 
 def revoke_all_user_tokens(user_id: int, db: Session) -> int:
@@ -192,6 +213,16 @@ def get_user_from_access_token(token: str, db: Session) -> Optional[User]:
     # surface the ban reason rather than a generic 401.
     if user is not None and not bool(getattr(user, "is_active", False)):
         return None
+    # token 版本号校验：tv 缺失视为 0（兼容升级前的存量 token）；版本不一致 =
+    # 用户已改密/登出全部设备/注销 → 立即作废。
+    if user is not None:
+        token_tv = payload.get("tv", 0)
+        user_tv = getattr(user, "token_version", 0) or 0
+        try:
+            if int(token_tv) != int(user_tv):
+                return None
+        except (TypeError, ValueError):
+            return None
     return user
 
 

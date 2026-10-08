@@ -1,3 +1,4 @@
+import type { PhotoMeasurement, ObservationContext } from '@/types/assessment'
 import apiClient from './client'
 
 export interface ContourRegion {
@@ -20,6 +21,9 @@ export interface ReferenceObject {
 }
 
 export interface VasiAssessmentResponse {
+  record_status?: string
+  measurement?: PhotoMeasurement | null
+  observation?: ObservationContext | null
   id: number
   user_id: number
   image_url: string
@@ -46,6 +50,16 @@ export interface VasiAssessmentResponse {
   suspected_lesions?: SuspectedLesion[] | null
   skin_region_ratio?: number | null
   visual_features?: VisualFeatures | null
+  // 全自动识别自循环
+  auto_finalized?: boolean
+  consensus?: {
+    verdict?: string
+    iou?: number | null
+    sam_pixels?: number | null
+    patient_pixels?: number | null
+    verified_candidates?: Array<Record<string, unknown>>
+  } | null
+  patient_model_version?: string | null
 }
 
 export interface VisualFeatureDimension {
@@ -67,6 +81,8 @@ export interface VisualFeatures {
 }
 
 export interface VasiHistoryItem {
+  measurement?: PhotoMeasurement | null
+  observation?: ObservationContext | null
   id: number
   image_url: string
   vasi_score: number
@@ -120,15 +136,30 @@ export interface QualityCheckResult {
 }
 
 export const vasiApi = {
-  async assess(image: File, bodySite: string, precision: string = 'quick', options: { hasReferenceCard?: boolean } = {}): Promise<VasiAssessmentResponse> {
+  async assess(image: File, bodySite: string, precision: string = 'quick', options: { hasReferenceCard?: boolean; observation?: ObservationContext } = {}): Promise<VasiAssessmentResponse> {
+    const capability = await apiClient.get<{ protocol: string }>('/vasi/annotation-protocol')
+    if (capability.data.protocol !== 'skin-outline-v1') throw new Error('annotation-protocol-unavailable')
     const formData = new FormData()
+    formData.append('annotation_protocol', 'skin-outline-v1')
     formData.append('image', image)
     formData.append('body_site', bodySite)
     formData.append('precision', precision)
     if (options.hasReferenceCard) formData.append('has_reference', 'true')
+    const context = options.observation
+    if (context) {
+      formData.append('intent', context.intent || 'discovery')
+      formData.append('observation_label', context.label || '')
+      formData.append('view', context.view || '')
+      formData.append('background', context.background || '')
+      if (context.calibration) formData.append('calibration', JSON.stringify(context.calibration))
+      if (context.capture_date) formData.append('capture_date', context.capture_date)
+      if (context.baseline_id) formData.append('baseline_id', String(context.baseline_id))
+    }
     const { data } = await apiClient.post('/vasi/assess', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 180000,
+      // VLM 视觉分析实测 ~76-115s（token-plan 端点），须留足余量；
+      // 与 nginx proxy_read_timeout 300s 对齐，避免前端先于后端超时。
+      timeout: 300000,
     })
     return data
   },
@@ -155,7 +186,7 @@ export const vasiApi = {
   async submitContour(assessmentId: number, contours: ContourRegion[], maskImage: string | null = null): Promise<{
     status: string; assessment_id: number; ai_contour_count: number; user_contour_count: number;
     diff_summary: { match: boolean; iou?: number; avg_point_distance?: number; modified: boolean };
-    final_area_percentage?: number; final_vasi_score?: number
+    measurement?: PhotoMeasurement; final_area_percentage?: number; final_vasi_score?: number
   }> {
     const body: Record<string, unknown> = { contours }
     if (maskImage) body.mask_image = maskImage
@@ -163,12 +194,12 @@ export const vasiApi = {
     return data
   },
 
-  async submitTwoLayerMask(assessmentId: number, skinMaskImage: string, lesionMaskImage: string): Promise<{
+  async submitTwoLayerMask(assessmentId: number, skinMaskImage: string, lesionMaskImage: string, uncertaintyReviewed = false): Promise<{
     status: string; assessment_id: number;
     diff_summary: { match: boolean; iou?: number; avg_point_distance?: number; modified: boolean };
-    final_area_percentage?: number; final_vasi_score?: number
+    measurement?: PhotoMeasurement; final_area_percentage?: number; final_vasi_score?: number
   }> {
-    const { data } = await apiClient.post(`/vasi/assess/${assessmentId}/contour`, { contours: [], skin_mask_image: skinMaskImage, lesion_mask_image: lesionMaskImage })
+    const { data } = await apiClient.post(`/vasi/assess/${assessmentId}/contour`, { contours: [], skin_mask_image: skinMaskImage, lesion_mask_image: lesionMaskImage, uncertainty_reviewed: uncertaintyReviewed })
     return data
   },
 
@@ -186,6 +217,7 @@ export const vasiApi = {
     formData.append('image', image)
     const { data } = await apiClient.post('/vasi/check-photo-quality', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 30000,
     })
     return data
   },
@@ -234,6 +266,45 @@ export const vasiApi = {
     const { data } = await apiClient.post(`/vasi/assess/${assessmentId}/abandon`)
     return data
   },
+
+  /** 白斑病灶轨迹（每处白斑的身份与面积变化，统一画布 IoU 匹配） */
+  async getTracks(assessmentId: number): Promise<{
+    assessment_id: number
+    tracks: Record<string, Array<{
+      photo_ref: string
+      photo_date: string | null
+      area_canvas_px: number | null
+      area_normalized: number | null
+      status: string
+      source: string | null
+      confidence: number | null
+    }>>
+  }> {
+    const { data } = await apiClient.get(`/vasi/assess/${assessmentId}/tracks`)
+    return data
+  },
+
+  /** 白斑识别自学习状态（患者模型/样本数/自动终审率） */
+  async getSelfLearningStatus(): Promise<{
+    patient_models: Array<{
+      body_site: string
+      version: string | null
+      training_source: string | null
+      sample_count: number
+      shadow_dice: number | null
+      trained_at: string | null
+    }>
+    stats: {
+      recent_assessments: number
+      auto_finalized: number
+      auto_finalize_rate: number | null
+      user_corrected: number
+    }
+    note: string
+  }> {
+    const { data } = await apiClient.get('/vasi/self-learning/status')
+    return data
+  },
 }
 
 export interface FeedbackPrompt {
@@ -270,4 +341,44 @@ export const vasiFeedbackApi = {
     const { data } = await apiClient.post(`/vasi/assess/${assessmentId}/feedback/share`)
     return data
   },
+}
+
+// ── 照片对齐（按部位锚点：面部=瞳距 / 手部=掌宽 / 躯干四肢=肩宽，滑块对比用）──
+
+export interface PhotoAlignItem {
+  index: number
+  found: boolean
+  kind?: 'face' | 'hand' | 'pose'
+  anchor_a?: [number, number]
+  anchor_b?: [number, number]
+  anchor_mid?: [number, number]
+  anchor_dist?: number
+  scale?: number
+  rotate_deg?: number
+  width?: number
+  height?: number
+}
+
+export interface PhotoAlignResult {
+  ok: boolean
+  note?: string
+  ref_index?: number
+  kind?: 'face' | 'hand' | 'pose'
+  canvas?: {
+    width: number
+    height: number
+    anchor_mid: [number, number]
+    angle_deg: number
+    anchor_dist: number
+  }
+  items: PhotoAlignItem[]
+}
+
+/** 请求后端计算多张照片的对齐参数（服务端不落盘，仅返回数值参数） */
+export async function alignPhotos(files: Blob[], bodySite?: string): Promise<PhotoAlignResult> {
+  const formData = new FormData()
+  files.forEach((b, i) => formData.append('files', b, `photo${i}.jpg`))
+  if (bodySite) formData.append('body_site', bodySite)
+  const { data } = await apiClient.post('/vasi/photo-align', formData, { timeout: 60000 })
+  return data
 }

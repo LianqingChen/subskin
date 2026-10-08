@@ -1,0 +1,32 @@
+[
+  {
+    "width": 375,
+    "overflow": false
+  },
+  {
+    "case": "no-body-selected",
+    "text": "跳转到主要内容\nSubSkin\n登录\n白斑记录\n体检解读\n手帐\n头部\n面部\n脖子\n右臂\n胸部\n背部\n腹部\n左臂\n右腿\n左腿\n右脚\n左脚\n右手\n左手\n展开记录面板\n\n点选小人身上的部位标签\n\n拍照记录\n从相册添加\n照片对比\n同一部位 · 选择 2–4 张\n最近记录\n查看全部 \n\n登录后可查看你的照片记录\n\n登录查看记录 \n\n照片记录仅供参考，不构成医疗建议\n\n问答\n手帐\n医评\n分享\n先点选身体部位\n×"
+  },
+  {
+    "case": "guest-upload",
+    "responses": [
+      {
+        "status": 401
+      }
+    ],
+    "text": "跳转到主要内容\nSubSkin\n登录\n白斑记录\n体检解读\n添加照片\n确认这次照片\n\n补充视角和日期，方便下次在同一位置记录。\n\n左手\n质检未完成，请重新选择照片\n重拍\n换一张\n拍摄视角\n请选择\n正面\n背面 / 手背 / 脚背\n左侧\n右侧\n内侧 / 手心 / 脚底\n拍摄日期\n部位与备注\n标尺测量（选填）\n\n照片检查未完成，请重新选择照片后重试\n\n开始分析\n\n照片记录仅供参考，不构成医疗建议\n\n问答\n手帐\n医评\n分享\n先点选身体部位\n×",
+    "startDisabled": true
+  },
+  {
+    "width": 768,
+    "overflow": false
+  },
+  {
+    "width": 1024,
+    "overflow": false
+  },
+  {
+    "width": 1440,
+    "overflow": false
+  }
+]

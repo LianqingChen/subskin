@@ -1,3 +1,4 @@
+export type { ButlerMascot, ButlerStyle, ButlerSize, ButlerPosition, ButlerPreference } from './butler'
 export interface User {
   id: number
   uid: string | null
@@ -88,6 +89,15 @@ export interface DiaryCard {
 
 export type ActionCard = VASICard | ReportCard | DiaryCard
 
+// ── 问答助手（结构化导航建议）──
+
+export interface NavSuggestion {
+  label: string
+  path: string
+  icon?: string
+  desc?: string
+}
+
 export interface Source {
   title: string
   url?: string
@@ -117,6 +127,10 @@ export interface PostImage {
   id: number
   image_url: string
   order: number
+  body_site?: string | null
+  capture_date?: string | null
+  analysis_status?: string
+  vasi_assessment_id?: number | null
 }
 
 export interface PostAudio {
@@ -142,12 +156,33 @@ export interface PostTag {
   usage_count: number
 }
 
+// ── 结构化治疗分享 ──
+
+export interface VasiAssessmentSnapshot {
+  id: number
+  assessment_date: string | null
+  vasi_score: number
+  final_vasi_score?: number | null
+  body_site?: string
+  stage?: string
+}
+
+export interface TreatmentShare {
+  method: string
+  duration?: string | null
+  effect_rating?: number | null
+  cost_range?: string | null
+  side_effects?: string[]
+  vasi_assessment_ids?: number[]
+  vasi_assessments?: VasiAssessmentSnapshot[]
+}
+
 export interface Post {
   id: number
   title: string
   content: string
   content_json: string | null
-  post_type?: 'image' | 'video' | 'text' | 'long'
+  post_type?: 'image' | 'video' | 'text' | 'long' | 'treatment'
   content_preview?: string | null
   video_url?: string | null
   video_thumbnail?: string | null
@@ -169,9 +204,11 @@ export interface Post {
   distance?: number | null
   like_count: number
   comment_count: number
+  share_count?: number
   is_liked: boolean
   is_bookmarked: boolean
   moderation_status?: string
+  treatment_share?: TreatmentShare | null
   created_at: string
   updated_at: string
 }
@@ -229,9 +266,10 @@ export interface PostCreateRequest {
   title: string
   content: string
   content_json?: string
-  post_type?: 'image' | 'video' | 'text' | 'long'
+  post_type?: 'image' | 'video' | 'text' | 'long' | 'treatment'
   category_id: number
   images?: string[]
+  image_metas?: Array<{ image_url: string; body_site?: string; capture_date?: string }>
   video_url?: string
   video_thumbnail?: string
   tag_names?: string[]
@@ -243,13 +281,18 @@ export interface PostCreateRequest {
   city?: string | null
   latitude?: number | null
   longitude?: number | null
+  treatment_share?: TreatmentShare
+  /** 用户已确认保留正文中的隐私信息（发布确认弹窗勾选） */
+  confirm_pii?: boolean
+  /** 用户已确认内容将公开发布（审计标记） */
+  public_ack?: boolean
 }
 
 export interface PostUpdateRequest {
   title?: string
   content?: string
   content_json?: string
-  post_type?: 'image' | 'video' | 'text' | 'long'
+  post_type?: 'image' | 'video' | 'text' | 'long' | 'treatment'
   category_id?: number
   tag_names?: string[]
   is_private?: boolean
@@ -261,6 +304,11 @@ export interface PostUpdateRequest {
   city?: string | null
   latitude?: number | null
   longitude?: number | null
+  treatment_share?: TreatmentShare
+  /** 用户已确认保留正文中的隐私信息（发布确认弹窗勾选） */
+  confirm_pii?: boolean
+  /** 用户已确认内容将公开发布（审计标记） */
+  public_ack?: boolean
 }
 
 export interface CommentCreateRequest {
