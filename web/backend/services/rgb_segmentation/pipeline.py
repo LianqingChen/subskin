@@ -11,9 +11,12 @@ from web.backend.models.vasi import VASIAssessment
 from web.backend.exceptions import RGBSegmentationError
 from web.backend.services.rgb_segmentation import artifacts
 from web.backend.services.rgb_segmentation.images import (
+    apply_soft_quality,
     canonical_image,
-    png_bytes,
     encode_mask,
+    frame_information_lost,
+    png_bytes,
+    RETAKE_MESSAGE,
 )
 from web.backend.services.rgb_segmentation.inference import infer_rgb
 from web.backend.services.rgb_segmentation.policy import (
@@ -22,7 +25,6 @@ from web.backend.services.rgb_segmentation.policy import (
     result_contract,
 )
 from web.backend.services.annotation_contract import encode_layer
-from web.backend.services.vasi_quality import vasi_quality_checker
 from web.backend.utils.assessment_body_sites import BODY_SITE_LABELS
 from web.backend.services.rgb_segmentation.label_sync import sync_rgb_label
 
@@ -71,21 +73,20 @@ def process_job(job_id: str, lease: str) -> None:
     rgb, metadata = canonical_image(source)
     image = png_bytes(rgb)
     stage(job_id, lease, "quality_check")
-    quality = vasi_quality_checker.check_all(image)
-    if quality.overall == "poor":
-        raise RGBSegmentationError(
-            "QUALITY_INFORMATION_LOST", "照片清晰度或曝光不足，请重拍"
-        )
+    if frame_information_lost(rgb):
+        raise RGBSegmentationError("QUALITY_INFORMATION_LOST", RETAKE_MESSAGE)
     stage(job_id, lease, "segmenting")
     masks, model = infer_rgb(rgb)
+    masks, routed = apply_soft_quality(rgb, masks)
     stage(job_id, lease, "validating")
     decision = measure_rgb(
         rgb, masks, image, reviewed=False, calibration=context.get("calibration")
     )
+    if routed.get("soft_issues"):
+        decision["quality"]["soft_issues"] = routed["soft_issues"]
+        decision["quality"]["routing"] = "uncertain_or_excluded_review"
     if decision["status"] == "retake_required":
-        raise RGBSegmentationError(
-            "QUALITY_INFORMATION_LOST", "照片局部过曝或过暗，请重拍"
-        )
+        raise RGBSegmentationError("QUALITY_INFORMATION_LOST", RETAKE_MESSAGE)
     manifest = artifacts.write_revision(
         job_id,
         image,

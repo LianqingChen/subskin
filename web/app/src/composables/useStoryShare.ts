@@ -53,7 +53,7 @@ export function useStoryShare() {
       if (!current()) return
       images.forEach(image => previews.push(URL.createObjectURL(image)))
       const heading = title || `${summary.site}的照片记录`
-      const content = `<p>${escapeHtml(heading)}</p><p>本次白斑记录</p><p>${summary.dataLines.map(escapeHtml).join('<br>')}</p><p>仅限本张照片中的可见皮肤，不构成医疗建议。</p>`
+      const content = `<p>${escapeHtml(heading)}</p><p>本次白斑记录</p><p>${summary.dataLines.map(escapeHtml).join('<br>')}</p><p>相对本张照片可见皮肤的浅色范围，不是临床 VASI，不构成医疗建议。</p>`
       const decision = await confirmPublish({ title: heading, content, preview: { title: heading, summary: summary.dataLines.join('；'), images: previews } })
       if (!decision || !current()) return
       const categories = await communityApi.getCategories()

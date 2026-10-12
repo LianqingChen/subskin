@@ -16,7 +16,7 @@ export interface RGBSelection {
 }
 export type RGBSelector = (input: RGBSelection) => Promise<string>
 const messages: Record<string, string> = {
-  QUALITY_INFORMATION_LOST: '照片部分区域过曝、过暗或不清晰，请重拍',
+  QUALITY_INFORMATION_LOST: '照片过曝、过暗或严重模糊，请重拍',
   REGIONS_UNRESOLVED: '边界仍不可靠，请使用画笔调整',
   SKIN_UNVERIFIED: '请先核对蓝色皮肤范围，再点选浅色区域',
   MODEL_UNAVAILABLE: '交互分割暂不可用，可使用画笔调整',

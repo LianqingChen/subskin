@@ -158,7 +158,8 @@ watch(() => auth.token, (token, previous) => {
 })
 async function submit() {
   if (!requireLogin() || !upload.uploadedImage.value || busy.value) return
-  if (upload.qualityChecking.value || !upload.qualityResult.value || upload.qualityResult.value.overall === 'poor') { toast.warning('请先完成照片质量检查'); return }
+  if (upload.qualityChecking.value || !upload.qualityResult.value) { toast.warning('照片检查尚未完成'); return }
+  if (upload.qualityResult.value.overall === 'poor') { toast.warning('照片过曝、过暗或严重模糊，请重拍'); return }
   if (!context.value.capture_date) { toast.warning('请确认照片日期'); return }
   try {
     await assess.submitAssessment(upload.uploadedImage.value, upload.selectedBodySite.value, 'quick', false, context.value)

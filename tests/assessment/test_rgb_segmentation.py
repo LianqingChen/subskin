@@ -591,6 +591,64 @@ def test_rgb_pipeline_does_not_call_configured_language_model(
     assert data["result"]["confidence"]["score"] is None
 
 
+def test_soft_defects_stay_in_review_and_only_information_loss_retakes():
+    from web.backend.services.rgb_segmentation.images import apply_soft_quality, local_quality
+
+    rng = np.random.default_rng(3)
+    rgb = np.clip(
+        np.array([170, 130, 100]) + rng.integers(-8, 9, (160, 160, 3)), 0, 255
+    ).astype(np.uint8)
+    rgb[20:50, 20:50] = 255
+    rgb[20:50, 100:140] = (30, 28, 26)
+    skin = np.ones(rgb.shape[:2], bool)
+    masks = dict(
+        skin=skin,
+        lesion=np.zeros_like(skin),
+        uncertain=np.zeros_like(skin),
+        excluded=np.zeros_like(skin),
+    )
+    updated, quality = apply_soft_quality(rgb, masks)
+    assert quality["status"] == "review_required"
+    assert "GLARE" in quality["soft_issues"] and "SHADOW" in quality["soft_issues"]
+    assert updated["excluded"].any() and updated["uncertain"].any()
+    assert not (updated["skin"] & updated["excluded"]).any()
+    decision = measure_rgb(rgb, updated, png_bytes(rgb), False)
+    assert decision["status"] == "review_required"
+    assert "QUALITY_INFORMATION_LOST" not in decision["blocking_reasons"]
+    assert decision["measurement"]["clinical_vasi"] is None
+    assert decision["measurement"]["clinical_vasi_valid"] is False
+    flat = np.full((80, 80, 3), (140, 110, 90), np.uint8)
+    assert local_quality(flat, np.ones(flat.shape[:2], bool))["status"] == "retake_required"
+
+
+def test_destroyed_frame_does_not_complete_and_glare_does(isolated, photo):
+    factory, _, _ = isolated
+    white = np.full(photo[0].shape, 255, np.uint8)
+    with factory() as db:
+        job = create_job(
+            db, 1, "destroyed-frame", png_bytes(white), "face", {"capture_date": "2026-09-01"}
+        )
+        job_id = job.id
+    with factory() as db:
+        claimed = claim_job(db)
+        lease = claimed.lease
+    with pytest.raises(RGBSegmentationError) as error:
+        pipeline.process_job(job_id, lease)
+    assert error.value.code == "QUALITY_INFORMATION_LOST"
+    with factory() as db:
+        saved = db.query(RGBSegmentationJob).get(job_id)
+        assert saved.assessment_id is None
+        assert saved.state == "running"
+    glared = photo[0].copy()
+    glared[80:110, 80:110] = 255
+    data = create_and_run(factory, (glared, png_bytes(glared)))
+    assert data["state"] == "completed"
+    assert data["result"]["status"] != "retake_required"
+    assert data["result"]["score_policy"]["clinical_vasi"] is None
+    assert data["result"]["score_policy"]["clinical_vasi_valid"] is False
+    assert data["result"]["measurement"] is None
+
+
 def test_rgb_photo_uses_existing_private_file_ownership_contract(isolated, photo):
     from fastapi import HTTPException
     from web.backend.api.files import _assert_path_ownership

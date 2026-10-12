@@ -22,7 +22,7 @@ function selected(event: Event) {
 function captured(file: File) { emit('file', file, 'camera'); camera.value = false }
 function captureCalibration(value: ObservationContext['calibration']) { emit('update:context', { ...props.context, calibration: value }) }
 const ready = computed(() => !!props.preview && !!props.bodySite && !!props.context.capture_date && !props.checking && !!props.quality && props.quality.overall !== 'poor' && !props.busy)
-const qualityMessage = computed(() => props.checking ? '检查照片中…' : !props.quality ? props.qualityError || '照片检查尚未完成' : props.quality.overall === 'good' ? '' : props.quality.suggestions[0] || '请调整光照后重拍')
+const qualityMessage = computed(() => props.checking ? '检查照片中…' : !props.quality ? props.qualityError || '照片检查尚未完成' : props.quality.overall === 'poor' ? (props.quality.suggestions[0] || '照片过曝、过暗或严重模糊，请重拍') : props.quality.overall === 'good' ? '' : (props.quality.suggestions[0] || '可继续分析，请核对范围'))
 </script>
 <template>
   <section aria-label="添加照片" class="capture-layout mx-auto grid w-full max-w-4xl items-start gap-3 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-3" :class="fitScreen ? 'capture-layout--fit' : ''">

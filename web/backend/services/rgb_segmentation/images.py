@@ -2,7 +2,7 @@
 
 import hashlib
 import io
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 import cv2
 import numpy as np
 from PIL import Image, ImageCms, ImageOps, UnidentifiedImageError
@@ -111,29 +111,99 @@ def decode_binary(data: bytes, shape: Tuple[int, int]) -> np.ndarray:
         raise RGBSegmentationError("ARTIFACT_INVALID", "标注与照片不匹配，请重新加载")
 
 
+# Hard retake only when the visible skin has lost recoverable detail.
+HARD_CLIPPED = 0.35
+HARD_DARK = 0.65
+HARD_BLUR = 4.0
+SOFT_BLUR = 20.0
+GLARE_VALUE = 250
+SHADOW_MAX = 40
+SHADOW_MIN = 12
+RETAKE_MESSAGE = "照片过曝、过暗或严重模糊，请重拍"
+
+
+def _gray(rgb: np.ndarray) -> np.ndarray:
+    return cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+
+
+def _interior(skin: np.ndarray) -> np.ndarray:
+    eroded = cv2.erode(skin.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
+    return eroded if eroded.any() else skin
+
+
+def frame_information_lost(rgb: np.ndarray) -> bool:
+    """Whole-frame loss only. Localized glare, shadow, and mild blur are not retakes."""
+    if rgb.ndim != 3 or rgb.shape[2] != 3 or min(rgb.shape[:2]) < 8:
+        return True
+    gray = _gray(rgb)
+    clipped = float((rgb.min(axis=2) >= GLARE_VALUE).mean())
+    dark = float((gray < 8).mean())
+    blur = float(cv2.Laplacian(gray, cv2.CV_32F).var())
+    return clipped > 0.85 or dark > 0.92 or blur < 1.5
+
+
 def local_quality(rgb: np.ndarray, skin: np.ndarray) -> Dict[str, Any]:
     """Heuristic evidence on the declared visible-skin scope, not diagnosis."""
     if skin.shape != rgb.shape[:2] or int(skin.sum()) < 64:
-        return {"status": "unknown", "reasons": ["SKIN_UNVERIFIED"]}
-    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
-    eroded = cv2.erode(skin.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
-    interior = eroded if eroded.any() else skin
+        return {
+            "status": "unknown",
+            "reasons": ["SKIN_UNVERIFIED"],
+            "soft_issues": [],
+        }
+    gray = _gray(rgb)
+    interior = _interior(skin)
     luminance = gray[interior]
-    clipped = float((rgb[interior].min(axis=1) >= 250).mean())
+    clipped = float((rgb[interior].min(axis=1) >= GLARE_VALUE).mean())
     dark = float((luminance < 15).mean())
-    laplacian = cv2.Laplacian(gray, cv2.CV_32F)
-    blur = float(laplacian[interior].var())
-    lost = clipped > 0.35 or dark > 0.65
+    shadow = float(((luminance < SHADOW_MAX) & (luminance >= SHADOW_MIN)).mean())
+    blur = float(cv2.Laplacian(gray, cv2.CV_32F)[interior].var())
+    lost = clipped > HARD_CLIPPED or dark > HARD_DARK or blur < HARD_BLUR
+    soft: List[str] = []
+    if not lost:
+        if clipped > 0.005:
+            soft.append("GLARE")
+        if shadow > 0.02:
+            soft.append("SHADOW")
+        if blur < SOFT_BLUR:
+            soft.append("MILD_EDGE_BLUR")
     return {
-        "status": (
-            "retake_required" if lost else "review_required" if blur < 20 else "usable"
-        ),
+        "status": "retake_required" if lost else "review_required" if soft else "usable",
         "clipped_fraction": round(clipped, 4),
         "dark_fraction": round(dark, 4),
+        "shadow_fraction": round(shadow, 4),
         "blur_score": round(blur, 2),
-        "reasons": (
-            ["QUALITY_INFORMATION_LOST"]
-            if lost
-            else ["LOCAL_BOUNDARY_UNCLEAR"] if blur < 20 else []
-        ),
+        "soft_issues": soft,
+        "reasons": ["QUALITY_INFORMATION_LOST"] if lost else soft,
     }
+
+
+def apply_soft_quality(
+    rgb: np.ndarray, masks: Dict[str, np.ndarray]
+) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
+    """Route shadow, glare, and mild edge blur into review. Do not fail the job."""
+    quality = local_quality(rgb, masks["skin"])
+    updated = {kind: mask.copy() for kind, mask in masks.items()}
+    if quality["status"] != "review_required":
+        return updated, quality
+    skin = updated["skin"]
+    gray = _gray(rgb)
+    uncertain = updated["uncertain"]
+    excluded = updated["excluded"]
+    issues = quality["soft_issues"]
+    if "GLARE" in issues:
+        glare = (rgb.min(axis=2) >= GLARE_VALUE) & skin
+        ring = cv2.dilate(glare.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
+        uncertain = uncertain | (ring & skin & ~glare)
+        excluded = excluded | glare
+        skin = skin & ~glare
+    if "SHADOW" in issues:
+        uncertain = uncertain | ((gray < SHADOW_MAX) & (gray >= SHADOW_MIN) & skin)
+    if "MILD_EDGE_BLUR" in issues:
+        eroded = cv2.erode(skin.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
+        uncertain = uncertain | (skin & ~eroded if eroded.any() else skin)
+    updated["skin"] = skin
+    updated["excluded"] = excluded & ~skin
+    updated["uncertain"] = uncertain & skin
+    updated["lesion"] = updated["lesion"] & skin & ~updated["uncertain"]
+    quality = dict(quality, routing="uncertain_or_excluded_review")
+    return updated, quality

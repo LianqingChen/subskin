@@ -17,7 +17,7 @@ REASONS = {
     "USER_REVIEW_REQUIRED": "请核对皮肤与浅色范围后再测量",
     "SKIN_UNVERIFIED": "尚未得到可靠皮肤范围，请先调整皮肤标注",
     "REGIONS_UNRESOLVED": "部分区域仍需核对，请补充遗漏或删除误圈范围",
-    "QUALITY_INFORMATION_LOST": "照片局部严重过曝或过暗，请在均匀光照下重拍",
+    "QUALITY_INFORMATION_LOST": "照片过曝、过暗或严重模糊，请重拍",
     "NO_TARGET": "本次未获得可测浅色区域，可手动补充",
 }
 
@@ -95,6 +95,9 @@ def measure_rgb(
         for i in order[:128]
     ]
     measurement["region_details_truncated"] = count - 1 > 128
+    measurement["clinical_vasi"] = None
+    measurement["clinical_vasi_valid"] = False
+    measurement["metric"] = "photo_visible_skin_light_patch_share"
     measurement["quality"] = quality
     measurement["calibration_id"] = None
     if measurement.get("area_cm2") is not None:
@@ -173,16 +176,31 @@ def result_contract(
                 ("excluded", "excluded"),
             ]
         },
+        "score_policy": {
+            "metric": "photo_visible_skin_light_patch_share",
+            "label": "照片内浅色占比",
+            "statement": "相对本张照片可见皮肤的浅色范围，不是临床 VASI",
+            "clinical_vasi": None,
+            "clinical_vasi_valid": False,
+            "area_cm2_without_reference": None,
+        },
         "measurement": (
             {
-                "scope": "visible_skin_in_selected_roi",
+                "scope": "visible_skin_in_photo",
+                "metric": "photo_visible_skin_light_patch_share",
+                "label": "照片内浅色占比",
+                "statement": "相对本张照片可见皮肤的浅色范围，不是临床 VASI",
+                "clinical_vasi": None,
+                "clinical_vasi_valid": False,
                 "skin_pixels": raw["skin_pixels"],
                 "lesion_pixels": raw["lesion_pixels"],
                 "area_percentage": raw["area_percentage"],
-                "area_cm2": raw.get("area_cm2"),
+                "area_cm2": raw.get("area_cm2") if raw.get("calibration_id") else None,
                 "calibration_id": raw.get("calibration_id"),
                 "scale_status": (
-                    "calibrated" if raw.get("area_cm2") is not None else "unavailable"
+                    "calibrated"
+                    if raw.get("calibration_id") and raw.get("area_cm2") is not None
+                    else "unavailable"
                 ),
                 "perimeter_pixels": (raw.get("border") or {}).get("perimeter_pixels"),
                 "region_count": raw.get("region_count"),
