@@ -1,20 +1,52 @@
 /** Display palette never changes the binary masks used for measurement. */
-export const MASK_PALETTE = { skin: [147, 197, 253], lesion: [249, 168, 212], opacity: 0.4 } as const
+export const MASK_PALETTE = { skin: [147, 197, 253], lesion: [249, 168, 212], uncertain: [240, 143, 0], opacity: 0.4 } as const
 export type PhotoMaskTool = 'skin' | 'lesion' | 'eraser' | 'refine'
-export interface PhotoMasks { width: number; height: number; skin: Uint8Array; lesion: Uint8Array }
+export interface PhotoMasks { width: number; height: number; skin: Uint8Array; lesion: Uint8Array; uncertain?: Uint8Array }
 export function alphaMask(rgba: Uint8ClampedArray): Uint8Array {
   return Uint8Array.from({ length: rgba.length / 4 }, (_, i) => rgba[i * 4 + 3] > 32 ? 1 : 0)
 }
 export function combineCandidates(skin: Uint8Array, lesion: Uint8Array, candidate: Uint8Array): Uint8Array {
   return Uint8Array.from(skin, (value, i) => value && (lesion[i] || candidate[i]) ? 1 : 0)
 }
+/** Keep confirmed lesion separate. Candidates stay uncertain until the user adopts them. */
+export function separateCandidates(skin: Uint8Array, lesion: Uint8Array, candidate: Uint8Array): { lesion: Uint8Array; uncertain: Uint8Array } {
+  const next = new Uint8Array(lesion.length), uncertain = new Uint8Array(lesion.length)
+  for (let i = 0; i < skin.length; i++) {
+    if (!skin[i]) continue
+    if (lesion[i]) next[i] = 1
+    else if (candidate[i]) uncertain[i] = 1
+  }
+  return { lesion: next, uncertain }
+}
+export function adoptUncertain(m: PhotoMasks): void {
+  const u = m.uncertain
+  if (!u) return
+  for (let i = 0; i < m.lesion.length; i++) {
+    if (u[i] && m.skin[i]) m.lesion[i] = 1
+    u[i] = 0
+  }
+}
+export function discardUncertain(m: PhotoMasks): void {
+  m.uncertain?.fill(0)
+}
+export function replaceLayer(m: PhotoMasks, layer: 'lesion' | 'uncertain', incoming: Uint8Array): void {
+  const dest = layer === 'lesion' ? m.lesion : (m.uncertain || (m.uncertain = new Uint8Array(m.lesion.length)))
+  for (let i = 0; i < dest.length; i++) {
+    const on = incoming[i] && m.skin[i] ? 1 : 0
+    if (layer === 'uncertain') dest[i] = on && !m.lesion[i] ? 1 : 0
+    else { dest[i] = on; if (m.uncertain && on) m.uncertain[i] = 0 }
+  }
+}
 export function overlayPixels(masks: PhotoMasks): Uint8ClampedArray {
   const out = new Uint8ClampedArray(masks.width * masks.height * 4)
+  const uncertain = masks.uncertain
   for (let i = 0; i < masks.skin.length; i++) {
     if (!masks.skin[i]) continue
-    const color = masks.lesion[i] ? MASK_PALETTE.lesion : MASK_PALETTE.skin
+    const amber = !masks.lesion[i] && !!uncertain?.[i]
+    const color = masks.lesion[i] ? MASK_PALETTE.lesion : amber ? MASK_PALETTE.uncertain : MASK_PALETTE.skin
     const offset = i * 4
-    out[offset] = color[0]; out[offset + 1] = color[1]; out[offset + 2] = color[2]; out[offset + 3] = Math.round(255 * MASK_PALETTE.opacity)
+    out[offset] = color[0]; out[offset + 1] = color[1]; out[offset + 2] = color[2]
+    out[offset + 3] = amber ? 140 : Math.round(255 * MASK_PALETTE.opacity)
   }
   return out
 }
@@ -37,5 +69,6 @@ export function paintPhotoMasks(m: PhotoMasks, layer: 'skin' | 'lesion', erase: 
     const i = y * m.width + x
     if (layer === 'skin') { m.skin[i] = erase ? 0 : 1; m.lesion[i] = 0 }
     else { m.lesion[i] = erase ? 0 : 1; if (!erase) m.skin[i] = 1 }
+    if (m.uncertain) m.uncertain[i] = 0
   }
 }

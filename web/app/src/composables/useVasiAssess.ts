@@ -135,6 +135,11 @@ export function useVasiAssess() {
     if (!annotation?.job_id || !annotation.mask_revision) throw new RGBTaskError('REVISION_CONFLICT')
     return rgbApi.outline(annotation.job_id, annotation.mask_revision, signal)
   }
+  async function snapEdges(skin: string, target: string, signal: AbortSignal): Promise<string> {
+    const annotation = assessmentResult.value?.measurement?.annotation
+    if (!annotation?.job_id || !annotation.mask_revision) throw new RGBTaskError('REVISION_CONFLICT')
+    return rgbApi.snap(annotation.job_id, annotation.mask_revision, skin, target, signal)
+  }
   function cleanupState() {
     assessmentResult.value = null
     lastAssessment.value = null
@@ -154,5 +159,5 @@ export function useVasiAssess() {
   return { isUploading, uploadStage, assessmentResult, lastAssessment, showContourEditor, highConfidence,
     isSubmittingContour, aiSkinLayerUrl, aiLesionLayerUrl, assessmentSource, suspectedLesions,
     visualFeatures, autoFinalized, patientModelVersion, annotatedImage, contourDiffResult,
-    loadAssessment, submitAssessment, selectRegion, outlineRegions, skipContourEdit, handleTwoLayerConfirm, cancelAssessment, cleanupState, cancelPending }
+    loadAssessment, submitAssessment, selectRegion, outlineRegions, snapEdges, skipContourEdit, handleTwoLayerConfirm, cancelAssessment, cleanupState, cancelPending }
 }

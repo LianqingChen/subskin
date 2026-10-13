@@ -522,6 +522,36 @@ def test_registry_rejects_unreviewed_weights_and_path_escape(tmp_path, monkeypat
         registry.registered_model()
 
 
+def test_rgb_fallback_keeps_edge_candidates_uncertain_inside_skin():
+    from web.backend.services.rgb_segmentation import inference
+
+    h, w = 256, 256
+    x = np.linspace(0.9, 1.1, w)[None, :]
+    y = np.linspace(0.98, 1.02, h)[:, None]
+    img = np.clip(np.array([205.0, 165.0, 140.0]) * (x * y)[:, :, None], 0, 255).astype(np.uint8)
+    img[:28, :] = (36, 36, 36)
+    img[-28:, :] = (36, 36, 36)
+    img[:, :28] = (36, 36, 36)
+    img[:, -28:] = (36, 36, 36)
+    yy, xx = np.mgrid[0:h, 0:w]
+    disk = (yy - 128) ** 2 + (xx - 128) ** 2 <= 34 ** 2
+    img[disk] = (236, 230, 224)
+    masks, meta = inference.infer_rgb(img)
+    assert not masks["lesion"].any()
+    assert meta["source"] == "interactive_rgb_reference"
+    assert meta["automatic_measurement"] is False
+    assert meta["edge_snap"] is True
+    disk_count = int(disk.sum())
+    overlap = int((masks["uncertain"] & disk).sum())
+    assert overlap > 0.25 * disk_count
+    assert int(masks["uncertain"].sum()) < 4 * disk_count
+    assert int((masks["skin"] & disk).sum()) > 0.8 * disk_count
+    border = img[:, :, 0] < 50
+    assert int((masks["skin"] & border).sum()) < 0.25 * int(border.sum())
+    snapped = inference.snap_visible_mask(img, masks["skin"], masks["uncertain"])
+    assert snapped.any() and not (snapped & ~masks["skin"]).any()
+
+
 def test_registered_rgb_adapter_keeps_measurement_manual(photo, tmp_path, monkeypatch):
     import torch
     from web.backend.services.rgb_segmentation import inference

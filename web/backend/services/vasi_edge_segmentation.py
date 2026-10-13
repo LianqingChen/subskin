@@ -93,7 +93,8 @@ class EdgeSegConfig:
     # 滞后阈值
     hi_thresh: float = 0.55
     lo_thresh: float = 0.28
-    # 边缘吸附
+    # 边缘吸附。关闭后仍给出候选，但边界不再被拉到色差脊线。
+    snap_edges: bool = True
     snap_radius: int = 4
     # 连通域过滤
     min_area_ratio: float = 0.0015
@@ -453,6 +454,37 @@ def snap_mask_to_edges(
     return refined
 
 
+def edge_review_band(
+    coarse: np.ndarray,
+    snapped: np.ndarray,
+    score: np.ndarray,
+    region: np.ndarray,
+    cfg: Optional[EdgeSegConfig] = None,
+) -> np.ndarray:
+    """Mark the ambiguous edge, not a measurable lesion.
+
+    The band is the snap disagreement plus a thin ring where the score is
+    still above the low threshold. Callers that must not auto-measure put
+    both this band and the candidate interior into ``uncertain``.
+    """
+    cfg = cfg or EdgeSegConfig()
+    empty = np.zeros(coarse.shape, dtype=bool)
+    if not _CV2_AVAILABLE:
+        return empty
+    changed = np.logical_xor(coarse.astype(bool), snapped.astype(bool)) & region
+    source = snapped if snapped.any() else coarse
+    if not source.any():
+        return changed
+    radius = max(1, int(cfg.snap_radius))
+    k = max(3, (radius * 2 + 1) | 1)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
+    layer = source.astype(np.uint8)
+    outer = cv2.dilate(layer, kernel).astype(bool)
+    inner = cv2.erode(layer, kernel).astype(bool)
+    ring = (outer & ~inner) & region & (score >= cfg.lo_thresh)
+    return changed | ring
+
+
 def _smooth_mask(mask: np.ndarray, close_size: int = 5, open_size: int = 3) -> np.ndarray:
     if not _CV2_AVAILABLE or not mask.any():
         return mask
@@ -684,7 +716,8 @@ def _refine_skin_region_impl(
     if lesion_mask is not None:
         candidate |= lesion_mask.astype(bool)
     if not candidate.any():
-        return np.ones((h, w), dtype=bool)
+        # An empty colour mask is not "the whole photo is skin".
+        return np.zeros((h, w), dtype=bool)
 
     cand_u8 = candidate.astype(np.uint8)
     # 断桥：开运算核按长边比例（小图不至于被抹掉）。必须在连通域标注之前做，
@@ -697,7 +730,8 @@ def _refine_skin_region_impl(
 
     num, labels, stats, centroids = cv2.connectedComponentsWithStats(cand_u8, connectivity=8)
     if num <= 1:
-        return np.ones((h, w), dtype=bool)
+        # Opening erased the mask. Keep the pre-open body instead of the frame.
+        return candidate.copy()
 
     total = float(h * w)
     diag = float(np.hypot(h, w))
@@ -771,7 +805,9 @@ def _refine_skin_region_impl(
     allowed = cv2.dilate(
         cand_u8, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, ((pad * 4) | 1, (pad * 4) | 1))
     ).astype(bool)
-    result = keep_u8.astype(bool) & allowed
+    # Enclosed holes are depigmented skin, not background. A short dilation
+    # cannot reach the middle of a large light patch, so keep the hole itself.
+    result = (keep_u8.astype(bool) & allowed) | holes.astype(bool)
     result = _smooth_mask(result, close_size=9, open_size=5)
     return result
 
@@ -805,8 +841,9 @@ def segment_lesions_edge_aware(
 
     Returns:
         {
-          "lesion_mask", "skin_region", "score", "stats", "source"
+          "lesion_mask", "uncertain_mask", "skin_region", "score", "stats", "source"
         }
+        ``uncertain_mask`` is the edge band only. It is not a measurement.
     """
     cfg = cfg or EdgeSegConfig()
     h, w = img_rgb.shape[:2]
@@ -845,7 +882,11 @@ def segment_lesions_edge_aware(
 
     score, parts = build_lesion_score(work, region, cfg)
     coarse = hysteresis_threshold(score, cfg.hi_thresh, cfg.lo_thresh, region)
-    snapped = snap_mask_to_edges(work, coarse, cfg.snap_radius, gradient=parts["gradient"])
+    snapped = (
+        snap_mask_to_edges(work, coarse, cfg.snap_radius, gradient=parts["gradient"])
+        if cfg.snap_edges
+        else coarse
+    )
     filtered, fallback, comp_stats = filter_lesion_components(
         snapped, score, parts, region, cfg, skin_candidate=skin_candidate
     )
@@ -855,8 +896,19 @@ def segment_lesions_edge_aware(
         # 用户可在编辑器里手绘修正）。
         filtered = fallback
         comp_stats["used_fallback"] = True
+    band = edge_review_band(coarse, snapped, score, region, cfg)
+    if filtered.any():
+        reach = max(3, (int(cfg.snap_radius) * 2 + 1) | 1)
+        near = cv2.dilate(
+            filtered.astype(np.uint8),
+            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (reach, reach)),
+        ).astype(bool)
+        band &= near
+    else:
+        band = np.zeros_like(band)
 
     lesion = _resize_mask(filtered, (h, w))
+    uncertain = _resize_mask(band, (h, w))
     region_full = _resize_mask(region, (h, w))
     score_full = cv2.resize(score, (w, h), interpolation=cv2.INTER_LINEAR)
 
@@ -874,9 +926,11 @@ def segment_lesions_edge_aware(
         "sigma_c": parts["sigma_c"],
         "texture_scale": parts["texture_scale"],
         "components": comp_stats,
+        "edge_snap": bool(cfg.snap_edges),
     }
     return {
         "lesion_mask": lesion,
+        "uncertain_mask": uncertain,
         "skin_region": region_full,
         "score": score_full,
         "stats": stats,
@@ -898,7 +952,7 @@ def refine_mask_by_edges(
       3) 平滑去锯齿。
     """
     cfg = cfg or EdgeSegConfig()
-    if not _CV2_AVAILABLE or mask is None or not mask.any():
+    if not _CV2_AVAILABLE or mask is None or not mask.any() or not cfg.snap_edges:
         return mask
     h, w = img_rgb.shape[:2]
     if mask.shape[:2] != (h, w):

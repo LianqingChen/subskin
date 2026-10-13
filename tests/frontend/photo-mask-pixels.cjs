@@ -4,11 +4,20 @@ const {readFileSync}=require('node:fs');const {createRequire}=require('node:modu
 const req=createRequire(path.resolve('web/app/package.json'));const ts=req('typescript')
 const exportsObject={};const code=ts.transpileModule(readFileSync('web/app/src/utils/photo-mask.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText
 new Function('exports',code)(exportsObject)
-const {combineCandidates,paintPhotoMasks,overlayPixels,binaryPixels,alphaMask}=exportsObject
+const {combineCandidates,separateCandidates,adoptUncertain,discardUncertain,paintPhotoMasks,overlayPixels,binaryPixels,alphaMask}=exportsObject
 function masks(){return {width:32,height:32,skin:new Uint8Array(1024),lesion:new Uint8Array(1024)}}
 test('candidates prefill only within skin; original arrays remain unchanged',()=>{
  const skin=new Uint8Array([1,1,0]),lesion=new Uint8Array([1,0,0]),candidate=new Uint8Array([0,1,1])
  assert.deepEqual([...combineCandidates(skin,lesion,candidate)],[1,1,0]);assert.deepEqual([...lesion],[1,0,0])
+})
+test('candidates stay uncertain until adopted, and discard clears them',()=>{
+ const skin=new Uint8Array([1,1,0]),lesion=new Uint8Array([1,0,0]),candidate=new Uint8Array([0,1,1])
+ const split=separateCandidates(skin,lesion,candidate)
+ assert.deepEqual([...split.lesion],[1,0,0]);assert.deepEqual([...split.uncertain],[0,1,0])
+ const m={width:3,height:1,skin,lesion:split.lesion,uncertain:split.uncertain}
+ assert.equal(overlayPixels(m)[0],249);assert.equal(overlayPixels(m)[4],240)
+ adoptUncertain(m);assert.deepEqual([...m.lesion],[1,1,0]);assert.equal(m.uncertain[1],0)
+ m.uncertain[1]=1;discardUncertain(m);assert.equal(m.uncertain[1],0);assert.equal(m.lesion[0],1)
 })
 test('blue and pink composite uses 60% transparency once, binary export remains opaque',()=>{
  const m={width:3,height:1,skin:new Uint8Array([1,1,0]),lesion:new Uint8Array([0,1,0])}

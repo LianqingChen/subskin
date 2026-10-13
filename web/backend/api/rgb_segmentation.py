@@ -19,7 +19,7 @@ from web.backend.services.rgb_segmentation.jobs import (
     cancel_job,
     serialize_job,
 )
-from web.backend.services.rgb_segmentation.review import review_job
+from web.backend.services.rgb_segmentation.review import review_job, snap_job
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -163,6 +163,35 @@ def review(
         db.rollback()
         logger.exception("RGB reference update failed")
         raise HTTPException(status_code=503, detail="标注保存暂未完成，请重试")
+
+
+class EdgeSnapRequest(BaseModel):
+    base_revision: str = Field(..., min_length=64, max_length=64)
+    skin_mask: str = Field(..., max_length=8 * 1024 * 1024)
+    target_mask: str = Field(..., max_length=8 * 1024 * 1024)
+
+
+@router.post("/segmentation-jobs/{job_id}/edge-snap")
+def edge_snap(
+    job_id: str,
+    request: EdgeSnapRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        return snap_job(
+            db,
+            job_id,
+            current_user.id,
+            request.base_revision,
+            request.skin_mask,
+            request.target_mask,
+        )
+    except RGBSegmentationError as exc:
+        raise domain_http(exc)
+    except Exception:
+        logger.exception("RGB edge snap failed")
+        raise HTTPException(status_code=503, detail="边界贴合暂未完成，可使用画笔调整")
 
 
 class RefinementPoint(BaseModel):

@@ -167,6 +167,20 @@ def test_snap_moves_boundary_toward_true_edge():
     assert after > 0.9
 
 
+def test_uncertain_band_stays_on_the_edge_and_snap_can_be_skipped():
+    img = _add_lesion(_synthetic_skin(), (128, 128), 40)
+    region = np.ones(img.shape[:2], dtype=bool)
+    snapped = segment_lesions_edge_aware(img, region, cfg=EdgeSegConfig(snap_edges=True))
+    plain = segment_lesions_edge_aware(img, region, cfg=EdgeSegConfig(snap_edges=False))
+    band = snapped["uncertain_mask"]
+    assert snapped["lesion_mask"].any() and plain["lesion_mask"].any()
+    assert band.any()
+    yy, xx = np.mgrid[0 : img.shape[0], 0 : img.shape[1]]
+    core = np.sqrt((yy - 128.0) ** 2 + (xx - 128.0) ** 2) <= 20
+    assert int((band & core).sum()) < int(core.sum()) * 0.25
+    assert not (band & ~region).any()
+
+
 def test_refine_mask_by_edges_is_safe_on_empty():
     img = _synthetic_skin(64, 64)
     empty = np.zeros(img.shape[:2], dtype=bool)

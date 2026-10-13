@@ -51,21 +51,85 @@ def infer_rgb(rgb: np.ndarray) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
             "note": "专用模型候选，仍需人工核对",
             "confidence_calibrated": False,
         }
-    skin = build_skin_mask(rgb)
-    skin = skin.astype(bool) if skin is not None else empty.copy()
-    raw = segment_lesions_edge_aware(rgb, region=skin) if skin.any() else None
-    candidate = (raw or {}).get("lesion_mask")
-    candidate = candidate.astype(bool) if candidate is not None else empty.copy()
-    # Do not convert CV proposals into successful automatic lesion measurements.
-    return {
-        "skin": skin,
-        "lesion": empty.copy(),
-        "uncertain": candidate & skin,
-        "excluded": empty.copy(),
-    }, {
+    return _interactive_reference(rgb, empty)
+
+
+def _interactive_reference(
+    rgb: np.ndarray, empty: np.ndarray
+) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
+    """CV fallback. Candidates stay uncertain and are not a measurement.
+
+    The skin denominator is the visible body region, including depigmented
+    pixels that colour thresholds miss. Edge snap is optional and only moves
+    the candidate boundary.
+    """
+    from web.backend.services.vasi_edge_segmentation import (
+        EdgeSegConfig,
+        refine_skin_region,
+    )
+
+    color = build_skin_mask(rgb)
+    color = color.astype(bool) if color is not None else empty.copy()
+    meta: Dict[str, Any] = {
         "model_id": None,
         "source": "interactive_rgb_reference",
         "automatic_measurement": False,
         "note": "当前为图像候选，请核对皮肤并补充浅色区域",
         "confidence_calibrated": False,
+        "edge_snap": False,
     }
+    if not color.any():
+        return {
+            "skin": empty,
+            "lesion": empty.copy(),
+            "uncertain": empty.copy(),
+            "excluded": empty.copy(),
+        }, meta
+    search = refine_skin_region(rgb, color, None)
+    if not np.any(search):
+        search = color
+    cfg = EdgeSegConfig(snap_edges=True)
+    raw = segment_lesions_edge_aware(
+        rgb, region=search, skin_candidate=color, cfg=cfg
+    )
+    candidate = _bool_mask(raw.get("lesion_mask"), empty.shape)
+    band = _bool_mask(raw.get("uncertain_mask"), empty.shape)
+    visible = color | candidate
+    skin = refine_skin_region(rgb, visible, candidate)
+    if not np.any(skin):
+        skin = visible
+    meta["edge_snap"] = True
+    return {
+        "skin": skin,
+        "lesion": empty.copy(),
+        "uncertain": (candidate | band) & skin,
+        "excluded": empty.copy(),
+    }, meta
+
+
+def _bool_mask(value: Any, shape: Tuple[int, ...]) -> np.ndarray:
+    if value is None:
+        return np.zeros(shape, dtype=bool)
+    arr = np.asarray(value)
+    if arr.shape != shape:
+        return np.zeros(shape, dtype=bool)
+    return arr.astype(bool)
+
+
+def snap_visible_mask(
+    rgb: np.ndarray, skin: np.ndarray, target: np.ndarray
+) -> np.ndarray:
+    """Snap a candidate onto colour edges. The result is still not a measurement."""
+    from web.backend.services.vasi_edge_segmentation import (
+        EdgeSegConfig,
+        refine_mask_by_edges,
+    )
+
+    bounded = target.astype(bool) & skin.astype(bool)
+    if not bounded.any():
+        return bounded
+    snapped = refine_mask_by_edges(
+        rgb, bounded, region=skin, cfg=EdgeSegConfig(snap_edges=True)
+    )
+    snapped = np.asarray(snapped).astype(bool) & skin.astype(bool)
+    return snapped if snapped.any() else bounded

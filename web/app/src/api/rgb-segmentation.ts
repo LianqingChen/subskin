@@ -101,6 +101,12 @@ export const rgbApi = {
     const response = await apiClient.get<{ mask_data_url: string }>(`/vasi/segmentation-jobs/${completed.id}/overlays/${completed.result.mask_revision}/lesion`, { timeout: 15000, signal: input.signal })
     return response.data.mask_data_url
   },
+  async snap(jobId: string, revision: string, skin: string, target: string, signal: AbortSignal): Promise<string> {
+    const response = await apiClient.post<{ mask_data_url: string }>(`/vasi/segmentation-jobs/${jobId}/edge-snap`, {
+      base_revision: revision, skin_mask: skin, target_mask: target,
+    }, { timeout: 30000, signal })
+    return response.data.mask_data_url
+  },
   async outline(jobId: string, revision: string, signal: AbortSignal): Promise<{ lesion: string; uncertain: string }> {
     const key = crypto.randomUUID()
     const initial = await submitIdempotently<RGBJob>(`/vasi/segmentation-jobs/${jobId}/outline`, {

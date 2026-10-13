@@ -219,3 +219,31 @@ def review_job(
         "diff_summary": {"modified": True},
         "result": result,
     }
+
+
+def snap_job(
+    db: Session,
+    job_id: str,
+    user_id: int,
+    base_revision: str,
+    skin_data: str,
+    target_data: str,
+) -> Dict[str, Any]:
+    """Edge-snap a review mask without saving a measurement or a new revision."""
+    from web.backend.services.rgb_segmentation.inference import snap_visible_mask
+
+    job = owned_job(db, job_id, user_id)
+    current = json.loads(job.result_json or "{}")
+    if job.state != "completed" or current.get("mask_revision") != base_revision:
+        raise RGBSegmentationError(
+            "REVISION_CONFLICT", "标注版本已变化，请重新加载后调整", 409
+        )
+    image = artifacts.read_artifact(job_id, base_revision, "image")
+    rgb = np.asarray(Image.open(io.BytesIO(image)).convert("RGB"))
+    shape = rgb.shape[:2]
+    skin = decode_editor_mask(skin_data, shape)
+    target = decode_editor_mask(target_data, shape)
+    snapped = snap_visible_mask(rgb, skin, target)
+    if not snapped.any():
+        raise RGBSegmentationError("INVALID_INPUT", "没有可贴合的范围")
+    return {"mask_data_url": encode_layer(snapped, (240, 143, 0))}
