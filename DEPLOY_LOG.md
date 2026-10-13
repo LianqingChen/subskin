@@ -6,6 +6,7 @@
 
 ## Pending Changes
 
+| 2026-10-13 | 记录页 M1：静默候选质量与一键核对 | **仅测试环境前端 + 共享后端重启**。①RGB 回退仍不写可测白斑：浅色候选留在 uncertain，皮肤分母纳入被浅色挡住的可见皮肤，边缘吸附可选。②核对页默认显示浅橙待核对范围，可一键全部当作白斑或丢弃；贴合边界可撤销，确认后清空待核对并只测量浅粉范围。未加强拍照引导。 | 1791856687927（已部署 staging；共享后端与 subskin-rgb-worker 已于 2026-10-13 09:58 CST 重启；正式前端未发布，正式 buildTime 仍为 1791693983981） |
 | 2026-10-13 | 记录页 M0：离线基准、照片内占比文案、质量门 | **仅测试环境前端 + 共享后端重启**。①离线授权金标准基准：`scripts/assessment_benchmark.py` 从本地 manifest 输出 dice/iou/boundary F1/面积误差，患者不跨 split，按部位/肤色分层，结果标记 `offline_benchmark_not_clinical_certification`；无金标准数据时用合成夹具。管理员复核蒙版经 `manifest_row_from_admin_snapshot` 接入，未授权不得标为临床真值。②结果与分享文案改为照片内浅色占比（相对可见皮肤），不是临床 VASI；无参照物时不给出 cm²，也不编造临床分。③只有严重过曝、过暗或信息被毁掉的模糊才要求重拍；阴影、反光、轻微边缘模糊进入核对，不整单失败，也不跳到拍照指南。 | 1791848750300（已部署 staging；共享后端与 subskin-rgb-worker 已于 2026-10-13 07:46 CST 重启；正式前端未发布，正式 buildTime 仍为 1791693983981） |
 | 2026-10-08 | 同行月份图触摸明细优化（仅测试前端） | 小屏/触摸设备使用44px月份选择入口，保留六个月完整图形，避免狭窄柱子成为难点按的控件；电脑支持柱子悬停提示与点按展开。 | 1791465159954 |
 
@@ -255,6 +256,12 @@
 | 2026-06-21 | 后端·VASI白斑识别 | **⚠️共享后端，已立即生效于全环境**。增强白斑范围与边缘识别精准度，3步改动：①重写VLM静态prompt(vasi.py)——恢复输出bbox+edge_points+skin_region，注入色素脱失量化标准(0级<0.10/1级0.10-0.20/2级0.20-0.40/3级>0.40)、Fitzpatrick肤色自适应提示、非白斑反例约束(高光/疤痕/白化痣/参考卡)、边缘几何约束(edge_points紧贴bbox内)；修复旧prompt"bbox已不再需要"与SAM代码优先用bbox的矛盾。②接通edge_points——vasi.py主流程重建lesion_edge_points并传入segment_vitiligo_guided；vasi_segmentation.py签名新增参数，在VLM bbox盒提示基础上叠加edge_points作为SAM正提示点(box+points组合提示)，精修不规则边缘。③超参可调——temperature/max_tokens/timeout改为环境变量读取(VASI_VLM_TEMPERATURE=0.0/VASI_VLM_MAX_TOKENS=8192/VASI_VLM_TIMEOUT=120，原硬编码0.1/4096/90)，边缘定位更确定性、大图多斑不截断。④VLM模型qwen-vl-max→qwen3-vl-plus(.env+DB llm_module_configs双改)。离线验证：样本图返回4个病灶，每个含bbox+6-7个edge_points+boundary_type，JSON一次解析成功。无DB schema变更。 | 后端重启即生效 |
 
 ## Staging Deployment History
+
+### 2026-10-13 — 记录页 M1 候选质量与一键核对（1791856687927）
+
+- 仅 `npm run build` 部署测试前端。正式 `version.json` 仍为 1791693983981，未执行 `deploy:prod`。
+- 共享后端 `subskin-backend` 与 `subskin-rgb-worker` 已重启并处于 active。`/api/health` 与 `/api/vasi/rgb-capabilities` 返回正常。该重启同时作用于正式环境 API。
+- 核对页可见「全部当作白斑」「丢弃候选」「贴合边界」。CV 候选不会直接变成可测白斑。
 
 ### 2026-10-13 — 记录页 M0 准确率改进（1791848750300）
 
