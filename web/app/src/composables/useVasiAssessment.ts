@@ -564,11 +564,11 @@ const toast = useToast()
     const today = new Date().toISOString().split('T')[0]
 
     const htmlContent =
-      `<p>今天做了VASI评估：</p>` +
+      `<p>今天记录了白斑照片：</p>` +
       `<ul>` +
       `<li>评估部位：${a.bodySite}</li>` +
-      `<li>VASI评分：${a.vasiScore}</li>` +
-      `<li>白斑占该部位皮肤：${a.areaPercentage}%</li>` +
+      `<li>照片内浅色占比（相对可见皮肤）：${a.areaPercentage}%</li>` +
+      `<li>不是临床 VASI</li>` +
       `<li>病情阶段：${a.stage}</li>` +
       `<li>分型：${a.classification || '未分型'}</li>` +
       `</ul>` +
@@ -601,11 +601,11 @@ const toast = useToast()
         mode: 'diary',
         prefill_title: `${today} 病情日记`,
         prefill_content:
-          `<p>今天做了VASI评估：</p>` +
+          `<p>今天记录了白斑照片：</p>` +
           `<ul>` +
           `<li>评估部位：${a.bodySite}</li>` +
-          `<li>VASI评分：${a.vasiScore}</li>` +
-          `<li>白斑占该部位皮肤：${a.areaPercentage}%</li>` +
+          `<li>照片内浅色占比（相对可见皮肤）：${a.areaPercentage}%</li>` +
+          `<li>不是临床 VASI</li>` +
           `<li>病情阶段：${a.stage}</li>` +
           `<li>分型：${a.classification || '未分型'}</li>` +
           `</ul>` +

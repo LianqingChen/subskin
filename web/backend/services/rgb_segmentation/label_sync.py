@@ -25,7 +25,12 @@ def is_rgb_label(label: ImageLabel) -> bool:
 
 
 def sync_rgb_label(db: Session, assessment: VASIAssessment) -> Optional[ImageLabel]:
-    """Idempotent projection; never commit or overwrite initial AI/admin versions."""
+    """Idempotent projection; never commit or overwrite initial AI/admin versions.
+
+    Masks written here are AI or user candidates, not clinician ground truth.
+    An offline benchmark row is built from an admin snapshot folder by
+    ``manifest_row_from_admin_snapshot`` in ``scripts/assessment_benchmark.py``.
+    """
     if (
         assessment.assessment_source != "rgb-tools-v1"
         or assessment.status == "abandoned"

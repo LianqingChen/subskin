@@ -16,7 +16,7 @@ export interface RGBSelection {
 }
 export type RGBSelector = (input: RGBSelection) => Promise<string>
 const messages: Record<string, string> = {
-  QUALITY_INFORMATION_LOST: '照片部分区域过曝、过暗或不清晰，请重拍',
+  QUALITY_INFORMATION_LOST: '照片过曝、过暗或严重模糊，请重拍',
   REGIONS_UNRESOLVED: '边界仍不可靠，请使用画笔调整',
   SKIN_UNVERIFIED: '请先核对蓝色皮肤范围，再点选浅色区域',
   MODEL_UNAVAILABLE: '交互分割暂不可用，可使用画笔调整',
@@ -99,6 +99,12 @@ export const rgbApi = {
     const completed = await poll(initial, input.signal)
     if (!completed.result) throw new RGBTaskError('REGIONS_UNRESOLVED')
     const response = await apiClient.get<{ mask_data_url: string }>(`/vasi/segmentation-jobs/${completed.id}/overlays/${completed.result.mask_revision}/lesion`, { timeout: 15000, signal: input.signal })
+    return response.data.mask_data_url
+  },
+  async snap(jobId: string, revision: string, skin: string, target: string, signal: AbortSignal): Promise<string> {
+    const response = await apiClient.post<{ mask_data_url: string }>(`/vasi/segmentation-jobs/${jobId}/edge-snap`, {
+      base_revision: revision, skin_mask: skin, target_mask: target,
+    }, { timeout: 30000, signal })
     return response.data.mask_data_url
   },
   async outline(jobId: string, revision: string, signal: AbortSignal): Promise<{ lesion: string; uncertain: string }> {

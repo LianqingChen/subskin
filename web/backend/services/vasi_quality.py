@@ -205,57 +205,31 @@ class VasiQualityChecker:
         brightness_mean = self.check_lighting(image_bytes)
         resolution = self.check_size(image_bytes)
 
-        # Evaluate individual checks
+        # Hard retake is information loss only. Shadow, glare, mild blur, and
+        # resolution stay reviewable so capture is not bounced to a photo guide.
         blur_ok = blur_score >= BLUR_THRESHOLD_ACCEPTABLE
         skin_ok = skin_ratio >= SKIN_RATIO_MIN
         w, h = resolution
         size_ok = w >= MIN_WIDTH and h >= MIN_HEIGHT
-
         lighting_ok = (
             brightness_mean >= BRIGHTNESS_DARK_THRESHOLD
             and brightness_mean <= BRIGHTNESS_OVEREXPOSED_THRESHOLD
         )
-
-        # Build Chinese suggestions
-        suggestions: List[str] = []
-
-        if not blur_ok:
-            if blur_score < BLUR_THRESHOLD_ACCEPTABLE:
-                suggestions.append("照片模糊，请保持手机稳定后重新拍摄")
-            else:
-                suggestions.append("照片清晰度一般，建议在光线充足的环境下拍摄")
-
-        if not skin_ok:
-            suggestions.append("画面中皮肤区域较少，请让患处更靠近相机或确保画面内皮肤完整可见")
-
-        if not lighting_ok:
-            if brightness_mean < BRIGHTNESS_DARK_THRESHOLD:
-                suggestions.append("光线过暗，请在自然光或充足照明下拍摄")
-            elif brightness_mean > BRIGHTNESS_OVEREXPOSED_THRESHOLD:
-                suggestions.append("光线过亮（过曝），请避免强光直射皮肤")
-
-        if not size_ok:
-            suggestions.append(
-                f"照片分辨率过低（当前 {w}×{h}，最低需要 {MIN_WIDTH}×{MIN_HEIGHT}），"
-                "请使用更高像素的手机拍照"
-            )
-
-        critical_failures = sum([
-            blur_score < BLUR_THRESHOLD_ACCEPTABLE * 0.5,
-            brightness_mean < BRIGHTNESS_DARK_THRESHOLD * 0.6,
-            brightness_mean > BRIGHTNESS_OVEREXPOSED_THRESHOLD + 20,
-            not size_ok and (w < MIN_WIDTH * 0.7 or h < MIN_HEIGHT * 0.7),
-        ])
-        soft_failures = sum([not blur_ok, not skin_ok, not lighting_ok, not size_ok])
-
-        if critical_failures >= 1:
+        hard_lost = (
+            blur_score < 8.0
+            or brightness_mean < 15.0
+            or brightness_mean > 250.0
+        )
+        soft = (not blur_ok) or (not lighting_ok) or (not skin_ok) or (not size_ok)
+        if hard_lost:
             overall = "poor"
-        elif soft_failures >= 2:
+            suggestions = ["照片过曝、过暗或严重模糊，请重拍"]
+        elif soft:
             overall = "acceptable"
-        elif soft_failures == 1:
-            overall = "acceptable"
+            suggestions = ["局部阴影、反光或轻微模糊，可继续分析并核对范围"]
         else:
             overall = "good"
+            suggestions = []
 
         return QualityReport(
             overall=overall,

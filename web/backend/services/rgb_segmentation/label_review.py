@@ -27,7 +27,12 @@ def save_admin_reference(
     annotations: Optional[List[Dict[str, Any]]],
     draft: bool,
 ) -> Optional[float]:
-    """Snapshot masks before the legacy editor replaces its mutable current view."""
+    """Snapshot masks before the legacy editor replaces its mutable current view.
+
+    The folder ``admin_labels/{label_id}/{revision}/lesion.png`` is the reviewed
+    mask a local benchmark manifest can point at. It stays non-clinical until
+    that manifest sets consent and label_source to clinician.
+    """
     if label.is_user_deleted or label.assessment is None:
         raise RGBSegmentationError("NOT_FOUND", "原记录已删除，不能继续标注", 404)
     if not annotations:

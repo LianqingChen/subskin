@@ -31,8 +31,11 @@ export function useVasiAssess() {
   let generation = 0
   let taskController: AbortController | null = null
 
+  function photoScore(data: { measurement?: { clinical_vasi_valid?: boolean } | null; final_vasi_score?: number | null; vasi_score?: number | null }): number {
+    return data.measurement?.clinical_vasi_valid === true ? (data.final_vasi_score ?? data.vasi_score ?? 0) : 0
+  }
   function mapResult(data: VasiAssessmentResponse): AssessmentResult {
-    return { id: data.id, imageUrl: data.image_url, vasiScore: data.final_vasi_score ?? data.vasi_score,
+    return { id: data.id, imageUrl: data.image_url, vasiScore: photoScore(data),
       bodySite: data.body_site, areaPercentage: data.final_area_percentage ?? data.area_percentage,
       classification: data.classification, stage: data.stage, confidence: data.confidence,
       measurement: data.measurement, observation: data.observation }
@@ -78,7 +81,7 @@ export function useVasiAssess() {
       lastAssessment.value = assessmentResult.value
     } catch (error) {
       if (current !== generation) return
-      toast.error(error instanceof RGBTaskError ? error.message : assessmentError(error, '照片暂不能完成分析，请重拍或稍后重试'))
+      toast.error(error instanceof RGBTaskError ? error.message : assessmentError(error, '照片暂不能完成分析，请稍后重试'))
       throw error
     } finally {
       if (current === generation) { isUploading.value = false; uploadStage.value = '' }
@@ -108,7 +111,7 @@ export function useVasiAssess() {
         : await vasiApi.submitTwoLayerMask(assessmentResult.value.id, skin, lesion, uncertaintyReviewed)
       contourDiffResult.value = response.diff_summary
       assessmentResult.value = { ...assessmentResult.value,
-        vasiScore: response.final_vasi_score ?? assessmentResult.value.vasiScore,
+        vasiScore: photoScore({ ...response, measurement: response.measurement ?? assessmentResult.value.measurement }),
         areaPercentage: response.final_area_percentage ?? assessmentResult.value.areaPercentage,
         measurement: response.measurement ?? assessmentResult.value.measurement }
       aiSkinLayerUrl.value = 'skin_layer_data_url' in response && typeof response.skin_layer_data_url === 'string' ? response.skin_layer_data_url : skin
@@ -132,6 +135,11 @@ export function useVasiAssess() {
     if (!annotation?.job_id || !annotation.mask_revision) throw new RGBTaskError('REVISION_CONFLICT')
     return rgbApi.outline(annotation.job_id, annotation.mask_revision, signal)
   }
+  async function snapEdges(skin: string, target: string, signal: AbortSignal): Promise<string> {
+    const annotation = assessmentResult.value?.measurement?.annotation
+    if (!annotation?.job_id || !annotation.mask_revision) throw new RGBTaskError('REVISION_CONFLICT')
+    return rgbApi.snap(annotation.job_id, annotation.mask_revision, skin, target, signal)
+  }
   function cleanupState() {
     assessmentResult.value = null
     lastAssessment.value = null
@@ -151,5 +159,5 @@ export function useVasiAssess() {
   return { isUploading, uploadStage, assessmentResult, lastAssessment, showContourEditor, highConfidence,
     isSubmittingContour, aiSkinLayerUrl, aiLesionLayerUrl, assessmentSource, suspectedLesions,
     visualFeatures, autoFinalized, patientModelVersion, annotatedImage, contourDiffResult,
-    loadAssessment, submitAssessment, selectRegion, outlineRegions, skipContourEdit, handleTwoLayerConfirm, cancelAssessment, cleanupState, cancelPending }
+    loadAssessment, submitAssessment, selectRegion, outlineRegions, snapEdges, skipContourEdit, handleTwoLayerConfirm, cancelAssessment, cleanupState, cancelPending }
 }

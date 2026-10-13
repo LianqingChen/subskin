@@ -522,6 +522,36 @@ def test_registry_rejects_unreviewed_weights_and_path_escape(tmp_path, monkeypat
         registry.registered_model()
 
 
+def test_rgb_fallback_keeps_edge_candidates_uncertain_inside_skin():
+    from web.backend.services.rgb_segmentation import inference
+
+    h, w = 256, 256
+    x = np.linspace(0.9, 1.1, w)[None, :]
+    y = np.linspace(0.98, 1.02, h)[:, None]
+    img = np.clip(np.array([205.0, 165.0, 140.0]) * (x * y)[:, :, None], 0, 255).astype(np.uint8)
+    img[:28, :] = (36, 36, 36)
+    img[-28:, :] = (36, 36, 36)
+    img[:, :28] = (36, 36, 36)
+    img[:, -28:] = (36, 36, 36)
+    yy, xx = np.mgrid[0:h, 0:w]
+    disk = (yy - 128) ** 2 + (xx - 128) ** 2 <= 34 ** 2
+    img[disk] = (236, 230, 224)
+    masks, meta = inference.infer_rgb(img)
+    assert not masks["lesion"].any()
+    assert meta["source"] == "interactive_rgb_reference"
+    assert meta["automatic_measurement"] is False
+    assert meta["edge_snap"] is True
+    disk_count = int(disk.sum())
+    overlap = int((masks["uncertain"] & disk).sum())
+    assert overlap > 0.25 * disk_count
+    assert int(masks["uncertain"].sum()) < 4 * disk_count
+    assert int((masks["skin"] & disk).sum()) > 0.8 * disk_count
+    border = img[:, :, 0] < 50
+    assert int((masks["skin"] & border).sum()) < 0.25 * int(border.sum())
+    snapped = inference.snap_visible_mask(img, masks["skin"], masks["uncertain"])
+    assert snapped.any() and not (snapped & ~masks["skin"]).any()
+
+
 def test_registered_rgb_adapter_keeps_measurement_manual(photo, tmp_path, monkeypatch):
     import torch
     from web.backend.services.rgb_segmentation import inference
@@ -589,6 +619,64 @@ def test_rgb_pipeline_does_not_call_configured_language_model(
     data = create_and_run(isolated[0], photo)
     assert data["state"] == "completed"
     assert data["result"]["confidence"]["score"] is None
+
+
+def test_soft_defects_stay_in_review_and_only_information_loss_retakes():
+    from web.backend.services.rgb_segmentation.images import apply_soft_quality, local_quality
+
+    rng = np.random.default_rng(3)
+    rgb = np.clip(
+        np.array([170, 130, 100]) + rng.integers(-8, 9, (160, 160, 3)), 0, 255
+    ).astype(np.uint8)
+    rgb[20:50, 20:50] = 255
+    rgb[20:50, 100:140] = (30, 28, 26)
+    skin = np.ones(rgb.shape[:2], bool)
+    masks = dict(
+        skin=skin,
+        lesion=np.zeros_like(skin),
+        uncertain=np.zeros_like(skin),
+        excluded=np.zeros_like(skin),
+    )
+    updated, quality = apply_soft_quality(rgb, masks)
+    assert quality["status"] == "review_required"
+    assert "GLARE" in quality["soft_issues"] and "SHADOW" in quality["soft_issues"]
+    assert updated["excluded"].any() and updated["uncertain"].any()
+    assert not (updated["skin"] & updated["excluded"]).any()
+    decision = measure_rgb(rgb, updated, png_bytes(rgb), False)
+    assert decision["status"] == "review_required"
+    assert "QUALITY_INFORMATION_LOST" not in decision["blocking_reasons"]
+    assert decision["measurement"]["clinical_vasi"] is None
+    assert decision["measurement"]["clinical_vasi_valid"] is False
+    flat = np.full((80, 80, 3), (140, 110, 90), np.uint8)
+    assert local_quality(flat, np.ones(flat.shape[:2], bool))["status"] == "retake_required"
+
+
+def test_destroyed_frame_does_not_complete_and_glare_does(isolated, photo):
+    factory, _, _ = isolated
+    white = np.full(photo[0].shape, 255, np.uint8)
+    with factory() as db:
+        job = create_job(
+            db, 1, "destroyed-frame", png_bytes(white), "face", {"capture_date": "2026-09-01"}
+        )
+        job_id = job.id
+    with factory() as db:
+        claimed = claim_job(db)
+        lease = claimed.lease
+    with pytest.raises(RGBSegmentationError) as error:
+        pipeline.process_job(job_id, lease)
+    assert error.value.code == "QUALITY_INFORMATION_LOST"
+    with factory() as db:
+        saved = db.query(RGBSegmentationJob).get(job_id)
+        assert saved.assessment_id is None
+        assert saved.state == "running"
+    glared = photo[0].copy()
+    glared[80:110, 80:110] = 255
+    data = create_and_run(factory, (glared, png_bytes(glared)))
+    assert data["state"] == "completed"
+    assert data["result"]["status"] != "retake_required"
+    assert data["result"]["score_policy"]["clinical_vasi"] is None
+    assert data["result"]["score_policy"]["clinical_vasi_valid"] is False
+    assert data["result"]["measurement"] is None
 
 
 def test_rgb_photo_uses_existing_private_file_ownership_contract(isolated, photo):

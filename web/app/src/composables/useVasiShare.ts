@@ -72,8 +72,8 @@ export function useVasiShare(assess: VasiAssess) {
       `<p>今天记录了白斑照片：</p>` +
       `<ul>` +
       `<li>评估部位：${a.bodySite}</li>` +
-      `<li>照片内白斑占比：${a.measurement?.area_percentage != null ? a.measurement.area_percentage + '%' : '此次无法量化'}</li>` +
-      `<li>仅描述照片可见范围，不代表诊断或病情阶段</li>` +
+      `<li>照片内浅色占比（相对可见皮肤）：${a.measurement?.area_percentage != null ? a.measurement.area_percentage + '%' : '此次无法量化'}</li>` +
+      `<li>不是临床 VASI，也不代表诊断或病情阶段</li>` +
       `</ul>` +
       `<p></p><p>今日感受：</p>`
 

@@ -31,14 +31,14 @@ const measure = computed(() => props.result.measurement)
         </div>
         <div class="p-4">
           <p v-if="!showOriginal" class="mb-3 text-xs text-gray-400">浅粉为白斑 · 浅蓝为皮肤</p>
-          <div class="flex items-baseline justify-between gap-2"><h3 class="whitespace-nowrap text-sm font-medium">照片内白斑占比</h3><strong class="text-2xl font-semibold tabular-nums text-primary-700 dark:text-primary-300">{{ summary.measurable ? summary.label : '—' }}</strong></div>
+          <div class="flex items-baseline justify-between gap-2"><h3 class="whitespace-nowrap text-sm font-medium">照片内浅色占比</h3><strong class="text-2xl font-semibold tabular-nums text-primary-700 dark:text-primary-300">{{ summary.measurable ? summary.label : '—' }}</strong></div>
           <div v-if="summary.measurable && measure?.region_count != null" class="mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400"><span>可见标注区域</span><span>{{ measure.region_count }} 处</span></div>
-          <p class="mt-3 text-xs text-gray-400">仅限本张照片中的可见皮肤</p>
+          <p class="mt-3 text-xs text-gray-400">相对本张照片中的可见皮肤，不是临床 VASI</p>
           <p v-if="summary.notice" role="status" class="mt-2 text-xs leading-5 text-primary-800 dark:text-primary-200">{{ summary.notice }}</p>
           <button v-if="!saved && !readonly" class="btn-primary mt-3 min-h-[44px] w-full rounded-xl text-sm" :disabled="busy" @click="emit('save')">{{ busy ? '保存中…' : summary.reviewed ? '保存记录' : '核对范围后保存' }}</button>
           <button type="button" class="mt-1 min-h-[44px] text-xs text-gray-500 dark:text-gray-400" :aria-expanded="showDetails" @click="showDetails = !showDetails">测量说明<i :class="showDetails ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'" aria-hidden="true"></i></button>
           <div v-if="showDetails" class="space-y-2 border-t border-gray-100 pt-3 text-xs leading-5 text-gray-500 dark:border-gray-700 dark:text-gray-400">
-            <p>占比＝白斑÷（正常皮肤＋白斑）。照片占比不是全身面积或临床 VASI，不同取景不宜直接比较。</p>
+            <p>浅色范围 ÷ 可见皮肤。这是照片内占比，不是临床 VASI，也不是全身面积。不同取景不宜直接比较。</p>
             <p v-for="reason in measure?.reasons || []" :key="reason">{{ reason }}</p>
             <p v-if="summary.measurable && measure?.lesion_pixels != null">白斑 {{ measure.lesion_pixels }} 像素，皮肤 {{ measure.skin_pixels }} 像素。</p>
             <p v-if="summary.measurable && measure?.area_cm2 != null">参照物估算 {{ measure.area_cm2 }} cm²，仅为二维投影面积。</p>

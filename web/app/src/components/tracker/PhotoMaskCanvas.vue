@@ -3,13 +3,14 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { usePhotoMaskCanvas, type PhotoCanvasOptions } from '@/composables/usePhotoMaskCanvas'
 import { referenceOutlineUrl } from '@/utils/photo-mask-canvas'
 const props = defineProps<PhotoCanvasOptions & { fill?: boolean; reference?: string | null }>()
-const emit = defineEmits<{ ready: [boolean]; refining: [boolean] }>()
+const emit = defineEmits<{ ready: [boolean]; refining: [boolean]; candidates: [boolean] }>()
 const canvas = ref<HTMLCanvasElement | null>(null)
 const stage = ref<HTMLElement | null>(null)
 const state = usePhotoMaskCanvas(props, canvas)
 watch(state.ready, value => emit('ready', value))
-watch(() => state.refining.value || state.outlining.value, value => emit('refining', value))
-defineExpose({ snapshot: state.snapshot, outline: state.runOutline })
+watch(() => state.refining.value || state.outlining.value || state.snapping.value, value => emit('refining', value))
+watch(state.hasCandidate, value => emit('candidates', value))
+defineExpose({ snapshot: state.snapshot, outline: state.runOutline, adoptCandidates: state.adoptCandidates, discardCandidates: state.discardCandidates, snapEdges: state.snapEdges })
 
 // ── 缩放 / 平移：只改 CSS transform，坐标换算仍基于 getBoundingClientRect，画笔半径随缩放按屏幕像素换算，放大后更精细 ──
 const MIN_ZOOM = 1, MAX_ZOOM = 6
@@ -114,12 +115,12 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', onKey); observer?.
 </script>
 <template>
   <div ref="stage" data-swipe-ignore class="photo-mask-stage relative flex w-full items-center justify-center overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-950" :class="{ 'photo-mask-stage--edit': editable, 'photo-mask-stage--fill': fill }" @touchstart.stop @touchmove.stop @touchend.stop @touchcancel.stop @click.stop @dragstart.prevent @contextmenu.prevent @wheel.prevent="onWheel" @pointerdown.capture="gestureDown" @pointermove.capture="gestureMove" @pointerup.capture="gestureUp" @pointercancel.capture="gestureUp">
-    <canvas ref="canvas" v-show="state.ready.value" role="img" aria-label="照片标注：浅蓝为皮肤，浅粉为白斑" class="block max-h-full max-w-full select-none" :class="editable ? (panMode && zoomed ? 'touch-none cursor-grab' : 'touch-none cursor-crosshair') : ''" :style="{ transform: viewTransform, transformOrigin: 'center center' }" @pointerdown.stop="state.down" @pointermove.stop="state.move" @pointerup.stop="state.up" @pointercancel="state.cancelStroke" @lostpointercapture="state.cancelStroke" />
+    <canvas ref="canvas" v-show="state.ready.value" role="img" aria-label="照片标注：浅蓝为皮肤，浅粉为白斑，浅橙为待核对" class="block max-h-full max-w-full select-none" :class="editable ? (panMode && zoomed ? 'touch-none cursor-grab' : 'touch-none cursor-crosshair') : ''" :style="{ transform: viewTransform, transformOrigin: 'center center' }" @pointerdown.stop="state.down" @pointermove.stop="state.move" @pointerup.stop="state.up" @pointercancel="state.cancelStroke" @lostpointercapture="state.cancelStroke" />
     <img v-if="referenceUrl && showReference && state.ready.value" :src="referenceUrl" alt="" aria-hidden="true" class="pointer-events-none absolute select-none object-contain" :style="{ ...referenceStyle, transformOrigin: 'center center' }" />
     <div v-if="editable && state.ready.value" class="pointer-events-none absolute inset-x-2 top-2 flex items-start justify-between gap-2">
       <div class="pointer-events-auto flex gap-1" role="group" aria-label="撤销与重做">
-        <button type="button" class="photo-mask-btn" aria-label="撤销" :disabled="!state.canUndo.value || busy || state.refining.value || state.outlining.value" @click.stop="state.undo"><i class="ri-arrow-go-back-line" aria-hidden="true"></i></button>
-        <button type="button" class="photo-mask-btn" aria-label="重做" :disabled="!state.canRedo.value || busy || state.refining.value || state.outlining.value" @click.stop="state.redo"><i class="ri-arrow-go-forward-line" aria-hidden="true"></i></button>
+        <button type="button" class="photo-mask-btn" aria-label="撤销" :disabled="!state.canUndo.value || busy || state.refining.value || state.outlining.value || state.snapping.value" @click.stop="state.undo"><i class="ri-arrow-go-back-line" aria-hidden="true"></i></button>
+        <button type="button" class="photo-mask-btn" aria-label="重做" :disabled="!state.canRedo.value || busy || state.refining.value || state.outlining.value || state.snapping.value" @click.stop="state.redo"><i class="ri-arrow-go-forward-line" aria-hidden="true"></i></button>
       </div>
       <div class="pointer-events-auto flex flex-col items-end gap-1" role="group" aria-label="缩放与移动">
         <div class="flex gap-1">

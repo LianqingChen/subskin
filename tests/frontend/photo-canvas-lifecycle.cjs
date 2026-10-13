@@ -7,7 +7,7 @@ function harness(loader){
  let mount,unmount;const readyState={masks:{width:32,height:32,skin:new Uint8Array(1024).fill(1),lesion:new Uint8Array(1024)}}
  const options=vue.reactive({image:'synthetic',skin:'skin',lesion:'lesion',tool:'lesion',brushSize:4,editable:true,busy:false})
  const target=vue.ref({setPointerCapture(){},hasPointerCapture(){return false},releasePointerCapture(){},getBoundingClientRect:()=>({left:0,top:0,width:32,height:32}),toDataURL:()=> 'fused'})
- const module=evaluate('web/app/src/composables/usePhotoMaskCanvas.ts',{'vue':{...vue,onMounted:fn=>mount=fn,onBeforeUnmount:fn=>unmount=fn},'@/utils/photo-mask':pixels,'@/utils/photo-mask-canvas':{loadPhotoMasks:loader|| (async()=>readyState),renderPhotoMasks(){},exportPhotoMasks:s=>({skinMaskDataUrl:[...s.masks.skin],lesionMaskDataUrl:[...s.masks.lesion]})}})
+ const module=evaluate('web/app/src/composables/usePhotoMaskCanvas.ts',{'vue':{...vue,onMounted:fn=>mount=fn,onBeforeUnmount:fn=>unmount=fn},'@/utils/photo-mask':pixels,'@/utils/photo-mask-canvas':{loadPhotoMasks:loader|| (async()=>readyState),renderPhotoMasks(){},exportPhotoMasks:s=>({skinMaskDataUrl:[...s.masks.skin],lesionMaskDataUrl:[...s.masks.lesion]}),maskDataUrl(){return 'mask'}},'@/api/rgb-segmentation':{RGBTaskError:class RGBTaskError extends Error{constructor(c){super(c);this.code=c}}},'@/utils/assessment-errors':{assessmentError:()=>'失败'}})
  const state=module.usePhotoMaskCanvas(options,target);return {state,options,readyState,mount:()=>mount(),unmount:()=>unmount()}
 }
 const event=(x,y,id=1)=>({clientX:x,clientY:y,pointerId:id,isPrimary:id===1,button:0,preventDefault(){this.defaultPrevented=true}})
@@ -48,6 +48,12 @@ test('leaving the photo stops drawing and reentry does not connect across it',as
  const before=h.readyState.masks.lesion.slice();h.state.move(event(50,50));assert.deepEqual(h.readyState.masks.lesion,before)
  h.state.move(event(28,28));h.state.up(event(50,50));assert.equal(h.state.painting.value,false)
  assert.equal(h.readyState.masks.lesion[15*32+15],0);assert.equal(h.readyState.masks.lesion[28*32+28],1)
+})
+test('adopt moves uncertain into lesion and undo restores it',async()=>{
+ const h=harness();h.readyState.masks.uncertain=new Uint8Array(1024);h.readyState.masks.uncertain[10]=1;h.readyState.masks.lesion=new Uint8Array(1024)
+ await h.mount();h.state.adoptCandidates();assert.equal(h.readyState.masks.lesion[10],1);assert.equal(h.readyState.masks.uncertain[10],0)
+ h.state.undo();assert.equal(h.readyState.masks.lesion[10],0);assert.equal(h.readyState.masks.uncertain[10],1)
+ h.state.discardCandidates();assert.equal(h.readyState.masks.uncertain[10],0)
 })
 test('eraser consistently clears pink and blue regardless of the preceding tool',async()=>{
  for(const tool of ['skin','lesion']){const h=harness();await h.mount();h.options.tool=tool;h.state.down(event(10,10));h.state.up(event(10,10));h.options.tool='eraser';h.state.down(event(10,10));h.state.up(event(10,10));assert.equal(h.readyState.masks.skin[330],0);assert.equal(h.readyState.masks.lesion[330],0)}

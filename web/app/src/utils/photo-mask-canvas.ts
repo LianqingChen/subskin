@@ -1,4 +1,4 @@
-import { alphaMask, binaryPixels, combineCandidates, MASK_PALETTE, type PhotoMasks } from './photo-mask'
+import { alphaMask, binaryPixels, MASK_PALETTE, separateCandidates, type PhotoMasks } from './photo-mask'
 export interface PhotoMaskSources { image: string; skin?: string | null; lesion?: string | null; candidate?: string | null }
 export interface LoadedPhotoMasks { image: HTMLImageElement; masks: PhotoMasks }
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -31,13 +31,13 @@ export async function loadPhotoMasks(sources: PhotoMaskSources): Promise<LoadedP
     ctx.clearRect(0, 0, width, height); ctx.imageSmoothingEnabled = false; ctx.drawImage(layer, 0, 0, width, height)
     return alphaMask(ctx.getImageData(0, 0, width, height).data)
   }
-  const skin = read(skinImage), lesion = combineCandidates(skin, read(lesionImage), read(candidateImage))
-  return { image, masks: { width, height, skin, lesion } }
+  const skin = read(skinImage), split = separateCandidates(skin, read(lesionImage), read(candidateImage))
+  return { image, masks: { width, height, skin, lesion: split.lesion, uncertain: split.uncertain } }
 }
 interface PaintBounds { x: number; y: number; width: number; height: number }
 const renderBuffers = new WeakMap<HTMLCanvasElement, { state: LoadedPhotoMasks; overlay: HTMLCanvasElement; pixels: ImageData }>()
 export function renderPhotoMasks(target: HTMLCanvasElement, state: LoadedPhotoMasks, dirty?: PaintBounds): void {
-  const { width, height, skin, lesion } = state.masks
+  const { width, height, skin, lesion, uncertain } = state.masks
   if (target.width !== width) target.width = width
   if (target.height !== height) target.height = height
   let buffer = renderBuffers.get(target)
@@ -47,9 +47,11 @@ export function renderPhotoMasks(target: HTMLCanvasElement, state: LoadedPhotoMa
   }
   const area = dirty || { x: 0, y: 0, width, height }, pixels = buffer.pixels.data
   for (let y = area.y; y < area.y + area.height; y++) for (let x = area.x; x < area.x + area.width; x++) {
-    const i = y * width + x, offset = i * 4, color = lesion[i] ? MASK_PALETTE.lesion : MASK_PALETTE.skin
+    const i = y * width + x, offset = i * 4
+    const amber = !lesion[i] && !!uncertain?.[i]
+    const color = lesion[i] ? MASK_PALETTE.lesion : amber ? MASK_PALETTE.uncertain : MASK_PALETTE.skin
     pixels[offset] = color[0]; pixels[offset + 1] = color[1]; pixels[offset + 2] = color[2]
-    pixels[offset + 3] = skin[i] ? Math.round(255 * MASK_PALETTE.opacity) : 0
+    pixels[offset + 3] = skin[i] ? (amber ? 140 : Math.round(255 * MASK_PALETTE.opacity)) : 0
   }
   context(buffer.overlay).putImageData(buffer.pixels, 0, 0, area.x, area.y, area.width, area.height)
   const ctx = context(target)
@@ -62,6 +64,11 @@ export function exportPhotoMasks(state: LoadedPhotoMasks): { skinMaskDataUrl: st
   const target = canvas(width, height), ctx = context(target)
   const encode = (mask: Uint8Array) => { ctx.putImageData(new ImageData(binaryPixels(mask), width, height), 0, 0); return target.toDataURL('image/png') }
   return { skinMaskDataUrl: encode(skin), lesionMaskDataUrl: encode(lesion) }
+}
+export function maskDataUrl(mask: Uint8Array, width: number, height: number): string {
+  const target = canvas(width, height)
+  context(target).putImageData(new ImageData(binaryPixels(mask), width, height), 0, 0)
+  return target.toDataURL('image/png')
 }
 
 /** 上次确认的白斑范围 → 仅描边的琥珀色图。只做参考显示，不参与测量与导出。 */
