@@ -971,3 +971,18 @@ npm run deploy:prod     # Build & deploy to /usr/share/nginx/html/subskin/
 | `/etc/nginx/conf.d/subskin-admin.conf` | `admin.subskin.cn` | `/usr/share/nginx/html/subskin-admin/` | Yes (443) |
 
 Repo templates are in `web/deploy/` — server configs may differ slightly. Server configs are the source of truth.
+
+## Cursor Cloud specific instructions
+
+Cloud agents run this app locally. Do not deploy to nginx, run `npm run build` / `npm run deploy:prod`, or restart `subskin-backend`. Those commands target the production host paths in the sections above.
+
+Local development:
+
+- Install `python3.12-venv` (the default image does not include `ensurepip`), then `python3 -m venv .venv`.
+- `web/backend/requirements.txt` pins two packages above the versions published on PyPI. Install `alibabacloud-dypnsapi20170525==2.0.0` and `python-alipay-sdk==3.4.0` instead of the pins `>=3.0.0` and `>=3.7.0`. Also install `bcrypt>=4.0.1,<5` (passlib cannot hash with bcrypt 5), plus `numpy`, `pillow`, and `opencv-python-headless`. OpenCV is imported while the API process starts.
+- `web/backend/start.sh` sets `PYTHONPATH` to `/root/subskin`. From this checkout use `PYTHONPATH=$PWD:$PWD/web/backend` and run `.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000`.
+- Copy `web/backend/.env.example` to `web/backend/.env` when it is missing, and set `LLM_ENCRYPTION_KEY` to a random hex string when that line is empty. `SMS_PROVIDER=log` prints verification codes in the API log.
+- Seed the SQLite database with `PYTHONPATH=$PWD .venv/bin/python -m web.backend.database.init_db` (creates `admin` and the community categories). The default database file is `data/subskin.db` when the process is started from the repo root.
+- User app: `cd web/app && npm ci && npm run dev -- --host 0.0.0.0 --port 5174` (proxies `/api` to port 8000).
+- Admin app: `cd web/admin && npm ci && npx vite --host 0.0.0.0 --port 5173`. Its Vite config also defaults to 5174, so it must use another port while the user app is running.
+- `npm run type-check` in `web/app` currently fails because `src/data/care-catalog.ts` and `src/data/hospitals.ts` are imported but are not in the repository. The home page, login, and community feed still run.
