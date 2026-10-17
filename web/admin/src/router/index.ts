@@ -16,6 +16,7 @@ const router = createRouter({
       component: () => import('@/views/Layout.vue'),
       redirect: '/dashboard',
       children: [
+        { path: 'dev-docs', name: 'DevDocs', component: () => import('@/views/DevDocs.vue') },
         { path: 'planning', name: 'PlanningArchive', component: () => import('@/views/PlanningArchive.vue') },
         {
           path: 'dashboard',

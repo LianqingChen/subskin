@@ -14,6 +14,7 @@
 .editor-content img {
   max-width: 100%;
   height: auto;
+  border-radius: 0.75rem;
 }
 .prose table,
 .editor-content table {
@@ -29,40 +30,63 @@
 }
 
 :root {
-  /* Teal-based theme — safe, organic, medical warmth */
+  /* ─── Brand Primary: Medical Tech Teal (Cursor/GitHub precision + clinical warmth) ─── */
   --color-primary-h: 174;
-  --color-primary-s: 63%;
-  /* 500 原为 50%（亮青），与 600(31%) 落差过大，导致同一品牌色在不同页面一深一浅；收敛到 40% */
-  --color-primary-l: 40%;
-  --color-primary-50: hsl(var(--color-primary-h), calc(var(--color-primary-s) * 0.3), 96%);
-  --color-primary-100: hsl(var(--color-primary-h), calc(var(--color-primary-s) * 0.5), 91%);
-  --color-primary-200: hsl(var(--color-primary-h), calc(var(--color-primary-s) * 0.7), 82%);
-  --color-primary-300: hsl(var(--color-primary-h), var(--color-primary-s), 70%);
-  --color-primary-400: hsl(var(--color-primary-h), var(--color-primary-s), 55%);
-  --color-primary-500: hsl(var(--color-primary-h), var(--color-primary-s), var(--color-primary-l));
-  --color-primary-600: hsl(var(--color-primary-h), var(--color-primary-s), 31%);
-  --color-primary-700: hsl(var(--color-primary-h), var(--color-primary-s), 28%);
-  --color-primary-800: hsl(var(--color-primary-h), calc(var(--color-primary-s) * 0.8), 24%);
-  --color-primary-900: hsl(var(--color-primary-h), calc(var(--color-primary-s) * 0.7), 16%);
+  --color-primary-s: 66%;
+  --color-primary-l: 39%;
+  --color-primary-50: #f0fdfa;
+  --color-primary-100: #ccfbf1;
+  --color-primary-200: #99f6e4;
+  --color-primary-300: #5eead4;
+  --color-primary-400: #2dd4bf;
+  --color-primary-500: #14b8a6;
+  --color-primary-600: #0d9488;
+  --color-primary-700: #0f766e;
+  --color-primary-800: #115e59;
+  --color-primary-900: #134e4a;
   --color-primary: var(--color-primary-600);
   --color-primary-light: var(--color-primary-500);
-  --color-secondary: #A5D6A7;
-  --color-secondary-light: #C8E6C9;
-  --color-accent: #FFB74D;
-  --color-accent-light: #FFCC80;
-  --color-success: #4CAF50;
-  --color-bg: #F5F7FA;
-  --color-surface: #E8EDF0;
-  --color-text-primary: #37474F;
-  --color-text-secondary: #78909C;
+  --color-secondary: #86efac;
+  --color-secondary-light: #bbf7d0;
+  --color-accent: #f59e0b;
+  --color-accent-light: #fcd34d;
+  --color-success: #10b981;
+
+  /* ─── Surfaces & Borders (Light Mode — GitHub Primer / Cursor Daylight) ─── */
+  --color-bg: #f6f8fa;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f8fafc;
+  --color-surface-muted: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-subtle: rgba(15, 23, 42, 0.08);
+  --color-border-strong: rgba(15, 23, 42, 0.15);
+
+  /* ─── Typography Colors (Light Mode) ─── */
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+
+  /* ─── Radii & Elevation ─── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.03);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+
+  /* ─── Safe Areas & Sidebar Layout ─── */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+
   /* 桌面侧边栏宽度：<1024px 为 0（手机/平板竖屏用顶栏+底部导航）；
      1024–1279px（iPad 横屏/小笔记本）为图标窄栏，≥1280px 为完整侧栏 */
   --app-sidebar-w: 0px;
 }
+
 @media (min-width: 1024px) {
   :root {
     --app-sidebar-w: 4.5rem;
@@ -74,9 +98,43 @@
   }
 }
 
+html.dark {
+  /* ─── Brand Primary (Dark Mode — translucent surfaces + luminous teal accents) ─── */
+  --color-primary-50: rgba(20, 184, 166, 0.12);
+  --color-primary-100: rgba(20, 184, 166, 0.20);
+  --color-primary-200: rgba(45, 212, 191, 0.28);
+  --color-primary-300: #5eead4;
+  --color-primary-400: #2dd4bf;
+  --color-primary-500: #14b8a6;
+  --color-primary-600: #0d9488;
+  --color-primary-700: #2dd4bf;
+  --color-primary-800: #5eead4;
+  --color-primary-900: rgba(19, 78, 74, 0.45);
+
+  /* ─── Surfaces & Borders (Dark Mode — Cursor Carbon / GitHub Dark Dimmed) ─── */
+  --color-bg: #0b0f17;
+  --color-surface: #111827;
+  --color-surface-subtle: #161f30;
+  --color-surface-muted: #1e293b;
+  --color-border: #1e293b;
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.15);
+
+  /* ─── Typography Colors (Dark Mode) ─── */
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 2px 6px -1px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px -4px rgba(0, 0, 0, 0.5);
+}
+
 @layer base {
   html {
-    font-family: 'Inter', 'PingFang SC', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'HarmonyOS Sans SC', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-tap-highlight-color: transparent;
@@ -86,37 +144,39 @@
   }
 
   body {
-    @apply bg-[var(--color-bg)] text-[var(--color-text-primary)] dark:bg-gray-950 dark:text-gray-100 transition-colors duration-200;
+    @apply bg-[#f6f8fa] text-slate-900 dark:bg-[#0b0f17] dark:text-slate-100 transition-colors duration-200;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
   }
 
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     @apply text-base;
   }
 
   a {
     @apply dark:text-gray-300;
-  }
-
-  button, a, [role="button"] {
-    @apply select-none;
-  }
-
-  /* 全站统一纤细化：默认最小高度 36px（原 44px 导致筛选胶囊/小图标按钮等
-     被全局撑高显得臃肿）；需要大触控目标的主操作按钮（底部操作栏、主 CTA）
-     均已在组件内显式声明 min-h-[44px]，不受影响。 */
-  button, [role="button"] {
-    min-height: 36px;
-  }
-
-  /* Navigation links use own padding for sizing, touch targets via padding */
-  a {
     min-height: 0;
   }
 
-  button:active {
-    @apply scale-[0.97];
+  button,
+  a,
+  [role="button"] {
+    @apply select-none;
+    touch-action: manipulation;
+  }
+
+  /* 全站统一纤细化：默认最小高度 36px；需要大触控目标的主操作按钮（底部操作栏、主 CTA）
+     均已在组件内显式声明 min-h-[44px]，不受影响。 */
+  button,
+  [role="button"] {
+    min-height: 36px;
+  }
+
+  button:active:not(:disabled) {
+    @apply scale-[0.98];
     transition: transform 0.1s ease;
   }
 
@@ -141,10 +201,10 @@
     flex-shrink: 0;
   }
   .setting-switch-off {
-    background: rgb(209 213 219);
+    background: rgb(203 213 225);
   }
   .dark .setting-switch-off {
-    background: rgb(75 85 99);
+    background: rgb(51 65 85);
   }
   .setting-switch-on {
     background: var(--color-primary-500);
@@ -155,33 +215,41 @@
     height: 8px;
     border-radius: 9999px;
     background: white;
-    box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.14);
     transition: transform 0.25s ease;
   }
 
+  /* ── Cursor / GitHub 风格主按钮：高对比医疗青 + 顶部微高光 1px 内边 + 利落阴影 ── */
   .btn-primary {
-    @apply bg-primary-600 text-white px-4 py-2.5 rounded-lg font-medium
+    @apply inline-flex items-center justify-center bg-primary-600 text-white px-4 py-2.5 rounded-lg font-medium
     hover:bg-primary-700 active:bg-primary-800
-    dark:bg-primary-700 dark:hover:bg-primary-600 dark:active:bg-primary-800
-    transition-all duration-150 active:scale-[0.97]
+    dark:bg-primary-600 dark:hover:bg-primary-500 dark:active:bg-primary-700
+    transition-all duration-150 active:scale-[0.98]
     disabled:opacity-50 disabled:cursor-not-allowed;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.16), 0 1px 2px 0 rgba(13, 148, 136, 0.22);
+  }
+  .btn-primary:hover:not(:disabled) {
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.22), 0 2px 6px -1px rgba(13, 148, 136, 0.32);
   }
 
+  /* ── GitHub Primer 风格次按钮：1px 精密边框 + 干净白/深灰表面 ── */
   .btn-secondary {
-    @apply bg-white text-gray-700 px-4 py-2.5 rounded-lg font-medium
-    border border-gray-300
-    hover:bg-gray-50 active:bg-gray-100
-    dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600
-    dark:hover:bg-gray-700 dark:active:bg-gray-600
-    transition-all duration-150 active:scale-[0.97]
+    @apply inline-flex items-center justify-center bg-white text-gray-700 px-4 py-2.5 rounded-lg font-medium
+    border border-gray-200/90
+    hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100
+    dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700
+    dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:active:bg-gray-600
+    transition-all duration-150 active:scale-[0.98]
     disabled:opacity-50 disabled:cursor-not-allowed;
+    box-shadow: var(--shadow-xs);
   }
 
+  /* ── 幽灵按钮：无边框克制悬停 ── */
   .btn-ghost {
-    @apply text-gray-600 px-4 py-2.5 rounded-lg font-medium
-    hover:bg-gray-100 active:bg-gray-200
-    dark:text-gray-300 dark:hover:bg-gray-800 dark:active:bg-gray-700
-    transition-all duration-150 active:scale-[0.97]
+    @apply inline-flex items-center justify-center text-gray-600 px-4 py-2.5 rounded-lg font-medium
+    hover:bg-gray-100/90 hover:text-gray-900 active:bg-gray-200/70
+    dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100 dark:active:bg-gray-700
+    transition-all duration-150 active:scale-[0.98]
     disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
@@ -196,72 +264,80 @@
   .page-narrow {
     @apply mx-auto w-full max-w-3xl px-4 sm:px-6;
   }
-  /* 页面标题区：桌面端顶栏已显示模块名，这里只放页面级标题 */
+
+  /* ── 页面标题区：桌面端顶栏已显示模块名，这里只放页面级标题 ── */
   .page-title {
     @apply text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100 md:text-2xl;
   }
   .page-subtitle {
-    @apply mt-1 text-sm text-gray-500 dark:text-gray-400;
+    @apply mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed;
   }
 
+  /* ── Cursor / GitHub 风格卡片：1px 精密发丝边框 + 极轻量级阴影 ── */
   .card {
-    @apply bg-white dark:bg-gray-800 dark:border-gray-700 rounded-2xl border border-gray-200/80;
+    @apply bg-white dark:bg-gray-900 dark:border-gray-800 rounded-xl border border-gray-200/80 transition-colors duration-200;
+    box-shadow: var(--shadow-xs);
+  }
+
+  .card-hover {
+    @apply card hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-200
+    active:scale-[0.99];
+  }
+  .card-hover:hover {
+    box-shadow: var(--shadow-sm);
   }
 
   /* ── 统一纤细控件体系（全站筛选框/下拉按钮/标签胶囊共用，保证风格一致）── */
   .control-slim {
-    @apply inline-flex items-center gap-1 min-h-[36px] px-3 py-1.5 rounded-full text-[13px] font-medium
-    border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800
-    text-gray-600 dark:text-gray-300 whitespace-nowrap transition-colors
-    hover:border-primary-300 dark:hover:border-primary-700 hover:text-primary-600 dark:hover:text-primary-400;
+    @apply inline-flex items-center gap-1 min-h-[36px] px-3 py-1.5 rounded-lg text-[13px] font-medium
+    border border-gray-200/90 dark:border-gray-700 bg-white dark:bg-gray-900
+    text-gray-600 dark:text-gray-300 whitespace-nowrap transition-all duration-150
+    hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800
+    hover:text-gray-900 dark:hover:text-gray-100;
+    box-shadow: var(--shadow-xs);
   }
   .control-slim-active {
-    @apply bg-primary-50 dark:bg-gray-800/60 border-primary-300 dark:border-primary-700
-    text-primary-700 dark:text-primary-300 hover:border-primary-300 dark:hover:border-primary-700;
+    @apply bg-primary-50 dark:bg-primary-900 border-primary-300 dark:border-primary-800
+    text-primary-700 dark:text-primary-300 hover:border-primary-400 dark:hover:border-primary-700;
   }
   .menu-slim {
-    @apply absolute top-full left-0 mt-1 z-30 bg-white dark:bg-gray-800 rounded-lg
-    border border-gray-200 dark:border-gray-700 shadow-md overflow-hidden;
+    @apply absolute top-full left-0 mt-1.5 py-1 z-30 bg-white dark:bg-gray-900 rounded-xl
+    border border-gray-200/90 dark:border-gray-700 shadow-lg overflow-hidden;
   }
   .menu-slim-item {
     @apply w-full text-left px-3 py-1.5 text-[13px] whitespace-nowrap transition-colors
-    hover:bg-gray-50 dark:hover:bg-gray-700;
-  }
-
-  .card-hover {
-    @apply card hover:shadow-md hover:border-gray-200
-    dark:hover:border-gray-600 transition-all duration-200
-    active:scale-[0.98];
+    hover:bg-gray-50 dark:hover:bg-gray-800;
   }
 
   .input-field {
-    @apply w-full px-4 py-3 rounded-lg border border-gray-300
-    focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-    dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100
-    dark:focus:ring-primary-400 dark:focus:border-primary-400
-    text-base transition-colors duration-150;
+    @apply w-full min-w-0 px-3.5 py-2.5 rounded-lg border border-gray-200/90 bg-white text-gray-900
+    placeholder:text-gray-400
+    focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-500
+    dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500
+    dark:focus:ring-primary-900 dark:focus:border-primary-400
+    text-base transition-all duration-150;
   }
 
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium;
   }
 
   .badge-primary {
-    @apply badge bg-primary-100 text-primary-700
-    dark:bg-primary-900 dark:text-primary-300;
+    @apply badge bg-primary-50 text-primary-700 border border-primary-200
+    dark:bg-primary-900 dark:text-primary-300 dark:border-primary-800;
   }
 
   .badge-success {
-    @apply badge bg-secondary-100 text-secondary-700
-    dark:bg-secondary-900 dark:text-secondary-300;
+    @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200/60
+    dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700/50;
   }
 
   .section-title {
-    @apply text-2xl font-bold text-gray-900 dark:text-gray-100;
+    @apply text-xl md:text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100;
   }
 
   .section-desc {
-    @apply text-gray-500 dark:text-gray-400 text-sm mt-1;
+    @apply text-gray-500 dark:text-gray-400 text-sm mt-1 leading-relaxed;
   }
 
   .pwa-safe-top {
@@ -274,7 +350,7 @@
 }
 
 @layer utilities {
-  /* Dynamic viewport units are unavailable in older iOS/Android WebViews.
+  /* Dynamic viewport units are unavailable in older iOS/Android/WeChat/Huawei WebViews.
      Declare a vh fallback first, then let modern browsers override it. */
   .min-h-dvh,
   .min-h-\[100dvh\] {
@@ -298,6 +374,30 @@
   .min-h-\[calc\(100dvh-3\.5rem\)\] {
     min-height: calc(100dvh - 3.5rem);
   }
+  .max-h-\[92dvh\] {
+    max-height: 92vh;
+  }
+  .max-h-\[92dvh\] {
+    max-height: 92dvh;
+  }
+  .max-h-\[90dvh\] {
+    max-height: 90vh;
+  }
+  .max-h-\[90dvh\] {
+    max-height: 90dvh;
+  }
+  .max-h-\[88dvh\] {
+    max-height: 88vh;
+  }
+  .max-h-\[88dvh\] {
+    max-height: 88dvh;
+  }
+  .max-h-\[85dvh\] {
+    max-height: 85vh;
+  }
+  .max-h-\[85dvh\] {
+    max-height: 85dvh;
+  }
 
   /* fixed 横跨全宽的底栏：桌面端从侧边栏右侧开始，避免盖住侧边栏 */
   .app-fixed-x {
@@ -305,20 +405,60 @@
     right: 0;
   }
 
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
   .safe-bottom {
     padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
   }
 
-  .no-scrollbar::-webkit-scrollbar {
+  .no-scrollbar::-webkit-scrollbar,
+  .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
 
-  .no-scrollbar {
+  .no-scrollbar,
+  .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
 
   .overscroll-dock {
     overscroll-behavior-y: contain;
+  }
+
+  /* Glass surface with solid WebView fallback for WeChat / Huawei Browser */
+  .surface-glass {
+    background-color: rgba(255, 255, 255, 0.92);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    backdrop-filter: saturate(180%) blur(14px);
+  }
+  html.dark .surface-glass {
+    background-color: rgba(17, 24, 39, 0.92);
+  }
+}
+
+/* Subtle GitHub/Cursor thin scrollbar on desktop */
+@media (pointer: fine) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.22);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.38);
+  }
+  html.dark ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.2);
+  }
+  html.dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.35);
   }
 }

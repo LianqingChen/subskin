@@ -111,6 +111,7 @@ function renderIcon(iconClass: string) {
 }
 
 const menuItems = [
+  { label: '开发文档', key: 'DevDocs', iconClass: 'ri-book-read-line' },
   { label: '规划档案', key: 'PlanningArchive', iconClass: 'ri-folder-history-line' },
   { label: '数据监控', key: 'Dashboard', iconClass: 'ri-dashboard-line' },
   { label: '内容生成', key: 'ContentGen', iconClass: 'ri-article-line' },
@@ -132,9 +133,9 @@ const menuOptions = menuItems.map(item => ({
 
 const bottomNavItems = [
   { key: 'Dashboard', label: '监控', icon: 'ri-dashboard-line' },
+  { key: 'DevDocs', label: '开发文档', icon: 'ri-book-read-line' },
   { key: 'Moderation', label: '风控', icon: 'ri-shield-check-line' },
   { key: 'ImageLabeling', label: '打标', icon: 'ri-image-line' },
-  { key: 'LLMConfig', label: 'LLM', icon: 'ri-cpu-line' },
   { key: 'more', label: '更多', icon: 'ri-menu-line' },
 ]
 
@@ -144,6 +145,7 @@ function handleMenuSelect(key: string) {
     return
   }
   const map: Record<string, string> = {
+    DevDocs: '/dev-docs',
     PlanningArchive: '/planning',
     Dashboard: '/dashboard',
     UserManagement: '/users',

@@ -272,23 +272,24 @@ SubSkin 的每个页面类型 **必须** 包含对应的 Schema.org 结构化数
 - [ ] 安装提示在移动端和桌面端均有合适位置
 - [ ] 离线降级策略有效（NetworkFirst for API, CacheFirst for static）
 
-### 6.2 响应式设计检查清单
+### 6.2 响应式与多端适配检查清单（手机 / 平板 / 桌面 / 微信WebView / 华为浏览器）
 
-- [ ] 移动端优先设计（`sm:` → `md:` → `lg:` → `xl:`）
-- [ ] BottomNav 在 `md:` 及以上隐藏
-- [ ] 桌面端有顶部导航 (AppHeader)
+- [ ] 移动端优先设计（`sm:` → `md:` → `lg:` → `xl:`），桌面端支持 `1024px` 窄侧栏（`72px`）与 `1280px` 宽侧栏（`224px`）
+- [ ] BottomNav 在 `md:` 及以上隐藏；固定底栏必须带 `.app-fixed-x` 避让桌面端左侧栏
+- [ ] 移动端底部抽屉（ActionSheet / Modal）在 `sm:` 及以上居中限宽（`sm:max-w-md sm:mx-auto sm:rounded-2xl`）
 - [ ] 触摸目标最小 44px（移动端可交互元素）
 - [ ] Safe Area: `env(safe-area-inset-bottom)` 处理
-- [ ] iOS: `data-ios` 属性处理
-- [ ] Viewport: 使用 `dvh` 代替 `vh`（动态视口）
+- [ ] Viewport: 手写 `100dvh`/`100svh` 时必须前置 `100vh` 回退（兼容旧版微信 WebView / 华为浏览器）
+- [ ] Canvas 绘图禁止直接调用 `ctx.roundRect()`，必须使用 `traceRoundedRect` (`arcTo` 实现)
 
-### 6.3 视觉一致性检查
+### 6.3 视觉一致性检查（详见 `docs/specs/2026-10-17-subskin-design-system.md`）
 
-- [ ] 所有内容页外层容器使用 `max-w-6xl mx-auto px-4`
-- [ ] Chat 页面使用 `max-w-4xl mx-auto px-4`
-- [ ] 颜色使用 `primary-*` Tailwind 类（禁止 hardcode hex）
-- [ ] `dark:` 变体覆盖所有颜色/背景
-- [ ] 组件命名一致（小白助手 / 小白追踪 / 小白社区 / 小白百科）
+- [ ] 所有页面外层容器使用 `.page`、`.page-wide` 或 `.page-narrow`
+- [ ] 颜色使用 `primary-*` Tailwind 类或 CSS 变量（禁止 hardcode hex，画布继承 `#f6f8fa` / `dark:#0b0f17`）
+- [ ] `dark:` 变体完整覆盖所有背景、文字、边框、输入框与弹窗
+- [ ] 图标 100% 使用 RemixIcon (`ri-*`)，零内联业务 `<svg>`、零 Emoji 图标
+- [ ] 模块命名严格对齐 `web/shared/site-modules.json`（问答 / 日记 / 发现 / 同行 / 就医经验 / 体检解读 / 调养 / 个人中心），严禁出现旧名（小白助手 / 小白追踪 / 小白社区 / 小白百科 / 小白日记 / 手帐 / 测评）
+- [ ] 对外分享页与生成海报遵循统一的品牌头尾、配色与免责声明规范
 
 ### 6.4 导航与路由规范
 

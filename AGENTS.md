@@ -616,50 +616,55 @@ User privacy and data security are the lifeblood of SubSkin. A single data leak 
 
 ## UI/Design Unity Principles (MANDATORY)
 
-All new features and modifications MUST follow these principles to maintain a unified, consistent experience:
+> 📘 **Authoritative Design System Specification**: `/root/subskin/docs/specs/2026-10-17-subskin-design-system.md`
+> Every agent modifying or creating any page, component, external share view, or generated poster MUST read and strictly follow `docs/specs/2026-10-17-subskin-design-system.md`.
 
-1. **Consistent Container Widths**: All content pages use the shared `.page` class (`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8`, defined in `styles/main.css`) as the outer container — NEVER hand-write `max-w-* px-*` or hardcode `max-width: NNNpx` in scoped CSS. The desktop header inner row uses the same width, so page title, content and header icons share the same left/right edges. Reading/form/chat pages may narrow with `page-narrow` (3xl) or a deliberate `max-w-*` override; feeds use `.page`. Page backgrounds must inherit the app background (never hardcode `#f5f7fa`).
-   - **Desktop navigation**: 1024–1279px = 72px icon rail (icon + small label), ≥1280px = full 224px sidebar, <1024px = header + BottomNav. Width comes from `--app-sidebar-w`; fixed bars must use `.app-fixed-x` or that variable.
+All new features and modifications MUST follow these principles to maintain a unified, consistent experience inspired by **Cursor & GitHub's modern tech aesthetic combined with clinical warmth**:
 
-2. **In-Page Navigation = Left Sidebar**: Page-internal navigation (tabs, categories, history lists) MUST use a collapsible left sidebar pattern on desktop (`md:` and up), consistent across all pages:
+1. **Consistent Container Widths & Responsive Layout**: All content pages use the shared `.page` (`72rem`), `.page-wide` (`80rem`), or `.page-narrow` (`48rem`) classes defined in `web/app/src/styles/main.css` as the outer container — NEVER hand-write `max-w-* px-*` or hardcode `max-width: NNNpx` in scoped CSS. Page backgrounds must inherit the app canvas (`#f6f8fa` in light mode, `#0b0f17` in dark mode; never hardcode `#f5f7fa`).
+   - **Desktop navigation**: `1024–1279px` = `72px` icon rail (icon + small label), `≥1280px` = full `224px` sidebar, `<1024px` = header + `BottomNav`. Width comes from `--app-sidebar-w`; fixed bottom bars MUST use `.app-fixed-x` (`left: var(--app-sidebar-w); right: 0;`) so they never cover the desktop sidebar.
+   - **Bottom sheets & modals on desktop**: Mobile bottom sheets (`fixed inset-x-0 bottom-0`) MUST constrain width on tablet/desktop (`sm:max-w-md sm:mx-auto sm:bottom-6 sm:rounded-2xl`) so they never stretch across the full desktop screen.
+
+2. **In-Page Navigation = Left Sidebar**: Page-internal navigation (tabs, categories, history lists) MUST use a collapsible left sidebar pattern on desktop (`md:` / `lg:` and up), consistent across all pages:
    - **Sidebar width**: `w-52` (208px) expanded, thin strip when collapsed
    - **Active item**: `bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-medium rounded-lg`
    - **Inactive item**: `text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg`
    - **Collapse toggle**: Small vertical bar with chevron icon at sidebar edge
    - **Mobile**: Horizontal scrollable tabs or drawer overlay (NEVER left sidebar on mobile)
 
-3. **Naming Consistency**: Use the same names across ALL surfaces (nav, title, header, body text):
-   - 功能模块命名以 `web/shared/site-modules.json` 为**唯一事实来源**（当前在线模块，顺序 = 主导航顺序：问答 `/`、手帐 `/assessment`、分享 `/community`、公益 `/hospitals`、白斑报告 `/community/reports`、体检解读 `/assessment?tab=exam`、个人中心 `/profile`）。前端导航（BottomNav / AppHeader / 小白管家）与后端 AI 导航（rag.py）均从它派生，禁止硬编码其他模块名。
-   - 旧命名（白友圈 / 小白助手 / 小白追踪 / 小白社区 / 小白百科 / 医评）仅作历史关键词别名（供用户用旧名提问时仍能匹配），不得再作为新代码的模块名。
+3. **Naming Consistency (Single Source of Truth)**: Use the exact same module names across ALL surfaces (nav, title, header, body text, share sheets, and Canvas posters):
+   - 功能模块命名以 `web/shared/site-modules.json` 和 `web/shared/page-names.json` 为**唯一事实来源**（当前在线模块：问答 `/`、日记 `/assessment`、发现 `/community`、同行 `/contribution`、就医经验 `/hospitals`、体检解读 `/assessment/exam`、调养 `/care`、个人中心 `/profile`）。前端导航（BottomNav / AppSidebar / AppHeader / 小白管家）与后端 AI 导航（`rag.py`）均从它派生，禁止硬编码其他模块名。
+   - 旧命名（`白友圈`、`小白助手`、`小白追踪`、`小白社区`、`小白百科`、`小白手账`、`小白日记`、`AI病情日记`、`小白知识库`、`病情追踪`、`手帐`、`测评`、`医评`、`公益`）仅作后端搜索历史关键词别名，**严禁**作为 UI 或海报中的模块名。
    - 小白百科已下线（内容融入智能问答 / 小白管家），不得向用户透出独立百科入口或页面。
-   - NEVER mix "病友社区"/"白友社区" and "分享" for the same concept
-   - NEVER mix "病情追踪"/"小白追踪"/"测评" and "手帐" for the same concept（`/assessment` 模块 2026-09-10 起官方名为「手帐」，「测评」仅作历史关键词别名）
-   - NEVER mix "医评" and "公益" for the same concept（`/hospitals` 模块 2026-09-12 起官方名为「公益」，路径与功能不变，「医评」仅作历史关键词别名）
-   - When referring to users within the community, "病友" is acceptable as a term of address
+   - When referring to users within the community, "病友" is acceptable as a term of address.
 
-4. **Theme Color System**: All primary/accent colors use CSS variables (`--color-primary-*`). NEVER hardcode hex colors like `#10b981`, `#34d399`, or Tailwind's `emerald-*` classes. Use `primary-*` Tailwind classes instead.
+4. **Theme Color System & Dark Mode Completeness**:
+   - All primary/accent colors use CSS variables (`--color-primary-*`, refined clinical teal `#0d9488` / `#14b8a6` / `#0f766e`). NEVER hardcode hex colors like `#10b981`, `#34d399`, or Tailwind's `blue-*`/`purple-*`/`emerald-*` classes for brand UI. Use `primary-*` Tailwind classes instead.
+   - Community category badges MUST use `getCategoryColor(name)` from `@/utils/colors`.
+   - Every view, card, modal, input, and toast MUST have complete `dark:*` variants tested against the `#0b0f17` / `#111827` dark canvas.
+   - Numerical metrics, scores, percentages, and dates MUST use `tabular-nums` (`font-variant-numeric: tabular-nums`).
 
-5. **Component Patterns**: Reuse the same component patterns for common UI elements:
-   - Cards: `card dark:bg-gray-800 p-5`
-   - Section titles: `section-title` class
-   - Section descriptions: `section-desc` class
-   - Buttons: `btn-primary`, `btn-ghost`
+5. **Component Patterns & Cross-Browser / WebView Compatibility**:
+   - Reuse standard classes in `main.css`: `.card`, `.card-hover`, `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.control-slim`, `.menu-slim`, `.input-field`, `.surface-glass`, `.page-title`, `.section-title`.
+   - **WeChat WebView & Huawei Browser rules**:
+     - Always provide `vh` fallback before `dvh`/`svh` in custom CSS (`height: 100vh; height: 100dvh;`).
+     - Always add `min-w-0` to `<input class="flex-1">` inside flex containers.
+     - Include `"HarmonyOS Sans SC"` and `"PingFang SC"` in font stacks (including Canvas `ctx.font`).
+     - **NEVER** call `ctx.roundRect()` directly in Canvas code (crashes older WeChat/Android WebViews); always use `traceRoundedRect` with `arcTo`.
 
-6. **AI Navigation Sync (MANDATORY)**: 小白管家（漂浮入口）+ 问答（`/`）is the central entry point for the entire website. When ANY new feature, page, or module is added, the following MUST be updated in sync:
-   - **System prompt** in `web/backend/services/rag.py` (`_build_llm_messages` function): Add the new feature to the site navigation guide table, including path and description
-   - **`SITE_FEATURE_KEYWORDS`** in `web/backend/services/rag.py`: Add keywords users might use to ask about the new feature
-   - **Navigation components** (`BottomNav.vue`, `AppHeader.vue`): If it's a top-level module
+6. **Unified External Share Pages & Generated Posters**:
+   - All external share pages (`/share/report/:token`, `/collection/:slug`) and generated Canvas posters (`PageSharePoster.vue`, `SkinReportPoster.vue`, `DiaryWeeklyPoster.vue`, `render.ts`) MUST follow the same design tokens (`#0f766e` → `#0d9488` header gradient, `#f8fafc` inner cards, `#0f172a` titles, `'SubSkin · 白癜风病友的AI记录和分享社区'` brand subtitle, valid QR code routes, and medical disclaimer).
+
+7. **AI Navigation Sync (MANDATORY)**: 小白管家（漂浮入口）+ 问答（`/`）is the central entry point for the entire website. When ANY new feature, page, or module is added, the following MUST be updated in sync:
+   - `web/shared/site-modules.json` & `web/shared/page-names.json`
+   - **System prompt** & **`SITE_FEATURE_KEYWORDS`** in `web/backend/services/rag.py`
+   - **Navigation components** (`BottomNav.vue`, `AppSidebar.vue`, `AppHeader.vue`)
    - **Router** (`router/index.ts`): The route must exist before the AI can reference it
-   - NEVER allow the AI to recommend features or routes that don't exist
-   - NEVER reference community board names that don't match the actual DB categories in `web/backend/database/init_db.py`
 
-7. **Icon System — RemixIcon (MANDATORY)**: ALL icons across the project MUST use [RemixIcon](https://remixicon.com/) for visual consistency. NEVER use emoji characters (📱🔒📷 etc.) or inline SVGs for icons.
+8. **Icon System — RemixIcon (MANDATORY)**: ALL icons across the project MUST use [RemixIcon](https://remixicon.com/) for visual consistency. NEVER use emoji characters (📱🔒📷✨🔥 etc.) or inline SVGs for UI icons.
    - **Package**: `remixicon` (CSS font approach, imported in `main.ts`)
    - **Usage**: `<i class="ri-icon-name"></i>` (line variant) or `<i class="ri-icon-name-fill"></i>` (filled variant)
-   - **In data arrays**: Store the class string (e.g., `{ icon: 'ri-bar-chart-2-line', label: '白斑报告' }`), render with `<i :class="item.icon"></i>`
-   - **Default to line variants** unless filled is explicitly needed for emphasis
-   - **Never mix**: Do NOT use emoji, Heroicons SVGs, or other icon systems alongside RemixIcon
-   - **Icon size**: Controlled by parent font-size or Tailwind classes (`text-sm`, `text-lg`, `text-2xl`, etc.)
+   - **Loading spinners**: Always use `<i class="ri-loader-4-line animate-spin"></i>` instead of inline `<svg>` spinners.
    - **Common mapping**:
 
      | Concept | RemixIcon Class |
@@ -785,12 +790,33 @@ The MCP server returns "not initialized." Ask the user: *"I notice this project 
 
 | 信息类型 | 唯一位置 | 说明 |
 |----------|----------|------|
-| 项目规范 | `AGENTS.md` | 部署流程、代码规范、架构原则 |
+| 项目规范 | `AGENTS.md` | 部署流程、代码规范、架构原则（根入口宪章） |
+| **全栈开发与维护标准库** | `docs/standards/` | **8 大模块化权威规范（同步渲染于管理后台 `/#/dev-docs`「开发文档」栏目）** |
 | Skill 库 | `.agents/skills/` | 前端/后端/部署/测试等所有 skill |
 | 实施计划 | `hermes_plan/` | 所有 agent 的任务规划文件 |
 | 部署日志 | `DEPLOY_LOG.md` | staging/production 变更记录 |
-| 设计文档 | `docs/specs/` | 功能设计规格 |
+| 设计文档 | `docs/specs/` | 功能设计规格（含 `2026-10-17-subskin-design-system.md`） |
 | 解决方案 | `docs/solutions/` | 已解决问题的经验文档 |
+
+### 📚 Modular Development & Handover Standards (`docs/standards/` & Admin `/#/dev-docs`)
+
+To guarantee seamless multi-agent handover, maintenance, upgrades, and refactoring across any LLM or coding tool, all engineering, UX, design, privacy, security, and operational standards are organized into **8 canonical modules** under `/root/subskin/docs/standards/` and rendered directly in the Admin Panel's **「开发文档」** (`https://admin.subskin.cn/#/dev-docs`):
+
+| ID | Standard File | Mandatory Scope |
+|----|---------------|-----------------|
+| `STD-00` | `docs/standards/00-agent-handover-governance.md` | Multi-agent 5-step onboarding SOP, single source of truth matrix, skill triggers, handover prompt |
+| `STD-01` | `docs/standards/01-product-ux-user-journey.md` | Canonical module names (`site-modules.json`), 6 core user journeys, de-escalation medical UX & disclaimers |
+| `STD-02` | `docs/standards/02-ui-design-cross-platform.md` | Cursor & GitHub × clinical warmth design tokens, RemixIcon, WeChat WebView & Huawei browser rules, share posters |
+| `STD-03` | `docs/standards/03-privacy-security-compliance.md` | L1–L4 data classification, 10 zero-tolerance security rules, `UserConsent`, `AuditLog`, `is_discoverable` vs `privacy_mode` |
+| `STD-04` | `docs/standards/04-frontend-pwa-architecture.md` | `web/app` vs `web/admin` boundary, Vue 3 + TS <500 lines rule, `vue-tsc` gate, PWA update mechanism, `DigitalHuman` |
+| `STD-05` | `docs/standards/05-backend-ai-data-architecture.md` | Shared backend caution, 3-layer `api -> services -> models/utils`, domain exceptions, Python 3.9, additive DB migrations, RAG & CV worker |
+| `STD-06` | `docs/standards/06-environments-deployment-ops.md` | Three-environment topology, staging-first & full-sync production rules, Nginx & emergency rollback SOP |
+| `STD-07` | `docs/standards/07-testing-quality-checklists.md` | Automated quality gate commands and 5 scenario-based delivery & handover checklists |
+
+**Mandatory Sync Rule for All Agents**:
+Whenever you add/rename a route or module, change architectural patterns, or update security/design rules:
+1. Update the corresponding file(s) in `docs/standards/` and `AGENTS.md`.
+2. Rebuild the Admin Panel (`cd /root/subskin/web/admin && npx vite build`) so that `https://admin.subskin.cn/#/dev-docs` stays 100% in sync with the repository.
 
 **禁止行为：**
 - ❌ 在各自工具的私有目录中维护规则副本（如 `.opencode/rules/`、`.claude/rules/`、`.cursor/rules/`）

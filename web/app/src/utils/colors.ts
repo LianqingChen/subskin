@@ -57,16 +57,16 @@ const CATEGORY_COLORS: Record<string, CategoryColor> = {
   '其他': {
     bg: 'bg-gray-100',
     text: 'text-gray-700',
-    darkBg: '',
-    darkText: '',
+    darkBg: 'dark:bg-gray-800',
+    darkText: 'dark:text-gray-300',
   },
 }
 
 const DEFAULT_COLOR: CategoryColor = {
   bg: 'bg-gray-100',
   text: 'text-gray-700',
-  darkBg: '',
-  darkText: '',
+  darkBg: 'dark:bg-gray-800',
+  darkText: 'dark:text-gray-300',
 }
 
 /**

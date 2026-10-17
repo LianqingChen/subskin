@@ -1,111 +1,97 @@
-# SubSkin 项目架构
+# SubSkin 项目架构总览 (PROJECT_FRAMEWORK)
 
-> **更新时间**: 2026-05-25
+> **更新时间**: 2026-10-17  
+> **权威规范入口**: `/root/subskin/AGENTS.md` 与 `/root/subskin/docs/standards/`（同步展示于管理后台 `https://admin.subskin.cn/#/dev-docs`「开发文档」栏目）
 
-## 项目定位
+## 一、项目定位
 
-SubSkin 是一个面向白癜风患者和关注者的综合知识平台，由两大子系统构成：
+**SubSkin（白癜风病友的 AI 记录和分享社区）** 是一个连接前沿医学研究与患者日常病程管理的智能平台，由三大子系统构成：
 
-1. **数据 Pipeline** (`src/`)：自动化爬取、AI 翻译、摘要生成
-2. **社区 Web App** (`web/`)：Vue 3 PWA 前端 + FastAPI 后端
+1. **用户端 PWA 应用** (`web/app/`)：面向全体病友的跨端响应式 Web 应用（测试环境 `staging.subskin.cn` + 正式环境 `subskin.cn`）
+2. **独立管理后台 SPA** (`web/admin/`)：面向平台管理员的运营、风控、LLM 配置、图片标注与开发文档中心（`admin.subskin.cn`）
+3. **共享后端与离线医学数据管线** (`web/backend/` + `src/`)：FastAPI + SQLAlchemy (SQLite) + RAG/VLM/CV 视觉分割服务 + PubMed/ClinicalTrials 论文采集翻译管线
 
-## 系统架构
+---
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                      展示层                              │
-│  Vue 3 PWA (Vite) + Tailwind CSS + Three.js 3D          │
-│  小白助手 │ 小白追踪 │ 小白社区 │ 小白百科                │
-└────────────────────────┬────────────────────────────────┘
-                         │ REST / WebSocket
-┌────────────────────────┴────────────────────────────────┐
-│                      应用层                              │
-│  FastAPI + Uvicorn                                       │
-│  Auth │ Community │ RAG │ VASI │ IM │ Medical Report     │
-└────────────────────────┬────────────────────────────────┘
-                         │
-┌────────────────────────┴────────────────────────────────┐
-│                      数据层                              │
-│  SQLAlchemy ORM + SQLite                                 │
-│  Pydantic Models                                         │
-└────────────────────────┬────────────────────────────────┘
-                         │
-┌────────────────────────┴────────────────────────────────┐
-│                      AI 层                               │
-│  OpenAI / Anthropic / DashScope                          │
-│  SAM / VLM 图像分割                                      │
-└─────────────────────────────────────────────────────────┘
+## 二、系统架构拓扑
 
-┌─────────────────────────────────────────────────────────┐
-│                   数据 Pipeline (离线)                    │
-│  Crawlers → Dedup → Translate → Summarize → Export       │
-│  PubMed / Semantic Scholar / ClinicalTrials.gov          │
-└─────────────────────────────────────────────────────────┘
-```
-
-## 前端架构 (`web/app/`)
-
-- **框架**: Vue 3 + TypeScript + Vite
-- **状态管理**: Pinia
-- **样式**: Tailwind CSS (dark mode via `class` strategy)
-- **PWA**: vite-plugin-pwa, Service Worker with runtime caching
-- **3D**: Three.js (数字人体模型)
-- **路由**: Vue Router (SPA mode)
-
-### 页面模块
-
-| 路由 | 模块 | 说明 |
-|------|------|------|
-| `/` | 小白助手 | AI 对话助手，RAG 问答 |
-| `/tracker` | 小白追踪 | 3D 身体图、VASI 评估、报告管理 |
-| `/community` | 小白社区 | 帖子信息流、发帖、互动 |
-| `/encyclopedia` | 小白百科 | 白癜风知识库 |
-| `/chat` | IM 聊天 | 即时通讯 |
-| `/profile` | 个人中心 | 用户设置、隐私管理 |
-
-## 后端架构 (`web/backend/`)
-
-- **框架**: FastAPI + Uvicorn
-- **数据库**: SQLite (via SQLAlchemy)
-- **认证**: JWT + SMS/Email 验证码 + OAuth (微信/支付宝)
-
-### 核心服务
-
-| 服务 | 文件 | 职责 |
-|------|------|------|
-| Auth | `services/auth.py` | JWT 签发、验证码登录 |
-| Community | `services/community.py` | 帖子 CRUD、信息流、关注 |
-| RAG | `services/rag.py` | AI 问答、知识检索、站点导航 |
-| VASI | `services/vasi.py` | 白斑图像分析、VASI 评分 |
-| IM | `services/im_service.py` | WebSocket 即时通讯 |
-| Medical | `services/medical/` | 报告解析、指标解读 |
-
-## 数据 Pipeline 架构 (`src/`)
-
-```
-Crawlers → Processors → Exporters → Notifications
-   ↓            ↓            ↓            ↓
- 采集原始    翻译/摘要    JSON/MD     QQ/微信
- 论文数据    去重/分类    导出        推送
+```text
+┌────────────────────────────────────────────────────────────────────────────┐
+│                                前端展示层                                   │
+│  ┌────────────────────────────────────┐  ┌──────────────────────────────┐  │
+│  │ 用户端 PWA (web/app/)               │  │ 管理后台 SPA (web/admin/)     │  │
+│  │ Vue 3 + TS + Tailwind + RemixIcon  │  │ Vue 3 + TS + NaiveUI + ECharts│  │
+│  │ 问答 · 日记 · 发现 · 就医经验 · 同行 │  │ 开发文档 · 规划档案 · 风控等  │  │
+│  └─────────────────┬──────────────────┘  └──────────────┬───────────────┘  │
+└────────────────────┼────────────────────────────────────┼──────────────────┘
+                     │ HTTPS REST / SSE (/api/*)          │
+                     ▼                                    ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│                        应用与服务层 (web/backend/)                          │
+│  FastAPI + Uvicorn (127.0.0.1:8000 — 三环境共享唯一后端实例)                 │
+│  ├─ API 路由层 (api/)        : 请求解析、鉴权、领域异常转 HTTPException      │
+│  ├─ 业务服务层 (services/)   : Auth / Community / Hospitals / RAG / VASI    │
+│  └─ 工具与配置层 (utils/)    : llm_config / pii_detect / 零框架依赖纯函数   │
+└────────────────────────────────────┬───────────────────────────────────────┘
+                                     │
+         ┌───────────────────────────┼───────────────────────────┐
+         ▼                           ▼                           ▼
+┌─────────────────┐       ┌─────────────────────┐     ┌──────────────────────┐
+│ 数据存储层       │       │ AI 与视觉计算层      │     │ 离线文献管线 (src/)   │
+│ SQLite (WAL)    │       │ DashScope / 火山引擎 │     │ PubMed / 临床试验爬虫 │
+│ 私有医疗影像存储 │       │ text-embedding-v4   │     │ LLM 自动翻译与摘要    │
+│ AuditLog 审计表 │       │ rgb_seg_worker 分割 │     │ 知识库向量化入库      │
+└─────────────────┘       └─────────────────────┘     └──────────────────────┘
 ```
 
-## 数据隐私分级
+---
 
-项目实行四级数据分类，严格控制不同敏感级别的数据：
+## 三、用户端核心模块 (`web/app/`)
 
-- **L4 极高**: 密码 (bcrypt)、JWT Token — 绝不对外暴露
-- **L3 高**: 手机号、邮箱、病情图片 — API 脱敏返回
-- **L2 中**: 昵称、头像、帖子内容 — 用户自主选择公开范围
-- **L1 低**: 百科内容、统计数据 — 可公开访问
+> **命名唯一事实来源**: `web/shared/site-modules.json` 与 `web/shared/page-names.json`（严禁使用已废弃的“小白助手”、“小白追踪”、“白友圈”、“小白手账”、“小白百科”等旧称）。
 
-## 技术选型决策
+| 路由路径 | 官方模块名 | 核心职责说明 |
+|----------|------------|--------------|
+| `/` (`/chat`) | **问答** | AI 智能问答首页、RAG 医学文献检索解读、全局悬浮「小白管家」功能导航 |
+| `/assessment` | **日记** | 白斑日记：24 部位 SVG 木头小人点选 (`DigitalHuman.vue`)、拍照记录、白斑多边形范围核对 (`MaskEditor`)、时间轴与前后对比报告 |
+| `/assessment/exam` | **体检解读** | 归属「日记」子模块：上传化验单图片，AI 自动识别提取异常指标并提供温和科普与复诊提问建议 |
+| `/community` | **发现** | 病友图文与康复经验分享信息流（关注、推荐、同城、分类筛选、图文发布） |
+| `/hospitals` | **就医经验** | 归属「发现」子模块：按地区查询白癜风医院官方资料、就诊前问题清单与病友客观就诊过程/费用分享（不评比医术疗效，含社区公约与申诉通道） |
+| `/contribution` | **同行** | 个人成长环、有效图片积累方格、可核验采纳月份柱图与 24 身体部位样本分布 |
+| `/profile` | **个人中心** | 账号资料、登录凭证绑定、颗粒度用途授权 (`UserConsent`)、可发现性设置 (`is_discoverable`) 与账号注销 |
+| `/care` | **调养** | 主导航暂隐藏（`nav_hidden: true`），保留直接路由与本机护理清单访问 |
+| `/share/report/:token`<br>`/collection/:slug` | **公开分享页** | 免登录外部分享落地页（白斑变化报告分享、精华合集分享），遵循全站统一设计系统 |
 
-| 决策点 | 选择 | 原因 |
-|--------|------|------|
-| 前端框架 | Vue 3 + Vite | 生态成熟，响应式优先 |
-| PWA | vite-plugin-pwa | 离线可用，类原生体验 |
-| CSS 方案 | Tailwind CSS | 原子化 CSS，暗色模式支持好 |
-| 3D 引擎 | Three.js | 浏览器兼容性最好 |
-| 后端框架 | FastAPI | 异步支持，自动 OpenAPI 文档 |
-| 数据库 | SQLite | 轻量部署，单机足够 |
-| 图标库 | RemixIcon | 开源免费，风格统一 |
+---
+
+## 四、管理后台模块 (`web/admin/`)
+
+| 路由路径 | 栏目名称 | 核心职责说明 |
+|----------|----------|--------------|
+| `/#/dev-docs` | **开发文档** | 全栈建设与维护规范中心（8 大模块 `STD-00` ~ `STD-07`、设计系统、隐私生死线、多 Agent 交接手册） |
+| `/#/planning` | **规划档案** | 历史研究报告、设计方案、任务计划（`hermes_plan/`）与部署记录归档检索 |
+| `/#/dashboard` | **数据监控** | 全站核心北极星指标、转化漏斗、模块活跃度与趋势看板 |
+| `/#/content-gen` | **内容生成** | AI 辅助科普与社区种子内容生成管理 |
+| `/#/moderation` | **风控管理** | 社区帖子、评论敏感词拦截与人工审核工作台 |
+| `/#/hospital-risk` | **公益风控** | 就医经验审核、医院资料纠错与申诉处理 |
+| `/#/users` | **用户管理** | 用户列表、状态管理与权限配置 |
+| `/#/llm-config` | **LLM配置** | 多模型供应商（DashScope / Volcengine 等）与路由切换配置 |
+| `/#/prompt-config` | **提示词管理** | 系统提示词版本化配置与调优 |
+| `/#/image-labeling` | **图片打标** | 患处影像人工标注与多边形精细核对工作台 |
+| `/#/training` | **训练数据** | AI 分割模型训练集统计与导出 |
+| `/#/site-maintenance`| **网站运维** | 系统运行状态监控、服务健康检查与运维操作 |
+
+---
+
+## 五、全栈开发与维护规范索引 (`docs/standards/`)
+
+所有进入本项目的开发者与 AI Agent 必须严格遵守 `/root/subskin/docs/standards/` 下的 8 篇权威规范：
+
+1. `00-agent-handover-governance.md` — 多 Agent 协同、无缝交接与项目治理总纲
+2. `01-product-ux-user-journey.md` — 产品架构、核心模块、用户动线与体验规范
+3. `02-ui-design-cross-platform.md` — 全站 UI 设计系统、多端适配与分享海报规范
+4. `03-privacy-security-compliance.md` — 隐私保护、数据分级与安全合规生死线
+5. `04-frontend-pwa-architecture.md` — 前端技术栈、工程架构与 PWA 开发规范
+6. `05-backend-ai-data-architecture.md` — 后端架构、数据库、AI/LLM 与算法服务规范
+7. `06-environments-deployment-ops.md` — 三套环境隔离、部署流程、Nginx 与运维监控规范
+8. `07-testing-quality-checklists.md` — 质量门禁、测试规范与全栈交付验收清单
