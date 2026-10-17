@@ -240,9 +240,15 @@ def my_summary(db: Session, user_id: int) -> dict:
         .scalar()
         or 0
     )
+    # Same unit as ``uploads``: distinct photos of this user's active records whose
+    # label still awaits review. Counting label rows double-counted re-uploads and
+    # legacy-flow copies, so "pending" could exceed "uploaded".
     pending = (
-        db.query(func.count(ImageLabel.id))
+        db.query(func.count(func.distinct(VASIAssessment.image_hash)))
+        .join(ImageLabel, ImageLabel.assessment_id == VASIAssessment.id)
         .filter(
+            VASIAssessment.user_id == user_id,
+            VASIAssessment.status == "active",
             ImageLabel.original_user_id == user_id,
             ImageLabel.is_user_deleted.is_(False),
             ImageLabel.label_status == "pending",

@@ -234,3 +234,25 @@ def test_owner_scoped_endpoints_and_read_only_gets(
     assert events["total"] == 2 and len(events["items"]) == 1
     assert "event_key" not in events["items"][0]
     assert client.get("/api/contributions/me/events?limit=5000").status_code == 422
+
+
+def test_pending_counts_distinct_photos_not_label_rows(db_session, test_user):
+    def pending(fingerprint):
+        row = label(db_session, test_user, fingerprint=fingerprint)
+        row.label_status, row.training_eligible = "pending", False
+        db_session.commit()
+        return row
+
+    first = pending("synthetic-a")
+    # Legacy-flow copies of the same record: still one photo.
+    for _ in range(2):
+        db_session.add(ImageLabel(original_user_id=test_user.id, assessment_id=first.assessment_id,
+                                  image_url=first.image_url, image_hash=None, label_status="pending"))
+    pending("synthetic-a-reupload")
+    label(db_session, test_user, fingerprint="synthetic-b")
+    gone = pending("synthetic-c")
+    db_session.get(VASIAssessment, gone.assessment_id).status = "abandoned"
+    db_session.commit()
+    summary = service.my_summary(db_session, test_user.id)
+    assert summary["pending"] == 2
+    assert summary["pending"] <= summary["uploaded"]
