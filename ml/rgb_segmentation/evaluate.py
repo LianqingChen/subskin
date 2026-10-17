@@ -62,20 +62,13 @@ def evaluate(
             if model is not None:
                 prediction = predict(model, rgb)
             else:
-                from web.backend.services.vasi_skin_mask import build_skin_mask
-                from web.backend.services.vasi_edge_segmentation import (
-                    segment_lesions_edge_aware,
-                )
+                # Baseline = the draft users get today (parsed skin + photo-adaptive lesion).
+                from web.backend.services.rgb_segmentation.inference import infer_rgb
 
-                skin = build_skin_mask(rgb)
+                masks, _ = infer_rgb(rgb)
                 prediction = np.zeros(truth.shape, np.uint8)
-                if skin is not None:
-                    prediction[skin] = 1
-                    candidate = (
-                        segment_lesions_edge_aware(rgb, region=skin) or {}
-                    ).get("lesion_mask")
-                    if candidate is not None:
-                        prediction[candidate & skin] = 2
+                prediction[masks["skin"]] = 1
+                prediction[masks["lesion"] & masks["skin"]] = 2
             row["metrics"] = score_labels(prediction, truth, rgb)
         except Exception:
             row["metrics"] = None
@@ -97,7 +90,7 @@ def evaluate(
     report = {
         "kind": "offline_model_benchmark",
         "baseline": (
-            "torchscript" if model is not None else "raw_cv_candidate_not_v2_pipeline"
+            "torchscript" if model is not None else "current_runtime_draft"
         ),
         "manifest_sha256": document["manifest_sha256"],
         "weights_sha256": (

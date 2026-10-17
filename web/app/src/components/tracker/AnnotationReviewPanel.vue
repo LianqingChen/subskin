@@ -29,7 +29,7 @@ function confirm() {
   <section aria-label="核对并调整皮肤和白斑范围" class="mx-auto w-full max-w-3xl" :class="fitScreen ? 'flex min-h-0 flex-1 flex-col gap-2' : 'space-y-2'">
     <PhotoMaskCanvas ref="editor" :fill="fitScreen" :image="image" :skin="skin" :lesion="lesion" :candidate="uncertain" :reference="reference" editable :busy="busy" :tool="tool" :brush-size="brushSize" :refine="selector ?? null" :outline="outline ?? null" :snap="snap ?? null" @ready="ready = $event" @refining="refining = $event" @candidates="hasCandidate = $event" />
     <div class="z-30 shrink-0 space-y-2 bg-gray-50 dark:bg-gray-900" :class="fitScreen ? '' : 'sticky bottom-0 pb-2'">
-      <p class="px-1 text-xs leading-4 text-gray-500 dark:text-gray-400">浅橙是待核对范围。确认后只保留浅粉白斑，浅橙不计入占比。</p>
+      <p class="px-1 text-xs leading-4 text-gray-500 dark:text-gray-400">浅粉为白斑初稿，浅橙存疑、不计占比。</p>
       <div class="grid grid-cols-2 gap-2">
         <button type="button" class="min-h-[44px] rounded-xl bg-primary-50 text-sm font-medium text-primary-800 disabled:opacity-40 dark:bg-primary-900/40 dark:text-primary-200" :disabled="busy || !ready || refining || !hasCandidate" @click="adoptAll">全部当作白斑</button>
         <button type="button" class="min-h-[44px] rounded-xl border border-gray-300 text-sm text-gray-700 disabled:opacity-40 dark:border-gray-600 dark:text-gray-200" :disabled="busy || !ready || refining || !hasCandidate" @click="discardAll">丢弃候选</button>

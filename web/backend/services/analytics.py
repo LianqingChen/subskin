@@ -61,15 +61,17 @@ FEATURE_USE_ELEMENT_IDS = (
     "report_upload_btn",
     # 主导航：元素 id 由导航项 label 拼成（header_nav_<label> / bottom_nav_<label>），
     # label 来自 web/shared/site-modules.json —— 模块改名后必须同步补上新 id，
-    # 否则该 Tab 的点击不计入「功能使用UV」（当前模块名：问答 / 记录 / 发现 / 调养；原「公益」已改名就医经验并并入发现，不在主导航）。
+    # 否则该 Tab 的点击不计入「功能使用UV」（当前模块名：问答 / 日记 / 发现 / 调养；原「公益」已改名就医经验并并入发现，不在主导航）。
     "header_nav_问答",
-    "header_nav_记录",
+    "header_nav_日记",
+    "header_nav_记录",  # legacy（2026-10-17 记录更名为日记）
     "header_nav_发现",
     "header_nav_分享",  # legacy（2026-09-30 分享Tab更名为发现）
     "header_nav_调养",
     "header_nav_公益",
     "bottom_nav_问答",
-    "bottom_nav_记录",
+    "bottom_nav_日记",
+    "bottom_nav_记录",  # legacy（2026-10-17 记录更名为日记）
     "bottom_nav_发现",
     "bottom_nav_分享",  # legacy（2026-09-30 分享Tab更名为发现）
     "bottom_nav_调养",

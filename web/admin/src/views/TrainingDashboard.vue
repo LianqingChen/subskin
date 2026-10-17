@@ -2,8 +2,12 @@
   <div class="training-page">
     <n-page-header title="训练数据管理" />
     <p class="page-desc">
-      打标数据沉淀为训练样本 — 训练 U-Net 白斑识别模型，对比上线前后精度，持续优化测评与白斑报告
+      打标数据沉淀为训练样本 — 训练白斑识别模型，对比上线前后精度，持续优化测评与白斑报告
     </p>
+
+    <RgbSegmentationPanel />
+
+    <div class="legacy-title">旧版测评（VASI/SAM）U-Net 样本与训练</div>
 
     <!-- 统计卡片 -->
     <n-grid :cols="isMobile ? 2 : 4" :x-gap="12" :y-gap="12" style="margin-top: 20px" responsive="screen">
@@ -363,6 +367,7 @@ import {
   useMessage,
 } from 'naive-ui'
 import request from '@/api/request'
+import RgbSegmentationPanel from '@/components/training/RgbSegmentationPanel.vue'
 
 const message = useMessage()
 
@@ -764,6 +769,7 @@ onUnmounted(() => {
 
 <style scoped>
 .training-page { padding: 0; }
+.legacy-title { margin-top: 28px; font-size: 13px; color: #94a3b8; }
 .page-desc {
   color: #94a3b8;
   margin: 6px 0 0;

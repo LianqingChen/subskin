@@ -1,7 +1,7 @@
 """Deterministic RGB proposal inference with an explicit untrained fallback."""
 
 import io
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 import numpy as np
 from web.backend.services.rgb_segmentation.registry import registered_model
 from web.backend.services.vasi_skin_mask import build_skin_mask
@@ -51,7 +51,50 @@ def infer_rgb(rgb: np.ndarray) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
             "note": "专用模型候选，仍需人工核对",
             "confidence_calibrated": False,
         }
+    drafted = _parsed_draft(rgb)
+    if drafted is not None:
+        return drafted
     return _interactive_reference(rgb, empty)
+
+
+def _parsed_draft(
+    rgb: np.ndarray,
+) -> Optional[Tuple[Dict[str, np.ndarray], Dict[str, Any]]]:
+    """Person-parsed skin plus a photo-adaptive lesion draft.
+
+    High-confidence light patches are pre-filled in the lesion layer for the
+    user to confirm; a thin boundary band (or, with too little contrast, the
+    whole candidate) stays uncertain. Returns None when the parser is
+    unavailable or sees no person, so the colour fallback still runs.
+    """
+    from web.backend.services.rgb_segmentation.lesion_draft import draft_lesion
+    from web.backend.services.rgb_segmentation.skin_parsing import parse_skin
+
+    parsed = parse_skin(rgb)
+    if parsed is None:
+        return None
+    skin = parsed["skin"]
+    draft = draft_lesion(rgb, skin, parsed["no_draft"])
+    return {
+        "skin": skin,
+        "lesion": draft["lesion"] & skin,
+        "uncertain": draft["uncertain"] & skin,
+        "excluded": np.zeros(skin.shape, dtype=bool),
+    }, {
+        "model_id": None,
+        "source": "parsed_skin_draft",
+        "skin_model": "mediapipe-selfie-multiclass-256",
+        "lesion_method": "ita-illumination-otsu-grabcut-v1",
+        "automatic_measurement": False,
+        "draft_check": draft["check"],
+        "faces": parsed["faces"],
+        "note": (
+            "已自动标出浅色范围初稿，请核对后确认"
+            if draft["check"]["status"] == "draft"
+            else "浅色与正常皮肤对比不明显，请核对候选范围"
+        ),
+        "confidence_calibrated": False,
+    }
 
 
 def _interactive_reference(

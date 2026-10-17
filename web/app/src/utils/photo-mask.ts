@@ -1,6 +1,6 @@
 /** Display palette never changes the binary masks used for measurement. */
 export const MASK_PALETTE = { skin: [147, 197, 253], lesion: [249, 168, 212], uncertain: [240, 143, 0], opacity: 0.4 } as const
-export type PhotoMaskTool = 'skin' | 'lesion' | 'eraser' | 'refine'
+export type PhotoMaskTool = 'skin' | 'lesion' | 'eraser' | 'refine' | 'remove'
 export interface PhotoMasks { width: number; height: number; skin: Uint8Array; lesion: Uint8Array; uncertain?: Uint8Array }
 export function alphaMask(rgba: Uint8ClampedArray): Uint8Array {
   return Uint8Array.from({ length: rgba.length / 4 }, (_, i) => rgba[i * 4 + 3] > 32 ? 1 : 0)
@@ -28,6 +28,29 @@ export function adoptUncertain(m: PhotoMasks): void {
 }
 export function discardUncertain(m: PhotoMasks): void {
   m.uncertain?.fill(0)
+}
+/** Tap-to-remove: clear the 8-connected lesion (or candidate) region under the point. Skin is kept. */
+export function removeRegionAt(m: PhotoMasks, x: number, y: number): number {
+  const px = Math.floor(x), py = Math.floor(y)
+  if (px < 0 || py < 0 || px >= m.width || py >= m.height) return 0
+  const start = py * m.width + px
+  const layer = m.lesion[start] ? m.lesion : m.uncertain?.[start] ? m.uncertain : null
+  if (!layer) return 0
+  const stack = [start]
+  let removed = 0
+  layer[start] = 0
+  while (stack.length) {
+    const i = stack.pop() as number
+    removed++
+    const cx = i % m.width, cy = (i - cx) / m.width
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const nx = cx + dx, ny = cy + dy
+      if (nx < 0 || ny < 0 || nx >= m.width || ny >= m.height) continue
+      const j = ny * m.width + nx
+      if (layer[j]) { layer[j] = 0; stack.push(j) }
+    }
+  }
+  return removed
 }
 export function replaceLayer(m: PhotoMasks, layer: 'lesion' | 'uncertain', incoming: Uint8Array): void {
   const dest = layer === 'lesion' ? m.lesion : (m.uncertain || (m.uncertain = new Uint8Array(m.lesion.length)))

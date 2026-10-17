@@ -1,5 +1,5 @@
 import { ref, watch, onMounted, onBeforeUnmount, type Ref } from 'vue'
-import { adoptUncertain, alphaMask, discardUncertain, paintPhotoMasks, replaceLayer, type PhotoMaskTool, type PhotoMasks } from '@/utils/photo-mask'
+import { adoptUncertain, alphaMask, discardUncertain, paintPhotoMasks, removeRegionAt, replaceLayer, type PhotoMaskTool, type PhotoMasks } from '@/utils/photo-mask'
 import { loadPhotoMasks, renderPhotoMasks, exportPhotoMasks, maskDataUrl, type LoadedPhotoMasks, type PhotoMaskSources } from '@/utils/photo-mask-canvas'
 import { RGBTaskError, type RGBSelector } from '@/api/rgb-segmentation'
 import { assessmentError } from '@/utils/assessment-errors'
@@ -232,6 +232,15 @@ export function usePhotoMaskCanvas(options: PhotoCanvasOptions, target: Ref<HTML
     if (activePointer !== null) { cancelStroke(); return }
     if (!e.isPrimary || e.button !== 0) return
     if (options.tool === 'refine') { e.preventDefault(); const at = point(e); if (at) void refineAt(at[0], at[1]); return }
+    if (options.tool === 'remove') {
+      e.preventDefault()
+      const at = point(e)
+      if (!at) return
+      const before = cloneSnap(loaded.masks)
+      if (removeRegionAt(loaded.masks, at[0], at[1])) { error.value = ''; dirty = undefined; render(); recordChange(before) }
+      else error.value = '这里没有白斑或候选，点在要去掉的那一块上'
+      return
+    }
     e.preventDefault()
     error.value = ''; activePointer = e.pointerId; painting.value = true
     beforeStroke = cloneSnap(loaded.masks)

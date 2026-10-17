@@ -45,3 +45,10 @@ test('lesion eraser keeps skin; skin eraser removes both masks',()=>{
  paintPhotoMasks(m,'lesion',true,[10,10],[10,10],3);assert.equal(m.lesion[330],0);assert.equal(m.skin[330],1)
  paintPhotoMasks(m,'skin',true,[20,20],[20,20],3);assert.equal(m.lesion[660],0);assert.equal(m.skin[660],0)
 })
+test('tap-to-remove clears only the connected lesion region, then candidates, and keeps skin',()=>{
+ const {removeRegionAt}=exportsObject
+ const m={width:6,height:2,skin:new Uint8Array(12).fill(1),lesion:new Uint8Array([1,1,0,0,1,1, 0,1,0,0,0,1]),uncertain:new Uint8Array([0,0,1,0,0,0, 0,0,1,0,0,0])}
+ assert.equal(removeRegionAt(m,0,0),3);assert.deepEqual([...m.lesion],[0,0,0,0,1,1, 0,0,0,0,0,1]);assert.equal(m.skin[0],1)
+ assert.equal(removeRegionAt(m,2,1),2);assert.equal(m.uncertain[2],0)
+ assert.equal(removeRegionAt(m,3,0),0);assert.equal(removeRegionAt(m,-1,0),0)
+})

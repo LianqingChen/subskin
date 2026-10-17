@@ -41,9 +41,13 @@ python -m ml.rgb_segmentation evaluate /private/dataset/manifest.json --weights 
 
 训练输出TorchScript与training-report.json，始终enabled=false。当前实现为轻量U-Net随机初始化基线，无预训练权重下载；RGB预训练编码器可作为后续实验，不能将随机初始化基线称为已训练好的专用模型。训练使用validation选最佳checkpoint，不使用test选模型。
 
-不带--weights时评估原始CV候选作为对照，报告会明确该对照不是旧VLM+SAM完整链路。Synthetic数据必须显式--allow-synthetic，产物不允许注册成真实模型。
+不带--weights时评估当前线上初稿（人体解析皮肤 + 照片自适应白斑，`inference.infer_rgb`）作为对照，报告 baseline 为 `current_runtime_draft`。Synthetic数据必须显式--allow-synthetic，产物不允许注册成真实模型。
 
 报告包括Dice、IoU、Precision、Recall、Boundary F1、面积相对误差/占比百分点误差、漏检/误检、同图Mask导致的颜色差异及按部位/肤色/光照/质量/设备/面积分组。边界统一到长边1024、容差2px，未知标签附近的边界不计入；阴性图不填Dice=1拉高正例均值。报告同时包含失败和患者bootstrap区间。当前自动测量覆盖率为0，不能以人工核对率或成功请求数充当模型准确率。
+
+## 后台一体化链路（2026-10-17）
+
+管理后台已接通：打标页「记录页」标注 → 提交并勾选「审核通过」（校验用户「改进识别」授权，记录不可变快照为金标准）→ 训练页「导出数据集」（`dataset_pipeline.export_dataset`：重新校验授权、HMAC 匿名受试者、按受试者分 split、用本工具 `validate_manifest` 校验）→「开始训练」（后台 nice 子进程 `training_job`：train → evaluate 模型 → evaluate 当前初稿）→ 锁定测试集达门槛（≥20 张、≥5 位用户、白斑 Dice≥0.80、皮肤 Dice≥0.85、优于当前初稿）后才可「登记上线」，可随时停用。数据集与训练产物位于 `data/rgb_segmentation/{datasets,training_runs}/`。
 
 ## 模型注册
 

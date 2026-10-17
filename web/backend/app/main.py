@@ -49,6 +49,7 @@ from web.backend.api import (
     content_generation_admin,
     image_label,
     vasi_training_admin,
+    rgb_training_admin,
     medication,
     diary,
     skin_report,
@@ -417,6 +418,7 @@ app.include_router(planning_admin.router)
 app.include_router(content_generation_admin.router)
 app.include_router(image_label.router, prefix="/api/vasi", tags=["图片打标管理"])
 app.include_router(vasi_training_admin.router, prefix="/api/vasi", tags=["模型训练管理"])
+app.include_router(rgb_training_admin.router, prefix="/api/vasi", tags=["RGB分割训练"])
 
 # 初始化监控 (Sentry + Prometheus)
 from web.backend.services.monitoring import init_sentry, PrometheusMiddleware

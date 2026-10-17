@@ -176,6 +176,8 @@
                   <i class="ri-user-line"></i> {{ item.username }}
                 </span>
                 <span v-else-if="item.source === 'admin'" class="label-row-user muted">管理员上传</span>
+                <n-tag v-if="item.rgb" size="tiny" :bordered="false" type="info">记录页</n-tag>
+                <n-tag v-if="item.rgb && !item.rgb.consent_allowed" size="tiny" :bordered="false">未授权训练</n-tag>
                 <span class="label-row-date">{{ formatShortDate(item.photo_date || item.created_at) }}</span>
               </div>
 
@@ -221,7 +223,7 @@
                     <n-tag v-if="item.admin_area_percentage != null" size="tiny" :bordered="false">{{ item.admin_area_percentage }}%</n-tag>
                     <span v-if="item.admin_is_vitiligo == null" class="no-ai-tag">未标注</span>
                     <n-tag v-if="item.in_training_set" size="tiny" :bordered="false" type="success" style="margin-left: auto;">
-                      <i class="ri-database-2-line"></i> 已入训练集
+                      <i class="ri-database-2-line"></i> {{ item.rgb ? '金标准' : '已入训练集' }}
                     </n-tag>
                   </div>
                   <div class="section-actions">
@@ -234,11 +236,12 @@
                       size="tiny"
                       type="primary"
                       ghost
+                      :disabled="!!item.rgb && !item.rgb.consent_allowed"
                       :loading="addingTrainingId === item.id"
                       @click="addToTraining(item)"
                     >
-                      <template #icon><i class="ri-database-2-line" /></template>
-                      添加至训练样本
+                      <template #icon><i :class="item.rgb ? 'ri-shield-check-line' : 'ri-database-2-line'" /></template>
+                      {{ item.rgb ? '审核通过（金标准）' : '添加至训练样本' }}
                     </n-button>
                   </div>
                 </div>
@@ -415,6 +418,8 @@ interface LabelItem {
   has_admin_annotation?: boolean
   has_admin_composite?: boolean
   in_training_set?: boolean
+  // 新流程（记录页 RGB）：金标准与训练授权；旧流程为 null
+  rgb?: { is_rgb: boolean; gold_current: boolean; consent_allowed: boolean } | null
 }
 
 interface StatsData {
@@ -488,7 +493,7 @@ async function addToTraining(item: LabelItem) {
       `/vasi/admin/image-labels/${item.id}/training-sample`,
     )
     if (data.status === 'ok') {
-      message.success('已添加至训练样本，可在训练数据页查看')
+      message.success(item.rgb ? '已审核通过为训练金标准，可在训练页导出数据集' : '已添加至训练样本，可在训练数据页查看')
       item.in_training_set = true
       fetchStats()
     }
@@ -730,7 +735,8 @@ async function fetchList() {
     if (filters.user_id != null) params.user_id = filters.user_id
     if (filters.username.trim()) params.username = filters.username.trim()
     const { data } = await request.get<{ total: number; items: LabelItem[] }>('/vasi/admin/image-labels', { params })
-    list.value = data.items || []
+    // 新流程标注的"入训练集"即"已审核为金标准"
+    list.value = (data.items || []).map((i: LabelItem) => (i.rgb ? { ...i, in_training_set: i.rgb.gold_current } : i))
     total.value = data.total || 0
   } catch (err: any) {
     message.error(err?.response?.data?.detail || '获取列表失败')

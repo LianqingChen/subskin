@@ -110,12 +110,15 @@ class ImageLabelDetail(BaseModel):
 
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
+    # 新流程（日记页 RGB）标注：快照/金标准/训练授权状态；旧流程为 None
+    rgb: Optional[dict] = None
 
     class Config:
         from_attributes = True
 
 
 class ImageLabelListItem(BaseModel):
+    rgb: Optional[dict] = None
     id: int
     assessment_id: Optional[int] = None
     image_url: str
@@ -192,7 +195,15 @@ def _format_dt(dt: Optional[datetime]) -> Optional[str]:
     return iso_utc(dt) if dt else None
 
 
-def _label_to_detail(label: ImageLabel) -> ImageLabelDetail:
+def _rgb_state(db: Optional[Session], label: ImageLabel) -> Optional[dict]:
+    from web.backend.services.assessment_measurement import read_details
+    if db is None or not (read_details(label.ai_details).get("rgb_sync") or {}).get("job_id"):
+        return None
+    from web.backend.services.rgb_segmentation.dataset_pipeline import gold_state
+    return gold_state(db, label)
+
+
+def _label_to_detail(label: ImageLabel, db: Optional[Session] = None) -> ImageLabelDetail:
     annotations = [
         AnnotationItem(
             source=a.source,
@@ -256,6 +267,7 @@ def _label_to_detail(label: ImageLabel) -> ImageLabelDetail:
         annotations=annotations,
         created_at=_format_dt(label.created_at),
         updated_at=_format_dt(label.updated_at),
+        rgb=_rgb_state(db, label),
     )
 
 
@@ -403,6 +415,7 @@ async def list_image_labels(
             has_admin_annotation="admin" in sources,
             has_admin_composite=bool(r.annotated_image_path),
             in_training_set=r.id in training_label_ids,
+            rgb=_rgb_state(db, r),
         ))
 
     return ImageLabelListResponse(total=total, items=items)
@@ -446,7 +459,7 @@ async def get_image_label_detail(
     label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
     if not label:
         raise HTTPException(status_code=404, detail="标注记录不存在")
-    return _label_to_detail(label)
+    return _label_to_detail(label, db)
 
 
 def _generate_annotated_image(
@@ -741,12 +754,17 @@ async def admin_label_image(
     from web.backend.services.rgb_segmentation.label_review import save_admin_reference
     from web.backend.exceptions import RGBSegmentationError
 
-    if is_rgb_label(label):
+    rgb_label = is_rgb_label(label)
+    rgb_gold_request: Optional[bool] = None
+    if rgb_label:
         try:
             update_data["area_percentage"] = save_admin_reference(db, label, admin_user.id, annotations_data, request.draft_mode)
         except RGBSegmentationError as exc:
             raise HTTPException(status_code=exc.http_status, detail=str(exc))
-        training_eligible = False  # A versioned, authorized dataset release is separate.
+        # For RGB labels the checkbox means "approve this snapshot as gold"; the
+        # legacy training flag stays False (RGB datasets are exported separately).
+        rgb_gold_request = training_eligible
+        training_eligible = False
 
 
     changes = []
@@ -831,6 +849,22 @@ async def admin_label_image(
 
     db.commit()
 
+    rgb_gold = None
+    if rgb_label and not request.draft_mode and rgb_gold_request is not None:
+        from web.backend.services.rgb_segmentation import dataset_pipeline
+
+        try:
+            if rgb_gold_request:
+                dataset_pipeline.approve_gold(db, label, admin_user.id)
+            else:
+                dataset_pipeline.revoke_gold(db, label, admin_user.id)
+            db.commit()
+        except RGBSegmentationError as exc:
+            db.rollback()
+            rgb_gold = {"error": str(exc)}
+        label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
+        rgb_gold = {**dataset_pipeline.gold_state(db, label), **(rgb_gold or {})}
+
     # ── Save / generate annotated image (original + admin mask overlay) ──
     # Uses FIXED filename so each draft overwrites the previous — only keeps latest
     try:
@@ -879,7 +913,7 @@ async def admin_label_image(
             joinedload(ImageLabel.annotations),
             joinedload(ImageLabel.assessment),
         ).filter(ImageLabel.id == label_id).first()
-        if label:
+        if label and not rgb_label:
             _ensure_image_hash(label, db)
             from web.backend.services.vasi_feedback import VasiFeedbackCollector
             collector = VasiFeedbackCollector(db)
@@ -897,6 +931,7 @@ async def admin_label_image(
         "changes": len(changes),
         "draft": request.draft_mode,
         "label_status": label.label_status,
+        "rgb_gold": rgb_gold,
     }
 
 
@@ -1144,6 +1179,18 @@ def _add_label_to_training(label_id: int, admin_user: User, db: Session) -> dict
         return {"ok": False, "status_code": 400, "detail": f"标注 {label_id} 对应用户已删除该测评，不能加入训练集"}
     if label.label_status != "labeled":
         return {"ok": False, "status_code": 400, "detail": f"标注 {label_id} 请先完成标注提交"}
+    from web.backend.services.rgb_segmentation.label_sync import is_rgb_label
+    if is_rgb_label(label):
+        # RGB labels never become legacy VasiTrainingSample rows; "加入训练" = approve as gold.
+        from web.backend.exceptions import RGBSegmentationError
+        from web.backend.services.rgb_segmentation import dataset_pipeline
+        try:
+            dataset_pipeline.approve_gold(db, label, admin_user.id)
+        except RGBSegmentationError as exc:
+            db.rollback()
+            return {"ok": False, "status_code": exc.http_status, "detail": f"标注 {label_id}：{exc}"}
+        db.commit()
+        return {"ok": True, "sample_id": None, "rgb_gold": True}
     # 分用途授权：用户来源的图片必须有有效的“改进识别”授权才能加入训练集
     from web.backend.services.data_consent import label_training_decision
     if not label_training_decision(db, label).allowed:
@@ -1246,8 +1293,11 @@ async def batch_update_status(
         row.label_status = request.label_status
         if request.training_eligible is not None:
             from web.backend.services.data_consent import label_training_decision
-            # 只能把有授权的标注置为可训练；置为 False 不受限
-            if not request.training_eligible or label_training_decision(db, row).allowed:
+            from web.backend.services.rgb_segmentation.label_sync import is_rgb_label
+            # 只能把有授权的标注置为可训练；置为 False 不受限。RGB 标注走金标准审核，不进旧训练。
+            if request.training_eligible and is_rgb_label(row):
+                pass
+            elif not request.training_eligible or label_training_decision(db, row).allowed:
                 row.training_eligible = request.training_eligible
         _log_change(db, row.id, admin_user.id, request.label_status)
         updated += 1
@@ -2392,9 +2442,13 @@ async def sync_training_samples(
 
     from web.backend.services.data_consent import label_training_decision
 
+    from web.backend.services.rgb_segmentation.label_sync import is_rgb_label
+
     synced = 0
     skipped_no_consent = 0
     for label in eligible_labels:
+        if is_rgb_label(label):
+            continue  # RGB gold is exported via /admin/rgb-training, never the legacy U-Net
         if not label_training_decision(db, label).allowed:
             skipped_no_consent += 1
             continue

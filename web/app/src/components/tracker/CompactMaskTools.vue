@@ -7,18 +7,19 @@ const expanded = ref(false)
 function closeOutside(event: FocusEvent) {
   if (event.relatedTarget instanceof Node && !(event.currentTarget as HTMLElement).contains(event.relatedTarget)) expanded.value = false
 }
-const tools = [{ key: 'skin', label: '正常皮肤', icon: 'ri-brush-line' }, { key: 'lesion', label: '白斑', icon: 'ri-brush-fill' }, { key: 'eraser', label: '排除', icon: 'ri-eraser-line' }, { key: 'refine', label: 'AI吸附', icon: 'ri-magic-line' }] as const
+const tools = [{ key: 'skin', label: '正常皮肤', icon: 'ri-brush-line' }, { key: 'lesion', label: '白斑', icon: 'ri-brush-fill' }, { key: 'eraser', label: '排除', icon: 'ri-eraser-line' }, { key: 'refine', label: 'AI吸附', icon: 'ri-magic-line' }, { key: 'remove', label: '去除', icon: 'ri-delete-bin-6-line' }] as const
 // 每个工具的实际作用：「正常皮肤」会把涂到的白斑改回正常皮肤；「排除」把区域移出皮肤范围（不计入占比）。
 const hints: Record<PhotoMaskTool, string> = {
   lesion: '涂出白斑范围。双指可缩放、放大后画得更细',
   skin: '涂在误标为白斑的地方，即可擦掉白斑（改回正常皮肤）',
   eraser: '涂掉背景、衣物等不是皮肤的部分，它们不会计入占比',
-  refine: '点一下白斑内部，AI 会自动贴合到边界',
+  refine: '点一下漏标的白斑内部，AI 会自动贴合到边界',
+  remove: '点一下标错的那一块，整块去掉（改回正常皮肤）',
 }
 </script>
 <template>
   <div class="space-y-1">
-  <div role="group" aria-label="调整范围工具" class="grid grid-cols-5 gap-1 rounded-2xl bg-white p-1 dark:bg-gray-800">
+  <div role="group" aria-label="调整范围工具" class="grid grid-cols-6 gap-1 rounded-2xl bg-white p-1 dark:bg-gray-800">
     <button v-for="item in tools" :key="item.key" type="button" :aria-pressed="tool === item.key" :disabled="disabled || (item.key === 'refine' && !refineAvailable)" class="flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl text-xs disabled:opacity-40" :class="tool === item.key ? 'bg-primary-50 text-primary-800 dark:bg-primary-900/40 dark:text-primary-200' : 'text-gray-600 dark:text-gray-300'" @click="emit('update:tool', item.key)">
       <i :class="[item.icon, item.key === 'skin' ? 'skin-icon' : item.key === 'lesion' ? 'lesion-icon' : item.key === 'refine' ? 'refine-icon' : '']" class="text-xl" aria-hidden="true"></i>{{ item.label }}
     </button>

@@ -30,6 +30,9 @@ const imageHash = ref<string | null>(null)
 const annotatedImageUrl = ref<string | null>(null)
 const loading = ref(true)
 const saving = ref(false)
+// 新流程（记录页 RGB）标注：快照/金标准/训练授权状态；旧流程为 null
+interface RgbState { is_rgb: boolean; snapshot_revision: string | null; snapshot_draft: boolean | null; gold: { revision: string; approved_at: string } | null; gold_current: boolean; consent_allowed: boolean; consent_reason: string; error?: string }
+const rgb = ref<RgbState | null>(null)
 const savingDraft = ref(false)
 
 // ── Canvas ref ──
@@ -198,6 +201,7 @@ async function loadImageData() {
       annotatedImageUrl.value = `/api/vasi/admin/image-labels/${labelId.value}/annotated-image?access_token=${encodeURIComponent(token)}`
     }
     if (detail.image_hash) imageHash.value = detail.image_hash
+    rgb.value = detail.rgb ?? null
 
     if (detail.admin_is_vitiligo != null) {
       Object.assign(form, {
@@ -209,7 +213,7 @@ async function loadImageData() {
         vasi_score: detail.admin_vasi_score ?? null,
         depigmentation_level: detail.admin_depigmentation_level ?? null,
         notes: detail.admin_notes ?? '',
-        training_eligible: detail.training_eligible ?? false,
+        training_eligible: detail.rgb ? !!detail.rgb.gold_current : (detail.training_eligible ?? false),
       })
     } else {
       Object.assign(form, {
@@ -282,6 +286,22 @@ const aiPretraining = ref(false)
 
 async function handleAiPretrain() {
   aiPretraining.value = true
+  if (rgb.value) {
+    // 新流程：重新跑与用户端相同的自动初稿（人体解析皮肤 + 自适应白斑）
+    try {
+      const { data } = await request.post<{ skin_mask_data: string; mask_data: string; check?: { status: string } | null }>(
+        `/vasi/admin/rgb-labels/${labelId.value}/redraft`,
+      )
+      await maskEditorRef.value?.loadMaskLayers(data.skin_mask_data, data.mask_data)
+      if (data.check && data.check.status !== 'draft') message.warning('白斑与正常皮肤对比不明显，初稿未自动填白斑，请手动标注')
+      else message.success('已载入自动初稿，请逐处核对后提交')
+    } catch (err: any) {
+      message.error(err?.response?.data?.detail || '自动初稿生成失败')
+    } finally {
+      aiPretraining.value = false
+    }
+    return
+  }
   try {
     const { data } = await request.post<{
       lesion_layer_data_url?: string | null
@@ -430,7 +450,7 @@ async function handleSubmit() {
   }
   saving.value = true
   try {
-    await request.post(`/vasi/admin/image-labels/${labelId.value}/label`, {
+    const { data } = await request.post<{ rgb_gold?: RgbState | null }>(`/vasi/admin/image-labels/${labelId.value}/label`, {
       body_site: form.body_site,
       is_vitiligo: form.is_vitiligo,
       vitiligo_type: form.vitiligo_type,
@@ -443,7 +463,9 @@ async function handleSubmit() {
       annotations: buildAnnotationsPayload(),
       annotated_image: maskEditorRef.value?.getAnnotatedImageDataUrl?.() || null,
     })
-    message.success('标注已提交')
+    if (data?.rgb_gold?.error) message.warning(`标注已提交，但未能审核通过：${data.rgb_gold.error}`)
+    else if (data?.rgb_gold?.gold_current) message.success('标注已提交，并已审核通过为训练金标准')
+    else message.success('标注已提交')
     await exitWorkspace()
   } catch (err: any) {
     message.error(err?.response?.data?.detail || '提交失败')
@@ -501,6 +523,7 @@ onBeforeUnmount(() => {
       <span class="top-title">图片打标 #{{ labelId }}</span>
       <span v-if="form.body_site" class="top-chip">{{ form.body_site }}</span>
       <span v-if="imageHash" class="top-chip muted" :title="imageHash">{{ imageHash.slice(0, 8) }}</span>
+      <span v-if="rgb" class="top-chip" title="来自记录页拍照测评（新流程）">记录页</span>
 
       <div class="top-actions">
         <button
@@ -629,7 +652,18 @@ onBeforeUnmount(() => {
 
               <textarea v-model="form.notes" rows="2" placeholder="备注说明" :style="{ ...inputStyle, resize: 'vertical' }"></textarea>
 
-              <label class="training-toggle">
+              <template v-if="rgb">
+                <label class="training-toggle" :title="rgb.consent_allowed ? '提交时把本次标注快照记为训练金标准' : '用户未授权「改进识别」，不能作为训练数据'">
+                  <input v-model="form.training_eligible" type="checkbox" :disabled="!rgb.consent_allowed" style="accent-color: #6366f1;" />
+                  <i class="ri-shield-check-line"></i> 审核通过（作为训练金标准）
+                </label>
+                <div class="rgb-status">
+                  <span class="top-chip" :class="rgb.consent_allowed ? 'ok' : ''">{{ rgb.consent_allowed ? '用户已授权训练' : '用户未授权训练' }}</span>
+                  <span v-if="rgb.gold_current" class="top-chip ok">当前快照已是金标准</span>
+                  <span v-else-if="rgb.gold" class="top-chip warn">金标准为旧版本，重新提交并勾选可更新</span>
+                </div>
+              </template>
+              <label v-else class="training-toggle">
                 <input v-model="form.training_eligible" type="checkbox" style="accent-color: #6366f1;" />
                 <i class="ri-database-2-line"></i> 作为训练数据
               </label>
@@ -642,6 +676,9 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.rgb-status { display: flex; flex-wrap: wrap; gap: 6px; }
+.top-chip.ok { background: rgba(16, 185, 129, 0.18); color: #34d399; }
+.top-chip.warn { background: rgba(245, 158, 11, 0.18); color: #fbbf24; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .ri-spin { animation: spin 1s linear infinite; }
 

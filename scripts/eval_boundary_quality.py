@@ -128,6 +128,25 @@ def original_bytes(record) -> bytes:
     return None
 
 
+def auto_candidate(record):
+    """Re-run today's infer_rgb on the original photo; pre-filled lesion draft only."""
+    from web.backend.services.rgb_segmentation.images import canonical_image
+    from web.backend.services.rgb_segmentation.inference import infer_rgb
+
+    raw = original_bytes(record)
+    if raw is None:
+        return None, None
+    rgb, _ = canonical_image(raw)
+    masks, meta = infer_rgb(rgb)
+    return masks, meta
+
+
+def _fit(mask, shape):
+    if mask.shape == shape:
+        return mask
+    return np.asarray(Image.fromarray(mask.astype(np.uint8) * 255).resize((shape[1], shape[0]), Image.NEAREST)) > 0
+
+
 def vlm_candidate(record, variant: str):
     from web.backend.services import vision_outline
     from web.backend.services.annotation_contract import render_annotation
@@ -194,7 +213,7 @@ def stability_scores(record):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source", choices=("cv", "vlm", "stability"), default="cv")
+    parser.add_argument("--source", choices=("cv", "auto", "vlm", "stability"), default="cv")
     parser.add_argument("--user", type=int, default=9)
     parser.add_argument("--limit", type=int, default=8)
     parser.add_argument("--body-site", default=None)
@@ -228,6 +247,21 @@ def main():
             print(f"id={record['id']} cv: IoU={scores['iou']} area_rel={scores['area_rel']} "
                   f"f1@8={scores['by_tol'][8][2]} f1@32={scores['by_tol'][32][2]}")
             summary.append({"id": record["id"], "source": "cv", **scores})
+        elif args.source == "auto":
+            masks, meta = auto_candidate(record)
+            if masks is None:
+                print(f"id={record['id']}: original missing"); continue
+            pred = _fit(masks["lesion"], gold.shape) & skin
+            own_skin = _fit(masks["skin"], gold.shape)
+            scores = boundary_scores(pred, gold, scale)
+            scores["skin_iou"] = round(float((own_skin & skin).sum() / max(1, (own_skin | skin).sum())), 3)
+            scores["pct_auto"] = round(100 * float(masks["lesion"].sum() / max(1, masks["skin"].sum())), 1)
+            scores["pct_gold"] = round(100 * float(gold.sum() / skin.sum()), 1)
+            scores["method"] = meta.get("source")
+            scores["check"] = meta.get("draft_check")
+            print(f"id={record['id']} auto[{scores['method']}]: IoU={scores['iou']} skinIoU={scores['skin_iou']} "
+                  f"pct={scores['pct_auto']} gold={scores['pct_gold']} f1@8={scores['by_tol'][8][2]} check={scores['check']}")
+            summary.append({"id": record["id"], "source": "auto", **scores})
         elif args.source == "stability":
             rows = stability_scores(record)
             if rows is None:
@@ -261,7 +295,7 @@ def main():
             print(f"   reject reasons: {reasons}")
             summary.append({"id": record["id"], "source": f"vlm:{args.variant}", **scores})
 
-    if summary and args.source in ("cv", "vlm"):
+    if summary and args.source in ("cv", "auto", "vlm"):
         f1s = [s["by_tol"][8][2] for s in summary if "by_tol" in s]
         f32 = [s["by_tol"][32][2] for s in summary if "by_tol" in s]
         ious = [s["iou"] for s in summary]
