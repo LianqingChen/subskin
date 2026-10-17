@@ -1185,7 +1185,7 @@ defineExpose({ areaPercent, confirmMasks, getAnnotatedImageDataUrl })
       <div v-if="showOnboardingTooltip && editable && imageLoaded && !isFullscreen" class="absolute top-3 left-1/2 -translate-x-1/2 z-40 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800/50 max-w-[260px] shadow-lg">
         <div class="flex items-center gap-2">
           <i class="ri-lightbulb-line text-amber-500 text-sm shrink-0"></i>
-          <p class="text-[11px] text-amber-700 dark:text-amber-400 flex-1">绿色=浅色候选 · 蓝色=皮肤 · 用「智能选斑」点一下白斑即可自动圈选，8秒后关闭</p>
+          <p class="text-[11px] text-amber-700 dark:text-amber-400 flex-1">绿色=候选 · 蓝色=皮肤</p>
           <button class="w-5 h-5 flex items-center justify-center text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/40 shrink-0" @click="showOnboardingTooltip = false" aria-label="关闭提示">
             <i class="ri-close-line text-xs"></i>
           </button>

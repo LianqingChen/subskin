@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { communityApi } from '@/api/community'
 import type { Collection, CollectionItem } from '@/types'
 import { avatarInitial } from '@/utils/avatar'
+import { getCategoryColor } from '@/utils/colors'
 
 const route = useRoute()
 
@@ -34,20 +35,6 @@ onMounted(async () => {
   }
 })
 
-function getCategoryColor(categoryId: number): string {
-  const idx = (categoryId - 1) % 7
-  const colors = [
-    'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-    'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-    'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300',
-    'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-    'bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300',
-    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-    'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-  ]
-  return colors[idx] || 'bg-gray-100 text-gray-700'
-}
-
 function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, '')
 }
@@ -57,7 +44,7 @@ function stripHtml(html: string): string {
   <div class="pb-10">
     <!-- 全站顶栏已有品牌，这里只保留来源与返回 -->
     <div class="page flex items-center justify-between py-2 md:py-3">
-      <span class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 dark:text-gray-400"><i class="ri-leaf-line text-primary-600 dark:text-primary-400" aria-hidden="true"></i>SubSkin 小白知识库</span>
+      <span class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 dark:text-gray-400"><i class="ri-leaf-line text-primary-600 dark:text-primary-400" aria-hidden="true"></i>SubSkin · 发现</span>
       <router-link to="/community" class="inline-flex min-h-10 items-center text-sm font-medium text-primary-700 no-underline hover:text-primary-800 dark:text-primary-400">返回发现<i class="ri-arrow-right-s-line" aria-hidden="true"></i></router-link>
     </div>
 
@@ -70,7 +57,7 @@ function stripHtml(html: string): string {
       <div v-else-if="error || !collection" class="card text-center py-20 px-6">
         <i class="ri-archive-line text-5xl text-gray-300 dark:text-gray-600 mb-4 block" aria-hidden="true"></i>
         <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">知识库不存在或已设为私密</h2>
-        <p class="text-gray-500 dark:text-gray-400 mb-6">该分享链接可能已失效，或者作者取消了公开分享。</p>
+        <p class="text-gray-500 dark:text-gray-400 mb-6">链接已失效，或作者取消了分享。</p>
         <router-link to="/community" class="btn-primary inline-block">
           去发现看看
         </router-link>
@@ -88,8 +75,6 @@ function stripHtml(html: string): string {
           </p>
           <div class="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
             <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">{{ collection.item_count }} 篇分享</span>
-            <span>·</span>
-            <span>由热心小白整理</span>
           </div>
         </div>
 
@@ -111,7 +96,7 @@ function stripHtml(html: string): string {
               <div class="flex-1 min-w-0 pt-1">
                 <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{ item.post.author.username }}</span>
               </div>
-              <span :class="getCategoryColor(item.post.category_id)" class="px-2 py-0.5 rounded-full text-xs whitespace-nowrap inline-flex items-center gap-0.5">
+              <span :class="getCategoryColor(item.post.category.name)" class="px-2 py-0.5 rounded-full text-xs whitespace-nowrap inline-flex items-center gap-0.5">
                 <i :class="item.post.category.icon" aria-hidden="true"></i> {{ item.post.category.name }}
               </span>
             </div>

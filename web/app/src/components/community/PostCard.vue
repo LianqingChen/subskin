@@ -152,7 +152,7 @@ async function toggleLike(e: MouseEvent) {
     <!-- Text Content -->
     <div class="px-2.5 pt-2 pb-2">
       <!-- Title -->
-      <h3 class="text-[13px] font-medium text-gray-900 leading-snug line-clamp-2 mb-1.5">
+      <h3 class="text-[13px] font-medium text-gray-900 dark:text-gray-100 leading-snug line-clamp-2 mb-1.5">
         {{ post.title }}
       </h3>
 
@@ -186,11 +186,9 @@ async function toggleLike(e: MouseEvent) {
       <div class="flex items-center justify-between mt-1">
         <span class="text-[10px] text-gray-400 ">{{ formatTimeCity(post) }}</span>
         <div class="flex items-center gap-0.5">
-          <button class="flex items-center gap-0.5 p-1.5 -m-1.5" :class="localLiked ? 'text-red-500' : 'text-red-400 dark:text-red-400'" @click.prevent.stop="toggleLike" aria-label="点赞">
-            <svg class="w-3.5 h-3.5 transition-colors" viewBox="0 0 20 20" :fill="localLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.5">
-              <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
-            </svg>
-            <span class="text-[11px] text-red-500">{{ formatCount(localLikeCount) }}</span>
+          <button class="flex items-center gap-0.5 p-1.5 -m-1.5" :class="localLiked ? 'text-red-500' : 'text-gray-400 dark:text-gray-500 hover:text-red-500'" @click.prevent.stop="toggleLike" aria-label="点赞">
+            <i :class="localLiked ? 'ri-heart-3-fill' : 'ri-heart-3-line'" class="text-sm leading-none transition-colors" aria-hidden="true"></i>
+            <span class="text-[11px] tabular-nums">{{ formatCount(localLikeCount) }}</span>
           </button>
           <button class="flex items-center gap-0.5 p-1.5 -m-1.5 text-gray-400 hover:text-primary-600" @click.prevent.stop="showShare = true" aria-label="转发">
             <i class="ri-share-forward-line text-sm"></i>

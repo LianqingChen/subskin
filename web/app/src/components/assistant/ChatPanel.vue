@@ -57,7 +57,7 @@ async function sendMessage(text?: string, attachmentIds: string[] = []) {
     stream.reader.onError = (error: string) => {
       chatStore.removeMessage(skeletonId)
 if (error.includes('已用完') || error.includes('429')) {
-    chatStore.addMessage('assistant', '今日免费体验次数已用完，请登录后继续使用AI助手')
+    chatStore.addMessage('assistant', '免费次数已用完，请登录后继续')
         guestRemaining.value = 0
       } else {
         chatStore.addMessage('assistant', `抱歉，${error}`)
@@ -134,15 +134,15 @@ defineExpose({ sendMessage, toggleHistory })
 
     <!-- Guest quota：整体上移，避开底部 fixed 输入区（正念呼吸/用药提醒 + 输入栏）遮挡 -->
     <div v-if="!authStore.isLoggedIn && guestRemaining !== null && !hasMessages" class="text-center pb-14 md:pb-0 md:pt-4 space-y-1">
-      <span class="text-[10px] text-gray-400 dark:text-gray-500">今日剩余 {{ guestRemaining }} 次免费提问</span>
-      <button v-if="guestRemaining !== null && guestRemaining <= 1" type="button" class="block mx-auto text-[10px] text-primary-500 hover:text-primary-600" @click="authStore.showLoginModal = true">登录获取更多提问次数 →</button>
+      <span class="text-[10px] text-gray-400 dark:text-gray-500">今日剩余 {{ guestRemaining }} 次</span>
+      <button v-if="guestRemaining !== null && guestRemaining <= 1" type="button" class="block mx-auto text-[10px] text-primary-500 hover:text-primary-600" @click="authStore.showLoginModal = true">登录获取更多次数 →</button>
     </div>
 
     <!-- Messages -->
     <div v-if="hasMessages" class="space-y-3 pb-2">
       <div v-for="msg in chatStore.messages" :key="msg.id" class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
         <div class="max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed"
-          :class="msg.role === 'user' ? 'bg-primary-500 text-white rounded-br-md' : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-bl-md'">
+          :class="msg.role === 'user' ? 'bg-primary-600 text-white rounded-br-md shadow-xs' : 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 text-gray-800 dark:text-gray-100 rounded-bl-md shadow-xs'">
           <div v-if="msg.isSkeleton && !msg.content" class="flex items-center gap-2 text-primary-500">
             <span class="inline-flex gap-1">
               <span class="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style="animation-delay:0s" />

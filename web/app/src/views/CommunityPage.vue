@@ -85,7 +85,7 @@ onMounted(() => {
       <div v-else-if="loadError" class="space-y-3 py-16 text-center"><i class="ri-error-warning-line text-4xl text-gray-400" aria-hidden="true"></i><p class="text-sm text-gray-500 dark:text-gray-400">加载失败，请检查网络后重试</p><button type="button" class="btn-primary min-h-11 text-sm" @click="retryLoad">重新加载</button></div>
       <div v-else-if="!posts.length" class="py-16 text-center">
         <template v-if="activeFeedType === 'local'"><p class="text-sm text-gray-500 dark:text-gray-400">{{ geo.city.value ? `暂无 ${geo.city.value} 的同城分享` : geo.error.value || '请选择城市查看同城分享' }}</p><button type="button" class="btn-ghost mt-3 min-h-11 text-sm" @click="showCityPicker = true">{{ geo.city.value ? '切换城市' : '选择城市' }}</button></template>
-        <EmptyState v-else icon="ri-quill-pen-line" :title="searchQuery.trim() ? '没有找到相关分享，换个标签试试' : '暂无分享，成为第一个分享的人吧'" :action-label="authStore.isLoggedIn && !searchQuery.trim() ? '发布分享' : ''" @action="createPost" />
+        <EmptyState v-else icon="ri-quill-pen-line" :title="searchQuery.trim() ? '没有找到相关分享' : '暂无分享'" :action-label="authStore.isLoggedIn && !searchQuery.trim() ? '发布分享' : ''" @action="createPost" />
       </div>
       <FeedWaterfall v-else :posts="posts" @like-click="handleLikeClick" @follow-change="handleFollowChange" />
       <div v-if="hasMore && !loadError" ref="loadMoreSentinel" class="py-4 text-center"><span v-if="loadingMore" class="text-sm text-gray-500 dark:text-gray-400">加载中…</span></div>

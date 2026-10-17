@@ -43,7 +43,7 @@ onBeforeUnmount(() => schema?.remove())
         <p class="mt-3 text-sm leading-6 text-gray-600 dark:text-gray-300">{{ found.item.why }}</p>
         <p class="mt-4 text-xl font-semibold text-primary-700 dark:text-primary-300">{{ found.item.price !== undefined ? formatPrice(found.item) : found.item.status === 'planned' ? '暂未发售' : '选购参考' }}</p>
         <p v-if="found.item.spec" class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ found.item.spec }}</p>
-        <p class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">{{ found.item.buyUrl && found.item.status !== 'planned' ? '购买跳转商家页面，价格、库存与售后由商家提供。' : '尚未接入购买，可加入本机清单或查看选购要点。' }}</p>
+        <p class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">{{ found.item.buyUrl && found.item.status !== 'planned' ? '购买跳转商家页面，价格、库存与售后由商家提供。' : '尚未接入购买，可加入本机清单。' }}</p>
         <section class="mt-5 rounded-xl bg-amber-50 p-4 dark:bg-amber-900/20" aria-labelledby="care-risk-title">
           <h2 id="care-risk-title" class="flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-200"><i class="ri-information-line" aria-hidden="true"></i>使用前请注意</h2>
           <ul class="mt-2 space-y-2 text-xs leading-6 text-amber-900 dark:text-amber-200"><li v-for="line in found.topic.cautions" :key="line">{{ line }}</li></ul>

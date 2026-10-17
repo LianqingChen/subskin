@@ -7,7 +7,7 @@ const form = ref<HospitalSuggestion>({ name: props.hospitalName ?? props.draft?.
 </script>
 <template>
   <form class="space-y-4" @submit.prevent="emit('save', { ...form })">
-    <p class="rounded-xl bg-primary-50 p-3 text-xs leading-6 text-primary-800 dark:bg-primary-900 dark:text-primary-200">先保存一份本机补充资料。此版本不会提交给平台，也不会直接修改地图；正式收录需核实医院资质与官方来源。</p>
+    <p class="rounded-xl bg-primary-50 p-3 text-xs leading-6 text-primary-800 dark:bg-primary-900 dark:text-primary-200">仅保存在本机，不会提交给平台。</p>
     <label class="block text-sm">医院全称<input v-model.trim="form.name" required maxlength="100" class="hospital-input" /></label>
     <label class="block text-sm">省份、城市和院区<input v-model.trim="form.city" required maxlength="100" class="hospital-input" placeholder="例如：江苏省南京市 · 具体院区" /></label>
     <label class="block text-sm">官方资料链接<input v-model.trim="form.source" type="url" maxlength="500" class="hospital-input" placeholder="https://" /></label>

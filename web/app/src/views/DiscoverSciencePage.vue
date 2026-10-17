@@ -25,7 +25,6 @@ onMounted(() => { const id = route.hash.replace(/^#/, ''); if (id) setTimeout(()
         <header class="mt-1">
           <p class="text-xs font-semibold tracking-widest text-primary-700 dark:text-primary-300">发现 · 科普</p>
           <h1 class="page-title mt-1">把日常过好：吃得稳、晒得对、记得准</h1>
-          <p class="page-subtitle leading-6">每个话题先告诉你现在的证据到哪，再告诉你怎么选。这里没有神奇功效，只有踏实的日常。</p>
         </header>
         <p role="note" class="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900 dark:bg-amber-900/20 dark:text-amber-200">
           <i class="ri-information-line mt-0.5 shrink-0" aria-hidden="true"></i>

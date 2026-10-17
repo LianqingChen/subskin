@@ -90,7 +90,6 @@ const protectedUrl = (url: string) => toProtectedFileUrl(url)
       <div v-if="!hasDrafts" class="card p-8 text-center">
         <div class="text-4xl mb-3 text-gray-300 dark:text-gray-600"><i class="ri-draft-line" aria-hidden="true"></i></div>
         <div class="text-sm text-gray-400 ">暂无草稿</div>
-        <div class="text-xs text-gray-300  mt-1">编辑帖子时，内容会自动保存为草稿</div>
       </div>
 
       <div v-else class="space-y-2">

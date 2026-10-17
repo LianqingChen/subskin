@@ -73,8 +73,6 @@ onUnmounted(() => {
 
         <!-- iOS Guide -->
         <div v-if="isIOS" class="p-6 space-y-5">
-          <p class="text-sm text-gray-600 dark:text-gray-300">按以下步骤将 SubSkin 添加到主屏幕，即可像 App 一样使用：</p>
-
           <div class="space-y-4">
             <div class="flex items-start gap-3">
               <span class="flex-shrink-0 w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 text-xs font-bold flex items-center justify-center">1</span>
@@ -96,21 +94,16 @@ onUnmounted(() => {
               <span class="flex-shrink-0 w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 text-xs font-bold flex items-center justify-center">3</span>
               <div>
                 <p class="text-sm font-medium text-gray-900 dark:text-gray-100">点击「添加」确认</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">桌面会出现 SubSkin 图标，点击即可打开</p>
               </div>
             </div>
           </div>
 
-          <div class="rounded-xl bg-primary-50 dark:bg-primary-900 p-4 text-sm text-gray-600 dark:text-gray-300 leading-6">
-            <i class="ri-lightbulb-line"></i> 添加后体验更流畅，支持全屏显示和离线访问
-          </div>
         </div>
 
         <!-- Android / Other: native install -->
         <div v-else class="p-6 space-y-4">
           <!-- State: install ready -->
           <template v-if="canInstall">
-            <p class="text-sm text-gray-600 dark:text-gray-300">点击下方按钮，一键将 SubSkin 添加到桌面：</p>
             <button class="w-full btn-primary py-3 rounded-xl text-base" @click="$emit('install')">
               添加到桌面
             </button>
@@ -131,9 +124,9 @@ onUnmounted(() => {
           <template v-else-if="timedOut">
             <div v-if="isPWALimitedBrowser" class="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 mb-4">
               <p class="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-2"><i class="ri-error-warning-line"></i> 当前浏览器不支持 PWA 安装</p>
-              <p class="text-xs text-amber-700 dark:text-amber-400">华为/UC/QQ 等浏览器的「添加至桌面」只是普通书签，打开后仍会显示浏览器按钮。如需真正的类 App 全屏体验，请改用 <strong>Chrome 浏览器</strong> 打开 SubSkin 后重新安装。</p>
+              <p class="text-xs text-amber-700 dark:text-amber-400">请改用 <strong>Chrome</strong> 打开后安装。</p>
             </div>
-            <p class="text-sm text-gray-600 mb-3">请在浏览器菜单中选择「添加到主屏幕」或「安装应用」：</p>
+            <p class="text-sm text-gray-600 mb-3">选择「添加到主屏幕」或「安装应用」：</p>
             <div class="rounded-xl bg-gray-50 dark:bg-gray-900/60 p-4 space-y-2 text-sm text-gray-600 dark:text-gray-300">
               <template v-if="isPWALimitedBrowser">
                 <p><strong>华为浏览器：</strong>底部菜单 → <i class="ri-smartphone-line"></i> 添加至桌面（仅书签）</p>

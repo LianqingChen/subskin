@@ -46,7 +46,7 @@ onBeforeUnmount(() => schema?.remove())
         </div>
         <button type="submit" class="btn-primary h-12 shrink-0 rounded-xl px-4 text-sm focus-visible:ring-2 focus-visible:ring-primary-500">搜索</button>
       </form>
-      <p role="note" class="text-xs leading-5 text-gray-500 dark:text-gray-400">目前提供选购参考，尚未接入购买；清单仅存此设备，站内不收款。</p>
+      <p role="note" class="text-xs leading-5 text-gray-500 dark:text-gray-400">仅供选购参考，清单存本机，站内不收款。</p>
     </header>
 
     <div class="mt-4 flex flex-col gap-4 lg:flex-row lg:gap-6">
@@ -83,7 +83,6 @@ onBeforeUnmount(() => schema?.remove())
         <div v-else class="py-16 text-center">
           <i class="ri-search-line text-3xl text-gray-400" aria-hidden="true"></i>
           <p class="mt-3 text-sm text-gray-600 dark:text-gray-300">没有找到相关用品</p>
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">试试其他关键词，或清除分类条件。</p>
           <button type="button" class="btn-ghost mt-3 min-h-11 text-sm" @click="clearFilters">清除筛选</button>
         </div>
         <footer class="mt-6 border-t border-gray-200 pt-4 text-xs leading-6 text-gray-500 dark:border-gray-700 dark:text-gray-400">

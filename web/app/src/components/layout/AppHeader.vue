@@ -62,13 +62,14 @@ onUnmounted(() => {
 const shareTitle = computed(() => {
   const path = route.path
   if (path === '/' || path === '') return 'SubSkin · 白癜风病友的AI记录和分享社区'
-  if (path.startsWith('/diary')) return 'SubSkin · AI病情日记'
-  if (path.startsWith('/assessment') || path.startsWith('/tracker')) return 'SubSkin · 白斑面积评估'
+  if (path.startsWith('/assessment/exam') || route.query.tab === 'exam' || route.query.tab === 'report') return 'SubSkin · 体检解读'
+  if (path.startsWith('/assessment') || path.startsWith('/tracker') || path.startsWith('/diary')) return 'SubSkin · 日记'
   if (path.startsWith('/community/reports')) return 'SubSkin · 白斑报告'
+  if (path.startsWith('/hospitals')) return 'SubSkin · 就医经验'
   if (path.startsWith('/community') || path.startsWith('/discover')) return 'SubSkin · 发现'
   if (path.startsWith('/care')) return 'SubSkin · 调养'
-  if (path.startsWith('/contribution')) return `SubSkin · ${currentLabel.value}`
-  if (path.startsWith('/profile')) return 'SubSkin · 我的主页'
+  if (path.startsWith('/contribution')) return `SubSkin · ${currentLabel.value || '同行'}`
+  if (path.startsWith('/profile')) return 'SubSkin · 个人中心'
   return 'SubSkin · 白癜风病友的AI记录和分享社区'
 })
 
@@ -85,15 +86,15 @@ function onGeneratePoster() {
 </script>
 
 <template>
-  <header :class="['app-header sticky top-0 z-50 border-b border-gray-200/80 bg-white dark:border-gray-800 dark:bg-gray-900', isStaging ? 'app-header--staging' : '']">
+  <header :class="['app-header surface-glass sticky top-0 z-50 border-b border-gray-200/80 dark:border-gray-800/90', isStaging ? 'app-header--staging' : '']">
     <div class="relative mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
       <router-link to="/" class="flex items-center gap-2 no-underline shrink-0 lg:hidden">
-        <img src="/subskin_logo.png?v=b4e9d1" alt="SubSkin" class="h-8 w-8 rounded-lg" />
+        <img src="/subskin_logo.png?v=b4e9d1" alt="SubSkin" class="h-8 w-8 rounded-lg ring-1 ring-gray-900/5 dark:ring-white/10" />
         <span class="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">SubSkin</span>
         <span v-if="isStaging" class="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-white">STAGING</span>
       </router-link>
       <!-- 桌面端 Logo 与主导航在侧边栏，顶栏左侧显示当前模块名 -->
-      <h2 class="hidden lg:block text-base font-semibold text-gray-900 dark:text-gray-100">{{ currentLabel }}</h2>
+      <h2 class="hidden lg:block text-base font-semibold tracking-tight text-gray-900 dark:text-gray-100">{{ currentLabel }}</h2>
 
       <nav class="hidden md:flex lg:hidden items-center gap-1" aria-label="主导航">
         <router-link
@@ -119,13 +120,7 @@ function onGeneratePoster() {
           data-track-id="header_btn_share"
           @click="handleShare"
         >
-          <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="18" cy="5" r="3" />
-            <circle cx="6" cy="12" r="3" />
-            <circle cx="18" cy="19" r="3" />
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-          </svg>
+          <i class="ri-share-forward-line text-[19px]" aria-hidden="true"></i>
         </button>
 
         <!-- Notification bell -->
@@ -141,26 +136,27 @@ function onGeneratePoster() {
         </button>
         <div v-else class="relative" ref="menuRef">
           <button type="button" class="flex items-center gap-2 px-1.5 py-1 rounded-full transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-gray-800" data-track-id="header_btn_user_menu" @click.stop="handleLoginClick">
-            <div v-if="showAvatarImage" class="w-8 h-8 rounded-full overflow-hidden bg-primary-100 dark:bg-primary-900 relative">
+            <div v-if="showAvatarImage" class="w-8 h-8 rounded-full overflow-hidden bg-primary-100 dark:bg-primary-900 relative ring-1 ring-gray-900/5 dark:ring-white/10">
               <img :src="userAvatar" :alt="`${userName || '用户'}头像`" class="absolute inset-0 w-full h-full object-cover" @error="onAvatarError" />
             </div>
-            <div v-else class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 text-sm font-medium">
+            <div v-else class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 text-sm font-medium ring-1 ring-primary-500/20">
               {{ userNameInitial }}
             </div>
           </button>
           <div
             v-if="showUserMenu"
-            class="absolute right-0 top-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 min-w-[160px] z-50"
+            class="absolute right-0 top-10 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200/90 dark:border-gray-700/90 py-1.5 min-w-[160px] z-50"
             @click="showUserMenu = false"
           >
-            <router-link to="/profile" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 no-underline" data-track-id="header_link_profile">
-              个人中心
+            <router-link to="/profile" class="flex items-center gap-2 px-3.5 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline transition-colors" data-track-id="header_link_profile">
+              <i class="ri-user-line text-gray-400 dark:text-gray-500" aria-hidden="true"></i>个人中心
             </router-link>
-            <router-link to="/privacy" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 no-underline" data-track-id="header_link_privacy">
-              隐私政策
+            <router-link to="/privacy" class="flex items-center gap-2 px-3.5 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline transition-colors" data-track-id="header_link_privacy">
+              <i class="ri-shield-keyhole-line text-gray-400 dark:text-gray-500" aria-hidden="true"></i>隐私政策
             </router-link>
-            <button type="button" class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" data-track-id="header_btn_logout" @click="handleLogout">
-              退出登录
+            <div class="my-1 border-t border-gray-100 dark:border-gray-800"></div>
+            <button type="button" class="w-full flex items-center gap-2 text-left px-3.5 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" data-track-id="header_btn_logout" @click="handleLogout">
+              <i class="ri-logout-box-r-line" aria-hidden="true"></i>退出登录
             </button>
           </div>
         </div>

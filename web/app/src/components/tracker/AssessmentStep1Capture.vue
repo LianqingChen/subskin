@@ -321,7 +321,7 @@ onUnmounted(() => {
         <div v-if="showCompareSection" class="shrink-0 flex items-center gap-2">
           <span class="h-px flex-1 bg-gray-100 dark:bg-gray-700/60" aria-hidden="true"></span>
           <i class="ri-links-line text-xs text-gray-300 dark:text-gray-500 shrink-0" aria-hidden="true"></i>
-          <span class="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap">测评照片自动存入历史，可直接用于对比</span>
+          <span class="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap">照片自动存入历史</span>
           <span class="h-px flex-1 bg-gray-100 dark:bg-gray-700/60" aria-hidden="true"></span>
         </div>
 

@@ -13,8 +13,8 @@
 export const PATH_TO_PAGE_NAME: Record<string, string> = {
   '/': '问答',
   '/chat': '问答',
-  '/assessment': '记录',
-  '/tracker': '记录',
+  '/assessment': '日记',
+  '/tracker': '日记',
   '/community': '发现',
   '/hospitals': '就医经验',
   '/care': '调养',

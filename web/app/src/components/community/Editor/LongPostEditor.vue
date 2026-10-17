@@ -306,10 +306,9 @@ const handlePublish = async () => {
               <i class="ri-capsule-line"></i> 治疗经验
             </button>
           </div>
-          <p v-if="postKind === 'treatment'" class="text-[11px] text-gray-400">选择治疗经验后，可按模板填写结构化治疗信息，方便白友参考</p>
         </div>
 
-        <input v-model="title" type="text" placeholder="添加标题，让大家看到你的分享..."
+        <input v-model="title" type="text" placeholder="添加标题"
           class="w-full text-lg font-medium text-gray-900 placeholder-gray-300 dark:placeholder-gray-600 outline-none bg-transparent border-b border-gray-100 dark:border-gray-700 pb-2 focus:border-primary-400 transition-colors" maxlength="100" />
 
         <RichEditor v-model="content" v-model:content-json="contentJson" placeholder="分享你的经历、建议或疑问..." class="min-h-[200px]" />
@@ -325,7 +324,7 @@ const handlePublish = async () => {
           <div class="space-y-1.5">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">治疗方案 <span class="text-red-500">*</span></label>
             <textarea v-model="tMethod" rows="2" maxlength="500"
-              placeholder="如：308准分子激光每周两次，联合他克莫司软膏外涂..."
+              placeholder="如：308准分子激光，每周两次"
               class="w-full text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:border-blue-400 resize-none"></textarea>
           </div>
 
@@ -376,10 +375,10 @@ const handlePublish = async () => {
 
           <div class="space-y-1.5">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">关联 VASI 评估（可选，最多2条）</label>
-            <p class="text-[11px] text-gray-400">选择治疗前后的 VASI 评估记录，展示分数对比，仅存储记录信息</p>
+            <p class="text-[11px] text-gray-400">展示分数对比，仅存储记录信息</p>
             <div v-if="vasiLoading" class="text-xs text-gray-400 py-2">加载中...</div>
             <div v-else-if="vasiHistory.length === 0" class="text-xs text-gray-400 bg-white dark:bg-gray-800 border border-dashed border-gray-200 dark:border-gray-600 rounded-lg p-3">
-              暂无 VASI 评估记录，可先到「记录」页完成一次评估
+              暂无评估记录，先去「日记」页评估
             </div>
             <div v-else class="grid grid-cols-2 gap-2">
               <button v-for="v in vasiHistory" :key="v.id" @click="toggleVasi(v.id)" type="button"

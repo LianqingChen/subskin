@@ -19,7 +19,7 @@ const notes = computed(() => CARE_TOPICS
     <header class="mt-1">
       <p class="text-xs font-semibold tracking-widest text-primary-700 dark:text-primary-300">发现 · 种草</p>
       <h1 class="page-title mt-1">值得看看的日常好物</h1>
-      <p class="page-subtitle leading-6">旧版选购笔记保留供查阅；统一选购入口已在调养，清单仅保存在此设备。</p>
+      <p class="page-subtitle leading-6">选购入口已移至调养。</p>
     </header>
     <nav aria-label="种草分类" class="sticky top-14 z-20 -mx-4 mt-3 flex gap-2 overflow-x-auto bg-gray-50 px-4 py-2 no-scrollbar dark:bg-gray-950 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
       <button v-for="tab in tabs" :key="tab.id" type="button" class="min-h-[40px] shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-medium transition-colors" :aria-pressed="active === tab.id" :class="active === tab.id ? 'bg-primary-600 text-white' : 'border border-gray-200 bg-white text-gray-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300'" @click="active = tab.id">{{ tab.title }}</button>

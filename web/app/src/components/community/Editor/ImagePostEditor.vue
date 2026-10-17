@@ -300,10 +300,10 @@ const handleSaveDraft = async () => {
               <input type="file" class="hidden" accept="image/*" multiple @change="handleImageUpload" :disabled="uploading" />
             </label>
           </div>
-          <p class="text-[11px] text-gray-400 ">第一张图将作为封面，最多9张</p>
+          <p class="text-[11px] text-gray-400 ">首图为封面，最多9张</p>
         </div>
 
-        <input v-model="title" type="text" placeholder="添加标题，让大家看到你的分享..."
+        <input v-model="title" type="text" placeholder="添加标题"
           class="w-full text-lg font-medium text-gray-900 placeholder-gray-300 dark:placeholder-gray-600 outline-none bg-transparent border-b border-gray-100 dark:border-gray-700 pb-2 focus:border-primary-400 transition-colors" maxlength="100" />
 
         <RichEditor v-model="content" v-model:content-json="contentJson" placeholder="描述你的图片..." class="min-h-[150px]" />
@@ -349,7 +349,6 @@ const handleSaveDraft = async () => {
         <div v-if="isPrivate" class="space-y-1 py-2">
           <label class="text-sm font-medium text-gray-700"><i class="ri-calendar-line"></i> 记录日期</label>
           <input v-model="diaryDate" type="date" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100" />
-          <p class="text-[11px] text-gray-400">可改为历史日期，用于补录过往记录</p>
         </div>
 
         <div class="flex items-center justify-between py-2">

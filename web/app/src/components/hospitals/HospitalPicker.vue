@@ -225,11 +225,11 @@ function onMapSelect(hospital: HospitalView) {
         />
       </div>
       <div v-else class="mt-4 rounded-2xl border border-dashed border-gray-200 px-4 dark:border-gray-700">
-        <EmptyState icon="ri-map-pin-search-line" title="没有符合当前条件的医院" description="试试清除筛选，或换一个医院名称、城市搜索。" action-label="清除筛选，查看全部" @action="resetFilters" />
+        <EmptyState icon="ri-map-pin-search-line" title="没有符合当前条件的医院" description="试试清除筛选或换个关键词。" action-label="清除筛选，查看全部" @action="resetFilters" />
       </div>
 
       <p class="mt-4 border-t border-gray-100 pt-3 text-xs leading-5 text-gray-500 dark:border-gray-800 dark:text-gray-400">
-        目录持续补充，找不到不代表当地没有诊疗服务；院区、门诊和设备请以医院最新公告为准。
+        目录持续补充，以医院最新公告为准。
         <button class="min-h-11 px-1 text-primary-700 underline dark:text-primary-300" @click="emit('create')">找不到？补充这家医院</button>
       </p>
     </div>

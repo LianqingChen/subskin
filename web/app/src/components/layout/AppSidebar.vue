@@ -90,12 +90,12 @@ watch(userAvatar, () => { avatarLoadError.value = false })
 }
 /* 窄栏：图标在上、小标签在下（与手机底部导航一致）；完整侧栏：图标在左、标签在右 */
 .sidebar-link {
-  @apply flex min-h-[56px] flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-gray-600 no-underline transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white xl:min-h-[48px] xl:flex-row xl:justify-start xl:gap-3 xl:px-3;
+  @apply flex min-h-[54px] flex-col items-center justify-center gap-0.5 rounded-xl border border-transparent px-1 text-gray-600 no-underline transition-all duration-150 hover:bg-gray-100/90 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800/80 dark:hover:text-white xl:min-h-[44px] xl:flex-row xl:justify-start xl:gap-3 xl:px-3;
 }
 .sidebar-label {
-  @apply text-[11px] leading-4 xl:text-[15px] xl:leading-normal;
+  @apply text-[11px] leading-4 xl:text-[14px] xl:leading-normal;
 }
 .sidebar-link--active {
-  @apply bg-primary-50 font-semibold text-primary-700 hover:bg-primary-50 hover:text-primary-700 dark:bg-primary-900 dark:text-primary-200;
+  @apply border-primary-200 bg-primary-50 font-semibold text-primary-700 hover:bg-primary-50 hover:text-primary-700 dark:border-primary-200 dark:bg-primary-900 dark:text-primary-200;
 }
 </style>

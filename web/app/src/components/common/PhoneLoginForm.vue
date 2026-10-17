@@ -81,60 +81,59 @@ async function handlePhoneRegister() {
 
 <template>
   <div class="space-y-4">
-    <div class="flex gap-2 rounded-lg bg-gray-100 p-1">
+    <div class="flex gap-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
       <button v-for="option in phoneViewOptions" :key="option.key" type="button"
-        class="flex-1 rounded-md px-2 py-2.5 text-sm font-medium transition-colors"
-        :class="phoneView === option.key ? 'bg-white text-primary-600 shadow-sm dark:text-primary-300' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-100'"
+        class="flex-1 rounded-lg px-2 py-2 text-xs font-medium transition-colors"
+        :class="phoneView === option.key ? 'bg-white dark:bg-gray-900 text-primary-600 shadow-xs dark:text-primary-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
         @click.prevent="phoneView = option.key">{{ option.label }}</button>
     </div>
 
     <div>
-      <label class="mb-1 block text-sm font-medium text-gray-700">手机号码</label>
+      <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">手机号码</label>
       <input v-model="phoneForm.phone" type="tel" name="tel" autocomplete="tel-national" maxlength="11" placeholder="请输入手机号"
-        class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600" />
+        class="w-full rounded-lg border border-gray-200/90 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
       <div v-if="phoneHistory.length > 0 && !phoneForm.phone" class="mt-2 flex flex-wrap items-center gap-1.5">
-        <span class="text-xs text-gray-400 ">最近使用：</span>
+        <span class="text-xs text-gray-400 dark:text-gray-500">最近使用：</span>
         <button v-for="ph in phoneHistory" :key="ph" type="button"
-          class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 transition-colors hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-900/30 dark:hover:text-primary-300"
+          class="rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-0.5 text-xs text-gray-600 dark:text-gray-300 transition-colors hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-900/30 dark:hover:text-primary-300 font-mono"
           @click.prevent="selectHistoryPhone(ph)">
           {{ ph.slice(0, 3) }}****{{ ph.slice(-4) }}
         </button>
       </div>
-      <p v-else-if="phoneHistory.length === 0 && !phoneForm.phone" class="mt-1 text-xs text-gray-400 ">点击输入框可选择浏览器保存的本机号码</p>
     </div>
 
     <template v-if="phoneView === 'code' || phoneView === 'register'">
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">验证码</label>
+        <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">验证码</label>
         <div class="flex gap-2">
           <input v-model="phoneForm.code" type="text" maxlength="6" placeholder="6位验证码"
-            class="flex-1 min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600" />
+            class="flex-1 min-w-0 rounded-lg border border-gray-200/90 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
           <button type="button" :disabled="countdown > 0"
-            class="shrink-0 rounded-lg bg-primary-50 px-3 py-2 text-sm font-medium text-primary-600 transition-colors hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-primary-900/30 dark:text-primary-300"
+            class="shrink-0 rounded-lg bg-primary-50 px-3 py-2 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-primary-900/40 dark:text-primary-300"
             @click="sendPhoneCode">{{ countdown > 0 ? `${countdown}s` : '获取验证码' }}</button>
         </div>
       </div>
       <div v-if="phoneView === 'register'">
-        <label class="mb-1 block text-sm font-medium text-gray-700">设置密码（可选）</label>
+        <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">设置密码（可选）</label>
         <input v-model="phoneForm.registerPassword" type="password" placeholder="至少6位，留空则仅验证码登录"
-          class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600" />
+          class="w-full rounded-lg border border-gray-200/90 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
       </div>
     </template>
 
     <div v-else>
-      <label class="mb-1 block text-sm font-medium text-gray-700">密码</label>
+      <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">密码</label>
       <input v-model="phoneForm.password" type="password" placeholder="请输入密码"
-        class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600" />
+        class="w-full rounded-lg border border-gray-200/90 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
     </div>
 
     <button v-if="phoneView === 'code'" type="button"
-      class="w-full rounded-lg bg-primary-600 py-2.5 font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+      class="btn-primary w-full py-2.5 text-sm"
       :disabled="loading || !agreedToTerms" @click="handlePhoneCodeLogin">{{ loading ? '登录中...' : '登录' }}</button>
     <button v-else-if="phoneView === 'password'" type="button"
-      class="w-full rounded-lg bg-primary-600 py-2.5 font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+      class="btn-primary w-full py-2.5 text-sm"
       :disabled="loading || !agreedToTerms" @click="handlePhonePasswordLogin">{{ loading ? '登录中...' : '登录' }}</button>
     <button v-else type="button"
-      class="w-full rounded-lg bg-primary-600 py-2.5 font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+      class="btn-primary w-full py-2.5 text-sm"
       :disabled="loading || !agreedToTerms" @click="handlePhoneRegister">{{ loading ? '注册中...' : '注册并登录' }}</button>
 
     <label class="flex items-start gap-2 cursor-pointer min-h-[44px] pt-1">

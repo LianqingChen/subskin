@@ -100,7 +100,7 @@ function isToday(dateStr: string): boolean {
     <div v-if="report.entry_count === 0" class="weekly-report__empty">
       <i class="ri-seedling-line weekly-report__empty-icon"></i>
       <p class="weekly-report__empty-title">本周还没有记录</p>
-      <p class="weekly-report__empty-desc">每天30秒，记录心情与身体状态，周末来看你的专属周报</p>
+      <p class="weekly-report__empty-desc">每天30秒，周末看专属周报</p>
     </div>
 
     <template v-else>
@@ -160,7 +160,7 @@ function isToday(dateStr: string): boolean {
           <h3 class="weekly-report__section-title">患处评估</h3>
           <div class="weekly-report__vasi">
             <i class="ri-ruler-line"></i>
-            <span>本周完成 {{ report.vasi_count }} 次 VASI 评估，坚持量化追踪</span>
+            <span>本周完成 {{ report.vasi_count }} 次 VASI 评估</span>
           </div>
         </section>
 

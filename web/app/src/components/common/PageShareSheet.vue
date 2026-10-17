@@ -102,81 +102,83 @@ function shareToXiaohongshu() {
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="visible" class="fixed inset-0 z-[70] flex items-end sm:items-center sm:p-4 justify-center" @click.self="closeSheet">
-        <div class="fixed inset-0 bg-black/50" @click="closeSheet" />
-        <div class="relative bg-white dark:bg-gray-800 w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[80vh] overflow-y-auto z-10 pb-[env(safe-area-inset-bottom,0px)] sm:pb-0 shadow-xl" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-[2px]" @click="closeSheet" />
+        <div class="relative bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[80vh] overflow-y-auto z-10 pb-[env(safe-area-inset-bottom,0px)] sm:pb-0 shadow-xl" role="dialog" aria-modal="true">
           <!-- Header -->
-          <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">分享到</h3>
-            <button type="button" class="w-10 h-10 -mr-2 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200 text-2xl leading-none" aria-label="关闭分享面板" @click="closeSheet">&times;</button>
+          <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-200/80 dark:border-gray-800">
+            <h3 class="text-base font-semibold tracking-tight text-gray-900 dark:text-gray-100">分享到</h3>
+            <button type="button" class="w-9 h-9 -mr-1.5 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200 transition-colors" aria-label="关闭分享面板" @click="closeSheet">
+              <i class="ri-close-line text-xl" aria-hidden="true"></i>
+            </button>
           </div>
 
           <!-- Share Buttons Grid -->
           <div class="grid grid-cols-4 gap-4 p-5">
             <!-- Poster -->
             <button type="button" class="flex flex-col items-center gap-2 group" @click="generatePoster">
-              <div class="w-12 h-12 rounded-full bg-primary-600 flex items-center justify-center group-hover:bg-primary-700 transition-colors">
-                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <div class="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center group-hover:bg-primary-700 transition-colors shadow-xs">
+                <i class="ri-image-add-line text-2xl" aria-hidden="true"></i>
               </div>
-              <span class="text-xs text-gray-600 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400">生成海报</span>
+              <span class="text-xs font-medium text-gray-600 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400">生成海报</span>
             </button>
 
             <!-- Copy Link -->
             <button type="button" class="flex flex-col items-center gap-2 group" @click="copyLink">
-              <div class="w-12 h-12 rounded-full bg-gray-500 flex items-center justify-center group-hover:bg-gray-600 transition-colors">
-                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              <div class="w-12 h-12 rounded-2xl bg-slate-600 text-white flex items-center justify-center group-hover:bg-slate-700 transition-colors shadow-xs">
+                <i class="ri-link text-2xl" aria-hidden="true"></i>
               </div>
-              <span class="text-xs text-gray-600 dark:text-gray-300 group-hover:text-gray-700">复制链接</span>
+              <span class="text-xs font-medium text-gray-600 dark:text-gray-300 group-hover:text-gray-800 dark:group-hover:text-gray-100">复制链接</span>
             </button>
 
             <!-- WeChat -->
             <button type="button" class="flex flex-col items-center gap-2 group" @click="shareToWechat">
-              <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center group-hover:bg-green-600 transition-colors">
-                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.594.594 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.216 0 .163.132.295.295.295a.32.32 0 0 0 .167-.054l1.9-1.106a.594.594 0 0 1 .407-.065c1.925.559 3.553.559 5.476 0a.594.594 0 0 1 .407.065l1.9 1.106a.32.32 0 0 0 .167.054.295.295 0 0 0 .295-.295c0-.075-.03-.146-.048-.216l-.39-1.48a.594.594 0 0 1 .213-.665C15.832 13.733 17 11.742 17 9.53c0-4.055-3.89-7.343-8.309-7.343zM5 8a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/><path d="M22.5 9.5c0-3.31-3.134-6-7-6a8.06 8.06 0 0 0-2.29.332c2.677 1.436 4.49 4.066 4.49 7.168 0 .574-.072 1.132-.2 1.672.194.025.385.038.576.038a.6.6 0 0 1 .41.163l1.236.774a.22.22 0 0 0 .114.037.2.2 0 0 0 .2-.2c0-.05-.02-.1-.033-.148l-.254-.968a.41.41 0 0 1 .147-.458C21.547 11.667 22.5 10.702 22.5 9.5z"/></svg>
+              <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center group-hover:bg-emerald-600 transition-colors shadow-xs">
+                <i class="ri-wechat-fill text-2xl" aria-hidden="true"></i>
               </div>
-              <span class="text-xs text-gray-600 dark:text-gray-300 group-hover:text-green-600">微信</span>
+              <span class="text-xs font-medium text-gray-600 dark:text-gray-300 group-hover:text-emerald-600">微信</span>
             </button>
 
             <!-- Moments -->
             <button type="button" class="flex flex-col items-center gap-2 group" @click="shareToMoments">
-              <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center group-hover:from-green-500 group-hover:to-emerald-700 transition-colors">
-                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="3" x2="12" y2="1"/><line x1="12" y1="23" x2="12" y2="21"/><line x1="3" y1="12" x2="1" y2="12"/><line x1="23" y1="12" x2="21" y2="12"/></svg>
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 text-white flex items-center justify-center group-hover:from-emerald-500 group-hover:to-teal-700 transition-colors shadow-xs">
+                <i class="ri-compass-3-line text-2xl" aria-hidden="true"></i>
               </div>
-              <span class="text-xs text-gray-600 dark:text-gray-300 group-hover:text-emerald-600">朋友圈</span>
+              <span class="text-xs font-medium text-gray-600 dark:text-gray-300 group-hover:text-teal-600">朋友圈</span>
             </button>
 
             <!-- Weibo -->
             <button type="button" class="flex flex-col items-center gap-2 group" @click="shareToWeibo">
-              <div class="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center group-hover:bg-red-600 transition-colors">
-                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.739 5.443zm7.782-10.936c-.391-.117-.656-.195-.453-.703.443-1.106.489-2.062.009-2.745-.913-1.298-3.413-1.229-6.27-.035 0 0-.897.427-.669-.344.441-1.468.374-2.698-.316-3.405-1.586-1.624-5.793.061-9.407 3.758C-1.374 8.447-2.9 12.516-2.9 16.078c0 5.672 7.276 9.122 14.397 9.122 9.344 0 15.565-5.432 15.565-9.736 0-2.601-2.191-4.078-4.082-4.683zM19.69 8.142c1.089-1.229 1.378-2.649.645-3.598-.89-1.152-2.688-1.162-4.014-.18l-.011.007c-.264.19-.313.562-.108.826l.11.136c.191.233.542.276.768.09.911-.567 2.013-.55 2.578.177.39.503.307 1.243-.16 2.068-.143.25-.078.569.165.732l.139.096c.246.168.577.111.748-.13l.002-.003c.136-.19.043-.022-.162.178z"/><circle cx="12" cy="14" r="2"/></svg>
+              <div class="w-12 h-12 rounded-2xl bg-rose-500 text-white flex items-center justify-center group-hover:bg-rose-600 transition-colors shadow-xs">
+                <i class="ri-weibo-fill text-2xl" aria-hidden="true"></i>
               </div>
-              <span class="text-xs text-gray-600 dark:text-gray-300 group-hover:text-red-600">微博</span>
+              <span class="text-xs font-medium text-gray-600 dark:text-gray-300 group-hover:text-rose-600">微博</span>
             </button>
 
             <!-- Douyin -->
-            <button type="button" class="flex flex-col items-center gap-2 group opacity-60" @click="shareToDouyin">
-              <div class="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center">
-                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.82s.51.5 0 0A4.278 4.278 0 0 1 15.54 3h-3.09v12.4a2.592 2.592 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6 0-1.72 1.66-3.01 3.37-2.48V9.66c-3.37-.47-6.36 2.33-6.36 5.87 0 3.47 2.83 6.14 6.33 6.14 3.53 0 6.38-2.84 6.38-6.38V8.81A7.32 7.32 0 0 0 19.5 10V6.89a4.33 4.33 0 0 1-2.9-1.07z"/></svg>
+            <button type="button" class="flex flex-col items-center gap-2 group opacity-70 hover:opacity-100 transition-opacity" @click="shareToDouyin">
+              <div class="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center shadow-xs">
+                <i class="ri-tiktok-fill text-2xl" aria-hidden="true"></i>
               </div>
-              <span class="text-xs text-gray-400 dark:text-gray-500">抖音</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">抖音</span>
             </button>
 
             <!-- Xiaohongshu -->
-            <button type="button" class="flex flex-col items-center gap-2 group opacity-60" @click="shareToXiaohongshu">
-              <div class="w-12 h-12 rounded-full bg-red-400 flex items-center justify-center">
-                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M9 9h6v6H9z"/><circle cx="12" cy="12" r="2"/></svg>
+            <button type="button" class="flex flex-col items-center gap-2 group opacity-70 hover:opacity-100 transition-opacity" @click="shareToXiaohongshu">
+              <div class="w-12 h-12 rounded-2xl bg-red-500 text-white flex items-center justify-center shadow-xs">
+                <i class="ri-book-mark-line text-2xl" aria-hidden="true"></i>
               </div>
-              <span class="text-xs text-gray-400 dark:text-gray-500">小红书</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">小红书</span>
             </button>
           </div>
 
           <!-- Hint -->
-          <div class="px-5 pb-5 pt-1">
+          <div class="px-5 pb-4 pt-1">
             <p class="text-xs text-gray-400 dark:text-gray-500 text-center">分享内容仅供参考，不构成医疗建议</p>
           </div>
 
           <!-- Cancel button for mobile -->
-          <div class="px-5 pb-6 md:hidden">
-            <button type="button" class="w-full py-3 text-center text-sm text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors" @click="closeSheet">取消</button>
+          <div class="px-5 pb-5 md:hidden">
+            <button type="button" class="w-full py-2.5 text-center text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200/70 dark:hover:bg-gray-700 transition-colors" @click="closeSheet">取消</button>
           </div>
         </div>
       </div>

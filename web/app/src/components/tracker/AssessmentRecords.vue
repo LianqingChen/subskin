@@ -46,7 +46,7 @@ watch(() => props.items, items => {
       <p v-if="selectionHint" role="status" class="mt-2 text-sm text-primary-700 dark:text-primary-300">{{ selectionHint }}</p>
     </aside>
     <LoadingSpinner v-if="loading" message="正在加载记录…" />
-    <EmptyState v-else-if="!items.length" icon="ri-camera-line" title="还没有白斑记录" description="拍下第一张照片，留下下次对照的参照。" action-label="开始拍照记录" @action="emit('create')" />
+    <EmptyState v-else-if="!items.length" icon="ri-camera-line" title="还没有白斑记录" action-label="开始拍照记录" @action="emit('create')" />
     <!-- 桌面端两列卡片，避免单列卡片横向过宽 -->
     <div v-if="!loading && items.length" class="grid gap-3 lg:grid-cols-2 lg:gap-4">
     <article v-for="item in items" :key="item.id" :class="selected.includes(item.id) ? 'ring-2 ring-primary-500' : ''" class="flex flex-col rounded-2xl border border-gray-200/80 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">

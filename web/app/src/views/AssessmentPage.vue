@@ -58,7 +58,7 @@ watch(editing, async on => {
   } catch { /* 参考层可缺省 */ }
 })
 let dateGeneration = 0
-const assessmentLabel = siteModules.modules.find(m => m.path === '/assessment')?.label || '记录'
+const assessmentLabel = siteModules.modules.find(m => m.path === '/assessment')?.label || '日记'
 const result = computed(() => assess.lastAssessment.value)
 const busy = computed(() => assess.isUploading.value || assess.isSubmittingContour.value)
 const workScreen = computed(() => screen.value === 'capture' || (screen.value === 'result' && editing.value))

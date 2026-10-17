@@ -71,7 +71,6 @@ function trendStyle(trend?: string) {
       <div v-else-if="!items.length" class="flex flex-col items-center justify-center py-8 px-4 text-gray-400 dark:text-gray-500">
         <i class="ri-file-chart-2-line text-3xl mb-2"></i>
         <p class="text-xs">暂无对比报告</p>
-        <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1 text-center">在「白斑对比」中选择两张照片或两次记录</p>
       </div>
 
       <!-- Items -->

@@ -309,8 +309,8 @@ defineExpose({ loadMedicalReports })
 
       <!-- File upload box — prompt when empty, file list when selected -->
       <div
-        class="relative border-2 border-dashed rounded-2xl p-4 lg:py-10 text-center cursor-pointer transition-all duration-200"
-        :class="reportFiles.length ? 'border-primary-400 bg-primary-50 dark:bg-primary-900' : 'border-gray-200 dark:border-gray-700 bg-primary-50 dark:bg-primary-900 hover:border-primary-300 dark:hover:border-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900'"
+        class="relative border border-dashed rounded-xl p-5 lg:py-10 text-center cursor-pointer transition-all duration-200"
+        :class="reportFiles.length ? 'border-primary-500/50 bg-primary-50/40 dark:bg-primary-900/20' : 'border-gray-300/90 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 hover:border-primary-400 dark:hover:border-primary-600 hover:bg-primary-50/30 dark:hover:bg-primary-900/20'"
         @dragover.prevent
         @drop.prevent="handleReportFileDrop"
       >
@@ -325,27 +325,24 @@ defineExpose({ loadMedicalReports })
 
         <!-- Empty state: upload prompt -->
         <div v-if="!reportFiles.length" class="flex flex-col items-center" @click="($refs.reportFileInput as HTMLInputElement).click()">
-          <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-amber-500 dark:text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-            </svg>
+          <div class="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-900/40 border border-primary-200/60 dark:border-primary-700/40 flex items-center justify-center mb-2.5 text-primary-600 dark:text-primary-400">
+            <i class="ri-file-upload-line text-2xl" aria-hidden="true"></i>
           </div>
-          <p class="text-sm font-medium text-gray-600 dark:text-gray-300">上传体检报告AI解读</p>
-          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">单个文件最大20MB</p>
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-200">上传体检报告 AI 解读</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">支持图片或 PDF · 单个文件最大 20MB</p>
         </div>
 
         <!-- Files selected: show file list inside the box -->
         <div v-else class="space-y-2 text-left">
           <div v-for="(file, idx) in reportFiles" :key="idx"
-            class="flex items-center gap-3 p-2.5 rounded-lg bg-white/80 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700">
+            class="flex items-center gap-3 p-2.5 rounded-lg bg-white/90 dark:bg-gray-800/90 border border-gray-200/80 dark:border-gray-700">
             <span class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              :class="file.type.startsWith('image/') ? 'bg-primary-50 dark:bg-primary-900' : 'bg-amber-50 dark:bg-amber-900/30'">
-              <svg v-if="file.type.startsWith('image/')" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-primary-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" /></svg>
-              <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" /></svg>
+              :class="file.type.startsWith('image/') ? 'bg-primary-50 dark:bg-primary-900 text-primary-600 dark:text-primary-400' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'">
+              <i :class="file.type.startsWith('image/') ? 'ri-image-line' : 'ri-file-text-line'" class="text-base" aria-hidden="true"></i>
             </span>
             <div class="flex-1 min-w-0">
               <div class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ file.name }}</div>
-              <div class="text-xs text-gray-400 dark:text-gray-500">{{ (file.size / 1024).toFixed(1) }} KB</div>
+              <div class="text-xs text-gray-400 dark:text-gray-500 tabular-nums">{{ (file.size / 1024).toFixed(1) }} KB</div>
             </div>
             <button
               type="button"
@@ -353,12 +350,12 @@ defineExpose({ loadMedicalReports })
               :aria-label="`移除 ${file.name}`"
               @click="removeReportFile(idx)"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+              <i class="ri-close-line text-lg" aria-hidden="true"></i>
             </button>
           </div>
-          <button type="button" class="min-h-[44px] flex items-center gap-1 text-xs text-primary-500 hover:text-primary-600 font-medium"
+          <button type="button" class="min-h-[44px] flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 font-medium"
             @click="($refs.reportFileInput as HTMLInputElement).click()">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+            <i class="ri-add-line text-sm" aria-hidden="true"></i>
             添加更多文件
           </button>
         </div>
@@ -427,7 +424,6 @@ defineExpose({ loadMedicalReports })
       <div v-else-if="medicalReports.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500">
         <div class="text-4xl mb-3"><i class="ri-file-list-3-line"></i></div>
         <p>暂无体检报告</p>
-        <p class="text-xs mt-1">上传报告后，AI将自动提取关键指标</p>
       </div>
       <div v-else-if="filteredReports.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500">
         <p>无符合条件的报告</p>

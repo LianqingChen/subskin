@@ -175,7 +175,7 @@ function submit() {
     <!-- 6 维体验点选：结构化点选降低门槛，全部选填（含「没体验过」档） -->
     <fieldset>
       <legend class="mb-1 text-sm font-medium">这次就医体验 <span class="text-xs font-normal text-gray-500 dark:text-gray-400">（选填，点一下即可）</span></legend>
-      <p class="mb-2 text-xs text-gray-500">只评价你自己的感受，不做疗效判断，也不评价医生技术水平。没经历过的项目选「没体验过」。</p>
+      <p class="mb-2 text-xs text-gray-500">没经历过的项目选「没体验过」。</p>
       <div class="space-y-2">
         <div v-for="dimension in EXPERIENCE_DIMENSIONS" :key="dimension.key" class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
           <div class="flex flex-wrap items-baseline justify-between gap-2">
@@ -200,11 +200,11 @@ function submit() {
     </fieldset>
 
     <label class="block text-sm">{{ active.label }}内容 <span class="text-gray-400">*</span>
-      <textarea v-model="form.content" required minlength="20" maxlength="2000" rows="5" class="composer-input resize-y" placeholder="写这几句最有用：挂号难不难、等了多久、医生有没有把方案讲清楚、这次花了多少、复诊怎么安排。请至少写 20 字。" />
+      <textarea v-model="form.content" required minlength="20" maxlength="2000" rows="5" class="composer-input resize-y" placeholder="挂号、等候、沟通、花费、复诊安排…至少 20 字" />
       <span class="mt-1 flex items-center justify-between gap-2 text-xs">
         <span :class="specificity.hit >= 3 ? 'text-primary-600 dark:text-primary-300' : 'text-gray-400'">
           <template v-if="specificity.hit >= 3"><i class="ri-checkbox-circle-line mr-1" />内容具体（已含{{ specificity.labels.join('、') }}）</template>
-          <template v-else>写清「时间 · 流程 · 费用 · 沟通 · 复诊」会更有参考价值<template v-if="specificity.labels.length">（已含{{ specificity.labels.join('、') }}）</template></template>
+          <template v-else>写清时间、流程、费用更有参考价值<template v-if="specificity.labels.length">（已含{{ specificity.labels.join('、') }}）</template></template>
         </span>
         <span :class="contentLength < 20 ? 'text-gray-400' : 'text-primary-600'">{{ form.content.length }} / 2000（至少 20 字）</span>
       </span>
@@ -241,7 +241,7 @@ function submit() {
 
     <template v-if="showMore">
       <div v-if="target === 'doctor'" class="grid gap-3 sm:grid-cols-2"><label class="text-sm">职称<input v-model.trim="form.doctorTitle" maxlength="40" class="composer-input" placeholder="例如：主任医师"></label><label class="text-sm">科室<input v-model.trim="form.doctorDepartment" maxlength="60" class="composer-input" placeholder="例如：皮肤科"></label></div>
-      <label v-if="target === 'treatment'" class="block text-sm">方案要点<input v-model.trim="form.treatmentDetail" maxlength="500" class="composer-input" placeholder="可补充实际治疗安排与复诊负担，不提供他人用药指导"></label>
+      <label v-if="target === 'treatment'" class="block text-sm">方案要点<input v-model.trim="form.treatmentDetail" maxlength="500" class="composer-input" placeholder="治疗安排与复诊负担（选填）"></label>
 
       <div class="grid grid-cols-2 gap-3">
         <label class="text-sm">就诊月份<input v-model="form.visitMonth" type="month" :max="maxMonth" class="composer-input"></label>

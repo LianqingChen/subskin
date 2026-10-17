@@ -6,7 +6,6 @@ import { useSpeechSynthesis } from '@/composables/useSpeechSynthesis'
 import { useToast } from '@/composables/useToast'
 import { chatApi } from '@/api/chat'
 import ChatPanel from '@/components/assistant/ChatPanel.vue'
-import CompanionTools from '@/components/assistant/CompanionTools.vue'
 
 const chatStore = useChatStore()
 const authStore = useAuthStore()
@@ -294,16 +293,12 @@ function teardownScrollChain() {
     <!-- Nav bar -->
     <div class="flex-shrink-0 max-w-3xl mx-auto w-full px-4">
       <div class="flex items-center justify-end h-11">
-        <div class="flex items-center gap-0.5">
-          <button type="button" @click="newConversation" class="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors" aria-label="新建对话">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
+        <div class="flex items-center gap-1">
+          <button type="button" @click="newConversation" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100/90 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800 transition-colors" title="新建对话" aria-label="新建对话">
+            <i class="ri-add-line text-lg" aria-hidden="true"></i>
           </button>
-          <button type="button" @click="toggleHistory" class="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors" aria-label="历史对话">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/>
-            </svg>
+          <button type="button" @click="toggleHistory" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100/90 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800 transition-colors" title="历史对话" aria-label="历史对话">
+            <i class="ri-history-line text-[17px]" aria-hidden="true"></i>
           </button>
         </div>
       </div>
@@ -311,15 +306,13 @@ function teardownScrollChain() {
 
     <!-- Logo (idle only) -->
     <div v-if="!hasMessages" class="chat-welcome flex-shrink-0 max-w-3xl mx-auto w-full px-4">
-      <div class="flex flex-col items-center pt-12 pb-6 md:pt-0 md:pb-8">
-        <div class="relative mb-8 md:mb-5 w-20 h-20 md:w-16 md:h-16 rounded-full bg-primary-50 dark:bg-primary-900 flex items-center justify-center">
-          <div class="absolute inset-0 rounded-full bg-primary-400/20 blur-2xl scale-150 pointer-events-none"></div>
-          <i class="ri-robot-3-line text-5xl md:text-4xl text-primary-500 dark:text-primary-400 relative" aria-hidden="true"></i>
+      <div class="flex flex-col items-center pt-10 pb-6 md:pt-0 md:pb-7">
+        <div class="relative mb-6 md:mb-4 w-16 h-16 md:w-14 md:h-14 rounded-2xl bg-primary-50 dark:bg-primary-900/50 border border-primary-200/60 dark:border-primary-700/40 flex items-center justify-center shadow-sm">
+          <div class="absolute inset-0 rounded-2xl bg-primary-400/15 blur-xl scale-125 pointer-events-none"></div>
+          <i class="ri-robot-3-line text-3xl md:text-2xl text-primary-600 dark:text-primary-400 relative" aria-hidden="true"></i>
         </div>
-        <h1 class="text-lg md:text-2xl font-semibold text-gray-800 dark:text-gray-100 tracking-tight mb-1">SubSkin AI 助手</h1>
-        <p class="hidden md:block text-sm text-gray-500 dark:text-gray-400 mt-1">白癜风相关的病情、用药、生活问题，都可以问我</p>
-        <!-- 全站统一页脚声明（首页置于小助手下方，不在对话框上方） -->
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+        <h1 class="text-lg md:text-2xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">SubSkin AI 助手</h1>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
           本平台不构成医疗建议，所有内容仅供参考。
         </p>
       </div>
@@ -335,12 +328,6 @@ function teardownScrollChain() {
     <!-- Companion tools + Input bar（固定在底部导航上方，键盘弹出也不被遮挡） -->
     <div ref="inputWrapEl" class="chat-input-wrap">
       <div class="max-w-3xl mx-auto w-full px-4 pb-1.5">
-      <!-- 知心陪伴快捷工具：正念呼吸 / 用药提醒
-           点击输入框或开始输入时自动隐藏，聚焦输入体验；失焦且无内容时恢复 -->
-      <div v-if="!isInputFocused && !inputText.trim()" class="flex items-center justify-between pb-1.5">
-        <CompanionTools />
-      </div>
-
       <!-- 附件预览 -->
       <div v-if="attachments.length" class="flex flex-wrap gap-1.5 mb-1.5">
         <span v-for="att in attachments" :key="att.tempId"
@@ -354,14 +341,14 @@ function teardownScrollChain() {
       </div>
 
       <div
-        class="chat-input-bar rounded-2xl px-3.5 py-2 border transition-all duration-200 flex items-center gap-2"
-        :class="isInputFocused ? 'border-primary-200 dark:border-primary-700 shadow-md shadow-primary-500/5' : 'border-primary-100 dark:border-primary-900'">
+        class="chat-input-bar rounded-2xl px-3 py-2 border transition-all duration-200 flex items-center gap-2"
+        :class="isInputFocused ? 'border-primary-500/60 dark:border-primary-500/50 ring-2 ring-primary-500/10 shadow-sm' : 'border-gray-200/90 dark:border-gray-800 shadow-xs'">
 
-        <button type="button" class="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900 transition-colors"
+        <button type="button" class="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-primary-600 hover:bg-gray-100/80 dark:hover:text-primary-400 dark:hover:bg-gray-800 transition-colors"
           :aria-label="isUploading ? '上传中' : '添加附件'"
           :disabled="isUploading || isStreaming"
           @click="fileEl?.click()">
-          <i :class="isUploading ? 'ri-loader-4-line animate-spin' : 'ri-attachment-2'"></i>
+          <i :class="isUploading ? 'ri-loader-4-line animate-spin' : 'ri-attachment-2'" class="text-lg"></i>
         </button>
         <input ref="fileEl" type="file" class="hidden" :accept="ATTACH_ACCEPT_TYPES" multiple aria-label="选择附件" @change="onFileChange" />
 
@@ -385,7 +372,7 @@ function teardownScrollChain() {
             @mouseleave="presetPaused = false"
           >
             <Transition name="preset-roll" mode="out-in">
-              <span :key="presetIndex" class="text-sm text-primary-400 whitespace-nowrap block w-full truncate">
+              <span :key="presetIndex" class="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap block w-full truncate">
                 {{ currentPreset }}
               </span>
             </Transition>
@@ -393,14 +380,11 @@ function teardownScrollChain() {
         </div>
 
         <button type="button" @click="sendMessage"
-          :class="['shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200',
-            canSend ? 'active:scale-90 text-white' : 'text-gray-300 dark:text-gray-600']"
+          :class="['shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150',
+            canSend ? 'bg-primary-600 hover:bg-primary-700 active:scale-95 text-white shadow-xs' : 'bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600']"
           :disabled="!canSend"
-          :aria-label="'发送'"
-          :style="canSend ? 'background: linear-gradient(135deg, #1C857C, #26A69A)' : ''">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" style="transform:rotate(-45deg)">
-            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-          </svg>
+          :aria-label="'发送'">
+          <i class="ri-arrow-up-line text-base font-semibold" aria-hidden="true"></i>
         </button>
       </div>
       </div>
@@ -413,15 +397,12 @@ function teardownScrollChain() {
           v-for="card in suggestionCards"
           :key="card.q"
           type="button"
-          class="group flex items-start gap-3 rounded-xl border border-gray-200/80 bg-white px-4 py-3 text-left transition-colors hover:border-primary-200 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-primary-700 dark:hover:bg-gray-800"
+          class="group flex items-center gap-3 rounded-xl border border-gray-200/80 bg-white px-4 py-3 text-left transition-colors hover:border-primary-200 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-primary-700 dark:hover:bg-gray-800"
           data-track-id="chat_suggestion_card"
           @click="fillSuggestion(card.q)"
         >
-          <i :class="card.icon" class="mt-0.5 text-lg text-primary-600 dark:text-primary-400" aria-hidden="true"></i>
-          <span class="min-w-0">
-            <span class="block text-sm font-medium text-gray-800 dark:text-gray-100">{{ card.q }}</span>
-            <span class="mt-0.5 block text-xs text-gray-400 dark:text-gray-500">{{ card.label }}</span>
-          </span>
+          <i :class="card.icon" class="text-lg text-primary-600 dark:text-primary-400" aria-hidden="true"></i>
+          <span class="min-w-0 truncate text-sm font-medium text-gray-800 dark:text-gray-100">{{ card.q }}</span>
         </button>
       </div>
     </div>
@@ -442,9 +423,9 @@ function teardownScrollChain() {
   }
 }
 
-/* Input bar: light gradient in light mode, flat dark surface in dark mode */
+/* Input bar: clean elevated surface in light and dark mode */
 .chat-input-bar {
-  background: linear-gradient(135deg, #eef6f5 0%, #f5faf9 100%);
+  background: #ffffff;
 }
 .dark .chat-input-bar {
   background: #111827;

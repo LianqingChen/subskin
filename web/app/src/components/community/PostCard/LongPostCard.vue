@@ -32,7 +32,7 @@ const authorAvatarUrl = computed(() => toProtectedFileUrl(props.post.author.avat
 <template>
   <router-link
     :to="`/community/${post.id}`"
-    class="feed-card block no-underline rounded-xl overflow-hidden bg-white dark:bg-gray-800 group"
+    class="feed-card block no-underline rounded-xl overflow-hidden bg-white dark:bg-gray-900 border border-gray-200/75 dark:border-gray-800/90 group"
   >
     <div class="p-3">
       <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2 mb-1.5">
@@ -77,11 +77,9 @@ const authorAvatarUrl = computed(() => toProtectedFileUrl(props.post.author.avat
           </router-link>
           <FollowPlus class="hidden sm:inline-flex" :targetUserId="post.author.id" :initialFollowed="post.author.is_followed" @follow-change="(f, uid) => emit('follow-change', f, uid)" />
         </div>
-        <button class="flex flex-shrink-0 items-center gap-1 p-1.5 -mr-1" :class="post.is_liked ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" :aria-pressed="post.is_liked" :aria-label="post.is_liked ? `已点赞，共${post.like_count}人` : '点赞'" @click.stop="emit('like-click', post.id)">
-          <svg class="w-4 h-4" viewBox="0 0 20 20" :fill="post.is_liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.5">
-            <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
-          </svg>
-          <span class="text-[12px]">{{ formatCount(post.like_count) }}</span>
+        <button class="flex flex-shrink-0 items-center gap-1 p-1.5 -mr-1 transition-colors" :class="post.is_liked ? 'text-red-500' : 'text-gray-400 dark:text-gray-500 hover:text-red-500'" :aria-pressed="post.is_liked" :aria-label="post.is_liked ? `已点赞，共${post.like_count}人` : '点赞'" @click.stop="emit('like-click', post.id)">
+          <i :class="post.is_liked ? 'ri-heart-3-fill' : 'ri-heart-3-line'" class="text-sm leading-none" aria-hidden="true"></i>
+          <span class="text-[12px] tabular-nums">{{ formatCount(post.like_count) }}</span>
         </button>
       </div>
     </div>

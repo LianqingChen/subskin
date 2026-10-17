@@ -27,17 +27,16 @@ function scrollTo(id: string) {
 <template>
   <div class="bg-gray-50 dark:bg-gray-950">
     <!-- Header -->
-    <div class="sticky top-14 z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+    <div class="sticky top-14 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-b border-gray-200/80 dark:border-gray-800">
       <div class="page max-w-5xl py-2.5 flex items-center gap-3">
         <button
-          class="p-2 -ml-2 rounded-lg hover:bg-gray-100 text-gray-600"
+          class="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
+          aria-label="返回"
           @click="router.back()"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
+          <i class="ri-arrow-left-s-line text-xl leading-none" aria-hidden="true"></i>
         </button>
-        <h1 class="text-lg font-semibold text-gray-900">服务条款</h1>
+        <h1 class="text-lg font-semibold text-gray-900 dark:text-gray-100">服务条款</h1>
       </div>
     </div>
 
@@ -103,9 +102,9 @@ function scrollTo(id: string) {
           <h3>3.1 服务内容</h3>
           <p>SubSkin 是白癜风病友的AI记录和分享社区，提供以下核心服务：</p>
           <ul>
-            <li><strong>AI助手</strong>：基于 AI 的智能问答服务</li>
-            <li><strong>AI病情日记</strong>：每日病情记录与 VASI 评估跟踪</li>
-            <li><strong>发现</strong>：白友交流、治疗经验分享与日常调养科普</li>
+            <li><strong>问答</strong>：基于 AI 的白癜风医学与日常照护智能问答服务</li>
+            <li><strong>日记</strong>：白斑照片记录、比例评估对比与体检报告解读</li>
+            <li><strong>发现与同行</strong>：白友交流、就医经验分享、匿名资料共建与日常调养参考</li>
           </ul>
 
           <h3>3.2 服务性质</h3>
@@ -152,15 +151,15 @@ function scrollTo(id: string) {
           <div class="not-prose space-y-2 my-4">
             <div class="flex items-center gap-2 text-sm">
               <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">严重</span>
-              <span class="text-gray-700">涉政、暴恐、色情、赌博、诈骗、毒品、枪支</span>
+              <span class="text-gray-700 dark:text-gray-300">涉政、暴恐、色情、赌博、诈骗、毒品、枪支</span>
             </div>
             <div class="flex items-center gap-2 text-sm">
               <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300">高危</span>
-              <span class="text-gray-700">自残教唆、辱骂歧视、人身攻击</span>
+              <span class="text-gray-700 dark:text-gray-300">自残教唆、辱骂歧视、人身攻击</span>
             </div>
             <div class="flex items-center gap-2 text-sm">
               <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300">中危</span>
-              <span class="text-gray-700">引流广告、违反公序良俗</span>
+              <span class="text-gray-700 dark:text-gray-300">引流广告、违反公序良俗</span>
             </div>
           </div>
 
@@ -366,12 +365,12 @@ function scrollTo(id: string) {
     </div>
 
     <!-- Mobile TOC (bottom bar) -->
-    <div class="lg:hidden fixed left-0 right-0 bottom-[calc(54px+env(safe-area-inset-bottom,0px))] md:bottom-0 md:pb-[max(env(safe-area-inset-bottom,0px),0.5rem)] bg-white/95 dark:bg-gray-900/95 border-t border-gray-200 dark:border-gray-800 px-4 py-2 z-30">
+    <div class="app-fixed-x lg:hidden fixed bottom-[calc(54px+env(safe-area-inset-bottom,0px))] md:bottom-0 md:pb-[max(env(safe-area-inset-bottom,0px),0.5rem)] bg-white/95 dark:bg-gray-900/95 border-t border-gray-200 dark:border-gray-800 px-4 py-2 z-30">
       <div class="flex overflow-x-auto gap-2 no-scrollbar">
         <button
           v-for="s in sections"
           :key="s.id"
-          class="shrink-0 text-xs px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 hover:bg-primary-100 dark:hover:bg-primary-900 hover:text-primary-600 dark:hover:text-primary-400 transition"
+          class="shrink-0 text-xs px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-primary-100 dark:hover:bg-primary-900 hover:text-primary-600 dark:hover:text-primary-400 transition"
           @click="scrollTo(s.id)"
         >
           {{ s.title }}

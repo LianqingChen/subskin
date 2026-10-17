@@ -65,7 +65,7 @@ export function useButlerChat() {
       stream.reader.onError = (error: string) => {
         chatStore.removeMessage(skeletonId)
         if (error.includes('已用完') || error.includes('429')) {
-          chatStore.addMessage('assistant', '今日免费体验次数已用完，请登录后继续使用AI助手')
+          chatStore.addMessage('assistant', '免费次数已用完，请登录后继续')
         } else {
           chatStore.addMessage('assistant', `抱歉，${error}`)
         }

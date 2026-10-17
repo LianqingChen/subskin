@@ -103,7 +103,7 @@ async function onFileChange(e: Event) {
           </div>
           <div class="min-w-0 flex-1">
             <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight">小白管家</p>
-            <p class="text-[10px] text-gray-400 truncate">{{ isCounseling ? '温暖倾听，安静陪伴' : '问答 · 导航 · 陪伴，随时都在' }}</p>
+            <p class="text-[10px] text-gray-400 truncate">{{ isCounseling ? '温暖倾听，安静陪伴' : '问答 · 导航 · 陪伴' }}</p>
           </div>
           <div class="flex items-center gap-1">
             <div class="flex bg-gray-100 dark:bg-gray-800 rounded-full p-0.5" role="tablist" aria-label="管家模式">
@@ -136,7 +136,6 @@ async function onFileChange(e: Event) {
               <ButlerCreature3D :creature="creature3D" :size="64" mood="greeting" />
             </div>
             <p class="text-sm text-gray-700 dark:text-gray-300">{{ butlerStore.preference.greeting }}</p>
-            <p class="text-[11px] text-gray-400 mt-1">可以问我白癜风知识、怎么用网站，也可以聊聊心情</p>
           </div>
           <nav aria-label="常用入口" class="grid grid-cols-2 gap-2 max-w-xs mx-auto">
             <button v-for="nav in QUICK_NAV" :key="nav.path" type="button"
@@ -147,7 +146,7 @@ async function onFileChange(e: Event) {
             </button>
           </nav>
           <p v-if="!authStore.isLoggedIn" class="text-center text-[10px] text-gray-400 mt-5">
-            游客每日可免费提问几次，<button type="button" class="text-primary-500 hover:underline" @click="authStore.showLoginModal = true">登录</button>后不限次并支持保存记录
+            游客每日限次，<button type="button" class="text-primary-500 hover:underline" @click="authStore.showLoginModal = true">登录</button>后不限次
           </p>
         </div>
 

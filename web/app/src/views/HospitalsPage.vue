@@ -161,7 +161,7 @@ onBeforeUnmount(() => schema?.remove())
       <button class="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl bg-primary-600 px-4 text-sm font-medium text-white transition-colors hover:bg-primary-700" @click="openQuickReview"><i class="ri-edit-2-line" aria-hidden="true" />分享就诊经历</button>
     </header>
     <p class="mb-4 text-xs leading-5 text-gray-500 dark:text-gray-400">
-      已收录 <strong class="text-gray-900 dark:text-gray-100">{{ hospitals.length }}</strong> 家医院 · {{ coverage }} 个省级地区 · {{ reviewTotal }} 条病友经验<template v-if="communityTotal"> · {{ communityTotal }} 家病友补充</template><template v-if="offline"> · 离线目录</template>。收录不代表推荐。
+      已收录 <strong class="text-gray-900 dark:text-gray-100">{{ hospitals.length }}</strong> 家医院 · {{ coverage }} 个省级地区 · {{ reviewTotal }} 条病友经验<template v-if="communityTotal"> · {{ communityTotal }} 家病友补充</template><template v-if="offline"> · 离线目录</template>
     </p>
     <p v-if="registryError" role="status" class="mb-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">{{ registryError }}（发布经验需要联网）</p>
 
@@ -173,7 +173,7 @@ onBeforeUnmount(() => schema?.remove())
         @open="openDetail" @mark="onMark" @compare="compare" @create="pageModal = 'create'" @write="pickForWriting"
       />
       <div v-if="visitedPrompt" class="card flex flex-wrap items-center gap-3 p-4 dark:bg-gray-900">
-        <p class="min-w-0 flex-1 text-sm">已标记去过「{{ visitedPrompt.name }}」。留下这次就诊中值得提醒病友的事吧。</p>
+        <p class="min-w-0 flex-1 text-sm">已标记去过「{{ visitedPrompt.name }}」，写下经历？</p>
         <button class="min-h-11 px-3 text-primary-700 dark:text-primary-300" @click="startFromVisited">写这次经历</button>
         <button class="min-h-11 px-2 text-sm text-gray-500" @click="visitedPrompt = null">以后再说</button>
       </div>

@@ -25,17 +25,16 @@ function scrollTo(id: string) {
 <template>
   <div class="bg-gray-50 dark:bg-gray-950">
     <!-- Header -->
-    <div class="sticky top-14 z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+    <div class="sticky top-14 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-b border-gray-200/80 dark:border-gray-800">
       <div class="page max-w-5xl py-2.5 flex items-center gap-3">
         <button
-          class="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 "
+          class="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
+          aria-label="返回"
           @click="router.back()"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
+          <i class="ri-arrow-left-s-line text-xl leading-none" aria-hidden="true"></i>
         </button>
-        <h1 class="text-lg font-semibold text-gray-900 ">隐私政策</h1>
+        <h1 class="text-lg font-semibold text-gray-900 dark:text-gray-100">隐私政策</h1>
       </div>
     </div>
 
@@ -264,39 +263,39 @@ function scrollTo(id: string) {
           <p>根据相关法律法规，您享有以下权利：</p>
 
           <div class="not-prose space-y-3 my-4">
-            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 ">
-              <span class="text-xl"><i class="ri-search-line"></i></span>
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/70">
+              <span class="text-xl text-primary-600 dark:text-primary-400"><i class="ri-search-line"></i></span>
               <div>
-                <p class="font-medium text-gray-900 ">查阅权</p>
-                <p class="text-sm text-gray-600 ">随时查看您的个人信息和使用记录</p>
+                <p class="font-medium text-gray-900 dark:text-gray-100">查阅权</p>
+                <p class="text-sm text-gray-600 dark:text-gray-300">随时查看您的个人信息和使用记录</p>
               </div>
             </div>
-            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 ">
-              <span class="text-xl"><i class="ri-edit-line"></i></span>
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/70">
+              <span class="text-xl text-primary-600 dark:text-primary-400"><i class="ri-edit-line"></i></span>
               <div>
-                <p class="font-medium text-gray-900 ">更正权</p>
-                <p class="text-sm text-gray-600 ">更正不准确的信息</p>
+                <p class="font-medium text-gray-900 dark:text-gray-100">更正权</p>
+                <p class="text-sm text-gray-600 dark:text-gray-300">更正不准确的信息</p>
               </div>
             </div>
-            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 ">
-              <span class="text-xl"><i class="ri-delete-bin-line"></i></span>
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/70">
+              <span class="text-xl text-primary-600 dark:text-primary-400"><i class="ri-delete-bin-line"></i></span>
               <div>
-                <p class="font-medium text-gray-900 ">删除权（被遗忘权）</p>
-                <p class="text-sm text-gray-600 ">请求删除您的个人信息，我们将在30天内完成。注销账户后所有个人数据（L2-L4）将被彻底删除</p>
+                <p class="font-medium text-gray-900 dark:text-gray-100">删除权（被遗忘权）</p>
+                <p class="text-sm text-gray-600 dark:text-gray-300">请求删除您的个人信息，我们将在30天内完成。注销账户后所有个人数据（L2-L4）将被彻底删除</p>
               </div>
             </div>
-            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 ">
-              <span class="text-xl"><i class="ri-download-2-line"></i></span>
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/70">
+              <span class="text-xl text-primary-600 dark:text-primary-400"><i class="ri-download-2-line"></i></span>
               <div>
-                <p class="font-medium text-gray-900 ">数据可携带权</p>
-                <p class="text-sm text-gray-600 ">导出您的个人数据（JSON格式）</p>
+                <p class="font-medium text-gray-900 dark:text-gray-100">数据可携带权</p>
+                <p class="text-sm text-gray-600 dark:text-gray-300">导出您的个人数据（JSON格式）</p>
               </div>
             </div>
-            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 ">
-              <span class="text-xl"><i class="ri-forbid-line"></i></span>
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/70">
+              <span class="text-xl text-primary-600 dark:text-primary-400"><i class="ri-forbid-line"></i></span>
               <div>
-                <p class="font-medium text-gray-900 ">撤回同意权</p>
-                <p class="text-sm text-gray-600 ">随时撤回对信息处理的同意</p>
+                <p class="font-medium text-gray-900 dark:text-gray-100">撤回同意权</p>
+                <p class="text-sm text-gray-600 dark:text-gray-300">随时撤回对信息处理的同意</p>
               </div>
             </div>
           </div>
@@ -352,12 +351,12 @@ function scrollTo(id: string) {
     </div>
 
     <!-- Mobile TOC (bottom bar) -->
-    <div class="lg:hidden fixed left-0 right-0 bottom-[calc(54px+env(safe-area-inset-bottom,0px))] md:bottom-0 md:pb-[max(env(safe-area-inset-bottom,0px),0.5rem)] bg-white/95 dark:bg-gray-900/95 border-t border-gray-200 dark:border-gray-800 px-4 py-2 z-30">
+    <div class="app-fixed-x lg:hidden fixed bottom-[calc(54px+env(safe-area-inset-bottom,0px))] md:bottom-0 md:pb-[max(env(safe-area-inset-bottom,0px),0.5rem)] bg-white/95 dark:bg-gray-900/95 border-t border-gray-200 dark:border-gray-800 px-4 py-2 z-30">
       <div class="flex overflow-x-auto gap-2 no-scrollbar">
         <button
           v-for="s in sections"
           :key="s.id"
-          class="shrink-0 text-xs px-3 py-1.5 rounded-full bg-gray-100  text-gray-600  hover:bg-primary-100 dark:hover:bg-primary-900 hover:text-primary-600 dark:hover:text-primary-400 transition"
+          class="shrink-0 text-xs px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-primary-100 dark:hover:bg-primary-900 hover:text-primary-600 dark:hover:text-primary-400 transition"
           @click="scrollTo(s.id)"
         >
           {{ s.title }}

@@ -1,6 +1,6 @@
 .report-page {
   min-height: 0;
-  background: #f9fafb;
+  background: #f6f8fa;
   padding-bottom: 32px;
 }
 @media (max-width: 767px) {
@@ -14,16 +14,16 @@
   z-index: 20;
   /* 不依赖 backdrop-filter（微信内置浏览器支持不稳定），直接用实色白底 */
   background: #fff;
-  border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
 }
 
 html.dark .report-page {
-  background: #0f172a;
+  background: #0b0f17;
 }
 
 html.dark .report-header {
   background: #111827;
-  border-color: #1f2937;
+  border-color: #1e293b;
 }
 
 .report-header__inner {

@@ -134,7 +134,7 @@ onUnmounted(() => { stop(); releaseDialog() })
         <h2 class="text-lg font-semibold">{{ PART_LABELS[bodyPart] || bodyPart || '拍摄照片' }}</h2>
         <button class="min-h-[44px] min-w-[44px]" aria-label="关闭相机" @click="close"><i class="ri-close-line text-2xl"></i></button>
       </header>
-      <p class="shrink-0 px-4 py-3 text-sm text-gray-200">{{ baselineUrl ? '对照上次照片，保持相同角度与距离。' : '均匀光照下拍摄，把白斑边缘和周围正常皮肤拍完整。' }}</p>
+      <p class="shrink-0 px-4 py-3 text-sm text-gray-200">{{ baselineUrl ? '对照上次照片，保持角度距离一致' : '光线均匀，拍全白斑和周围皮肤' }}</p>
       <div class="relative min-h-0 flex-1">
         <video ref="video" autoplay playsinline muted class="h-full w-full object-contain"></video>
         <img v-if="baselineUrl && showBaseline" :src="toProtectedFileUrl(baselineUrl)" alt="上次拍摄的位置参考" class="pointer-events-none absolute inset-0 h-full w-full object-contain opacity-30" />

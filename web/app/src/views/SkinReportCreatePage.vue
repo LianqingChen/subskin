@@ -317,7 +317,7 @@ onMounted(load)
           v-if="allImages.length === 0"
           icon="ri-image-2-line"
           title="还没有照片"
-          description="在下方上传白斑照片，或到发现发布「仅自己可见」的图文记录"
+          description="在下方上传白斑照片"
         />
 
         <!-- 照片墙：2 列（每行 2 张）；长按拖动排序（微信朋友圈式）、点日期改日期、右上角 × 删除 -->
@@ -383,7 +383,7 @@ onMounted(load)
         </p>
 
         <p v-if="allImages.length > 1" class="create-reorder-hint">
-          <i class="ri-drag-move-2-line"></i> 长按照片拖动排序 · 点日期改日期 · × 删除
+          <i class="ri-drag-move-2-line"></i> 长按拖动排序 · 点日期可改
         </p>
 
         <!-- 上传照片工具框（页面下方） -->

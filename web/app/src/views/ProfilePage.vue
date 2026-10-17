@@ -144,10 +144,10 @@ const allSettingsItems = [
 ] as const
 
 const guestLinks = [
-  { label: '测评历史', desc: '查看你的 VASI 评分变化趋势', icon: 'ri-bar-chart-2-line', to: '/assessment' },
-  { label: 'AI日记', desc: '记录每日状态，AI追踪变化', icon: 'ri-book-3-line', to: '/diary' },
-  { label: '体检报告', desc: 'AI 解读的体检指标汇总', icon: 'ri-file-text-line', to: '/assessment?tab=report' },
-  { label: '社区互动', desc: '你的发布、收藏和评论', icon: 'ri-chat-3-line', to: '/community' },
+  { label: '白斑日记', icon: 'ri-booklet-line', to: '/assessment' },
+  { label: '体检解读', icon: 'ri-microscope-line', to: '/assessment/exam' },
+  { label: '就医经验', icon: 'ri-hospital-line', to: '/hospitals' },
+  { label: '发现社区', icon: 'ri-compass-3-line', to: '/community' },
 ]
 
 const settingsItems = computed(() =>
@@ -652,7 +652,7 @@ async function handleAvatarChange(event: Event) {
         </div>
         <div class="min-w-0 flex-1">
           <h1 class="text-lg font-semibold text-gray-900 dark:text-gray-100 md:text-xl">登录后查看个人中心</h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">登录后可以查看追踪数据和管理社区内容</p>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">查看追踪数据，管理社区内容</p>
         </div>
         <button type="button"
           class="btn-primary inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-6 text-sm"
@@ -669,7 +669,6 @@ async function handleAvatarChange(event: Event) {
       <router-link v-for="link in guestLinks" :key="link.label" :to="link.to" class="profile-entry">
         <span class="profile-entry__icon"><i :class="link.icon" aria-hidden="true"></i></span>
         <span class="mt-3 block text-sm font-medium text-gray-900 dark:text-gray-100">{{ link.label }}</span>
-        <span class="mt-0.5 block text-xs leading-5 text-gray-500 dark:text-gray-400">{{ link.desc }}</span>
       </router-link>
     </div>
     </template>
@@ -688,7 +687,6 @@ async function handleAvatarChange(event: Event) {
         <div class="flex items-start justify-between gap-3 mb-3">
           <div>
             <h3 class="profile-card-title"><i class="ri-shield-keyhole-line" aria-hidden="true"></i>账号与安全</h3>
-            <p class="mt-1 text-xs text-gray-500 ">管理登录方式、绑定信息与密码安全</p>
           </div>
           <span v-if="isLoadingCredentials" class="text-xs text-gray-400 ">加载中...</span>
         </div>
@@ -737,7 +735,7 @@ async function handleAvatarChange(event: Event) {
         </div>
 
         <p v-if="bindableCredentialCount <= 1" class="mt-3 text-xs text-gray-400 ">
-          至少保留一种手机号或邮箱登录方式，最后一个绑定项不可解绑。
+          至少保留一种登录方式
         </p>
 
         <div class="mt-4 flex flex-wrap gap-2">
@@ -861,16 +859,11 @@ async function handleAvatarChange(event: Event) {
                   <span v-else class="absolute inset-0 flex items-center justify-center">{{ userInitial }}</span>
                   <!-- Camera badge -->
                   <span
-                    class="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary-500 dark:bg-primary-600 flex items-center justify-center shadow-md ring-2 ring-white dark:ring-gray-700 transition-transform group-hover:scale-110"
+                    class="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary-600 flex items-center justify-center shadow-md ring-2 ring-white dark:ring-gray-800 transition-transform group-hover:scale-110"
                     :class="{ 'animate-pulse': isUploadingAvatar }"
                   >
-                    <svg v-if="!isUploadingAvatar" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="white" class="w-4 h-4">
-                      <path fill-rule="evenodd" d="M1 8a7 7 0 1114 0A7 7 0 011 8zm7-4a1 1 0 00-1 1v2H5a1 1 0 000 2h2v2a1 1 0 102 0V9h2a1 1 0 100-2H9V5a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                    <svg v-else class="w-3.5 h-3.5 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                    </svg>
+                    <i v-if="!isUploadingAvatar" class="ri-camera-fill text-xs text-white" aria-hidden="true"></i>
+                    <i v-else class="ri-loader-4-line text-xs text-white animate-spin" aria-hidden="true"></i>
                   </span>
                 </button>
                 <input
@@ -885,22 +878,22 @@ async function handleAvatarChange(event: Event) {
 
            <!-- Basic Info Section -->
            <div class="space-y-4">
-             <div class="flex items-center gap-2 text-xs font-medium text-gray-500  uppercase tracking-wider">
-               <span class="w-4 h-px bg-gray-300"></span>
+             <div class="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+               <span class="w-4 h-px bg-gray-200 dark:bg-gray-700"></span>
                基本信息
-               <span class="flex-1 h-px bg-gray-300"></span>
+               <span class="flex-1 h-px bg-gray-200 dark:bg-gray-700"></span>
              </div>
 
              <div>
-               <label class="block text-sm font-medium text-gray-700 mb-1.5">昵称</label>
+               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">昵称</label>
                <input
                  v-model="profileForm.username"
                  type="text"
-                 class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-shadow"
-placeholder="请输入昵称"
-                  @input="debouncedNicknameCheck"
-                  @blur="checkNicknameAvailability"
-                />
+                 class="input-field"
+                 placeholder="请输入昵称"
+                 @input="debouncedNicknameCheck"
+                 @blur="checkNicknameAvailability"
+               />
                 <div v-if="nicknameCheckStatus === 'checking'" class="mt-1 text-xs text-gray-400">
                   <i class="ri-loader-4-line animate-spin mr-1"></i>检查中...
                 </div>
@@ -913,10 +906,10 @@ placeholder="请输入昵称"
               </div>
 
              <div>
-               <label class="block text-sm font-medium text-gray-700 mb-1.5">与白友关系</label>
+               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">与白友关系</label>
                <select
                  v-model="profileForm.patientRelation"
-                 class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-shadow"
+                 class="input-field"
                >
                  <option value="">请选择</option>
                  <option
@@ -927,16 +920,14 @@ placeholder="请输入昵称"
                    {{ option.label }}
                  </option>
                </select>
-               <p class="text-xs text-gray-400  mt-1.5">帮助我们提供更有针对性的内容和建议</p>
              </div>
            </div>
 
            <!-- Contact Info -->
-           <div class="rounded-xl bg-gray-50 p-4 border-l-2 border-primary-400 dark:border-primary-500">
+           <div class="rounded-xl bg-gray-50 dark:bg-gray-900/60 p-4 border-l-2 border-primary-500">
              <div class="flex items-start justify-between gap-3">
                <div>
-                 <h3 class="text-sm font-medium text-gray-900">联系方式</h3>
-                 <p class="mt-1 text-xs text-gray-500 ">手机号、邮箱与密码请在"账号与安全"中管理</p>
+                 <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100">联系方式</h3>
                </div>
                <button
                  type="button"
@@ -947,7 +938,7 @@ placeholder="请输入昵称"
                </button>
              </div>
 
-             <div class="mt-3 grid gap-2 text-sm text-gray-600">
+             <div class="mt-3 grid gap-2 text-sm text-gray-600 dark:text-gray-300">
                <p><i class="ri-smartphone-line"></i> {{ displayPhone || '未绑定手机号' }}</p>
                <p><i class="ri-mail-line mr-1"></i>{{ displayEmail || '未绑定邮箱' }}</p>
              </div>

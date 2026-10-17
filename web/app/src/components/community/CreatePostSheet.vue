@@ -121,17 +121,17 @@ onBeforeUnmount(() => {
     <Transition name="sheet">
       <div
         v-if="isVisible"
-        class="fixed inset-x-0 bottom-0 z-[61] rounded-t-2xl bg-white shadow-2xl"
+        class="fixed inset-x-0 bottom-0 z-[61] sm:max-w-md sm:mx-auto sm:bottom-6 rounded-t-2xl sm:rounded-2xl bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 shadow-2xl"
         :style="{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }"
       >
         <!-- Drag handle -->
-        <div class="flex justify-center pt-3 pb-1">
-          <div class="w-10 h-1 rounded-full bg-gray-300 " />
+        <div class="flex justify-center pt-3 pb-1 sm:hidden">
+          <div class="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700" />
         </div>
 
         <!-- Header -->
-        <div class="px-5 pb-3 pt-1">
-          <h3 class="text-base font-semibold text-gray-900">选择发布类型</h3>
+        <div class="px-5 pb-3 pt-2 sm:pt-4">
+          <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">选择发布类型</h3>
         </div>
 
         <!-- Options -->
@@ -139,60 +139,56 @@ onBeforeUnmount(() => {
           <button
             v-for="option in publishOptions"
             :key="option.type"
-            class="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-150 hover:bg-gray-50 dark:hover:bg-gray-300/60 active:bg-gray-100 dark:active:bg-gray-700 text-left"
+            class="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-150 hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-700 text-left"
             @click="handleSelect(option)"
             :data-track-id="`community_create_${option.type}`"
           >
             <!-- Icon circle -->
-            <div class="w-11 h-11 rounded-full flex items-center justify-center text-xl flex-shrink-0"
+            <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
               :class="{
-                'bg-primary-50 dark:bg-primary-900/30': option.type === 'image',
-                'bg-rose-50 dark:bg-rose-900/30': option.type === 'video',
-                'bg-sky-50 dark:bg-sky-900/30': option.type === 'text',
-                'bg-amber-50 dark:bg-amber-900/30': option.type === 'long',
+                'bg-primary-50 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300': option.type === 'image',
+                'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-300': option.type === 'video',
+                'bg-sky-50 text-sky-600 dark:bg-sky-900/30 dark:text-sky-300': option.type === 'text',
+                'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300': option.type === 'long',
               }"
             >
               <i :class="option.icon"></i>
             </div>
             <!-- Text -->
             <div class="flex-1 min-w-0">
-              <div class="text-[15px] font-medium text-gray-900">{{ option.title }}</div>
-              <div class="text-xs text-gray-500  mt-0.5">{{ option.description }}</div>
+              <div class="text-[15px] font-medium text-gray-900 dark:text-gray-100">{{ option.title }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ option.description }}</div>
             </div>
             <!-- Arrow -->
-            <svg class="w-5 h-5 text-gray-300  flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-            </svg>
+            <i class="ri-arrow-right-s-line text-xl text-gray-400 dark:text-gray-500 flex-shrink-0" aria-hidden="true"></i>
           </button>
         </div>
 
         <!-- My Drafts -->
         <div class="px-3 pb-1">
-          <div class="h-px bg-gray-100 my-1"></div>
+          <div class="h-px bg-gray-100 dark:bg-gray-800 my-1"></div>
           <button
-            class="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-150 hover:bg-gray-50 dark:hover:bg-gray-300/60 active:bg-gray-100 dark:active:bg-gray-700 text-left"
+            class="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-150 hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-700 text-left"
             @click="close(); router.push('/community/drafts')"
           >
-            <div class="w-11 h-11 rounded-full flex items-center justify-center text-xl flex-shrink-0 bg-gray-100">
+            <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
               <i class="ri-draft-line"></i>
             </div>
             <div class="flex-1 min-w-0">
-              <div class="text-[15px] font-medium text-gray-900">我的草稿</div>
-              <div class="text-xs text-gray-500  mt-0.5">
+              <div class="text-[15px] font-medium text-gray-900 dark:text-gray-100">我的草稿</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 <template v-if="draftCount > 0">{{ draftCount }}篇未发布<span v-if="expiringCount" class="text-amber-500 dark:text-amber-400 ml-1"><i class="ri-time-line"></i>{{ expiringCount }}篇即将过期</span></template>
                 <template v-else>暂无草稿</template>
               </div>
             </div>
-            <svg class="w-5 h-5 text-gray-300  flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-            </svg>
+            <i class="ri-arrow-right-s-line text-xl text-gray-400 dark:text-gray-500 flex-shrink-0" aria-hidden="true"></i>
           </button>
         </div>
 
         <!-- Cancel -->
         <div class="px-3 pb-4">
           <button
-            class="w-full py-3 text-sm font-medium text-gray-500  hover:text-gray-700 dark:hover:text-gray-200 transition-colors rounded-xl hover:bg-gray-50 dark:hover:bg-gray-300/40 active:bg-gray-100 dark:active:bg-gray-700"
+            class="w-full py-3 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-700"
             @click="close"
           >
             取消

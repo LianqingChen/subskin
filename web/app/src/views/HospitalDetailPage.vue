@@ -134,7 +134,7 @@ onBeforeUnmount(() => schema?.remove())
     <LoadingSpinner v-if="registryLoading && !hospital" message="正在加载医院资料…" />
     <EmptyState
       v-else-if="!hospital" icon="ri-hospital-line" title="没有找到这家医院"
-      description="链接可能已失效，回目录重新查找，或补充一家医院。"
+      description="链接可能已失效。"
       action-label="返回医院目录" @action="backToDirectory"
     />
 
@@ -159,7 +159,7 @@ onBeforeUnmount(() => schema?.remove())
           </div>
         </div>
         <div v-if="visitedPrompt" class="mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-primary-50 p-3 dark:bg-primary-900">
-          <p class="min-w-0 flex-1 text-sm">已标记去过。留下这次就诊中值得提醒病友的事吧。</p>
+          <p class="min-w-0 flex-1 text-sm">已标记去过，写下这次经历？</p>
           <button class="min-h-11 px-3 text-sm text-primary-700 dark:text-primary-300" @click="writeReview('experience')">写这次经历</button>
           <button class="min-h-11 px-2 text-sm text-gray-500" @click="visitedPrompt = false">以后再说</button>
         </div>
@@ -185,7 +185,7 @@ onBeforeUnmount(() => schema?.remove())
 
         <div class="mt-4 rounded-xl bg-gray-50 p-4 dark:bg-gray-800">
           <h3 class="text-sm font-medium">官方资料</h3>
-          <p class="mt-2 text-xs leading-6 text-gray-500 dark:text-gray-400">出诊、院区、设备、医保和费用可能变化，请出发前核实。查看官方科室介绍可了解医生团队与诊疗方向。</p>
+          <p class="mt-2 text-xs leading-6 text-gray-500 dark:text-gray-400">出诊与费用可能变化，请出发前核实。</p>
           <a v-if="hospital.source" :href="hospital.source" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-primary-700 dark:text-primary-300">查看医院官方来源 <i class="ri-external-link-line ml-1" /></a>
           <p class="text-[11px] text-gray-400">
             <template v-if="hospital.checkedAt">资料核对：{{ hospital.checkedAt }} · </template>收录不代表推荐或排名
@@ -214,7 +214,7 @@ onBeforeUnmount(() => schema?.remove())
       </section>
 
       <div class="mt-4 min-w-0 lg:order-1 lg:mt-0">
-        <p v-if="!hospital.id" role="status" class="rounded-xl bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">当前展示的是离线目录，联网后可查看该院病友经验并发布评价。</p>
+        <p v-if="!hospital.id" role="status" class="rounded-xl bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">离线目录，联网后可查看评价。</p>
         <HospitalReviewBoard
           v-else
           :hospital="hospital" :reviews="visibleReviews" :loaded-count="reviews.length"

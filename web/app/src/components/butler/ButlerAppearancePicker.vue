@@ -120,7 +120,7 @@ async function onSave() {
               </fieldset>
             </div>
             <p class="text-[10px] leading-relaxed text-gray-400">
-              长按管家可直接拖动到页面任意位置；拖到屏幕左右边缘隐藏，拖回底部角落恢复默认位置。
+              长按管家可拖动；拖到边缘隐藏
             </p>
 
             <fieldset>
@@ -133,7 +133,6 @@ async function onSave() {
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-800 dark:text-gray-200">在页面上显示小白管家</p>
-                <p class="text-[11px] text-gray-400">关闭后漂浮按钮不再出现</p>
               </div>
               <button type="button" role="switch" :aria-checked="form.enabled"
                 class="relative w-11 h-6 rounded-full transition-colors"

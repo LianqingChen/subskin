@@ -117,7 +117,7 @@ function freqLabel(freq: string) {
     <div v-if="loading" class="text-center py-4 text-xs text-gray-400">加载中...</div>
 
     <div v-else-if="!reminders.length" class="text-center py-4 text-xs text-gray-400">
-      还没有用药提醒，添加后 AI 问答将引用你的用药数据
+      暂无用药提醒
     </div>
 
     <div v-else class="space-y-2">

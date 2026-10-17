@@ -38,7 +38,7 @@ function continueRecord() { router.push({ path: '/assessment', query: { baseline
 </template>
 
 <style scoped>
-.record-edit-shell { --work-top-padding: 0px; display: flex; flex: none; flex-direction: column; gap: 8px; padding-top: 8px; padding-bottom: 8px; height: calc(100svh - 56px - 55px - env(safe-area-inset-bottom, 0px) - var(--work-top-padding)); overflow: hidden; }
+.record-edit-shell { --work-top-padding: 0px; display: flex; flex: none; flex-direction: column; gap: 8px; padding-top: 8px; padding-bottom: 8px; height: calc(100vh - 56px - 55px - env(safe-area-inset-bottom, 0px) - var(--work-top-padding)); height: calc(100svh - 56px - 55px - env(safe-area-inset-bottom, 0px) - var(--work-top-padding)); overflow: hidden; }
 :global(html[data-ios] .record-edit-shell) { --work-top-padding: env(safe-area-inset-top, 0px); }
-@media (min-width: 768px) { .record-edit-shell { height: calc(100svh - 56px - var(--work-top-padding)); } }
+@media (min-width: 768px) { .record-edit-shell { height: calc(100vh - 56px - var(--work-top-padding)); height: calc(100svh - 56px - var(--work-top-padding)); } }
 </style>

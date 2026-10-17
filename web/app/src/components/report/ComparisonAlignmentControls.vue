@@ -19,7 +19,7 @@ function manual() { if (props.modelValue) return; emit('update:modelValue', iden
       <button type="button" :disabled="disabled" :aria-pressed="!modelValue" class="min-h-[44px] rounded-lg px-3 text-sm" :class="!modelValue ? 'bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400'" @click="emit('update:modelValue', null)">自动对齐</button>
       <button type="button" :disabled="disabled" :aria-pressed="!!modelValue" class="min-h-[44px] rounded-lg px-3 text-sm" :class="modelValue ? 'bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400'" @click="manual">手动调整</button>
     </div>
-    <p v-if="!modelValue" class="text-xs text-gray-500 dark:text-gray-400">开始分析时尝试自动对齐，也可以先手动调整画面。</p>
+    <p v-if="!modelValue" class="text-xs text-gray-500 dark:text-gray-400">分析时自动对齐，也可手动调整</p>
     <template v-else>
       <ManualAlignmentPanel :model-value="modelValue" :before-url="beforeUrl" :after-url="afterUrl" :disabled="disabled" @update:model-value="emit('update:modelValue', $event)" @ready="previewReady = $event" />
       <p v-if="!support.supported.value" role="status" class="text-xs text-gray-500 dark:text-gray-400">{{ support.loading.value ? '正在准备手动分析…' : '手动对齐分析尚未启用，可先预览调整。' }}<button v-if="!support.loading.value" type="button" class="min-h-[44px] px-2 text-primary-700 dark:text-primary-300" @click="support.load">重试</button></p>

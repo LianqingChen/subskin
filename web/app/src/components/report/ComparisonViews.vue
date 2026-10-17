@@ -235,7 +235,7 @@ const changeChips = computed<ChangeChip[]>(() => {
         </span>
       </div>
       <p class="cv__heat-note">
-        <i class="ri-information-line"></i> 仅比对两图皮肤内的白斑区域，衣物与背景不参与；照片条件差异较大时自动隐藏此图
+        <i class="ri-information-line"></i> 仅比对皮肤内的白斑区域
       </p>
     </div>
     <p v-else-if="aligned && align?.note" class="cv__heat-note">

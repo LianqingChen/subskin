@@ -6,7 +6,7 @@ const router = useRouter()
 const goodExamples = [
   '光线均匀、白斑清晰可见',
   '手机正对皮肤，距离约30cm',
-  '照片中包含参考物（硬币/尺子）以便精确测量',
+  '照片中带上硬币或尺子',
   '对焦清晰，避免手抖',
 ]
 
@@ -31,7 +31,6 @@ const badExamples = [
       </button>
       <div class="min-w-0">
         <h1 class="page-title">拍照技巧指南</h1>
-        <p class="page-subtitle">照片质量直接影响记录的准确度，按下面的建议拍，前后对比才可靠。</p>
       </div>
     </div>
 

@@ -49,7 +49,7 @@ async function handleUpdate() {
             @click="handleUpdate"
           >
             <span v-if="isUpdating" class="inline-flex items-center gap-1">
-              <svg class="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+              <i class="ri-loader-4-line animate-spin text-xs" aria-hidden="true"></i>
               更新中
             </span>
             <span v-else>更新</span>
@@ -92,7 +92,6 @@ async function handleUpdate() {
         <img src="/subskin_logo.png?v=b4e9d1" alt="SubSkin" class="w-12 h-12 rounded-xl flex-shrink-0" />
         <div class="flex-1 min-w-0">
           <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-sm">添加到桌面，体验更流畅</h3>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">像原生应用一样使用，随时快速打开</p>
           <div class="flex items-center gap-2 mt-3">
             <button type="button"
               class="flex-1 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors"
@@ -171,9 +170,6 @@ async function handleUpdate() {
             <li>或使用菜单中的「安装 SubSkin」选项</li>
           </ol>
 
-          <p class="mt-3 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
-            提示：若菜单中没有安装选项，可能浏览器暂时不满足安装条件（如刚清除过站点数据），稍后重新打开一般即可。
-          </p>
         </div>
       </div>
     </Transition>

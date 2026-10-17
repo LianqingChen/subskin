@@ -348,15 +348,15 @@ async function generate() {
     }
 
     ctx.fillStyle = '#0f766e'
-    ctx.font = 'bold 30px sans-serif'
+    ctx.font = 'bold 30px -apple-system, BlinkMacSystemFont, "HarmonyOS Sans SC", "PingFang SC", sans-serif'
     ctx.fillText('扫码查看完整报告', 70, 1670)
-    ctx.fillStyle = '#94a3b8'
-    ctx.font = '24px sans-serif'
-    ctx.fillText('SubSkin · 小白日记', 70, 1720)
+    ctx.fillStyle = '#64748b'
+    ctx.font = '24px -apple-system, BlinkMacSystemFont, "HarmonyOS Sans SC", "PingFang SC", sans-serif'
+    ctx.fillText('SubSkin · 白斑日记', 70, 1720)
 
     // 免责声明
     ctx.fillStyle = '#94a3b8'
-    ctx.font = '22px sans-serif'
+    ctx.font = '22px -apple-system, BlinkMacSystemFont, "HarmonyOS Sans SC", "PingFang SC", sans-serif'
     ctx.fillText('本报告不构成医疗诊断建议，请遵医嘱', 70, 1830)
 
     posterUrl.value = canvas.toDataURL('image/png')
@@ -440,7 +440,6 @@ async function sharePoster() {
         </div>
 
         <div class="poster-modal__footer">
-          <p class="poster-tip">长按图片可保存，或点击下方按钮分享</p>
           <div class="poster-actions">
             <button class="poster-btn poster-btn--primary" @click="sharePoster">
               <i class="ri-share-line"></i> 分享

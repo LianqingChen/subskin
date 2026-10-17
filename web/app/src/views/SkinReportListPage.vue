@@ -83,7 +83,7 @@ const { router, authStore, reports, loading, previews, typeFilter, isLoggedIn, f
           v-if="reports.length === 0"
           icon="ri-file-chart-2-line"
           title="还没有报告"
-          description="上传白斑照片生成周报/月报，或选择日记照片生成对比报告"
+          description="上传照片生成周报或对比报告"
           action-label="生成第一份报告"
           @action="router.push({ name: 'skin-report-new' })"
         />

@@ -395,7 +395,7 @@ onBeforeUnmount(() => {
         </div>
 
         <p class="pointer-events-none absolute bottom-2 left-3 text-[11px] text-gray-400 dark:text-gray-500">
-          点选省市或圆点缩放查看 · 橙色点为当前选定医院
+          点选省市或圆点查看
         </p>
       </div>
 

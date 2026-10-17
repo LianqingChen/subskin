@@ -75,8 +75,8 @@ onUnmounted(() => {
 }
 
 html.dark .bottom-nav {
-  background: rgba(15, 23, 42, 0.94);
-  border-top-color: rgba(31, 41, 55, 0.9);
+  background: rgba(17, 24, 39, 0.94);
+  border-top-color: rgba(30, 41, 59, 0.9);
 }
 
 .bottom-nav__item {

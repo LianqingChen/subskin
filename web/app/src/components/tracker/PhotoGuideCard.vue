@@ -18,11 +18,11 @@ function dismissPermanently() {
 }
 
 const tips = [
-  { icon: 'ri-ruler-line', text: '保持 20-30cm 距离，正对皮肤拍摄，确保白斑完整入镜' },
-  { icon: 'ri-sun-line', text: '在自然漫射光或白色柔光灯下拍摄，避免阴影和强光直射' },
-  { icon: 'ri-stamp-line', text: '强烈推荐：放一枚标准一元硬币（直径25mm）在患处旁作为尺寸参考' },
-  { icon: 'ri-contrast-drop-2-line', text: '确保正常皮肤与白斑同时出现在画面中，方便 AI 对比色差' },
-  { icon: 'ri-camera-lens-line', text: '对焦在白斑区域，保持手稳避免模糊，照片分辨率 ≥ 640×480' },
+  { icon: 'ri-ruler-line', text: '距离 20-30cm，正对皮肤' },
+  { icon: 'ri-sun-line', text: '柔和光线，避免阴影和强光' },
+  { icon: 'ri-stamp-line', text: '患处旁放一枚硬币作参照' },
+  { icon: 'ri-contrast-drop-2-line', text: '白斑与正常皮肤同框' },
+  { icon: 'ri-camera-lens-line', text: '对焦白斑，手稳不糊' },
 ]
 </script>
 

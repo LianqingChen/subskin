@@ -394,7 +394,7 @@ onBeforeUnmount(() => {
         <textarea
           v-model="inputText"
           class="diary-input__textarea"
-          placeholder="记录今天的状态... 比如：今天心情不错，早上吃了黑芝麻糊，涂了他克莫司，白斑好像没什么变化"
+          placeholder="记录今天的状态…"
           rows="3"
           maxlength="2000"
           @keydown.ctrl.enter="submitEntry"
@@ -431,7 +431,7 @@ onBeforeUnmount(() => {
         v-else-if="entries.length === 0"
         icon="ri-book-open-line"
         title="还没有日记"
-        description="记录每天的状态，AI帮你追踪病情变化趋势"
+        description="记录每天状态，追踪变化"
       />
 
       <template v-else>

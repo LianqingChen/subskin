@@ -25,23 +25,22 @@ function handleFormClose() {
 <template>
   <Teleport to="body">
     <!-- 手机端底部抽屉，平板/桌面居中弹窗 -->
-    <div class="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 sm:items-center sm:p-4" @click.self="emit('close')">
-      <div class="max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom,0px)] shadow-xl dark:bg-gray-800 sm:max-w-sm sm:rounded-2xl sm:pb-0" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 backdrop-blur-[2px] sm:items-center sm:p-4" @click.self="emit('close')">
+      <div class="max-h-[92vh] max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl border border-gray-200/80 bg-white pb-[env(safe-area-inset-bottom,0px)] shadow-xl dark:border-gray-800 dark:bg-gray-900 sm:max-w-sm sm:rounded-2xl sm:pb-0" role="dialog" aria-modal="true">
         <div class="flex items-center justify-between px-6 pt-5 pb-3">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ activeMethod === 'phone' ? '手机登录 / 注册' : '邮箱登录 / 注册' }}</h2>
-          <button type="button" class="-mr-2 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200" aria-label="关闭" @click="emit('close')">
-            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+          <h2 class="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">{{ activeMethod === 'phone' ? '手机登录 / 注册' : '邮箱登录 / 注册' }}</h2>
+          <button type="button" class="-mr-2 flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200" aria-label="关闭" @click="emit('close')">
+            <i class="ri-close-line text-xl" aria-hidden="true"></i>
           </button>
         </div>
 
-        <div class="flex border-b border-gray-200 dark:border-gray-700">
+        <div class="flex border-b border-gray-200/80 dark:border-gray-800">
           <button v-for="tab in tabs" :key="tab.key" type="button"
-            class="flex-1 border-b-2 px-2 py-3 text-sm font-medium transition-colors"
-            :class="activeMethod === tab.key ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-300' : 'border-transparent text-gray-500 hover:text-gray-700  dark:hover:text-gray-200'"
+            class="flex-1 border-b-2 px-2 py-2.5 text-sm font-medium transition-colors"
+            :class="activeMethod === tab.key ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-300' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
             @click.prevent="activeMethod = tab.key; errorMessage = ''">
             <span class="inline-flex items-center gap-1.5">
-              <svg v-if="tab.key === 'phone'" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.58 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
-              <svg v-else class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" /><polyline points="2,4 12,13 22,4" /></svg>
+              <i :class="tab.icon" class="text-base shrink-0" aria-hidden="true"></i>
               {{ tab.label }}
             </span>
           </button>

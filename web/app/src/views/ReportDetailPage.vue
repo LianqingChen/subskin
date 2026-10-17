@@ -138,7 +138,7 @@ function formatDate(dateStr: string) {
 
 <template>
   <div class="flex-1 bg-gray-50 pb-8 dark:bg-gray-950 md:pb-10">
-    <!-- 子工具条：与记录页同宽同样式 -->
+    <!-- 子工具条：与日记页同宽同样式 -->
     <header class="sticky top-14 z-30 border-b border-gray-200/80 bg-white dark:border-gray-800 dark:bg-gray-900">
       <div class="page flex min-h-[52px] items-center gap-2">
         <button type="button" aria-label="返回" @click="router.back()" class="-ml-2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800">
@@ -198,7 +198,6 @@ function formatDate(dateStr: string) {
             <div v-if="!interpretation && !interpreting" class="card p-8 text-center flex-1 flex flex-col items-center justify-center">
               <div class="text-5xl mb-4 text-primary-500"><i class="ri-robot-line"></i></div>
               <p class="text-gray-900 dark:text-gray-100 font-medium mb-2 text-lg">还未进行AI解读</p>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm">AI将用通俗易懂的语言解读你的体检报告，提示风险项并给出建议</p>
               <button @click="triggerInterpret" class="btn-primary px-6 py-2.5">
                 <i class="ri-magic-line mr-1"></i> 开始AI解读
               </button>
@@ -219,7 +218,7 @@ function formatDate(dateStr: string) {
                     <i class="ri-loader-4-line text-3xl animate-spin"></i>
                   </div>
                   <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">AI正在解读报告</h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">通常需要10-30秒，请耐心等待</p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">约 10-30 秒</p>
                 </div>
                 
                 <div class="space-y-4">

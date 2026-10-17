@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-dvh bg-gray-50 dark:bg-gray-950 flex flex-col overflow-x-clip" @click.capture="handleGlobalClick">
+  <div class="min-h-dvh bg-[#f6f8fa] dark:bg-[#0b0f17] flex flex-col overflow-x-clip" @click.capture="handleGlobalClick">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white dark:focus:bg-gray-900 focus:text-primary-600 dark:focus:text-primary-400">跳转到主要内容</a>
     <AppSidebar />
     <div class="app-shell flex flex-1 flex-col min-w-0">
@@ -78,8 +78,12 @@ if (typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAg
 // Dynamic title & canonical per route
 const pageTitles: Record<string, string> = {
   '/': 'SubSkin - 白癜风病友的AI记录和分享社区',
-  '/assessment': '记录 - SubSkin',
+  '/assessment': '日记 - SubSkin',
+  '/assessment/exam': '体检解读 - SubSkin',
   '/community': '发现 - SubSkin',
+  '/hospitals': '就医经验 - SubSkin',
+  '/contribution': '同行 - SubSkin',
+  '/care': '调养 - SubSkin',
   '/profile': '个人中心 - SubSkin',
   '/photo-guide': '拍照指南 - SubSkin',
   '/privacy': '隐私政策 - SubSkin',

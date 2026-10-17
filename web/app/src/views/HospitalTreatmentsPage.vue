@@ -34,9 +34,8 @@ onBeforeUnmount(() => schema?.remove())
 <template>
   <div class="page pb-8 pt-4 text-gray-900 dark:text-gray-100 md:pt-6">
     <header class="mb-6">
-      <p class="text-xs font-medium tracking-widest text-primary-700 dark:text-primary-300">就诊前，先了解一些基本知识</p>
       <h1 class="page-title mt-2">白癜风治疗知识</h1>
-      <p class="mt-3 max-w-3xl text-sm leading-6 text-gray-600 dark:text-gray-300">治疗需要结合类型、进展情况、部位、年龄和个人目标讨论。这里帮助你准备问题，不替你选择药物或判断哪家医院更好。</p>
+      <p class="mt-3 max-w-3xl text-sm leading-6 text-gray-600 dark:text-gray-300">帮你准备问题，不替你选药或选医院。</p>
       <MedicalDisclaimer class="mt-3" variant="inline" message="本文不构成医疗建议。仅作通用知识整理，尚未经本站临床医师审阅；具体方案请与医生讨论。" />
     </header>
     <div class="flex min-w-0 flex-col gap-6 md:flex-row">

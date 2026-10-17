@@ -93,7 +93,6 @@ function selected(event: Event) {
       <!-- 平板/桌面：右栏标题，交代这一页能做什么 -->
       <header class="hidden pb-1 md:block">
         <h2 class="page-title">白斑记录</h2>
-        <p class="page-subtitle leading-6">选部位、拍一张照片，AI 圈出白斑范围，留下下次对照的参照。</p>
       </header>
       <section aria-label="白斑记录" class="rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sm md:p-5 md:shadow-none dark:border-gray-700 dark:bg-gray-800">
         <p class="mb-3 flex items-center gap-2 text-sm" role="status">
@@ -134,7 +133,7 @@ function selected(event: Event) {
             <button type="button" class="min-h-[44px] shrink-0 rounded-full bg-primary-50 px-3 text-xs font-medium text-primary-700 dark:bg-primary-900 dark:text-primary-200" @click="emit('continue', item)">继续拍 <i class="ri-camera-line" aria-hidden="true"></i></button>
           </div>
         </div>
-        <div v-else class="pb-4 text-sm leading-6 text-gray-500 dark:text-gray-400"><p>{{ !loggedIn ? '登录后可查看你的照片记录' : bodySite ? '最近记录中暂无这个部位的照片' : '从第一张照片开始，留下变化的参照' }}</p><button v-if="!loggedIn" class="min-h-11 text-primary-700 dark:text-primary-300" @click="emit('history')">登录查看记录 <i class="ri-arrow-right-line" aria-hidden="true"></i></button></div>
+        <div v-else class="pb-4 text-sm leading-6 text-gray-500 dark:text-gray-400"><p>{{ !loggedIn ? '登录后可查看你的照片记录' : bodySite ? '最近记录中暂无这个部位的照片' : '还没有照片记录' }}</p><button v-if="!loggedIn" class="min-h-11 text-primary-700 dark:text-primary-300" @click="emit('history')">登录查看记录 <i class="ri-arrow-right-line" aria-hidden="true"></i></button></div>
       </section>
       <MedicalDisclaimer variant="inline" message="照片记录仅供参考，不构成医疗建议" />
       </div>

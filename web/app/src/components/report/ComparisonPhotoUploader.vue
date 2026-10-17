@@ -125,7 +125,7 @@ async function save() {
 
     <div v-else class="cpu-panel">
       <div class="cpu-panel__head">
-        <span>已选 {{ items.length }} 张，逐张标注拍摄日期</span>
+        <span>已选 {{ items.length }} 张，请标注日期</span>
         <button v-if="items.length < 4" type="button" class="cpu-add" @click="pick">
           <i class="ri-add-line"></i> 继续添加
         </button>

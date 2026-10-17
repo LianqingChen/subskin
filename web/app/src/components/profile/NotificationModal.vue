@@ -48,7 +48,7 @@ const treatmentNotification = createStoredBoolean(STORAGE_KEYS.treatmentNotifica
             <div><h3 class="text-sm font-medium text-gray-900">治疗进展通知</h3><p class="text-xs text-gray-500  mt-1">有新的白癜风治疗研究进展时通知</p></div>
             <button type="button" class="setting-switch" :class="treatmentNotification.value ? 'setting-switch-on' : 'setting-switch-off'" @click="treatmentNotification.value = !treatmentNotification.value"><span class="setting-switch-thumb" :class="treatmentNotification.value ? 'translate-x-7' : 'translate-x-0'" /></button>
           </div>
-          <p class="text-xs text-gray-400 ">通知功能将在后续版本中支持推送</p>
+          <p class="text-xs text-gray-400 ">推送功能即将支持</p>
         </div>
       </div>
     </div>

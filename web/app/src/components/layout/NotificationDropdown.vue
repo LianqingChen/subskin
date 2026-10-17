@@ -166,14 +166,11 @@ onUnmounted(() => {
       aria-label="通知"
       @click.stop="toggle"
     >
-      <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-      </svg>
+      <i class="ri-notification-3-line text-[19px]" aria-hidden="true"></i>
       <!-- Unread badge -->
       <span
         v-if="unreadCount > 0"
-        class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1 leading-none"
+        class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1 leading-none tabular-nums"
       >
         {{ unreadCount > 99 ? '99+' : unreadCount }}
       </span>
@@ -185,15 +182,15 @@ onUnmounted(() => {
         <div
           v-if="open"
           ref="dropdownRef"
-          class="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-[60]"
+          class="bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200/90 dark:border-gray-700/90 overflow-hidden z-[60]"
           @vue:mounted="updateDropdownPosition"
         >
           <!-- Header -->
-          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
             <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">通知</span>
             <button
               v-if="unreadCount > 0"
-              class="text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400"
+              class="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
               @click.stop="markAll"
             >
               全部已读
@@ -203,7 +200,7 @@ onUnmounted(() => {
           <!-- List -->
           <div class="overflow-y-auto" style="max-height: 350px">
             <div v-if="loading" class="flex items-center justify-center py-8">
-              <span class="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <span class="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
             </div>
 
             <div v-else-if="notifications.length === 0" class="py-10 text-center">
@@ -214,13 +211,13 @@ onUnmounted(() => {
             <button
               v-for="n in notifications"
               :key="n.id"
-              class="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors border-b border-gray-50 dark:border-gray-700/50 last:border-b-0"
-              :class="{ 'bg-blue-50/50 dark:bg-blue-900/10': !n.is_read }"
+              class="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/70 transition-colors border-b border-gray-50 dark:border-gray-800/70 last:border-b-0"
+              :class="{ 'bg-primary-50/40 dark:bg-primary-900/15': !n.is_read }"
               @click="handleClick(n)"
             >
               <!-- Actor avatar or type icon -->
               <div class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-lg"
-                :class="n.is_read ? 'bg-gray-100' : 'bg-blue-100 dark:bg-blue-900/30'">
+                :class="n.is_read ? 'bg-gray-100 dark:bg-gray-800' : 'bg-primary-50 dark:bg-primary-900/40'">
                 <img
                   v-if="n.actor?.avatar_url"
                   :src="n.actor.avatar_url"
@@ -230,15 +227,15 @@ onUnmounted(() => {
                 <i v-else :class="typeIcon(n.type)" aria-hidden="true"></i>
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-sm text-gray-800 leading-snug">
+                <p class="text-sm text-gray-800 dark:text-gray-100 leading-snug">
                   <span v-if="n.actor" class="font-medium">{{ n.actor.username }}</span>
                   {{ n.type === 'follow' && n.actor ? '' : ' ' }}{{ n.title }}
                 </p>
-                <p v-if="n.body" class="text-xs text-gray-500  mt-0.5 line-clamp-1">{{ n.body }}</p>
-                <p class="text-[10px] text-gray-400 mt-1">{{ timeAgo(n.created_at) }}</p>
+                <p v-if="n.body" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{{ n.body }}</p>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{{ timeAgo(n.created_at) }}</p>
               </div>
               <!-- Unread dot -->
-              <span v-if="!n.is_read" class="shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
+              <span v-if="!n.is_read" class="shrink-0 w-2 h-2 rounded-full bg-primary-500 mt-1.5" />
             </button>
           </div>
         </div>

@@ -70,10 +70,9 @@ onUnmounted(() => { active = false; clearPhotos() })
       <button v-for="option in [{ id: 'records' as const, label: '两次记录' }, { id: 'photos' as const, label: '两张照片' }]" :key="option.id" type="button" :aria-pressed="mode === option.id" :disabled="compare.generating.value" class="min-h-[40px] rounded-lg px-4 text-sm disabled:opacity-40" :class="mode === option.id ? 'bg-white font-medium text-primary-700 shadow-sm dark:bg-gray-700 dark:text-primary-200' : 'text-gray-600 dark:text-gray-400'" @click="mode = option.id">{{ option.label }}</button>
     </div>
     <template v-if="mode === 'photos'">
-      <!-- 手机端主按钮在上方独占一行；平板/桌面与说明同排 -->
+      <!-- 主按钮 -->
       <div class="flex flex-col gap-3 md:flex-row-reverse md:items-center md:justify-between">
         <button class="btn-primary min-h-[48px] w-full rounded-xl disabled:opacity-40 md:w-auto md:min-h-[44px] md:px-5" :disabled="!ready || compare.generating.value || (!!manualAlignment && !manualReady)" @click="generate">{{ compare.generating.value ? '正在保存…' : manualAlignment ? '确认对齐并分析' : '开始白斑对比' }}</button>
-        <p class="text-sm text-gray-500 dark:text-gray-400">添加两张同一部位的照片，确认各自拍摄日期。</p>
       </div>
       <div class="grid gap-4 sm:grid-cols-2">
         <figure v-for="(photo, index) in slots" :key="photo?.key || `empty-${index}`" class="card min-w-0 p-4">

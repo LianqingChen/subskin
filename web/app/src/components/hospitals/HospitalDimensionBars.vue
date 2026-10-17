@@ -40,7 +40,6 @@ const rows = computed(() => (props.items ?? [])
       <h3 id="hospital-dimension-title" class="text-sm font-medium">
         病友怎么说<template v-if="reviewCount"> · 共 {{ reviewCount }} 条评价</template>
       </h3>
-      <span class="text-[11px] text-gray-400">按维度分别计数，不做合并评分</span>
     </div>
 
     <ul class="mt-3 space-y-3">

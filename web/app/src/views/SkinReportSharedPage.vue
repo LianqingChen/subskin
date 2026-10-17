@@ -83,7 +83,7 @@ onMounted(load)
         <div class="shared-cover">
           <div class="shared-cover__brand">
             <i class="ri-leaf-line"></i>
-            <span>SubSkin · 小白日记</span>
+            <span>SubSkin · 白斑日记</span>
           </div>
           <h1 class="shared-cover__title">{{ report.title }}</h1>
           <p class="shared-cover__meta">
@@ -179,7 +179,7 @@ onMounted(load)
       <div class="shared-lead">
         <i class="ri-leaf-line shared-lead__icon"></i>
         <h2>用 SubSkin 追踪你的白斑变化</h2>
-        <p>图文日记 · AI 深度分析 · 变化报告 — 白癜风病友的AI记录和分享社区</p>
+        <p>图文日记 · AI 分析 · 变化报告</p>
         <button class="shared-lead__btn" @click="goToApp">
           <i class="ri-arrow-right-line"></i>
           {{ authStore.isLoggedIn ? '开始记录' : '立即体验' }}
@@ -193,8 +193,11 @@ onMounted(load)
 .shared-page {
   min-height: 100vh;
   min-height: 100dvh;
-  background: #f9fafb;
+  background: #f6f8fa;
   padding: 16px 16px 40px;
+}
+html.dark .shared-page {
+  background: #0b0f17;
 }
 @media (min-width: 768px) {
   .shared-page { padding: 40px 24px 64px; }

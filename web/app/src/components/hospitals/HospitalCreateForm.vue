@@ -29,7 +29,7 @@ function submit() {
 <template>
   <form class="space-y-4" @submit.prevent="submit">
     <p class="rounded-xl bg-primary-50 p-3 text-xs leading-6 text-primary-800 dark:bg-primary-900 dark:text-primary-200">
-      创建后会立即出现在就医经验目录里，并标注「<strong>病友补充 · 待核实</strong>」，方便其他病友接着评价。请填写真实存在的医院；不要填写医生或任何人的联系方式。
+      创建后标注「<strong>病友补充 · 待核实</strong>」，勿填联系方式。
     </p>
     <label class="block text-sm">医院 / 院区全称 <span class="text-gray-400">*</span>
       <input v-model.trim="form.name" required maxlength="200" class="create-input" placeholder="例如：某某市人民医院（东院区）">
@@ -42,7 +42,6 @@ function submit() {
     </div>
     <label class="block text-sm">具体地址 / 院区 <span class="text-gray-400">*</span>
       <input v-model.trim="form.address" required maxlength="300" class="create-input" placeholder="例如：某某路 12 号 3 号楼（门诊楼 5 楼皮肤科）">
-      <span class="mt-1 block text-[11px] text-gray-400">写清楚到能导航或问路的程度；不要填个人住址。</span>
     </label>
     <label class="block text-sm">医院类型
       <select v-model="form.kind" class="create-input"><option v-for="kind in kinds" :key="kind" :value="kind">{{ kind }}</option></select>

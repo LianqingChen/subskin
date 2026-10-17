@@ -46,7 +46,7 @@ function key(event: KeyboardEvent) {
 </script>
 <template>
   <section aria-label="手动对齐照片" class="space-y-3">
-    <p class="text-sm text-gray-500 dark:text-gray-400">第一张固定，拖动第二张并调整旋转、缩放，尽量对齐周围皮肤纹理。</p>
+    <p class="text-sm text-gray-500 dark:text-gray-400">固定第一张，拖动第二张对齐</p>
     <div v-if="images.loading.value || images.error.value" role="status" class="rounded-xl bg-gray-50 p-4 text-sm dark:bg-gray-900">{{ images.error.value || '正在加载照片…' }}<button v-if="images.error.value" type="button" class="min-h-[44px] px-3 text-primary-700 dark:text-primary-300" @click="images.load">重试</button></div>
     <div v-else-if="images.before.value && images.after.value" data-swipe-ignore tabindex="0" role="group" aria-label="拖动调整第二张照片，方向键也可移动" class="alignment-stage mx-auto touch-none select-none overflow-hidden rounded-xl border border-gray-200 bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500 dark:border-gray-700 dark:bg-gray-900" :style="{ '--alignment-ratio': ratio }" @pointerdown="down" @pointermove="move" @pointerup="up" @pointercancel="up" @lostpointercapture="up" @keydown="key">
       <svg class="block h-full w-full" :viewBox="`0 0 ${images.before.value.width} ${images.before.value.height}`" role="img" aria-label="两张照片的对齐叠影">

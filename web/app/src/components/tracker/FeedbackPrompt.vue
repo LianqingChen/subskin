@@ -105,7 +105,7 @@ onUnmounted(() => {
   >
     <div class="flex items-center gap-2 text-sm text-green-700 dark:text-green-300">
       <i class="ri-check-line"></i>
-      感谢你的反馈，这将帮助我们改进AI识别精度
+      感谢反馈
     </div>
   </div>
 </template>

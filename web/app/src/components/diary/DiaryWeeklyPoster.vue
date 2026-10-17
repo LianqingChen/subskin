@@ -31,8 +31,27 @@ const canShareFiles = (() => {
 })()
 
 const FONT =
-  '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif'
+  '-apple-system, BlinkMacSystemFont, "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif'
 const WEEK_LABELS = ['一', '二', '三', '四', '五', '六', '日']
+
+function traceRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number | number[],
+) {
+  const radii = Array.isArray(radius) ? radius : [radius, radius, radius, radius]
+  const [tl, tr, br, bl] = radii.map((value) => Math.min(value, width / 2, height / 2))
+  ctx.beginPath()
+  ctx.moveTo(x + tl, y)
+  ctx.arcTo(x + width, y, x + width, y + height, tr)
+  ctx.arcTo(x + width, y + height, x, y + height, br)
+  ctx.arcTo(x, y + height, x, y, bl)
+  ctx.arcTo(x, y, x + width, y, tl)
+  ctx.closePath()
+}
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
@@ -134,8 +153,8 @@ async function generatePoster() {
 
     // ── Header ──
     const hGrad = ctx.createLinearGradient(0, 0, W, headerH)
-    hGrad.addColorStop(0, '#26A69A')
-    hGrad.addColorStop(1, '#00897B')
+    hGrad.addColorStop(0, '#0f766e')
+    hGrad.addColorStop(1, '#0d9488')
     ctx.fillStyle = hGrad
     ctx.fillRect(0, 0, W, headerH)
 
@@ -155,15 +174,15 @@ async function generatePoster() {
     ctx.textBaseline = 'top'
     ctx.fillStyle = '#ffffff'
     ctx.font = `bold 34px ${FONT}`
-    ctx.fillText('SubSkin · AI病情日记', padX + logoSize + 16, 42)
+    ctx.fillText('SubSkin · 白斑日记', padX + logoSize + 16, 42)
     ctx.fillStyle = 'rgba(255,255,255,0.85)'
     ctx.font = `20px ${FONT}`
-    ctx.fillText("What's beneath? SubSkin更懂你", padX + logoSize + 16, 82)
+    ctx.fillText('白癜风病友的AI记录和分享社区', padX + logoSize + 16, 82)
 
     // Week title
     ctx.fillStyle = '#ffffff'
     ctx.font = `bold 40px ${FONT}`
-    ctx.fillText('我的本周报告 ✨', padX, 130)
+    ctx.fillText('我的本周报告', padX, 130)
     ctx.fillStyle = 'rgba(255,255,255,0.85)'
     ctx.font = `22px ${FONT}`
     ctx.fillText(`${fmtDay(report.week_start)} - ${fmtDay(report.week_end)}`, padX, 178)
@@ -175,17 +194,16 @@ async function generatePoster() {
     const statItems = [
       { value: String(report.recorded_days), label: '记录天数' },
       { value: String(report.entry_count), label: '日记条数' },
-      { value: String(report.current_streak), label: '连续天数 🔥' },
+      { value: String(report.current_streak), label: '连续天数' },
     ]
     ctx.fillStyle = C.bgCard
-    ctx.beginPath()
-    ctx.roundRect(padX, curY, W - padX * 2, statsH - 20, 20)
+    traceRoundedRect(ctx, padX, curY, W - padX * 2, statsH - 20, 20)
     ctx.fill()
     statItems.forEach((item, i) => {
       const cellW = (W - padX * 2) / 3
       const cx = padX + cellW * i + cellW / 2
       ctx.textAlign = 'center'
-      ctx.fillStyle = '#26A69A'
+      ctx.fillStyle = '#0d9488'
       ctx.font = `bold 46px ${FONT}`
       ctx.fillText(item.value, cx, curY + 26)
       ctx.fillStyle = C.textLight
@@ -207,17 +225,18 @@ async function generatePoster() {
       report.daily_moods.forEach((day, i) => {
         const cx = padX + cellW * i + cellW / 2
         const mood = day.moods[0]
-        const emoji = mood ? props.moodConfig[mood]?.emoji || '🙂' : ''
+        const labelText = mood ? props.moodConfig[mood]?.label || '' : ''
         // circle
-        ctx.fillStyle = emoji ? 'rgba(38,166,154,0.08)' : '#f1f5f9'
+        ctx.fillStyle = labelText ? 'rgba(13,148,136,0.1)' : '#f1f5f9'
         ctx.beginPath()
         ctx.arc(cx, curY + 30, 34, 0, Math.PI * 2)
         ctx.fill()
         ctx.textAlign = 'center'
-        if (emoji) {
-          ctx.font = `34px ${FONT}`
+        if (labelText) {
+          ctx.fillStyle = '#0f766e'
+          ctx.font = `bold 20px ${FONT}`
           ctx.textBaseline = 'middle'
-          ctx.fillText(emoji, cx, curY + 32)
+          ctx.fillText(labelText.slice(0, 2), cx, curY + 31)
           ctx.textBaseline = 'top'
         }
         ctx.fillStyle = C.textLight
@@ -230,19 +249,17 @@ async function generatePoster() {
 
     // AI summary block
     if (summaryH) {
-      ctx.fillStyle = 'rgba(38,166,154,0.06)'
-      ctx.beginPath()
-      ctx.roundRect(padX, curY, W - padX * 2, summaryH - 16, 16)
+      ctx.fillStyle = 'rgba(13,148,136,0.06)'
+      traceRoundedRect(ctx, padX, curY, W - padX * 2, summaryH - 16, 16)
       ctx.fill()
-      ctx.strokeStyle = 'rgba(38,166,154,0.2)'
+      ctx.strokeStyle = 'rgba(13,148,136,0.2)'
       ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.roundRect(padX, curY, W - padX * 2, summaryH - 16, 16)
+      traceRoundedRect(ctx, padX, curY, W - padX * 2, summaryH - 16, 16)
       ctx.stroke()
 
-      ctx.fillStyle = '#26A69A'
+      ctx.fillStyle = '#0f766e'
       ctx.font = `bold 24px ${FONT}`
-      ctx.fillText('✨ AI本周总结', padX + 28, curY + 24)
+      ctx.fillText('AI 本周总结', padX + 28, curY + 24)
       ctx.fillStyle = C.textMid
       ctx.font = `24px ${FONT}`
       summaryLines.forEach((line, i) => {
@@ -255,10 +272,10 @@ async function generatePoster() {
     if (insightItems.length) {
       ctx.fillStyle = C.textDark
       ctx.font = `bold 26px ${FONT}`
-      ctx.fillText('AI洞察', padX, curY)
+      ctx.fillText('AI 洞察', padX, curY)
       curY += 48
       insightWrapped.forEach((lines) => {
-        ctx.fillStyle = '#26A69A'
+        ctx.fillStyle = '#0d9488'
         ctx.beginPath()
         ctx.arc(padX + 10, curY + 12, 6, 0, Math.PI * 2)
         ctx.fill()
@@ -288,15 +305,13 @@ async function generatePoster() {
     const qrX = W - padX - qrSize - qrPad * 2
     const qrY = footerY + (footerH - qrSize - qrPad * 2) / 2
     ctx.fillStyle = '#ffffff'
-    ctx.beginPath()
-    ctx.roundRect(qrX - qrPad, qrY - qrPad, qrSize + qrPad * 2, qrSize + qrPad * 2, 12)
+    traceRoundedRect(ctx, qrX - qrPad, qrY - qrPad, qrSize + qrPad * 2, qrSize + qrPad * 2, 12)
     ctx.fill()
-    ctx.strokeStyle = '#f0f0f5'
-    ctx.beginPath()
-    ctx.roundRect(qrX - qrPad, qrY - qrPad, qrSize + qrPad * 2, qrSize + qrPad * 2, 12)
+    ctx.strokeStyle = '#e2e8f0'
+    traceRoundedRect(ctx, qrX - qrPad, qrY - qrPad, qrSize + qrPad * 2, qrSize + qrPad * 2, 12)
     ctx.stroke()
 
-    const pageUrl = `${window.location.origin}/diary`
+    const pageUrl = `${window.location.origin}/assessment`
     try {
       const qrDataUrl = await QRCode.toDataURL(pageUrl, {
         width: qrSize * 2,
@@ -318,7 +333,7 @@ async function generatePoster() {
     ctx.fillText('扫码记录你的每一天', padX, footerMidY - 24)
     ctx.fillStyle = C.textLight
     ctx.font = `20px ${FONT}`
-    ctx.fillText('SubSkin · 白癜风患者AI社区', padX, footerMidY + 14)
+    ctx.fillText('SubSkin · 白癜风病友的AI记录和分享社区', padX, footerMidY + 14)
     ctx.fillText('长按识别二维码', padX, footerMidY + 44)
 
     // Disclaimer
@@ -416,13 +431,13 @@ watch(
       <!-- Hint -->
       <div v-if="posterImageUrl && !isGenerating" class="text-center text-white/70 text-xs">
         <template v-if="isWeChat">
-          <i class="ri-hand-heart-line mr-1"></i>长按图片保存到相册，再分享到微信
+          <i class="ri-hand-heart-line mr-1"></i>长按图片保存后分享
         </template>
         <template v-else-if="canShareFiles">
-          <i class="ri-share-line mr-1"></i>点击「分享」可直接发送到微信等应用
+          <i class="ri-share-line mr-1"></i>点「分享」发送给好友
         </template>
         <template v-else>
-          <i class="ri-hand-heart-line mr-1"></i>长按图片保存到相册，再分享到微信
+          <i class="ri-hand-heart-line mr-1"></i>长按图片保存后分享
         </template>
       </div>
 

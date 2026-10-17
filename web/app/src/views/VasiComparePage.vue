@@ -29,6 +29,6 @@ async function generate() { const id = await compare.generate(manualAlignment.va
     <p v-if="compare.loading.value" role="status" class="text-sm text-gray-500 dark:text-gray-400">正在加载照片…</p><p v-if="compare.error.value" role="alert" class="rounded-xl bg-primary-50 p-4 dark:bg-primary-900">{{ compare.error.value }}</p>
     <ComparisonAlignmentControls v-if="compare.items.value.length === 2" v-model="manualAlignment" :before-url="compare.items.value[0].image_url" :after-url="compare.items.value[1].image_url" :disabled="compare.generating.value" @ready="manualReady = $event" />
     <div class="grid gap-4 md:grid-cols-2"><figure v-for="item in compare.items.value" :key="item.id" class="card p-4"><img :src="toProtectedFileUrl(item.image_url)" alt="参与比较的观察照片" class="max-h-[45dvh] w-full rounded-xl object-contain" /><figcaption class="mt-3 text-sm"><strong>{{ item.observation?.label || item.body_site }}</strong><p class="mt-1 text-gray-500 dark:text-gray-400">{{ item.assessment_date.slice(0,10) }} · {{ item.observation?.view || '视角未记录' }}</p></figcaption></figure></div>
-    <p v-if="compare.items.value.length && !samePosition" class="rounded-2xl border border-gray-200/80 bg-white p-4 text-sm leading-6 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">这些记录可直接尝试对比；若画面位置不同，可以先手动调整叠影。</p>
+    <p v-if="compare.items.value.length && !samePosition" class="rounded-2xl border border-gray-200/80 bg-white p-4 text-sm leading-6 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">位置不同可手动调整叠影。</p>
   </div>
 </template>

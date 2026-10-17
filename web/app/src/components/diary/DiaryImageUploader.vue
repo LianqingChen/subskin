@@ -183,7 +183,6 @@ defineExpose({ clearAll })
     <button v-else class="diary-uploader__trigger" @click="pickFiles">
       <i class="ri-image-add-line"></i>
       <span>添加白斑照片</span>
-      <span class="diary-uploader__trigger-hint">记录变化，支持历史补录</span>
     </button>
   </div>
 </template>

@@ -1,24 +1,23 @@
 .srl-page {
   min-height: 0;
-  min-height: 0;
-  background: #f5f7fa;
+  background: #f6f8fa;
 }
 
 html.dark .srl-page {
-  background: #0f172a;
+  background: #0b0f17;
 }
 
 .srl-header {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(245, 247, 250, 0.85);
+  background: rgba(246, 248, 250, 0.88);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid #e2e8f0;
 }
 
 html.dark .srl-header {
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(11, 15, 23, 0.88);
   border-color: #1e293b;
 }
 

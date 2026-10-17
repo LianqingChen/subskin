@@ -242,15 +242,13 @@ function goBack() {
     <!-- Top bar -->
     <div class="flex items-center gap-2 py-2 md:py-3">
       <button @click="goBack" class="-ml-2 flex h-10 w-10 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100" aria-label="返回">
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-        </svg>
+        <i class="ri-arrow-left-s-line text-xl" aria-hidden="true"></i>
       </button>
       <span class="text-sm font-medium text-gray-700 dark:text-gray-200">帖子详情</span>
       <!-- Author actions -->
       <div v-if="authStore.user && post && post.author.id === authStore.user.id" class="ml-auto flex items-center gap-3">
-        <button class="text-xs text-gray-400  hover:text-primary-600" @click="showEditModal = true">编辑</button>
-        <button class="text-xs text-gray-400  hover:text-red-500" @click="showDeleteConfirm = true">删除</button>
+        <button class="text-xs text-gray-400 hover:text-primary-600 dark:hover:text-primary-400" @click="showEditModal = true">编辑</button>
+        <button class="text-xs text-gray-400 hover:text-red-500" @click="showDeleteConfirm = true">删除</button>
       </div>
     </div>
 
@@ -429,33 +427,25 @@ function goBack() {
         <!-- Action buttons -->
         <span class="sr-only" aria-live="polite">{{ actionFeedback }}</span>
         <button class="flex flex-col items-center gap-0.5 px-2 py-1 transition-colors"
-          :class="post.is_liked ? 'text-red-500' : 'text-gray-400  hover:text-red-500'"
+          :class="post.is_liked ? 'text-red-500' : 'text-gray-400 dark:text-gray-500 hover:text-red-500'"
           :aria-pressed="post.is_liked"
           :aria-label="post.is_liked ? `已点赞，共${post.like_count}人` : '点赞'"
           @click="toggleLike"
         >
-          <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-            <path v-if="post.is_liked" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
-            <path v-else fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656zm5.656 1.414L10 7.757l1.172-1.171a2.5 2.5 0 113.535 3.535L10 15.828 5.293 10.12a2.5 2.5 0 013.535-3.535z" clip-rule="evenodd"/>
-          </svg>
-          <span class="text-[10px]">{{ post.like_count }}</span>
+          <i :class="post.is_liked ? 'ri-heart-3-fill' : 'ri-heart-3-line'" class="text-xl leading-none" aria-hidden="true"></i>
+          <span class="text-[10px] tabular-nums">{{ post.like_count }}</span>
         </button>
         <button class="flex flex-col items-center gap-0.5 px-2 py-1 transition-colors"
-          :class="post.is_bookmarked ? 'text-yellow-500' : 'text-gray-400  hover:text-yellow-500'"
+          :class="post.is_bookmarked ? 'text-amber-500' : 'text-gray-400 dark:text-gray-500 hover:text-amber-500'"
           :aria-pressed="post.is_bookmarked"
           :aria-label="post.is_bookmarked ? '已收藏' : '收藏'"
           @click="toggleBookmark"
         >
-          <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-            <path v-if="post.is_bookmarked" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5z"/>
-            <path v-else fill-rule="evenodd" d="M3 4a2 2 0 012-2h10a2 2 0 012 2v14l-3.5-2L10 18l-3.5-2L3 18V4z" clip-rule="evenodd"/>
-          </svg>
+          <i :class="post.is_bookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line'" class="text-xl leading-none" aria-hidden="true"></i>
           <span class="text-[10px]">{{ post.is_bookmarked ? '已收藏' : '收藏' }}</span>
         </button>
-        <button class="flex flex-col items-center gap-0.5 px-2 py-1 text-gray-400  hover:text-primary-600 transition-colors" @click="showShare = true" aria-label="转发">
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/>
-          </svg>
+        <button class="flex flex-col items-center gap-0.5 px-2 py-1 text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors" @click="showShare = true" aria-label="转发">
+          <i class="ri-share-forward-line text-xl leading-none" aria-hidden="true"></i>
           <span class="text-[10px]">{{ post.share_count ? `转发 ${post.share_count}` : '转发' }}</span>
         </button>
       </div>
@@ -469,9 +459,9 @@ function goBack() {
   <!-- Delete Confirmation Modal -->
   <Teleport to="body">
     <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center" @click.self="showDeleteConfirm = false">
-      <div class="bg-white  rounded-xl p-6 max-w-sm w-full mx-4">
-        <h3 class="text-lg font-semibold text-gray-900  mb-2">确认删除</h3>
-        <p class="text-sm text-gray-500  mb-4">删除后无法恢复，确定要删除这篇分享吗？</p>
+      <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">确认删除</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">删除后无法恢复，确定要删除这篇分享吗？</p>
         <div class="flex gap-3 justify-end">
           <button class="btn-ghost px-4 py-2" @click="showDeleteConfirm = false">取消</button>
           <button class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors" @click="confirmDeletePost">删除</button>
@@ -483,14 +473,14 @@ function goBack() {
   <!-- Edit Post Modal -->
   <Teleport to="body">
     <div v-if="showEditModal" class="fixed inset-0 bg-black/50 z-[110] flex items-stretch md:items-center justify-center" @click.self="showEditModal = false">
-      <div class="bg-white  w-full md:max-w-2xl md:rounded-xl flex flex-col h-full md:h-auto md:max-h-[90vh]">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white  z-10 flex-shrink-0">
-          <h2 class="text-lg font-semibold ">编辑分享</h2>
-          <button class="text-gray-400  hover:text-gray-600 dark:hover:text-gray-300 text-2xl" @click="showEditModal = false">&times;</button>
+      <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 w-full md:max-w-2xl md:rounded-xl flex flex-col h-full md:h-auto md:max-h-[90vh] shadow-xl">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10 flex-shrink-0">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">编辑分享</h2>
+          <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl" aria-label="关闭" @click="showEditModal = false"><i class="ri-close-line"></i></button>
         </div>
         <div class="p-6 space-y-4 overflow-y-auto flex-1">
           <div>
-            <label class="block text-sm font-medium text-gray-700  mb-1">分类</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">分类</label>
             <div class="flex flex-wrap gap-2">
               <button
                 v-for="cat in categories"
@@ -498,7 +488,7 @@ function goBack() {
                 class="px-3 py-1.5 rounded-lg text-sm border transition-colors"
                 :class="editCategoryId === cat.id
                   ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
-                  : 'border-gray-200 dark:border-gray-600 text-gray-600  hover:border-primary-300'"
+                  : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary-300'"
                 @click="editCategoryId = cat.id"
               >
                 <i :class="cat.icon" aria-hidden="true"></i> {{ cat.name }}
@@ -506,11 +496,11 @@ function goBack() {
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700  mb-1">标题</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">标题</label>
             <input v-model="editTitle" type="text" class="input-field" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700  mb-1">内容</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">内容</label>
             <RichEditor v-model="editContent" placeholder="编辑你的分享内容..." />
           </div>
           <button

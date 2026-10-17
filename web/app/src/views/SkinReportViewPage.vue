@@ -56,8 +56,8 @@ const { report, loading, error, reportRef, chartRef, showPoster, exporting, shar
         <!-- 后台生成中 -->
         <div v-if="report.status === 'generating'" class="report-loading">
           <i class="ri-loader-4-line report-spin"></i>
-          <p>AI 正在分析你的白斑照片（约 1-2 分钟）…</p>
-          <p class="report-loading__sub">页面会自动刷新，也可以稍后回来查看</p>
+          <p>AI 分析中，约 1-2 分钟…</p>
+          <p class="report-loading__sub">完成后自动刷新</p>
         </div>
 
         <div v-else-if="report.status === 'failed'" class="report-error">

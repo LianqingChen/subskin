@@ -2,9 +2,10 @@
 import siteModules from '../../../../shared/site-modules.json'
 defineProps<{ active: 'skin' | 'exam'; locked?: boolean }>()
 const emit = defineEmits<{ skin: [] }>()
+const diary = siteModules.modules.find(item => item.path === '/assessment')
 const exam = siteModules.modules.find(item => item.path.includes('tab=exam'))
 const sections = [
-  { key: 'skin', label: '白斑记录', icon: 'ri-focus-3-line', to: { name: 'assessment' } },
+  { key: 'skin', label: '白斑记录', icon: diary?.icon || 'ri-booklet-line', to: { name: 'assessment' } },
   { key: 'exam', label: exam?.label || '体检解读', icon: exam?.icon || 'ri-microscope-line', to: { name: 'assessment-exam' } },
 ]
 // 视觉高度收紧到 34px（原 44px），同时用 after 伪元素把实际可点区域向上下各扩 6px，

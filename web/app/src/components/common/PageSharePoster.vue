@@ -113,7 +113,7 @@ const canShareFiles = (() => {
   } catch { return false }
 })()
 
-const FONT = '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif'
+const FONT = '-apple-system, BlinkMacSystemFont, "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif'
 
 // ── Shared utilities ──
 
@@ -260,15 +260,15 @@ async function generatePostPoster() {
     const ctx = canvas.getContext('2d')!
 
     const C = {
-      primary: '#26A69A',
-      primaryDark: '#00897B',
-      primaryLight: '#E0F2F1',
-      textDark: '#1e1e2f',
-      textMid: '#4a4a68',
-      textLight: '#9a9ab0',
+      primary: '#0d9488',
+      primaryDark: '#0f766e',
+      primaryLight: '#f0fdfa',
+      textDark: '#0f172a',
+      textMid: '#475569',
+      textLight: '#64748b',
       bgWhite: '#ffffff',
-      bgCard: '#fafbfc',
-      divider: '#eeeef3',
+      bgCard: '#f8fafc',
+      divider: '#e2e8f0',
     }
 
     ctx.fillStyle = C.bgWhite
@@ -277,8 +277,8 @@ async function generatePostPoster() {
     // ── Header ──
     const headerH = 240
     const hGrad = ctx.createLinearGradient(0, 0, W, headerH)
-    hGrad.addColorStop(0, '#26A69A')
-    hGrad.addColorStop(1, '#00897B')
+    hGrad.addColorStop(0, '#0f766e')
+    hGrad.addColorStop(1, '#0d9488')
     ctx.fillStyle = hGrad
     ctx.beginPath()
     traceRoundedRect(ctx, 0, 0, W, headerH, [0, 0, 32, 32])
@@ -578,13 +578,13 @@ async function generatePagePoster() {
     const ctx = canvas.getContext('2d')!
 
     const C = {
-      primary: '#26A69A',
-      textDark: '#1e1e2f',
-      textMid: '#4a4a68',
-      textLight: '#9a9ab0',
+      primary: '#0d9488',
+      textDark: '#0f172a',
+      textMid: '#475569',
+      textLight: '#64748b',
       bgWhite: '#ffffff',
-      bgCard: '#fafbfc',
-      divider: '#eeeef3',
+      bgCard: '#f8fafc',
+      divider: '#e2e8f0',
     }
 
     // Background
@@ -593,8 +593,8 @@ async function generatePagePoster() {
 
     // ── Header ──
     const hGrad = ctx.createLinearGradient(0, 0, W, headerH)
-    hGrad.addColorStop(0, '#26A69A')
-    hGrad.addColorStop(1, '#00897B')
+    hGrad.addColorStop(0, '#0f766e')
+    hGrad.addColorStop(1, '#0d9488')
     ctx.fillStyle = hGrad
     ctx.beginPath()
     traceRoundedRect(ctx, 0, 0, W, headerH, [0, 0, 24, 24])

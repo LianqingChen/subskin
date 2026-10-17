@@ -48,7 +48,7 @@ function choose(hospital: HospitalView) {
       <div class="min-w-0 flex-1">
         <h2 id="quick-review-title" class="text-lg font-semibold"><i class="ri-edit-2-line mr-1 text-primary-600 dark:text-primary-300" />分享这次就诊经历</h2>
         <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-300">
-          选医院，写下至少 20 字的亲身经历。挂号、候诊、沟通、费用、复诊等体验可以按需点选补充。
+          选医院，写下至少 20 字的亲身经历。
         </p>
         <p v-if="selected" class="mt-2 text-sm text-primary-800 dark:text-primary-200">
           当前医院：<strong>{{ selected.name }}</strong>（{{ selected.city }}）
@@ -82,7 +82,7 @@ function choose(hospital: HospitalView) {
           <i class="ri-arrow-right-s-line" />
         </button>
       </div>
-      <p v-else-if="query" class="text-sm text-gray-400">没有匹配的医院，可以到下方列表里创建一家。</p>
+      <p v-else-if="query" class="text-sm text-gray-400">没有匹配，可在下方列表创建。</p>
       <button class="min-h-11 text-sm text-primary-700 underline dark:text-primary-300" @click="emit('browse')">去下面的列表按省市找医院</button>
     </div>
   </section>

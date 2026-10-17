@@ -5,7 +5,7 @@ const emit = defineEmits<{ remove: [key: string] }>()
 </script>
 <template>
   <section>
-    <p class="mb-4 text-xs leading-6 text-gray-500">并排查看官方资料与病友评价数量，不按治疗效果排名。费用、医保和出诊以医院确认为准。</p>
+    <p class="mb-4 text-xs leading-6 text-gray-500">并排对比官方资料，不做疗效排名。</p>
     <div class="grid gap-4" :class="hospitals.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'">
       <article v-for="hospital in hospitals" :key="hospital.key" class="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
         <h3 class="min-h-12 text-sm font-semibold leading-6">{{ hospital.name }}</h3>

@@ -137,7 +137,7 @@ onMounted(() => {
 
       <label class="block text-sm font-medium">评价编号 <span class="text-gray-500">（必填）</span>
         <input v-model.number="form.reviewId" type="number" min="1" required class="form-input" placeholder="例如：128">
-        <span class="mt-1 block text-xs text-gray-500">在评价卡片的地址栏或分享链接中可以找到；从评价卡片点「申诉」进入时会自动带填。</span>
+        <span class="mt-1 block text-xs text-gray-500">从评价卡片点「申诉」进入会自动带填。</span>
       </label>
 
       <div class="grid gap-3 sm:grid-cols-2">
