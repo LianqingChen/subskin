@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
+import { BODY_REGIONS, BODY_SILHOUETTE, BODY_VIEWBOX } from '@/utils/body-silhouette'
 import { compactContributionCount, contributionParts } from '@/utils/contribution-charts'
 import type { ContributionDistribution, ContributionPersonalVisuals } from '@/types/contribution'
 const props = defineProps<{ distribution: ContributionDistribution | null; personal: ContributionPersonalVisuals | null; loading: boolean; error: boolean; personalError: boolean }>()
 defineEmits<{ retry: [] }>()
+const clipId = `body-${useId()}`
 const mode = ref<'community' | 'mine'>('community')
 const selected = ref<string | null>(null)
 const parts = computed(() => contributionParts(props.distribution, props.personal, mode.value))
@@ -28,16 +30,11 @@ watch(() => props.personal, value => { if (!value) mode.value = 'community' })
     <template v-else>
       <p v-if="!hasData" class="mb-3 text-xs text-gray-500 dark:text-gray-400">{{ parts.some(p => p.count === null) ? '部位数量暂不公开' : '有效资料正在积累' }}</p>
       <div class="body-layout">
-        <figure class="body-figure"><svg class="body-plot" viewBox="0 0 140 250" role="img" :aria-label="`${mode === 'mine' ? '本人' : '社区'}有效图片部位示意，深浅表示资料数量，左右为合计，并非病情图`">
-          <g v-for="region in ['head', 'neck', 'trunk', 'arms', 'hands', 'legs', 'feet']" :key="region" :data-part="region" :class="count(region) !== null && (count(region) ?? 0) > 0 ? 'body-region' : 'body-empty'" :fill-opacity="shade(region)" :stroke="selected === region ? 'var(--color-primary-600)' : 'none'" stroke-width="2">
-            <circle v-if="region === 'head'" cx="70" cy="25" r="18" />
-            <rect v-if="region === 'neck'" x="62" y="49" width="16" height="14" rx="4" />
-            <rect v-if="region === 'trunk'" x="45" y="68" width="50" height="68" rx="14" />
-            <template v-if="region === 'arms'"><rect x="23" y="70" width="14" height="69" rx="7" /><rect x="103" y="70" width="14" height="69" rx="7" /></template>
-            <template v-if="region === 'hands'"><rect x="21" y="146" width="18" height="22" rx="5" /><rect x="101" y="146" width="18" height="22" rx="5" /></template>
-            <template v-if="region === 'legs'"><rect x="45" y="143" width="21" height="70" rx="8" /><rect x="74" y="143" width="21" height="70" rx="8" /></template>
-            <template v-if="region === 'feet'"><rect x="40" y="221" width="26" height="13" rx="5" /><rect x="74" y="221" width="26" height="13" rx="5" /></template>
-          </g>
+        <figure class="body-figure"><svg class="body-plot" :viewBox="BODY_VIEWBOX" role="img" :aria-label="`${mode === 'mine' ? '本人' : '社区'}有效图片部位示意，深浅表示资料数量，左右为合计，并非病情图`">
+          <defs><clipPath :id="clipId"><path :d="BODY_SILHOUETTE" /></clipPath></defs>
+          <path :d="BODY_SILHOUETTE" class="body-empty" />
+          <path v-for="(d, region) in BODY_REGIONS" :key="region" :d="d" :data-part="region" :clip-path="`url(#${clipId})`" :class="[count(region) !== null && (count(region) ?? 0) > 0 ? 'body-region' : 'body-empty', selected === region && 'body-selected']" :fill-opacity="selected === region ? 1 : shade(region)" />
+          <path :d="BODY_SILHOUETTE" class="body-outline" />
         </svg><figcaption class="mt-1 text-center text-[11px] text-gray-500 dark:text-gray-400">左右合计</figcaption></figure>
         <div class="min-w-0 flex-1"><button v-for="part in parts" :key="part.code" type="button" class="part-button w-full rounded-lg px-1.5 py-1.5 text-left focus-visible:ring-2 focus-visible:ring-primary-500" :aria-pressed="selected === part.code" :aria-label="`${part.label}，${part.count === null ? '暂不公开' : `${part.count}张`}，查看详情`" @click="select(part.code)"><span class="mb-1 flex justify-between gap-2 text-xs"><span :class="selected === part.code ? 'font-semibold text-primary-700 dark:text-primary-300' : 'text-gray-600 dark:text-gray-300'">{{ part.label }}</span><span class="shrink-0 tabular-nums text-gray-500 dark:text-gray-400">{{ part.count === null ? '未公开' : compactContributionCount(part.count) }}</span></span><span class="block h-1.5 rounded-full bg-gray-100 dark:bg-gray-700"><span class="block h-full rounded-full bg-primary-500 dark:bg-primary-400" :style="{ width: `${100 * (part.count ?? 0) / maximum}%` }"></span></span></button></div>
       </div>
@@ -50,14 +47,17 @@ watch(() => props.personal, value => { if (!value) mode.value = 'community' })
 
 <style scoped>
 .body-layout { display:flex; align-items:center; gap:16px; }
-.body-figure { width:104px; flex-shrink:0; margin:0; }
+.body-figure { width:118px; flex-shrink:0; margin:0; }
 .body-plot { width:100%; height:auto; }
 .body-region { fill:var(--color-primary-600); }
 .body-empty { fill:var(--color-border); }
 :global(html.dark .body-region) { fill:var(--color-primary-400); }
 :global(html.dark .body-empty) { fill:var(--color-border-strong); }
+.body-selected { fill:var(--color-primary-700); }
+:global(html.dark .body-selected) { fill:var(--color-primary-300); }
+.body-outline { fill:none; stroke:var(--color-border-strong); stroke-width:1; }
 .part-button[aria-pressed="true"] { background:var(--color-primary-50); }
 :global(html.dark .part-button[aria-pressed="true"]) { background:var(--color-primary-900); }
 @media(pointer:coarse) { .part-button { min-height:40px; } }
-@media(max-width:374px) { .body-figure { width:90px; } .body-layout { gap:10px; } }
+@media(max-width:374px) { .body-figure { width:96px; } .body-layout { gap:10px; } }
 </style>
