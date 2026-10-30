@@ -7,7 +7,7 @@ import type { useVasiAssess } from './useVasiAssess'
 type VasiAssess = ReturnType<typeof useVasiAssess>
 
 /**
- * useVasiShare — 评估结果发布到发现
+ * useVasiShare — 评估结果发布到分享
  *
  * 组合标注图（原图 + AI 皮肤/白斑层）与原始照片 → 生成病情日记草稿 → 跳转发布页。
  */

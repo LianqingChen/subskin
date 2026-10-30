@@ -119,6 +119,12 @@ def bind_route(...):
 - **双照片/双记录对比引擎**：
   - 支持对同一部位不同时期的两张照片或两次日记记录进行面积变化百分比计算、复色趋势判定与 AI 综合解读。
 
-### 5.3 离线医学数据采集管线 (`src/`)
+### 5.3 图片打标与训练数据链路 (`services/labeling/` · `api/labeling_admin.py`)
+- **唯一流水线**：后台「图片打标」只走五类标注（0 背景 / 1 正常皮肤 / 2 白斑 / 3 遮挡 / 4 不可判读，255 未标），像素值与 `ml/rgb_segmentation` 训练格式一致；坐标系是日记规范图（EXIF 已校正，长边 ≤1024）。旧 VLM/U-Net 接口（`api/image_label.py`）只读保留，RGB 标注不能经它写入或定金标准。
+- **部位词表**：唯一来源 `web/shared/body-sites.json`（`utils/body_sites.py` 派生后端 `BODY_SITE_LABELS`、后台选项与训练分组）；已入库的中文标签不可改。
+- **版本与复核**：每次提交生成不可覆盖的快照（`data/rgb_segmentation/admin_labels/{id}/{revision}/labels.png`）与 `label_submissions` 行；金标准只来自复核通过的提交，提交人自复核记 `single_review`；基准集（锁定测试集）必须盲标 + 他人复核，受试者整体进 test。
+- **授权**：日记照片仅在用户授权「帮助改进白斑识别」（`model_training`）后对管理员可见；后台上传/旧版转入须确认来源授权并记录确认人。导出数据集 30 天到期删除，撤回授权或注销时删除含该受试者的数据集（消费 `DataRightsJob`）。
+
+### 5.4 离线医学数据采集管线 (`src/`)
 - `src/crawlers/`：定时或按需从 PubMed、Semantic Scholar、ClinicalTrials.gov 抓取白癜风最新研究论文与临床试验进展（遵守 `robots.txt` 与 API 速率限制）。
 - `src/processors/`：调用大模型将英文医学摘要翻译并提炼为患者友好的中文结构化卡片（自动附带 PMID 来源与免责声明）。

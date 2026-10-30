@@ -104,7 +104,7 @@ function scrollTo(id: string) {
           <ul>
             <li><strong>问答</strong>：基于 AI 的白癜风医学与日常照护智能问答服务</li>
             <li><strong>日记</strong>：白斑照片记录、比例评估对比与体检报告解读</li>
-            <li><strong>发现与同行</strong>：白友交流、就医经验分享、匿名资料共建与日常调养参考</li>
+            <li><strong>分享与同行</strong>：白友交流、就医经验分享、匿名资料共建与日常调养参考</li>
           </ul>
 
           <h3>3.2 服务性质</h3>

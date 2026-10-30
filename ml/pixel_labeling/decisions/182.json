@@ -1,0 +1,50 @@
+{
+  "task_id": 182,
+  "model_id": "face-plaque-gb-v1+lab-match-180",
+  "image": "面颈日记照（与180/181同人可能性高）；大斑+半脸光照不对称",
+  "params": {
+    "skin": {
+      "method": "mediapipe"
+    },
+    "baseline_mode": "hybrid"
+  },
+  "method": "face-gb + Lab-match-180 + litflat-trim(L-181-2)",
+  "lesion": [],
+  "unknown": [],
+  "reject": [],
+  "notes": {
+    "_pipeline": "large_plaque_risk.warn → face-gb; Lab对齐180（L-181-1）；lit-flat外扩修剪（L-181-2）。未抄用户版。",
+    "_review_hint": "核对颊侧斑驳是否仍过标、额发际是否欠填、眉区皮肤洞。",
+    "_review_s16": "vs s16: Dice 0.945, AI 43.15%≈human 43.63%. Residual: missed_skin brows, forehead hairline underfill, peri-oral/neck satellites, lip vermilion lesion (~953px) blocked by lips no_draft (L-182-1). Overcall minor.",
+    "_gold": "s16 approved; train face-gb v2 with 180/s13 + 181/s15 + 182/s16",
+    "_migrated": "迁移：face-gb + Lab 偏移 + lit-flat 修剪（L-181-2）"
+  },
+  "legacy_params": {
+    "skin": {
+      "method": "mediapipe"
+    },
+    "baseline_mode": "hybrid",
+    "face_gb_threshold": 0.69,
+    "lab_median_match_task": 180,
+    "lab_shift_LAB": {
+      "dL": 0.39,
+      "dA": -1.0,
+      "dB": 0.0
+    },
+    "post": "litflat trim far from thr0.85 core (L-181-2)"
+  },
+  "base": "face-gb-v1",
+  "base_params": {
+    "threshold": 0.69,
+    "lab_shift": {
+      "dL": 0.39,
+      "dA": -1.0,
+      "dB": 0.0
+    }
+  },
+  "ops": [
+    {
+      "op": "litflat_trim"
+    }
+  ]
+}

@@ -50,7 +50,7 @@ def models_dir() -> Path:
 
 # Registration gate on the locked test split (never used for model selection).
 GATE = {"min_test_images": 20, "min_test_subjects": 5, "min_dice": 0.80, "min_skin_dice": 0.85}
-BODY_SITES = {"面部": "face", "颈部": "neck", "手部": "hand", "躯干": "trunk", "上肢": "arm", "下肢": "leg", "足部": "foot"}
+DATASET_RETENTION_DAYS = 30
 
 
 def _now() -> str:
@@ -61,10 +61,13 @@ def _sync(label: ImageLabel) -> Dict[str, Any]:
     return read_details(label.ai_details).get("rgb_sync") or {}
 
 
-def _write_sync(label: ImageLabel, sync: Dict[str, Any]) -> None:
+def write_sync(label: ImageLabel, sync: Dict[str, Any]) -> None:
     details = read_details(label.ai_details)
     details["rgb_sync"] = sync
     label.ai_details = json.dumps(details, ensure_ascii=False)
+
+
+_write_sync = write_sync
 
 
 def latest_snapshot(db: Session, label: ImageLabel) -> Optional[Dict[str, Any]]:
@@ -95,15 +98,30 @@ def gold_state(db: Session, label: ImageLabel) -> Dict[str, Any]:
     }
 
 
-def approve_gold(db: Session, label: ImageLabel, actor: int, label_source: str = "admin_reviewed") -> Dict[str, Any]:
-    """Mark the latest submitted (non-draft) admin snapshot as gold."""
+def approve_gold(
+    db: Session,
+    label: ImageLabel,
+    actor: int,
+    label_source: str = "admin_reviewed",
+    revision: Optional[str] = None,
+    extra: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Bind gold to a submitted admin snapshot (the latest one unless ``revision``)."""
     from web.backend.services.data_consent import label_training_decision
 
     if label_source not in LABEL_SOURCES:
         raise RGBSegmentationError("INVALID_REQUEST", "标注来源无效", 400)
     if label.is_user_deleted:
         raise RGBSegmentationError("NOT_FOUND", "原记录已删除", 404)
-    snapshot = latest_snapshot(db, label)
+    if revision is None:
+        snapshot = latest_snapshot(db, label)
+    else:
+        snapshot = next(
+            (read_details(r.new_value) for r in db.query(ImageLabelLog)
+             .filter_by(image_label_id=label.id, action="rgb-admin-reference").all()
+             if read_details(r.new_value).get("revision") == revision),
+            None,
+        )
     if not snapshot or snapshot.get("draft"):
         raise RGBSegmentationError("REVIEW_REQUIRED", "请先正式提交管理员标注，再审核通过", 409)
     decision = label_training_decision(db, label)
@@ -115,11 +133,12 @@ def approve_gold(db: Session, label: ImageLabel, actor: int, label_source: str =
         "approved_by": actor,
         "approved_at": _now(),
         "consent_grant_id": decision.grant_id,
+        **(extra or {}),
     }
     sync = _sync(label)
     sync["gold"] = gold
     sync["training_state"] = "gold_approved"
-    _write_sync(label, sync)
+    write_sync(label, sync)
     label.training_eligible = False  # legacy U-Net pipeline must never pick RGB labels up
     db.add(ImageLabelLog(image_label_id=label.id, operator_id=actor, action="rgb-gold-approved",
                          new_value=json.dumps(gold, ensure_ascii=False)))
@@ -137,22 +156,39 @@ def revoke_gold(db: Session, label: ImageLabel, actor: int) -> None:
                          old_value=json.dumps(old, ensure_ascii=False)))
 
 
-def _subject(user_id: Optional[int], label_id: int) -> str:
+def _pseudonym(prefix: str, value: str) -> str:
     key = (os.getenv("SECRET_KEY") or "").encode()
     if not key:
         raise RGBSegmentationError("CONFIG_MISSING", "服务端缺少密钥，无法生成匿名编号", 500)
-    value = "user:%s" % user_id if user_id is not None else "admin-upload:%s" % label_id
-    return "subject_" + hmac.new(key, value.encode(), hashlib.sha256).hexdigest()[:24]
+    return prefix + hmac.new(key, value.encode(), hashlib.sha256).hexdigest()[:24]
+
+
+def _subject(user_id: Optional[int], label_id: int, subject_ref: Optional[str] = None) -> str:
+    if user_id is not None:
+        value = "user:%s" % user_id
+    elif subject_ref:
+        # Uploader-supplied patient code keeps one patient's photos in one split.
+        value = "upload-subject:%s" % subject_ref
+    else:
+        value = "admin-upload:%s" % label_id
+    return _pseudonym("subject_", value)
+
+
+def _label_subject(label: ImageLabel) -> str:
+    ref = (_sync(label).get("provenance") or {}).get("subject_ref")
+    return _subject(label.original_user_id, label.id, ref)
 
 
 def _gold_rows(db: Session) -> List[Dict[str, Any]]:
     from web.backend.services.data_consent import label_training_decision
 
+    from web.backend.services.labeling import sources
+
     rows = []
     for label in db.query(ImageLabel).filter(ImageLabel.is_user_deleted.is_(False)).all():
         sync = _sync(label)
         gold = sync.get("gold")
-        if not gold or not sync.get("job_id"):
+        if not gold or sources.kind(label) is None or label.label_status in ("skipped", "rejected"):
             continue
         decision = label_training_decision(db, label)
         rows.append({"label": label, "sync": sync, "gold": gold, "consent": decision})
@@ -160,15 +196,18 @@ def _gold_rows(db: Session) -> List[Dict[str, Any]]:
 
 
 def dataset_status(db: Session) -> Dict[str, Any]:
+    from web.backend.services.labeling import sources
+
+    prune_datasets(db)
     rgb_total = labeled = 0
     for label in db.query(ImageLabel).filter(ImageLabel.is_user_deleted.is_(False)).all():
-        if not _sync(label).get("job_id"):
+        if sources.kind(label) is None:
             continue
         rgb_total += 1
-        labeled += label.label_status == "labeled"
+        labeled += label.label_status in ("in_review", "gold", "returned")
     gold = _gold_rows(db)
     usable = [r for r in gold if r["consent"].allowed]
-    subjects = {_subject(r["label"].original_user_id, r["label"].id) for r in usable} if usable else set()
+    subjects = {_label_subject(r["label"]) for r in usable} if usable else set()
     return {
         "rgb_labels": rgb_total,
         "admin_labeled": labeled,
@@ -176,6 +215,7 @@ def dataset_status(db: Session) -> Dict[str, Any]:
         "gold_consented": len(usable),
         "gold_consent_withdrawn": len(gold) - len(usable),
         "subjects": len(subjects),
+        "benchmark_gold": sum(bool(r["label"].benchmark) for r in usable),
         "gate": GATE,
         "datasets": list_datasets(),
         "runs": list_runs(),
@@ -183,11 +223,15 @@ def dataset_status(db: Session) -> Dict[str, Any]:
     }
 
 
-def _split_for(subjects: List[str]) -> Dict[str, str]:
-    """Deterministic subject-level split; every split gets a subject when possible."""
-    ordered = sorted(subjects, key=lambda s: hashlib.sha256(s.encode()).hexdigest())
-    split = {}
-    for index, subject in enumerate(ordered):
+def _split_for(subjects: List[str], locked_test: Optional[set] = None) -> Dict[str, str]:
+    """Deterministic subject-level split; benchmark subjects are pinned to test."""
+    locked_test = locked_test or set()
+    split = {s: "test" for s in subjects if s in locked_test}
+    ordered = sorted(
+        (s for s in subjects if s not in locked_test),
+        key=lambda s: hashlib.sha256(s.encode()).hexdigest(),
+    )
+    for index, subject in enumerate(ordered, start=1 if split else 0):
         if index == 0:
             split[subject] = "test"
         elif index == 1:
@@ -198,8 +242,45 @@ def _split_for(subjects: List[str]) -> Dict[str, str]:
     return split
 
 
+def _submission_attributes(db: Session, gold: Dict[str, Any]) -> Dict[str, Any]:
+    from web.backend.models.label_submission import LabelSubmission
+
+    row = db.get(LabelSubmission, gold["submission_id"]) if gold.get("submission_id") else None
+    return {
+        "attributes": read_details(row.attributes) if row else {},
+        "blind": bool(row.blind) if row else False,
+        "prefill_source": row.prefill_source if row else "unknown",
+        "guideline_version": row.guideline_version if row else None,
+    }
+
+
+def _groups(label: ImageLabel, attributes: Dict[str, Any]) -> Dict[str, str]:
+    from web.backend.utils.body_sites import group_of
+
+    site = attributes.get("body_site") or label.admin_body_site or label.user_body_site or label.ai_body_site
+    tone = attributes.get("monk_skin_tone")
+    issues = attributes.get("quality_issues")
+    return {
+        "body_site": group_of(site),
+        "skin_tone": "mst_%d" % tone if tone else "unknown",
+        "lighting": attributes.get("lighting") or "unknown",
+        "quality": "unknown" if issues is None else ("clear" if not issues else "issues"),
+        "device": "unknown",
+        "shot_type": attributes.get("shot_type") or "unknown",
+        "imaging": attributes.get("imaging") or "unknown",
+    }
+
+
 def export_dataset(db: Session, actor: int) -> Dict[str, Any]:
-    """Write a private manifest from consented gold; validate it with the trainer's checker."""
+    """Write a private manifest from consented gold; validate it with the trainer's checker.
+
+    Masks keep 255 for pixels the annotator left unlabeled (ignored by the
+    loss); benchmark subjects are pinned to the locked test split.
+    """
+    from web.backend.services.labeling import class_map, sources
+    from web.backend.services.labeling.submissions import read_snapshot
+
+    prune_datasets(db)
     rows = [r for r in _gold_rows(db) if r["consent"].allowed]
     if not rows:
         raise RGBSegmentationError("NO_DATA", "还没有已授权、已审核通过的金标准标注", 409)
@@ -207,33 +288,26 @@ def export_dataset(db: Session, actor: int) -> Dict[str, Any]:
     digest = hashlib.sha256("|".join(sorted(r["gold"]["revision"] for r in rows)).encode()).hexdigest()[:8]
     dataset_id = "rgbds-%s-%s" % (stamp, digest)
     folder = datasets_dir() / dataset_id
-    subjects = {r["label"].id: _subject(r["label"].original_user_id, r["label"].id) for r in rows}
-    split = _split_for(sorted(set(subjects.values())))
-    items, skipped = [], []
+    subjects = {r["label"].id: _label_subject(r["label"]) for r in rows}
+    locked = {subjects[r["label"].id] for r in rows if r["label"].benchmark}
+    split = _split_for(sorted(set(subjects.values())), locked)
+    items, skipped, negatives = [], [], 0
     for row in rows:
-        label, sync, gold = row["label"], row["sync"], row["gold"]
+        label, gold = row["label"], row["gold"]
         try:
-            snap = artifacts.ROOT / "admin_labels" / str(label.id) / gold["revision"]
-            meta = json.loads((snap / "metadata.json").read_text())
-            raw = {name: (snap / name).read_bytes() for name in ("normal_skin.png", "lesion.png")}
-            if any(hashlib.sha256(v).hexdigest() != meta["mask_sha256"][k] for k, v in raw.items()):
-                raise ValueError("snapshot hash mismatch")
-            image = artifacts.read_artifact(sync["job_id"], sync["ai_revision"], "image")
-            manifest = artifacts.read_manifest(sync["job_id"], sync["ai_revision"])["metadata"]["image"]
-            shape = (manifest["height"], manifest["width"])
-            normal = decode_binary(raw["normal_skin.png"], shape)
-            lesion = decode_binary(raw["lesion.png"], shape)
+            image, shape = sources.canonical(label)
+            labels = read_snapshot(label.id, gold["revision"])
+            if labels.shape != shape:
+                raise ValueError("snapshot shape mismatch")
         except (OSError, KeyError, ValueError, RGBSegmentationError, json.JSONDecodeError):
             skipped.append({"label_id": label.id, "reason": "artifact_unavailable"})
             continue
-        labels = np.zeros(shape, np.uint8)
-        labels[normal] = 1
-        labels[lesion] = 2
+        review = _submission_attributes(db, gold)
+        negatives += not bool((labels == class_map.LESION).any())
         image_id = "image_" + hashlib.sha256(image).hexdigest()[:20]
         mask_bytes = _label_png(labels)
         artifacts.atomic_write(folder / "images" / (image_id + ".png"), image)
         artifacts.atomic_write(folder / "masks" / (image_id + ".png"), mask_bytes)
-        site = label.admin_body_site or label.user_body_site or label.ai_body_site
         items.append({
             "id": image_id,
             "subject_id": subjects[label.id],
@@ -243,8 +317,16 @@ def export_dataset(db: Session, actor: int) -> Dict[str, Any]:
             "image_sha256": hashlib.sha256(image).hexdigest(),
             "mask_sha256": hashlib.sha256(mask_bytes).hexdigest(),
             "review_reference": "image_label:%s:%s:%s" % (label.id, gold["revision"][:16], gold["label_source"]),
-            "groups": {"body_site": BODY_SITES.get(site or "", "unknown"), "skin_tone": "unknown",
-                       "lighting": "unknown", "quality": "unknown", "device": "unknown"},
+            "groups": _groups(label, review["attributes"]),
+            "provenance": {
+                "source_kind": sources.kind(label),
+                "benchmark": bool(label.benchmark),
+                "review_mode": gold.get("review_mode", "single_review"),
+                "blind": review["blind"],
+                "prefill_source": review["prefill_source"],
+                "guideline_version": review["guideline_version"],
+                "annotator": _pseudonym("annotator_", str(gold.get("author_id", gold["approved_by"]))),
+            },
         })
     # Same photo uploaded twice must stay in one split (validator rejects leakage).
     first = {}
@@ -259,7 +341,7 @@ def export_dataset(db: Session, actor: int) -> Dict[str, Any]:
         "authorization": {
             "training": True,
             "reference": "data_consent:model_training:" + (",".join(grants) or "not_user_contributed"),
-            "expires_at": (date.today() + timedelta(days=30)).isoformat(),
+            "expires_at": (date.today() + timedelta(days=DATASET_RETENTION_DAYS)).isoformat(),
         },
         "dataset_review_id": dataset_id,
         "created_by": actor,
@@ -269,7 +351,9 @@ def export_dataset(db: Session, actor: int) -> Dict[str, Any]:
     artifacts.atomic_write(folder / "manifest.json", json.dumps(document, ensure_ascii=False, indent=1).encode())
     counts = {s: sum(i["split"] == s for i in items) for s in ("train", "validation", "test")}
     report = {"dataset_id": dataset_id, "items": len(items), "skipped": skipped, "counts": counts,
-              "subjects": len(set(subjects.values()))}
+              "subjects": len(set(subjects.values())), "negatives": negatives,
+              "benchmark_items": sum(i["provenance"]["benchmark"] for i in items),
+              "expires_at": document["authorization"]["expires_at"]}
     try:
         from ml.rgb_segmentation.dataset import validate_manifest
 
@@ -279,6 +363,41 @@ def export_dataset(db: Session, actor: int) -> Dict[str, Any]:
         report["valid"], report["error"] = False, str(exc)
     artifacts.atomic_write(folder / "export-report.json", json.dumps(report, ensure_ascii=False).encode())
     return report
+
+
+def prune_datasets(db: Session) -> int:
+    """Delete expired dataset copies and those holding a withdrawn subject.
+
+    Consumes ``DataRightsJob`` rows for ``model_training`` withdrawals (and the
+    blanket withdrawals account deletion creates). Trained weights are not
+    reclaimed — that limit is stated in the consent text.
+    """
+    from web.backend.models.data_consent import DataRightsJob
+
+    removed = 0
+    jobs = [
+        j for j in db.query(DataRightsJob).filter_by(job_type="withdrawal", status="pending").all()
+        if (j.note or "") == "purpose=model_training"
+    ]
+    withdrawn = {_subject(j.user_id, 0): j for j in jobs}
+    if datasets_dir().exists():
+        for folder in datasets_dir().iterdir():
+            if not folder.is_dir() or folder.is_symlink():
+                continue
+            manifest = _read_json(folder / "manifest.json") or {}
+            expires = (manifest.get("authorization") or {}).get("expires_at")
+            subjects = {i.get("subject_id") for i in manifest.get("items", [])}
+            expired = bool(expires) and date.fromisoformat(expires) < date.today()
+            if expired or subjects & set(withdrawn):
+                shutil.rmtree(folder, ignore_errors=True)
+                removed += 1
+    for job in jobs:
+        job.status = "done"
+        job.completed_at = datetime.utcnow()
+        job.note = "purpose=model_training; datasets_purged"
+    if jobs:
+        db.commit()
+    return removed
 
 
 def _label_png(labels: np.ndarray) -> bytes:

@@ -1,0 +1,377 @@
+[
+ {
+  "task": 174,
+  "group": "person-A",
+  "source": "parsed_skin_draft",
+  "only": {
+   "lesion_dice": 0.6248,
+   "lesion_dice_tol2": 0.6386,
+   "skin_dice": 0.9513,
+   "occl_dice": null,
+   "ai_ratio": 40.14,
+   "gold_ratio": 48.5,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  },
+  "merged": {
+   "lesion_dice": 0.6485,
+   "lesion_dice_tol2": 0.6629,
+   "skin_dice": 0.9513,
+   "occl_dice": null,
+   "ai_ratio": 45.11,
+   "gold_ratio": 48.5,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  }
+ },
+ {
+  "task": 180,
+  "group": "person-A",
+  "source": "parsed_skin_draft",
+  "only": {
+   "lesion_dice": 0.6426,
+   "lesion_dice_tol2": 0.6524,
+   "skin_dice": 0.974,
+   "occl_dice": null,
+   "ai_ratio": 37.83,
+   "gold_ratio": 47.22,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  },
+  "merged": {
+   "lesion_dice": 0.6605,
+   "lesion_dice_tol2": 0.6722,
+   "skin_dice": 0.974,
+   "occl_dice": null,
+   "ai_ratio": 42.51,
+   "gold_ratio": 47.22,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  }
+ },
+ {
+  "task": 181,
+  "group": "person-A",
+  "source": "parsed_skin_draft",
+  "only": {
+   "lesion_dice": 0.693,
+   "lesion_dice_tol2": 0.707,
+   "skin_dice": 0.9717,
+   "occl_dice": null,
+   "ai_ratio": 40.16,
+   "gold_ratio": 43.44,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  },
+  "merged": {
+   "lesion_dice": 0.7216,
+   "lesion_dice_tol2": 0.7364,
+   "skin_dice": 0.9717,
+   "occl_dice": null,
+   "ai_ratio": 45.04,
+   "gold_ratio": 43.44,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  }
+ },
+ {
+  "task": 182,
+  "group": "person-A",
+  "source": "parsed_skin_draft",
+  "only": {
+   "lesion_dice": 0.6616,
+   "lesion_dice_tol2": 0.6773,
+   "skin_dice": 0.9744,
+   "occl_dice": null,
+   "ai_ratio": 39.83,
+   "gold_ratio": 43.63,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  },
+  "merged": {
+   "lesion_dice": 0.6786,
+   "lesion_dice_tol2": 0.6935,
+   "skin_dice": 0.9744,
+   "occl_dice": null,
+   "ai_ratio": 44.55,
+   "gold_ratio": 43.63,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  }
+ },
+ {
+  "task": 185,
+  "group": "task185",
+  "source": "parsed_skin_draft",
+  "only": {
+   "lesion_dice": 0.338,
+   "lesion_dice_tol2": 0.309,
+   "skin_dice": 0.9527,
+   "occl_dice": 0.0,
+   "ai_ratio": 41.78,
+   "gold_ratio": 16.1,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 4768
+  },
+  "merged": {
+   "lesion_dice": 0.3383,
+   "lesion_dice_tol2": 0.307,
+   "skin_dice": 0.9527,
+   "occl_dice": 0.0,
+   "ai_ratio": 45.01,
+   "gold_ratio": 16.1,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 5229
+  }
+ },
+ {
+  "task": 186,
+  "group": "task186",
+  "source": "parsed_skin_draft",
+  "only": {
+   "lesion_dice": 0.1428,
+   "lesion_dice_tol2": 0.1758,
+   "skin_dice": 0.3952,
+   "occl_dice": 0.0,
+   "ai_ratio": 13.12,
+   "gold_ratio": 34.68,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 609
+  },
+  "merged": {
+   "lesion_dice": 0.1531,
+   "lesion_dice_tol2": 0.1837,
+   "skin_dice": 0.3952,
+   "occl_dice": 0.0,
+   "ai_ratio": 16.1,
+   "gold_ratio": 34.68,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 868
+  }
+ },
+ {
+  "task": 187,
+  "group": "task187",
+  "source": "interactive_rgb_reference",
+  "only": {
+   "lesion_dice": 0.0,
+   "lesion_dice_tol2": 0.0,
+   "skin_dice": 0.9831,
+   "occl_dice": 0.0,
+   "ai_ratio": 0.0,
+   "gold_ratio": 0.34,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  },
+  "merged": {
+   "lesion_dice": 0.0469,
+   "lesion_dice_tol2": 0.0293,
+   "skin_dice": 0.9831,
+   "occl_dice": 0.0,
+   "ai_ratio": 5.56,
+   "gold_ratio": 0.34,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  }
+ },
+ {
+  "task": 188,
+  "group": "task188",
+  "source": "parsed_skin_draft",
+  "only": {
+   "lesion_dice": 0.0904,
+   "lesion_dice_tol2": 0.0404,
+   "skin_dice": 0.8538,
+   "occl_dice": 0.0,
+   "ai_ratio": 49.78,
+   "gold_ratio": 4.88,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 2153
+  },
+  "merged": {
+   "lesion_dice": 0.0876,
+   "lesion_dice_tol2": 0.036,
+   "skin_dice": 0.8538,
+   "occl_dice": 0.0,
+   "ai_ratio": 56.8,
+   "gold_ratio": 4.88,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 2492
+  }
+ },
+ {
+  "task": 189,
+  "group": "task189",
+  "source": "parsed_skin_draft",
+  "only": {
+   "lesion_dice": 0.0921,
+   "lesion_dice_tol2": 0.0316,
+   "skin_dice": 0.9807,
+   "occl_dice": 0.0,
+   "ai_ratio": 42.24,
+   "gold_ratio": 3.63,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 3311
+  },
+  "merged": {
+   "lesion_dice": 0.089,
+   "lesion_dice_tol2": 0.0286,
+   "skin_dice": 0.9807,
+   "occl_dice": 0.0,
+   "ai_ratio": 47.47,
+   "gold_ratio": 3.63,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 3553
+  }
+ },
+ {
+  "task": 191,
+  "group": "task191",
+  "source": "parsed_skin_draft",
+  "only": {
+   "lesion_dice": 0.3293,
+   "lesion_dice_tol2": 0.2987,
+   "skin_dice": 0.9861,
+   "occl_dice": 0.0,
+   "ai_ratio": 22.86,
+   "gold_ratio": 4.47,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  },
+  "merged": {
+   "lesion_dice": 0.3044,
+   "lesion_dice_tol2": 0.2751,
+   "skin_dice": 0.9861,
+   "occl_dice": 0.0,
+   "ai_ratio": 25.1,
+   "gold_ratio": 4.47,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  }
+ },
+ {
+  "task": 192,
+  "group": "task192",
+  "source": "parsed_skin_draft",
+  "only": {
+   "lesion_dice": 0.2482,
+   "lesion_dice_tol2": 0.1306,
+   "skin_dice": 0.8086,
+   "occl_dice": 0.0,
+   "ai_ratio": 69.36,
+   "gold_ratio": 15.43,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 1478
+  },
+  "merged": {
+   "lesion_dice": 0.2375,
+   "lesion_dice_tol2": 0.1211,
+   "skin_dice": 0.8086,
+   "occl_dice": 0.0,
+   "ai_ratio": 75.08,
+   "gold_ratio": 15.43,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 1493
+  }
+ },
+ {
+  "task": 199,
+  "group": "task199",
+  "source": "parsed_skin_draft",
+  "only": {
+   "lesion_dice": 0.4965,
+   "lesion_dice_tol2": 0.455,
+   "skin_dice": 0.8548,
+   "occl_dice": 0.0,
+   "ai_ratio": 53.12,
+   "gold_ratio": 26.67,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 1761
+  },
+  "merged": {
+   "lesion_dice": 0.4775,
+   "lesion_dice_tol2": 0.4274,
+   "skin_dice": 0.8548,
+   "occl_dice": 0.0,
+   "ai_ratio": 59.27,
+   "gold_ratio": 26.67,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 1836
+  }
+ },
+ {
+  "task": 201,
+  "group": "task201",
+  "source": "parsed_skin_draft",
+  "only": {
+   "lesion_dice": 0.4809,
+   "lesion_dice_tol2": 0.4774,
+   "skin_dice": 0.6691,
+   "occl_dice": 0.0,
+   "ai_ratio": 17.38,
+   "gold_ratio": 9.83,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  },
+  "merged": {
+   "lesion_dice": 0.4657,
+   "lesion_dice_tol2": 0.4566,
+   "skin_dice": 0.6691,
+   "occl_dice": 0.0,
+   "ai_ratio": 19.16,
+   "gold_ratio": 9.83,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  }
+ },
+ {
+  "task": 207,
+  "group": "task207",
+  "source": "parsed_skin_draft",
+  "only": {
+   "lesion_dice": 0.0434,
+   "lesion_dice_tol2": 0.029,
+   "skin_dice": 0.9972,
+   "occl_dice": null,
+   "ai_ratio": 68.63,
+   "gold_ratio": 1.65,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  },
+  "merged": {
+   "lesion_dice": 0.0436,
+   "lesion_dice_tol2": 0.0282,
+   "skin_dice": 0.9972,
+   "occl_dice": null,
+   "ai_ratio": 71.38,
+   "gold_ratio": 1.65,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 0
+  }
+ },
+ {
+  "task": 263,
+  "group": "task263",
+  "source": "parsed_skin_draft",
+  "only": {
+   "lesion_dice": 0.8279,
+   "lesion_dice_tol2": 0.8773,
+   "skin_dice": 0.9684,
+   "occl_dice": 0.0,
+   "ai_ratio": 14.64,
+   "gold_ratio": 16.52,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 2828
+  },
+  "merged": {
+   "lesion_dice": 0.8177,
+   "lesion_dice_tol2": 0.8628,
+   "skin_dice": 0.9684,
+   "occl_dice": 0.0,
+   "ai_ratio": 16.13,
+   "gold_ratio": 16.52,
+   "bg_as_occl": 0,
+   "occl_as_lesion": 3174
+  }
+ }
+]

@@ -1,0 +1,130 @@
+{
+  "task_id": 207,
+  "model_id": "pixel-reviewed-v2-abdomen-spots",
+  "image": "腹干多发圆形白斑；蓝上衣；禁face-gb",
+  "params": {
+    "skin": {
+      "method": "color_b",
+      "hole_max": 2000
+    },
+    "baseline_mode": "hybrid",
+    "t_hi": 7.0,
+    "t_lo": 4.0,
+    "grow_score": 2.5,
+    "ellipse_L_adaptive": {
+      "L_margin": 0,
+      "sl_t": 2.5,
+      "R": 3,
+      "max_scale": 3.2,
+      "close_r": 2,
+      "ring_ksize": 25
+    },
+    "reject_rules": [
+      "cy<200 clothing/hand",
+      "lit-flat#9",
+      "navel",
+      "weak#16#18"
+    ]
+  },
+  "lesion": [
+    11,
+    12,
+    13,
+    14,
+    17,
+    19,
+    21,
+    22,
+    23,
+    24,
+    26,
+    27,
+    28,
+    30,
+    31
+  ],
+  "unknown": [],
+  "reject": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    15,
+    16,
+    18,
+    20,
+    25,
+    29,
+    32,
+    33
+  ],
+  "lesion_roi": [],
+  "unknown_roi": [],
+  "nails_ellipse": [],
+  "nails_hull": [],
+  "lesion_polygons": [],
+  "unknown_polygons": [],
+  "normal_polygons": [],
+  "occlusion_polygons": [],
+  "notes": {
+    "_scene": "C 腹干多发圆形斑",
+    "_gold": "s23 approved ratio1.65%",
+    "_v1_fail": "无门控 morph-close 外扩#11 fringe；衣物/lit-flat；同斑双候选",
+    "_method": "KEEP→fitEllipse，rim L vs 邻域正常皮停→sl>2.5→R≤3环带→gated close→fringe trim",
+    "_repro_dice": 0.956,
+    "_residual": "FN rim: high sg(~14)+near-zero sl(~0.3)；放松 sl 会引入更多 FP，经典CV平台≈0.956",
+    "_no_copy": true,
+    "_migrated": "迁移：候选 KEEP + 椭圆填盘 + 门控闭运算 + 边缘修剪（L-207-1/2）"
+  },
+  "legacy_params": {
+    "skin": {
+      "method": "color_b",
+      "hole_max": 2000
+    },
+    "baseline_mode": "hybrid",
+    "t_hi": 7.0,
+    "t_lo": 4.0,
+    "grow_score": 2.5,
+    "ellipse_L_adaptive": {
+      "L_margin": 0,
+      "sl_t": 2.5,
+      "R": 3,
+      "max_scale": 3.2,
+      "close_r": 2,
+      "ring_ksize": 25
+    },
+    "reject_rules": [
+      "cy<200 clothing/hand",
+      "lit-flat#9",
+      "navel",
+      "weak#16#18"
+    ]
+  },
+  "ops": [
+    {
+      "op": "ellipse_fill",
+      "L_margin": 0,
+      "sl": 2.5,
+      "R": 3,
+      "max_scale": 3.2,
+      "ring": 25
+    },
+    {
+      "op": "lesion_close_gated",
+      "r": 2,
+      "sg": 2,
+      "sl": 1
+    },
+    {
+      "op": "fringe_trim",
+      "sl_max": 1.5,
+      "band": 2
+    }
+  ]
+}

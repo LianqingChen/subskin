@@ -44,8 +44,8 @@ function stripHtml(html: string): string {
   <div class="pb-10">
     <!-- 全站顶栏已有品牌，这里只保留来源与返回 -->
     <div class="page flex items-center justify-between py-2 md:py-3">
-      <span class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 dark:text-gray-400"><i class="ri-leaf-line text-primary-600 dark:text-primary-400" aria-hidden="true"></i>SubSkin · 发现</span>
-      <router-link to="/community" class="inline-flex min-h-10 items-center text-sm font-medium text-primary-700 no-underline hover:text-primary-800 dark:text-primary-400">返回发现<i class="ri-arrow-right-s-line" aria-hidden="true"></i></router-link>
+      <span class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 dark:text-gray-400"><i class="ri-leaf-line text-primary-600 dark:text-primary-400" aria-hidden="true"></i>SubSkin · 分享</span>
+      <router-link to="/community" class="inline-flex min-h-10 items-center text-sm font-medium text-primary-700 no-underline hover:text-primary-800 dark:text-primary-400">返回分享<i class="ri-arrow-right-s-line" aria-hidden="true"></i></router-link>
     </div>
 
     <div class="page pt-2">
@@ -59,7 +59,7 @@ function stripHtml(html: string): string {
         <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">知识库不存在或已设为私密</h2>
         <p class="text-gray-500 dark:text-gray-400 mb-6">链接已失效，或作者取消了分享。</p>
         <router-link to="/community" class="btn-primary inline-block">
-          去发现看看
+          去分享看看
         </router-link>
       </div>
 
@@ -116,7 +116,7 @@ function stripHtml(html: string): string {
         <!-- Footer CTA -->
         <div class="text-center pt-4 pb-2">
           <router-link to="/community" class="btn-primary inline-block">
-            加入发现讨论
+            加入分享讨论
           </router-link>
         </div>
       </div>

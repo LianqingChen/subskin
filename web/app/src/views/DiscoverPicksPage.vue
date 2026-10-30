@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** 发现 · 种草：按主体浏览好物笔记（为什么值得看、怎么挑），点进商品详情再决定是否加购。 */
+/** 分享 · 种草：按主体浏览好物笔记（为什么值得看、怎么挑），点进商品详情再决定是否加购。 */
 import { computed, ref } from 'vue'
 import { CARE_TOPICS, TOPIC_TINT, formatPrice } from '@/data/care-catalog'
 import { useCareCart } from '@/composables/useCareCart'
@@ -15,9 +15,9 @@ const notes = computed(() => CARE_TOPICS
 
 <template>
   <div class="page pb-10 pt-3 text-gray-900 dark:text-gray-100 md:pt-5">
-    <router-link to="/community" class="-ml-1 inline-flex min-h-10 items-center gap-1 text-sm text-gray-500 no-underline hover:text-gray-800 dark:text-gray-400"><i class="ri-arrow-left-s-line" aria-hidden="true"></i>返回发现</router-link>
+    <router-link to="/community" class="-ml-1 inline-flex min-h-10 items-center gap-1 text-sm text-gray-500 no-underline hover:text-gray-800 dark:text-gray-400"><i class="ri-arrow-left-s-line" aria-hidden="true"></i>返回分享</router-link>
     <header class="mt-1">
-      <p class="text-xs font-semibold tracking-widest text-primary-700 dark:text-primary-300">发现 · 种草</p>
+      <p class="text-xs font-semibold tracking-widest text-primary-700 dark:text-primary-300">分享 · 种草</p>
       <h1 class="page-title mt-1">值得看看的日常好物</h1>
       <p class="page-subtitle leading-6">选购入口已移至调养。</p>
     </header>

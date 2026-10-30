@@ -40,15 +40,10 @@ async def get_gold(label_id: int, admin_user: User = Depends(get_current_admin_u
 
 
 @router.post("/admin/rgb-labels/{label_id:int}/gold")
-async def approve(label_id: int, body: ApproveRequest, admin_user: User = Depends(get_current_admin_user), db: Session = Depends(get_db)):
-    label = _rgb_label(db, label_id)
-    try:
-        pipeline.approve_gold(db, label, admin_user.id, body.label_source)
-    except RGBSegmentationError as exc:
-        db.rollback()
-        _fail(exc)
-    db.commit()
-    return pipeline.gold_state(db, label)
+async def approve(label_id: int, body: ApproveRequest, admin_user: User = Depends(get_current_admin_user)):
+    """Retired 2026-10-21: gold now comes only from reviewing a versioned submission
+    (``/admin/labeling/submissions/{id}/approve``)."""
+    raise HTTPException(status_code=410, detail="请在打标工作台复核通过提交版本")
 
 
 @router.delete("/admin/rgb-labels/{label_id:int}/gold")

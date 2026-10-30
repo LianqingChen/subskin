@@ -152,7 +152,7 @@ onBeforeUnmount(() => schema?.remove())
 
 <template>
   <div class="page pb-8 pt-4 text-gray-900 dark:text-gray-100 md:pt-6">
-    <router-link to="/community" class="mb-2 inline-flex min-h-11 items-center gap-1 text-sm text-gray-500 hover:text-primary-700 dark:text-gray-400 dark:hover:text-primary-300"><i class="ri-arrow-left-s-line" aria-hidden="true"></i>返回发现</router-link>
+    <router-link to="/community" class="mb-2 inline-flex min-h-11 items-center gap-1 text-sm text-gray-500 hover:text-primary-700 dark:text-gray-400 dark:hover:text-primary-300"><i class="ri-arrow-left-s-line" aria-hidden="true"></i>返回分享</router-link>
     <header class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <div class="min-w-0">
         <p class="text-xs font-semibold tracking-widest text-primary-700 dark:text-primary-300">{{ hospitalLabel }} · 病友互助</p>

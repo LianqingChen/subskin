@@ -292,21 +292,6 @@ export interface SkinReportListItem {
   post_count?: number
 }
 
-export interface PeriodicPreviewItem {
-  period_type: 'weekly' | 'monthly'
-  label: string
-  period_start: string
-  period_end: string
-  photo_count: number
-  site_count: number
-  exam_count?: number
-  qa_count?: number
-  post_count?: number
-  can_generate: boolean
-  existing_report_id: number | null
-  existing_status: string | null
-}
-
 // ── API Functions ──
 
 /** 对比照片条目（直接上传用） */
@@ -385,22 +370,6 @@ export interface SynthesisSource {
 /** 基于多份历史报告提炼对比，生成新的对比报告 */
 export function synthesizeReports(reportIds: number[]) {
   return apiClient.post<SkinReport>('/skin-reports/synthesize', { report_ids: reportIds })
-}
-
-/** 生成白斑周报/月报（后台异步，返回 generating 状态报告） */
-export function createPeriodicReport(data: {
-  period_type: 'weekly' | 'monthly'
-  anchor_date?: string
-  body_sites?: string[]
-  profile_id?: number
-  force?: boolean
-}) {
-  return apiClient.post<SkinReport>('/skin-reports/periodic', data)
-}
-
-/** 周报/月报快捷生成可用性预览 */
-export function getPeriodicPreview() {
-  return apiClient.get<{ items: PeriodicPreviewItem[] }>('/skin-reports/periodic/preview')
 }
 
 /** 获取我的报告列表 */

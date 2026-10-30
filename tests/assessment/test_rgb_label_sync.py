@@ -275,6 +275,6 @@ def test_admin_api_requires_admin_and_legacy_export_excludes_rgb(isolated, photo
     assert response.status_code in (401,403)
     app.dependency_overrides[admin_api.get_current_admin_user]=lambda:SimpleNamespace(id=2)
     response=http.post(f"/admin/image-labels/{lid}/label",json={"annotations":[{"source":"admin","mask_data":"invalid"}]})
-    assert response.status_code==400 and "标注与当前照片不一致" in response.text
+    assert response.status_code==409 and "打标工作台" in response.text  # legacy writer refuses five-class labels
     response=http.post("/admin/image-labels/training-export",json={})
     assert response.status_code==200 and response.json()["total_count"]==0

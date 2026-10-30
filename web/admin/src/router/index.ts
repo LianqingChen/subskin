@@ -59,6 +59,11 @@ const router = createRouter({
           component: () => import('@/views/ImageLabeling.vue')
         },
         {
+          path: 'external-gallery',
+          name: 'ExternalGallery',
+          component: () => import('@/views/ExternalGallery.vue')
+        },
+        {
           path: 'image-labeling/:id',
           name: 'LabelingWorkspace',
           component: () => import('@/views/LabelingWorkspace.vue'),

@@ -147,7 +147,7 @@ const guestLinks = [
   { label: '白斑日记', icon: 'ri-booklet-line', to: '/assessment' },
   { label: '体检解读', icon: 'ri-microscope-line', to: '/assessment/exam' },
   { label: '就医经验', icon: 'ri-hospital-line', to: '/hospitals' },
-  { label: '发现社区', icon: 'ri-compass-3-line', to: '/community' },
+  { label: '分享社区', icon: 'ri-compass-3-line', to: '/community' },
 ]
 
 const settingsItems = computed(() =>
@@ -768,7 +768,7 @@ async function handleAvatarChange(event: Event) {
 
       <div class="space-y-4 min-w-0">
       <div class="card p-2 md:p-3">
-        <h3 class="profile-card-title px-2 pt-2 pb-1"><i class="ri-compass-3-line" aria-hidden="true"></i>发现</h3>
+        <h3 class="profile-card-title px-2 pt-2 pb-1"><i class="ri-compass-3-line" aria-hidden="true"></i>分享</h3>
         <div class="divide-y divide-gray-100 dark:divide-gray-700/60">
           <router-link
             v-for="item in menuItems"

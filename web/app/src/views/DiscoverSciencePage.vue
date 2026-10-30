@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** 发现 · 科普：调养各主体的证据等级、怎么选、注意事项（不写功效，不是治疗建议）。 */
+/** 分享 · 科普：调养各主体的证据等级、怎么选、注意事项（不写功效，不是治疗建议）。 */
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import CareTopicSection from '@/components/care/CareTopicSection.vue'
@@ -21,9 +21,9 @@ onMounted(() => { const id = route.hash.replace(/^#/, ''); if (id) setTimeout(()
         </nav>
       </aside>
       <div class="min-w-0 max-w-3xl">
-        <router-link to="/community" class="-ml-1 inline-flex min-h-10 items-center gap-1 text-sm text-gray-500 no-underline hover:text-gray-800 dark:text-gray-400"><i class="ri-arrow-left-s-line" aria-hidden="true"></i>返回发现</router-link>
+        <router-link to="/community" class="-ml-1 inline-flex min-h-10 items-center gap-1 text-sm text-gray-500 no-underline hover:text-gray-800 dark:text-gray-400"><i class="ri-arrow-left-s-line" aria-hidden="true"></i>返回分享</router-link>
         <header class="mt-1">
-          <p class="text-xs font-semibold tracking-widest text-primary-700 dark:text-primary-300">发现 · 科普</p>
+          <p class="text-xs font-semibold tracking-widest text-primary-700 dark:text-primary-300">分享 · 科普</p>
           <h1 class="page-title mt-1">把日常过好：吃得稳、晒得对、记得准</h1>
         </header>
         <p role="note" class="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900 dark:bg-amber-900/20 dark:text-amber-200">

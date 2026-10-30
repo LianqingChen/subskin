@@ -38,6 +38,13 @@ from web.backend.services.unified_auth import get_current_admin_user
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+NEW_WORKBENCH = "该记录属于新版五类打标流程，请在打标工作台中处理"
+
+
+def _first_set(*values):
+    """First value that is not None (0.0 is a real measurement)."""
+    return next((v for v in values if v is not None), None)
+
 
 # ── Pydantic Schemas ──────────────────────────────────────────────
 
@@ -457,7 +464,7 @@ async def get_image_label_detail(
 ):
     """管理员获取单张图片标注详情 — 含三级标注数据"""
     label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
-    if not label:
+    if not label or label.is_user_deleted:
         raise HTTPException(status_code=404, detail="标注记录不存在")
     return _label_to_detail(label, db)
 
@@ -743,7 +750,7 @@ async def admin_label_image(
 ):
     """管理员提交最终标注 — 核心打标接口"""
     label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
-    if not label:
+    if not label or label.is_user_deleted:
         raise HTTPException(status_code=404, detail="标注记录不存在")
 
     update_data: dict = request.model_dump(exclude_unset=True)
@@ -751,21 +758,11 @@ async def admin_label_image(
     annotated_image_data_url: Optional[str] = update_data.pop("annotated_image", None)
     training_eligible: Optional[bool] = update_data.pop("training_eligible", None)
     from web.backend.services.rgb_segmentation.label_sync import is_rgb_label
-    from web.backend.services.rgb_segmentation.label_review import save_admin_reference
-    from web.backend.exceptions import RGBSegmentationError
 
-    rgb_label = is_rgb_label(label)
-    rgb_gold_request: Optional[bool] = None
-    if rgb_label:
-        try:
-            update_data["area_percentage"] = save_admin_reference(db, label, admin_user.id, annotations_data, request.draft_mode)
-        except RGBSegmentationError as exc:
-            raise HTTPException(status_code=exc.http_status, detail=str(exc))
-        # For RGB labels the checkbox means "approve this snapshot as gold"; the
-        # legacy training flag stays False (RGB datasets are exported separately).
-        rgb_gold_request = training_eligible
-        training_eligible = False
-
+    # Five-class labels need versions + review; this legacy writer has neither.
+    if is_rgb_label(label):
+        raise HTTPException(status_code=409, detail=NEW_WORKBENCH)
+    rgb_label = False
 
     changes = []
     column_map = {
@@ -850,20 +847,6 @@ async def admin_label_image(
     db.commit()
 
     rgb_gold = None
-    if rgb_label and not request.draft_mode and rgb_gold_request is not None:
-        from web.backend.services.rgb_segmentation import dataset_pipeline
-
-        try:
-            if rgb_gold_request:
-                dataset_pipeline.approve_gold(db, label, admin_user.id)
-            else:
-                dataset_pipeline.revoke_gold(db, label, admin_user.id)
-            db.commit()
-        except RGBSegmentationError as exc:
-            db.rollback()
-            rgb_gold = {"error": str(exc)}
-        label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
-        rgb_gold = {**dataset_pipeline.gold_state(db, label), **(rgb_gold or {})}
 
     # ── Save / generate annotated image (original + admin mask overlay) ──
     # Uses FIXED filename so each draft overwrites the previous — only keeps latest
@@ -966,7 +949,7 @@ async def get_annotated_image(
 
     # ── 查 label ──
     label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
-    if not label:
+    if not label or label.is_user_deleted:
         raise HTTPException(status_code=404, detail="标注记录不存在")
 
     # ── 尝试从已保存的合成图文件返回 ──
@@ -1060,7 +1043,7 @@ async def get_user_annotated_image(
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
-    if not label:
+    if not label or label.is_user_deleted:
         raise HTTPException(status_code=404, detail="标注记录不存在")
 
     output_dir = Path("/root/subskin/data/uploads/vasi/annotated")
@@ -1181,16 +1164,7 @@ def _add_label_to_training(label_id: int, admin_user: User, db: Session) -> dict
         return {"ok": False, "status_code": 400, "detail": f"标注 {label_id} 请先完成标注提交"}
     from web.backend.services.rgb_segmentation.label_sync import is_rgb_label
     if is_rgb_label(label):
-        # RGB labels never become legacy VasiTrainingSample rows; "加入训练" = approve as gold.
-        from web.backend.exceptions import RGBSegmentationError
-        from web.backend.services.rgb_segmentation import dataset_pipeline
-        try:
-            dataset_pipeline.approve_gold(db, label, admin_user.id)
-        except RGBSegmentationError as exc:
-            db.rollback()
-            return {"ok": False, "status_code": exc.http_status, "detail": f"标注 {label_id}：{exc}"}
-        db.commit()
-        return {"ok": True, "sample_id": None, "rgb_gold": True}
+        return {"ok": False, "status_code": 409, "detail": NEW_WORKBENCH}
     # 分用途授权：用户来源的图片必须有有效的“改进识别”授权才能加入训练集
     from web.backend.services.data_consent import label_training_decision
     if not label_training_decision(db, label).allowed:
@@ -1664,9 +1638,9 @@ async def export_training_data(
             "is_vitiligo": label.admin_is_vitiligo,
             "vitiligo_type": label.admin_vitiligo_type or label.ai_vitiligo_type,
             "vitiligo_stage": label.admin_vitiligo_stage or label.ai_vitiligo_stage,
-            "area_percentage": label.admin_area_percentage or label.ai_area_percentage,
-            "vasi_score": label.admin_vasi_score or label.ai_vasi_score,
-            "depigmentation_level": label.admin_depigmentation_level or label.ai_depigmentation_level,
+            "area_percentage": _first_set(label.admin_area_percentage, label.ai_area_percentage),
+            "vasi_score": _first_set(label.admin_vasi_score, label.ai_vasi_score),
+            "depigmentation_level": _first_set(label.admin_depigmentation_level, label.user_depigmentation_level),
             "admin_notes": label.admin_notes,
             "contours": contour_list,
             "mask_count": mask_count,
@@ -1723,9 +1697,16 @@ async def download_training_manifest(
     from fastapi.responses import FileResponse
     import os
 
-    # 安全检查: 必须是 /root/subskin/data/training_manifests/ 下的文件
-    if not path.startswith("/root/subskin/data/training_manifests/"):
+    from pathlib import Path as _Path
+
+    # 安全检查: 解析后必须仍在 training_manifests 目录内（拒绝 ../ 越界）
+    root = _Path("/root/subskin/data/training_manifests").resolve()
+    resolved = _Path(path).resolve()
+    try:
+        resolved.relative_to(root)
+    except ValueError:
         raise HTTPException(status_code=400, detail="非法路径")
+    path = str(resolved)
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="manifest 不存在")
 
@@ -1836,74 +1817,6 @@ class AiPretrainResponse(BaseModel):
     duration_ms: Optional[int] = None
 
 
-async def _download_image_to_bytes(image_url: str, base_url: str = "http://127.0.0.1:8000") -> bytes:
-    """下载图片到 bytes — 内部用, 用于 AI 预标注
-
-    支持:
-    1. 本地路径 (如 /api/files/serve/..., data/uploads/...) — 直接从磁盘读取
-    2. 完整 URL (http:// 或 https://) — 通过 HTTP 下载
-    3. 相对路径 (如 /api/files/serve/..., /api/...) — 通过本地服务器代理获取
-    """
-    import re
-    import httpx
-    from pathlib import Path
-
-    # ── 尝试解析为本地路径 ──
-    path_in_url: Optional[str] = None
-
-    api_match = re.search(r"/api/files/serve/(.+?)(?:\?|$)", image_url)
-    if api_match:
-        path_in_url = api_match.group(1)
-    elif "data/uploads" in image_url:
-        idx = image_url.find("data/uploads")
-        path_in_url = image_url[idx + len("data/uploads/"):]
-    elif image_url.startswith("/data/"):
-        path_in_url = image_url[len("/data/"):]
-
-    if path_in_url:
-        path_in_url = path_in_url.split("?")[0].split("#")[0]
-        if ".." not in path_in_url and not path_in_url.startswith("/"):
-            candidate = Path("/root/subskin/data/uploads") / path_in_url
-            if candidate.exists() and candidate.is_file():
-                return candidate.read_bytes()
-
-    # ── HTTP 下载 (完整 URL) ──
-    if image_url.startswith("http://") or image_url.startswith("https://"):
-        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
-            r = await client.get(image_url)
-            r.raise_for_status()
-            return r.content
-
-    # ── 兜底: 相对路径 — 通过内部文件解析直接读取 (避免 HTTP 代理鉴权问题) ──
-    if image_url.startswith("/"):
-        try:
-            from web.backend.api.files import _resolve_requested_file
-            relative = image_url.split("?")[0].split("#")[0]
-            # Strip known prefixes to get the relative path for file resolution
-            for prefix in ("/api/files/serve/", "/api/", "/uploads/", "/data/"):
-                if relative.startswith(prefix):
-                    relative = relative[len(prefix):]
-                    break
-            else:
-                relative = relative.lstrip("/")
-            if ".." not in relative and not relative.startswith("/"):
-                resolved = _resolve_requested_file(relative)
-                if resolved.exists() and resolved.is_file():
-                    return resolved.read_bytes()
-        except Exception as e:
-            logger.warning("Internal file resolution failed: %s, falling back to HTTP proxy", e)
-
-        # Last resort: HTTP proxy via localhost (may fail if endpoint requires auth)
-        proxy_url = f"{base_url.rstrip('/')}{image_url}"
-        logger.info("AI pretrain: local file not found, proxying via %s", proxy_url)
-        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
-            r = await client.get(proxy_url)
-            r.raise_for_status()
-            return r.content
-
-    raise HTTPException(status_code=400, detail=f"无法解析图片 URL: {image_url}")
-
-
 @router.post("/admin/image-labels/{label_id:int}/ai-pretrain", response_model=AiPretrainResponse)
 async def admin_ai_pretrain(
     label_id: int,
@@ -1911,96 +1824,12 @@ async def admin_ai_pretrain(
     admin_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db),
 ):
-    """AI 一键预标注 — 对已上传图片重新跑 VLM, 返回 contours 供管理员微调
+    """AI 一键预标注（旧版 VLM）— 已下线。
 
-    这条接口不会写入数据库, 仅返回 VLM 实时推理结果。
-    管理员点击确认后, contours 才会被保存为 image_label_annotations 记录。
+    2026-10-21：该接口把用户照片发给外部 VLM 而不校验 ai_data 授权，且后台 UI 已改用
+    五类打标工作台的本地 AI 初稿（/admin/labeling/tasks/{id}/redraft）。
     """
-    import time
-    import json
-    from web.backend.services.vasi import VASIService
-
-    label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
-    if not label:
-        raise HTTPException(status_code=404, detail="标注记录不存在")
-
-    if not label.image_url:
-        raise HTTPException(status_code=400, detail="图片 URL 为空, 无法进行 AI 预标注")
-
-    # 从 request 构造 base_url 用于代理相对路径的图片
-    base_url = f"{request.url.scheme}://{request.url.netloc}"
-
-    body_site = label.ai_body_site or label.user_body_site or "面部"
-    # 标准化 body_site 到 VASI 服务的标签
-    body_site_label = body_site if body_site in (
-        "面部", "颈部", "头皮", "躯干前面", "躯干后面",
-        "上肢近端", "上肢远端", "手部", "下肢近端", "下肢远端", "足部", "生殖器"
-    ) else "面部"
-
-    t0 = time.time()
-    try:
-        # 下载图片
-        image_bytes = await _download_image_to_bytes(label.image_url, base_url=base_url)
-        image_type = "image/jpeg"
-        if image_bytes[:8] == b"\x89PNG\r\n\x1a\n":
-            image_type = "image/png"
-        elif image_bytes[:4] == b"RIFF" and image_bytes[8:12] == b"WEBP":
-            image_type = "image/webp"
-
-        service = VASIService(db)
-        vasi_result = await service._call_vasi_api(
-            image_file=image_bytes,
-            precision="quick",
-            body_site=body_site_label,
-        )
-    except Exception as e:
-        logger.error("AI 预标注失败: %s", str(e), exc_info=True)
-        raise HTTPException(status_code=500, detail=f"AI 推理失败: {e}")
-
-    # 解析 VLM 输出
-    contours: List[dict] = []
-    lesion_layer_data_url = None
-    skin_layer_data_url = None
-    suspected_lesions = None
-    source = None
-    is_vitiligo = None
-    vitiligo_type = None
-    vitiligo_stage = None
-    area_percentage = None
-    vasi_score = None
-    depigmentation_level = None
-    confidence = None
-
-    if vasi_result:
-        contours = vasi_result.get("contours", []) or []
-        lesion_layer_data_url = vasi_result.get("lesion_layer_data_url")
-        skin_layer_data_url = vasi_result.get("skin_layer_data_url")
-        suspected_lesions = vasi_result.get("suspected_lesions")
-        source = vasi_result.get("source") or vasi_result.get("assessment_source")
-        is_vitiligo = vasi_result.get("is_vitiligo")
-        vitiligo_type = vasi_result.get("classification") or vasi_result.get("vitiligo_type")
-        vitiligo_stage = vasi_result.get("stage") or vasi_result.get("vitiligo_stage")
-        area_percentage = vasi_result.get("area_percentage")
-        vasi_score = vasi_result.get("vasi_score")
-        depigmentation_level = vasi_result.get("depigmentation_level")
-        confidence = vasi_result.get("confidence")
-
-    return AiPretrainResponse(
-        contours=contours,
-        body_site=body_site,
-        is_vitiligo=is_vitiligo,
-        vitiligo_type=vitiligo_type,
-        vitiligo_stage=vitiligo_stage,
-        area_percentage=area_percentage,
-        vasi_score=vasi_score,
-        depigmentation_level=depigmentation_level,
-        confidence=confidence,
-        lesion_layer_data_url=lesion_layer_data_url,
-        skin_layer_data_url=skin_layer_data_url,
-        suspected_lesions=suspected_lesions,
-        source=source,
-        duration_ms=int((time.time() - t0) * 1000),
-    )
+    raise HTTPException(status_code=410, detail="旧版 VLM 预标注已下线，请使用打标工作台的 AI 初稿")
 
 
 @router.get("/admin/image-labels/{label_id:int}/image")
@@ -2035,7 +1864,7 @@ async def get_image_label_image(
 
     # ── 查 label ──
     label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
-    if not label:
+    if not label or label.is_user_deleted:
         raise HTTPException(status_code=404, detail="标注记录不存在")
     if not label.image_url:
         raise HTTPException(status_code=404, detail="图片 URL 为空")
@@ -2140,7 +1969,7 @@ async def get_admin_annotations(
 ):
     """获取图片已有的人工标注明细 — 编辑已标注图片时回显用"""
     label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
-    if not label:
+    if not label or label.is_user_deleted:
         raise HTTPException(status_code=404, detail="标注记录不存在")
 
     annotations = db.query(ImageLabelAnnotation).filter(
@@ -2199,7 +2028,7 @@ async def get_user_annotations_for_admin(
     不会影响 VASIAssessment 表中的用户数据。
     """
     label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
-    if not label:
+    if not label or label.is_user_deleted:
         raise HTTPException(status_code=404, detail="标注记录不存在")
     
     result = {
@@ -2312,7 +2141,7 @@ async def delete_admin_annotations(
 ):
     """删除图片所有人工标注明细 — 重新标注前的清理"""
     label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
-    if not label:
+    if not label or label.is_user_deleted:
         raise HTTPException(status_code=404, detail="标注记录不存在")
 
     deleted = db.query(ImageLabelAnnotation).filter(
@@ -2335,7 +2164,7 @@ async def get_label_history(
 ):
     """获取标注变更历史 — 审计追溯"""
     label = db.query(ImageLabel).filter(ImageLabel.id == label_id).first()
-    if not label:
+    if not label or label.is_user_deleted:
         raise HTTPException(status_code=404, detail="标注记录不存在")
 
     logs = db.query(ImageLabelLog).filter(

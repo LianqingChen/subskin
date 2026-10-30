@@ -1,0 +1,85 @@
+{
+  "task_id": 201,
+  "model_id": "pixel-reviewed-v1-neck",
+  "image": "PMC OA 颈侧特写：单一心形白斑",
+  "params": {
+    "skin": {
+      "method": "color_b",
+      "hole_max": 2000
+    },
+    "baseline_mode": "hybrid",
+    "t_hi": 7.0,
+    "t_lo": 4.0,
+    "grow_score": 2.0
+  },
+  "lesion": [
+    2
+  ],
+  "unknown": [],
+  "reject": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+  ],
+  "lesion_roi": [],
+  "unknown_roi": [],
+  "nails_ellipse": [],
+  "nails_hull": [],
+  "lesion_polygons": [],
+  "unknown_polygons": [],
+  "normal_polygons": [],
+  "occlusion_polygons": [
+    [
+      [
+        4,
+        264
+      ],
+      [
+        0,
+        674
+      ],
+      [
+        303,
+        674
+      ],
+      [
+        224,
+        494
+      ],
+      [
+        242,
+        351
+      ],
+      [
+        108,
+        358
+      ],
+      [
+        57,
+        580
+      ],
+      [
+        101,
+        248
+      ]
+    ]
+  ],
+  "notes": {
+    "2": "心形白斑主体",
+    "_reject": "衣物/阴影/高光/噪点",
+    "_occlusion": "WRONG in v1 draft — use background for clothing (L-201-2)",
+    "_no_face_gb": "异人颈特写，禁止 face-gb",
+    "_core_fill": "compose 后对白斑环做孔洞填充（局部基线吸核，同 L-180-2）",
+    "_review_s17": "vs s17: Dice 0.573, AI 6.64% vs human 9.83%. Main gaps: (1) yellow garment as occlusion~50k → should be background; (2) missed lower-neck secondary lesions (~15k+ AI-bg→lesion); (3) slight main-plaque fringe overcall + ~3k unknown on uncertain core. L-201-2.",
+    "_gold": "s17 approved"
+  }
+}

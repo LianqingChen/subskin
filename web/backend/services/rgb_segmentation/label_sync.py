@@ -155,7 +155,10 @@ def sync_rgb_label(db: Session, assessment: VASIAssessment) -> Optional[ImageLab
     label.user_area_percentage = assessment.final_area_percentage
     label.user_body_site = assessment.body_site
     label.training_eligible = False
-    label.label_status = "pending"
+    # New-workflow states (in_review/gold/returned/…) survive a user revision;
+    # the workbench flags the newer diary version instead of discarding review.
+    if label.label_status == "labeled":
+        label.label_status = "pending"
     event = {
         "revision": revision,
         "previous_revision": (

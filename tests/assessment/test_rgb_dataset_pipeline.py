@@ -87,17 +87,19 @@ def test_legacy_training_paths_never_take_rgb_labels(isolated, photo):
         admin_submit(db, label, photo[0].shape[:2])
         grant(db, 1)
         lid = label.id
+    # Gold now only comes from reviewing a versioned submission in the workbench.
     response = http.post("/admin/image-labels/%d/training-sample" % lid)
-    assert response.status_code == 200 and response.json()["sample_id"] is None
+    assert response.status_code == 409
+    assert http.post("/admin/image-labels/%d/label" % lid, json={"training_eligible": True}).status_code == 409
     response = http.post("/admin/training/sync-samples")
     assert response.status_code == 200
     with factory() as db:
         label = db.get(ImageLabel, lid)
         assert db.query(VasiTrainingSample).count() == 0
         assert label.training_eligible is False
-        assert dp.gold_state(db, label)["gold_current"]
+        assert dp.gold_state(db, label)["gold"] is None
     detail = http.get("/admin/image-labels/%d" % lid).json()
-    assert detail["rgb"]["is_rgb"] and detail["rgb"]["gold_current"]
+    assert detail["rgb"]["is_rgb"] and not detail["rgb"]["gold_current"]
 
 
 def test_export_pseudonymises_splits_by_subject_and_rechecks_consent(isolated, photo):

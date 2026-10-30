@@ -1,0 +1,46 @@
+{
+  "task_id": 181,
+  "model_id": "face-plaque-gb-v1+lab-match-180",
+  "image": "与180同人面颈照；白平衡偏冷/少黄",
+  "params": {
+    "skin": {
+      "method": "mediapipe"
+    },
+    "baseline_mode": "hybrid"
+  },
+  "method": "face-gb + Lab median match to same-person calibration photo",
+  "lesion": [],
+  "unknown": [],
+  "reject": [],
+  "notes": {
+    "_root_cause": "face-gb 仅在180/s13上校准。181皮肤B*中位数比180低约4、A*低约3；181正常皮B≈18≈180白斑B，模型把亮侧正常皮高置信标成白斑（P|nor p90≈0.95）。占比59% vs 同人应有≈47%。",
+    "_fix": "将181 Lab中位数对齐180皮肤后再跑 face-gb thr0.69；不贴用户/180金标PNG。",
+    "_verify": "校正后占比应≈46–48%；请载入AI初稿核对边界噪声。",
+    "_review_s15": "vs s15: Dice 0.895, AI 46.6% vs human 43.44%. Remaining: cheek mottled overcall (FP local≈-0.8), forehead hairline underfill, MediaPipe brow/temple as background→human normal_skin (L-181-2).",
+    "_gold": "s15 approved; use for face-gb v2 training with 180/s13",
+    "_migrated": "迁移：face-gb + Lab 偏移对齐 180（L-181-1）"
+  },
+  "legacy_params": {
+    "skin": {
+      "method": "mediapipe"
+    },
+    "baseline_mode": "hybrid",
+    "face_gb_threshold": 0.69,
+    "lab_median_match_task": 180,
+    "lab_shift_LAB": {
+      "dL": 1.96,
+      "dA": 3.0,
+      "dB": 4.0
+    }
+  },
+  "base": "face-gb-v1",
+  "base_params": {
+    "threshold": 0.69,
+    "lab_shift": {
+      "dL": 1.96,
+      "dA": 3.0,
+      "dB": 4.0
+    }
+  },
+  "ops": []
+}

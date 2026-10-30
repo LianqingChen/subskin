@@ -28,10 +28,7 @@ onBeforeUnmount(() => schema?.remove())
 
 <template>
   <div class="page space-y-4 pb-6 pt-4 text-gray-900 dark:text-gray-100 md:space-y-5 md:pt-6">
-    <header>
-      <h1 class="page-title">{{ title }}</h1>
-      <p class="page-subtitle">我的一份，大家的力量</p>
-    </header>
+    <h1 class="sr-only">{{ title }}</h1>
 
     <div class="grid gap-4 md:grid-cols-2">
       <ContributionPersonal :summary="mine.summary.value" :loading="mine.loading.value" :error="mine.error.value" @retry="mine.load" />

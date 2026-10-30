@@ -189,3 +189,13 @@ patch_backend.py
 # ─────────────────────────────────────────────
 data/vasi_models/
 data/models/mediapipe/
+
+# ML weights and research artifacts (keep out of git; large binaries)
+*.pt
+*.joblib
+*.npy
+*.npz
+docs/research/**/*.png
+docs/research/**/*.jpg
+docs/research/**/round*-artifacts/
+ml/pixel_labeling/models/

@@ -121,6 +121,7 @@ const menuItems = [
   { label: 'LLM配置', key: 'LLMConfig', iconClass: 'ri-cpu-line' },
   { label: '提示词管理', key: 'PromptConfig', iconClass: 'ri-file-edit-line' },
   { label: '图片打标', key: 'ImageLabeling', iconClass: 'ri-image-line' },
+  { label: '公开图库', key: 'ExternalGallery', iconClass: 'ri-gallery-line' },
   { label: '训练数据', key: 'TrainingDashboard', iconClass: 'ri-database-2-line' },
   { label: '网站运维', key: 'SiteMaintenance', iconClass: 'ri-settings-3-line' },
 ]
@@ -155,6 +156,7 @@ function handleMenuSelect(key: string) {
     LLMConfig: '/llm-config',
     PromptConfig: '/prompt-config',
     ImageLabeling: '/image-labeling',
+    ExternalGallery: '/external-gallery',
     TrainingDashboard: '/training',
     SiteMaintenance: '/site-maintenance'
   }

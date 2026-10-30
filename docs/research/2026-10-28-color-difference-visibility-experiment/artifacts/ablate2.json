@@ -1,0 +1,293 @@
+[
+ {
+  "set": "hand(\u5168\u90e8\u624b\u5de5\u7279\u5f81)",
+  "mean_dice": 0.5397924911218992,
+  "ratio_mae_pp": 7.191999999999998,
+  "rows": [
+   {
+    "task": 174,
+    "dice": 0.6101780809421972,
+    "pred_ratio": 33.88,
+    "gold_ratio": 48.5
+   },
+   {
+    "task": 180,
+    "dice": 0.6918556474388243,
+    "pred_ratio": 39.88,
+    "gold_ratio": 47.22
+   },
+   {
+    "task": 181,
+    "dice": 0.6025248555929893,
+    "pred_ratio": 27.51,
+    "gold_ratio": 43.44
+   },
+   {
+    "task": 182,
+    "dice": 0.7770865420429036,
+    "pred_ratio": 39.98,
+    "gold_ratio": 43.63
+   },
+   {
+    "task": 185,
+    "dice": 0.7088639582203644,
+    "pred_ratio": 26.03,
+    "gold_ratio": 16.1
+   },
+   {
+    "task": 186,
+    "dice": 0.7737200843380776,
+    "pred_ratio": 42.86,
+    "gold_ratio": 34.68
+   },
+   {
+    "task": 187,
+    "dice": 0.0800602604110621,
+    "pred_ratio": 2.43,
+    "gold_ratio": 0.34
+   },
+   {
+    "task": 188,
+    "dice": 0.44026616779937955,
+    "pred_ratio": 10.13,
+    "gold_ratio": 4.88
+   },
+   {
+    "task": 189,
+    "dice": 0.09833651013689135,
+    "pred_ratio": 9.82,
+    "gold_ratio": 3.63
+   },
+   {
+    "task": 191,
+    "dice": 0.3604768255177857,
+    "pred_ratio": 20.24,
+    "gold_ratio": 4.47
+   },
+   {
+    "task": 192,
+    "dice": 0.47009183420203526,
+    "pred_ratio": 29.97,
+    "gold_ratio": 15.43
+   },
+   {
+    "task": 199,
+    "dice": 0.7883755764445021,
+    "pred_ratio": 27.47,
+    "gold_ratio": 26.67
+   },
+   {
+    "task": 201,
+    "dice": 0.7152107568778928,
+    "pred_ratio": 12.95,
+    "gold_ratio": 9.83
+   },
+   {
+    "task": 207,
+    "dice": 0.5086876887282807,
+    "pred_ratio": 1.62,
+    "gold_ratio": 1.65
+   },
+   {
+    "task": 263,
+    "dice": 0.47115257813530265,
+    "pred_ratio": 16.08,
+    "gold_ratio": 16.52
+   }
+  ]
+ },
+ {
+  "set": "sam32(\u4ec5SAM\u7279\u5f81)",
+  "mean_dice": 0.4286688563800802,
+  "ratio_mae_pp": 14.320666666666666,
+  "rows": [
+   {
+    "task": 174,
+    "dice": 0.3729426863242245,
+    "pred_ratio": 18.18,
+    "gold_ratio": 48.5
+   },
+   {
+    "task": 180,
+    "dice": 0.4024942284188131,
+    "pred_ratio": 17.86,
+    "gold_ratio": 47.22
+   },
+   {
+    "task": 181,
+    "dice": 0.14928405500489247,
+    "pred_ratio": 8.77,
+    "gold_ratio": 43.44
+   },
+   {
+    "task": 182,
+    "dice": 0.3308081699507911,
+    "pred_ratio": 15.97,
+    "gold_ratio": 43.63
+   },
+   {
+    "task": 185,
+    "dice": 0.8677711945462598,
+    "pred_ratio": 18.45,
+    "gold_ratio": 16.1
+   },
+   {
+    "task": 186,
+    "dice": 0.759175092252532,
+    "pred_ratio": 28.53,
+    "gold_ratio": 34.68
+   },
+   {
+    "task": 187,
+    "dice": 0.1365334329473291,
+    "pred_ratio": 4.46,
+    "gold_ratio": 0.34
+   },
+   {
+    "task": 188,
+    "dice": 0.15630215904808054,
+    "pred_ratio": 8.32,
+    "gold_ratio": 4.88
+   },
+   {
+    "task": 189,
+    "dice": 0.11881540542464583,
+    "pred_ratio": 12.74,
+    "gold_ratio": 3.63
+   },
+   {
+    "task": 191,
+    "dice": 0.6168119884390256,
+    "pred_ratio": 9.37,
+    "gold_ratio": 4.47
+   },
+   {
+    "task": 192,
+    "dice": 0.40964041857676164,
+    "pred_ratio": 18.84,
+    "gold_ratio": 15.43
+   },
+   {
+    "task": 199,
+    "dice": 0.458056909067663,
+    "pred_ratio": 63.23,
+    "gold_ratio": 26.67
+   },
+   {
+    "task": 201,
+    "dice": 0.6343978376213836,
+    "pred_ratio": 5.54,
+    "gold_ratio": 9.83
+   },
+   {
+    "task": 207,
+    "dice": 0.40323254841855927,
+    "pred_ratio": 5.33,
+    "gold_ratio": 1.65
+   },
+   {
+    "task": 263,
+    "dice": 0.6137667196602419,
+    "pred_ratio": 31.31,
+    "gold_ratio": 16.52
+   }
+  ]
+ },
+ {
+  "set": "hand+sam32",
+  "mean_dice": 0.5579624613973615,
+  "ratio_mae_pp": 12.114666666666666,
+  "rows": [
+   {
+    "task": 174,
+    "dice": 0.5227042057281501,
+    "pred_ratio": 21.01,
+    "gold_ratio": 48.5
+   },
+   {
+    "task": 180,
+    "dice": 0.60970255174456,
+    "pred_ratio": 24.91,
+    "gold_ratio": 47.22
+   },
+   {
+    "task": 181,
+    "dice": 0.44884319458854915,
+    "pred_ratio": 14.44,
+    "gold_ratio": 43.44
+   },
+   {
+    "task": 182,
+    "dice": 0.6306634454562349,
+    "pred_ratio": 24.3,
+    "gold_ratio": 43.63
+   },
+   {
+    "task": 185,
+    "dice": 0.856372478812372,
+    "pred_ratio": 19.52,
+    "gold_ratio": 16.1
+   },
+   {
+    "task": 186,
+    "dice": 0.9184662847069194,
+    "pred_ratio": 33.51,
+    "gold_ratio": 34.68
+   },
+   {
+    "task": 187,
+    "dice": 0.15024553338209173,
+    "pred_ratio": 3.95,
+    "gold_ratio": 0.34
+   },
+   {
+    "task": 188,
+    "dice": 0.3640159423040425,
+    "pred_ratio": 2.61,
+    "gold_ratio": 4.88
+   },
+   {
+    "task": 189,
+    "dice": 0.16167697147196008,
+    "pred_ratio": 17.86,
+    "gold_ratio": 3.63
+   },
+   {
+    "task": 191,
+    "dice": 0.40836521765853806,
+    "pred_ratio": 17.41,
+    "gold_ratio": 4.47
+   },
+   {
+    "task": 192,
+    "dice": 0.5521553339830572,
+    "pred_ratio": 28.78,
+    "gold_ratio": 15.43
+   },
+   {
+    "task": 199,
+    "dice": 0.6498156658754608,
+    "pred_ratio": 49.19,
+    "gold_ratio": 26.67
+   },
+   {
+    "task": 201,
+    "dice": 0.7682868634535415,
+    "pred_ratio": 8.99,
+    "gold_ratio": 9.83
+   },
+   {
+    "task": 207,
+    "dice": 0.5701242877611542,
+    "pred_ratio": 3.21,
+    "gold_ratio": 1.65
+   },
+   {
+    "task": 263,
+    "dice": 0.7579989440337909,
+    "pred_ratio": 24.2,
+    "gold_ratio": 16.52
+   }
+  ]
+ }
+]

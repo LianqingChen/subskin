@@ -23,6 +23,12 @@ const SORT_OPTIONS = [
   { key: 'views', label: '最多浏览' }, { key: 'likes', label: '最多点赞' },
   { key: 'bookmarks', label: '最多收藏' }, { key: 'shares', label: '最多转发' },
 ] as const
+const HOSPITAL_TOPIC = '就医经验'
+const TOPICS = [HOSPITAL_TOPIC] as const
+function toggleTopic(topic: string) {
+  searchQuery.value = ''
+  activeTag.value = activeTag.value === topic ? null : topic
+}
 function selectCity() {
   activeTag.value = null
   if (activeFeedType.value === 'local' && geo.city.value) showCityPicker.value = true
@@ -47,24 +53,24 @@ onMounted(() => {
 
 <template>
   <div class="page space-y-3 pb-8 pt-3 md:space-y-4 md:pt-5">
-    <h1 class="sr-only">发现</h1>
+    <h1 class="sr-only">分享</h1>
     <header class="discovery-toolbar flex min-w-0 flex-nowrap items-center gap-1">
-      <nav aria-label="发现内容筛选" class="discovery-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap">
+      <nav aria-label="分享内容筛选" class="discovery-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap">
         <button v-for="ft in FEED_TYPES" :key="ft.key" type="button" class="min-h-11 shrink-0 rounded-lg px-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-primary-500" :aria-pressed="activeFeedType === ft.key && !activeTag" :class="activeFeedType === ft.key && !activeTag ? 'bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'" @click="activeTag = null; activeFeedType = ft.key">{{ ft.label }}</button>
-        <button type="button" class="flex min-h-11 min-w-11 max-w-28 flex-1 items-center gap-1 rounded-lg px-2 text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary-500" :title="geo.city.value || '同城'" :aria-pressed="activeFeedType === 'local'" :class="activeFeedType === 'local' ? 'bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300' : 'text-gray-600 dark:text-gray-400'" @click="selectCity">
+        <button type="button" class="flex min-h-11 min-w-11 max-w-[7rem] shrink-0 items-center gap-1 rounded-lg px-2 text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary-500" :title="geo.city.value || '同城'" :aria-pressed="activeFeedType === 'local'" :class="activeFeedType === 'local' ? 'bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300' : 'text-gray-600 dark:text-gray-400'" @click="selectCity">
           <span class="min-w-0 truncate">{{ geo.city.value || (geo.loading.value ? '定位中…' : '同城') }}</span><i v-if="geo.city.value" class="ri-arrow-down-s-line shrink-0" aria-hidden="true"></i>
         </button>
       </nav>
       <div class="flex shrink-0 items-center gap-1">
         <SortDropdown v-if="!activeTag && !searchQuery.trim()" v-model="activeSort" :options="SORT_OPTIONS" />
         <button type="button" class="flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-gray-400 dark:hover:bg-gray-800" aria-label="搜索病友内容" :aria-expanded="showSearch" @click="toggleSearch"><i class="ri-search-line text-lg" aria-hidden="true"></i></button>
-        <router-link to="/hospitals" class="hidden min-h-11 items-center px-2 text-xs text-gray-500 no-underline hover:text-primary-700 dark:text-gray-400 md:inline-flex" data-track-id="community_hospitals_entry">就医经验<i class="ri-arrow-right-s-line" aria-hidden="true"></i></router-link>
-        <details class="relative md:hidden">
-          <summary class="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-lg text-gray-500 focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-gray-400" aria-label="更多发现入口"><i class="ri-more-2-line text-lg" aria-hidden="true"></i></summary>
-          <nav aria-label="更多发现入口" class="absolute right-0 top-full z-30 w-36 rounded-xl border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"><router-link to="/hospitals" class="flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-gray-700 no-underline dark:text-gray-200" data-track-id="community_hospitals_entry"><i class="ri-hospital-line" aria-hidden="true"></i>就医经验</router-link></nav>
-        </details>
       </div>
     </header>
+
+    <nav aria-label="分享话题" class="flex min-w-0 items-center gap-2 overflow-x-auto whitespace-nowrap">
+      <button v-for="topic in TOPICS" :key="topic" type="button" class="control-slim shrink-0" :class="activeTag === topic && 'control-slim-active'" :aria-pressed="activeTag === topic" data-track-id="community_topic_hospital" @click="toggleTopic(topic)"><i class="ri-hospital-line" aria-hidden="true"></i>{{ topic }}</button>
+      <router-link v-if="activeTag === HOSPITAL_TOPIC" to="/hospitals" class="ml-auto inline-flex min-h-11 shrink-0 items-center text-xs text-gray-500 no-underline hover:text-primary-700 dark:text-gray-400" data-track-id="community_hospitals_entry">查找医院<i class="ri-arrow-right-s-line" aria-hidden="true"></i></router-link>
+    </nav>
 
     <section v-if="showSearch" aria-label="搜索病友内容" class="relative">
       <form class="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 dark:border-gray-700 dark:bg-gray-800" @submit.prevent="handleSearch">
@@ -101,7 +107,6 @@ onMounted(() => {
 <style scoped>
 .community-fab { bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); }
 @media (min-width: 768px) { .community-fab { bottom: 2rem; } }
-summary::-webkit-details-marker { display: none; }
 .discovery-tabs { scrollbar-width: none; }
 .discovery-tabs::-webkit-scrollbar { display: none; }
 .discovery-toolbar :deep(.control-slim) { min-height: 44px; }

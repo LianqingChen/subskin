@@ -4,13 +4,62 @@ import json
 import logging
 import shutil
 from datetime import datetime, timedelta
+from typing import Set
+
+from sqlalchemy.exc import SQLAlchemyError
 from web.backend.database.database import SessionLocal
 from web.backend.database.models import User
+from web.backend.exceptions import RGBSegmentationError
+from web.backend.models.image_label import ImageLabel, ImageLabelLog
 from web.backend.models.rgb_segmentation import RGBSegmentationJob
 from web.backend.models.vasi import VASIAssessment
+from web.backend.services.assessment_measurement import read_details
 from web.backend.services.rgb_segmentation import artifacts
 
 logger = logging.getLogger(__name__)
+
+
+def _labeling_retained_revisions(db, job_id: str) -> Set[str]:
+    """Revisions still referenced by admin image-labeling tasks for this job.
+
+    Without this, ``cleanup_jobs`` deletes pixel-reviewed AI drafts about an hour
+    after write (they are not in VASI assessment.details), and the labeling
+    workspace then shows「标注版本暂不可用」.
+    """
+    kept: Set[str] = set()
+    for label in (
+        db.query(ImageLabel)
+        .filter(ImageLabel.ai_details.contains(job_id))
+        .all()
+    ):
+        sync = read_details(label.ai_details).get("rgb_sync") or {}
+        if sync.get("job_id") != job_id:
+            continue
+        kept.update(
+            {
+                sync.get("ai_revision"),
+                sync.get("previous_ai_revision"),
+                (sync.get("gold") or {}).get("revision")
+                if isinstance(sync.get("gold"), dict)
+                else None,
+            }
+        )
+        for row in (
+            db.query(ImageLabelLog)
+            .filter_by(image_label_id=label.id)
+            .filter(ImageLabelLog.action.in_(("rgb-user-reference", "ai-draft-replaced")))
+            .all()
+        ):
+            value = read_details(row.new_value)
+            kept.update(
+                {
+                    value.get("revision"),
+                    value.get("new_ai_revision"),
+                    value.get("old_ai_revision"),
+                    value.get("base_ai_revision"),
+                }
+            )
+    return {r for r in kept if isinstance(r, str) and artifacts.REVISION_PATTERN.fullmatch(r)}
 
 
 def cleanup_jobs() -> None:
@@ -57,6 +106,7 @@ def cleanup_jobs() -> None:
                         retained.update(
                             [review.get("revision"), review.get("previous_revision")]
                         )
+                    retained.update(_labeling_retained_revisions(db, folder.name))
                     for revision in folder.iterdir():
                         if (
                             revision.is_dir()
@@ -97,3 +147,10 @@ def cleanup_jobs() -> None:
                     db.delete(assessment)
                 db.delete(job)
         db.commit()
+    try:
+        from web.backend.services.rgb_segmentation.dataset_pipeline import prune_datasets
+
+        with SessionLocal() as db:
+            prune_datasets(db)  # expired copies and withdrawn subjects
+    except (OSError, ValueError, RGBSegmentationError, SQLAlchemyError):
+        logger.warning("Deferred training dataset pruning", exc_info=True)

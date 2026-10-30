@@ -1,0 +1,26 @@
+{
+  "task_id": 195,
+  "base": "pixel-gb-v2",
+  "model_id": "pixel-gb-v2",
+  "image": "浅色掌心；棕色色素斑；地板背景。未见比掌色更白的脱色斑",
+  "ops": [
+    {
+      "op": "relabel_lesion_as_normal"
+    },
+    {
+      "op": "occlusion_to_background"
+    }
+  ],
+  "lesion_polygons": [],
+  "normal_polygons": [],
+  "unknown_polygons": [],
+  "unreadable_polygons": [],
+  "occlusion_polygons": [],
+  "background_polygons": [],
+  "notes": {
+    "_scene": "A 掌心",
+    "_method": "pixel-gb-v2 把整只粉掌（L 中位 72）标成白斑、棕色斑（L 中位 51）留成正常，临床反了。粉掌是正常掌色，棕色斑是色素。整幅白斑改回正常，误标的地板遮挡清掉",
+    "_nails": "指甲未标。自动指尖椭圆落在指甲外侧，没有采用",
+    "_check": "若腕部棕色斑周围的粉皮其实是白斑，请改回来"
+  }
+}

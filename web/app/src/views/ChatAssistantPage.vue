@@ -311,8 +311,8 @@ function teardownScrollChain() {
           <div class="absolute inset-0 rounded-2xl bg-primary-400/15 blur-xl scale-125 pointer-events-none"></div>
           <i class="ri-robot-3-line text-3xl md:text-2xl text-primary-600 dark:text-primary-400 relative" aria-hidden="true"></i>
         </div>
-        <h1 class="text-lg md:text-2xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">SubSkin AI 助手</h1>
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
+        <h1 class="sr-only">问答</h1>
+        <p class="text-xs text-gray-400 dark:text-gray-500">
           本平台不构成医疗建议，所有内容仅供参考。
         </p>
       </div>

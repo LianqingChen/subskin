@@ -79,27 +79,6 @@ export interface CalendarResponse {
   days: CalendarDay[]
 }
 
-export interface DailyMood {
-  date: string
-  moods: string[]
-}
-
-export interface WeeklyReport {
-  week_start: string
-  week_end: string
-  entry_count: number
-  recorded_days: number
-  mood_distribution: Record<string, number>
-  sleep_distribution: Record<string, number>
-  avg_stress_level: number | null
-  vasi_count: number
-  daily_moods: DailyMood[]
-  ai_summary: string | null
-  insights: string[]
-  current_streak: number
-  recorded_today: boolean
-}
-
 // ── API Functions ──
 
 /** 创建日记（AI自动提取结构化信息） */
@@ -142,11 +121,6 @@ export function getDiaryCalendar(year: number, month: number) {
   return apiClient.get<CalendarResponse>('/diary/calendar', {
     params: { year, month },
   })
-}
-
-/** 获取周报 */
-export function getWeeklyReport() {
-  return apiClient.get<WeeklyReport>('/diary/summary/weekly')
 }
 
 /** 获取统计概览 */

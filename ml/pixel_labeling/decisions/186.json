@@ -1,0 +1,85 @@
+{
+  "task_id": 186,
+  "model_id": "pixel-reviewed-v2-hands-plaque",
+  "image": "双手背+前臂大斑；木桌；色素岛=正常；指甲+箭头=遮挡",
+  "params": {
+    "skin": {
+      "method": "wood_aware",
+      "pig_Lmax": 55,
+      "pig_bmin": 2,
+      "dep_Lmin": 52,
+      "dep_bmax": 4,
+      "wood_bmin": 7,
+      "hole_max": 2000
+    },
+    "baseline_mode": "hybrid",
+    "t_hi": 7.0,
+    "t_lo": 4.0,
+    "grow_score": 2.5
+  },
+  "lesion": [],
+  "unknown": [],
+  "reject": [],
+  "lesion_roi": [],
+  "unknown_roi": [],
+  "nails_ellipse": [],
+  "nails_hull": [],
+  "lesion_polygons": [],
+  "unknown_polygons": [],
+  "normal_polygons": [],
+  "occlusion_polygons": [],
+  "notes": {
+    "_scene": "A 手足大斑 on 木桌",
+    "_method": "pig∪depig−wood；sg白斑；色素岛还原；指尖局部极小值椭圆指甲+箭头 occl",
+    "_gold": "s4 approved；lesion_ratio 39.12%",
+    "_repro_dice": 0.9371,
+    "_repro_occl_dice": 0.4057,
+    "_no_copy": "方法复现未贴金标 PNG",
+    "_migrated": "迁移：木桌皮肤 wood_aware + 全局白度填斑 + 指尖指甲 + 箭头（L-186-1/2）"
+  },
+  "legacy_params": {
+    "skin": {
+      "method": "color_b",
+      "hole_max": 2000,
+      "_impl": "pig_plus_depig_minus_wood",
+      "pig_Lmax": 55,
+      "pig_bmin": 2,
+      "dep_Lmin": 52,
+      "dep_bmax": 4,
+      "wood_bmin": 7
+    },
+    "baseline_mode": "hybrid",
+    "sg_thr": 17.0,
+    "close_r": 5,
+    "pigment_L_off": 3,
+    "nails": {
+      "method": "fingertip_ellipse",
+      "rx": 22,
+      "ry": 12,
+      "yoff": 8,
+      "tips_n": 16
+    },
+    "t_hi": 7.0,
+    "t_lo": 4.0,
+    "grow_score": 2.5
+  },
+  "ops": [
+    {
+      "op": "global_score_fill",
+      "sg": 17.0,
+      "close_r": 5,
+      "pigment_L_off": 3.0
+    },
+    {
+      "op": "fingertip_nails",
+      "rx": 22,
+      "ry": 12,
+      "yoff": 8,
+      "max_tip_y": 350
+    },
+    {
+      "op": "dark_marks_occlusion"
+    }
+  ],
+  "legacy_implicit_reject": true
+}

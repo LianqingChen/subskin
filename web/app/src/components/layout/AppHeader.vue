@@ -66,7 +66,7 @@ const shareTitle = computed(() => {
   if (path.startsWith('/assessment') || path.startsWith('/tracker') || path.startsWith('/diary')) return 'SubSkin · 日记'
   if (path.startsWith('/community/reports')) return 'SubSkin · 白斑报告'
   if (path.startsWith('/hospitals')) return 'SubSkin · 就医经验'
-  if (path.startsWith('/community') || path.startsWith('/discover')) return 'SubSkin · 发现'
+  if (path.startsWith('/community') || path.startsWith('/discover')) return 'SubSkin · 分享'
   if (path.startsWith('/care')) return 'SubSkin · 调养'
   if (path.startsWith('/contribution')) return `SubSkin · ${currentLabel.value || '同行'}`
   if (path.startsWith('/profile')) return 'SubSkin · 个人中心'

@@ -145,6 +145,8 @@ class ImageLabel(Base):
     training_eligible = Column(Boolean, default=False, comment="是否适合作为训练数据（管理员决定）")
     training_set_split = Column(String(10), nullable=True, comment="train/val/test — 训练集划分标记")
     training_exported_at = Column(DateTime, nullable=True, comment="最近一次导出训练数据的时间")
+    benchmark = Column(Boolean, default=False, nullable=False, server_default="0",
+                       comment="基准集（锁定测试集）：盲标、须第二人复核，受试者整体进 test")
 
     # ── 主动学习字段 ───────────────────────────────────────────
     priority_score = Column(Float, nullable=True, comment="主动学习优先级分数 (0-1)")
@@ -279,6 +281,7 @@ def ensure_image_label_columns() -> None:
     Safe to call multiple times — creates missing tables and columns only.
     """
     from web.backend.database.database import engine
+    from web.backend.models.label_submission import LabelSubmission
 
     try:
         Base.metadata.create_all(bind=engine, tables=[
@@ -286,6 +289,7 @@ def ensure_image_label_columns() -> None:
             ImageLabelAnnotation.__table__,
             ImageLabelLog.__table__,
             LabelingWorkSession.__table__,
+            LabelSubmission.__table__,
         ])
 
         # ── Add missing columns for existing tables (SQLite safe) ──
@@ -302,10 +306,11 @@ def ensure_image_label_columns() -> None:
             il_cols = [row[1] for row in cursor.fetchall()]
             for col_name in ("annotated_image_path", "annotated_image_url", "annotated_layers_path",
                               "priority_score", "active_learning_round", "last_model_version",
-                              "labeling_duration_ms"):
+                              "labeling_duration_ms", "benchmark"):
                 if col_name not in il_cols:
                     col_type = "FLOAT" if col_name == "priority_score" else (
-                        "INTEGER" if col_name in ("active_learning_round", "labeling_duration_ms") else "VARCHAR"
+                        "INTEGER" if col_name in ("active_learning_round", "labeling_duration_ms") else
+                        "BOOLEAN NOT NULL DEFAULT 0" if col_name == "benchmark" else "VARCHAR"
                     )
                     cursor.execute(f"ALTER TABLE image_labels ADD COLUMN {col_name} {col_type}")
                     logger.info("Added column image_labels.%s", col_name)

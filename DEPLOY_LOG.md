@@ -6,11 +6,41 @@
 
 ## Pending Changes
 
-> 2026-10-18 已全量同步到正式环境（见下方 Production History），当前无待推送项。
+> 2026-10-30 已全量同步到正式环境（见下方 Production History）。当前无待同步项。
+
+| 日期 | 环境 | 说明 |
+|------|------|------|
+| — | — | （空） |
 
 ## Production Deployment History
 
-> Latest: 2026-10-18 — buildTime: 1792335601832（同源重建 staging 1792335613445）
+> Latest: 2026-10-30 — buildTime: 1793314103483（同源重建 staging 1793314119194）
+
+### 2026-10-30 — 前端周报/报告列表死代码清理 全量同步
+
+- 用户指令：部署到线上生产环境。`npm run deploy:prod`（vue-tsc 通过）后 `npm run build` 同源重建 staging。后端未改、未重启。
+- 验证：正式 version.json=1793314103483（env=production）；staging=1793314119194，lastProdBuildTime=1793314103483；/、/community、/assessment、manifest、sw.js、version.json 均 200；正式 index 无 STAGING 标识；正式打包产物中无 `diary/summary/weekly`、`skin-reports/periodic` 调用；/api/health=ok；subskin-backend active；autogen timer 仍为 disabled。
+- 本次归档的 Pending 条目：
+  - 删除未注册路由、不在线上打包产物里的死代码：`views/DiaryPage.vue`（含「AI周报」标签与指向不存在路由名 `skin-reports` 的跳转）、`components/diary/DiaryWeeklyReport.vue`、`DiaryWeeklyPoster.vue`、`views/SkinReportListPage.vue`、`composables/useSkinReportList.ts`，以及 `api/diary.ts` 的 `getWeeklyReport`/`WeeklyReport`/`DailyMood`、`api/skin_report.ts` 的 `createPeriodicReport`/`getPeriodicPreview`/`PeriodicPreviewItem`。线上无可见变化。
+- 遗留：①后端 `/diary/summary/weekly`、`/skin-reports/periodic*` 接口仍在（前端已无调用，删除需改后端并重启，影响两个环境，待用户决定）；②`DiaryEntryCard`、`DiaryImageUploader`、`DiaryCalendarMini`、`DiaryQuickPanel` 四个组件因 DiaryPage 删除成为无引用组件，未删。
+
+### 2026-10-29 — 下线健康周报/月报自动生成 全量同步
+
+- 用户指令：同步到线上生产环境。`npm run deploy:prod`（vue-tsc 通过）后 `npm run build` 同源重建 staging。后端未改、未重启。
+- 验证：正式 version.json=1793288397571（env=production）；staging=1793288464820，lastProdBuildTime=1793288397571；/、/community、manifest、sw.js、version.json 均 200；正式 index 无 STAGING 标识；/api/health=ok；subskin-backend active。
+- 本次归档的 Pending 条目：
+  - 下线周报/月报自动生成（服务器 systemd，已于 2026-10-29 生效）：`systemctl disable --now subskin-report-autogen.timer`，停用后不再每天 02:30 批量调 LLM、不再推送「健康周报已生成」通知。`scripts/auto_generate_reports.py` 与 unit 文件保留，恢复用 `systemctl enable --now subskin-report-autogen.timer`。已有周报/月报仍可查看，用户自己上传照片生成对比报告不受影响。
+  - 报告列表空状态文案去掉「周报」（`SkinReportListPage.vue`）。注意：该页面当前未在 router 注册（孤立页面），此改动线上无可见效果。
+  - 2026-10-24 共享后端（admin 打标）：「重新生成初稿」优先走 `face-plaque-gb-v1`，仅 `/admin/labeling/tasks/{id}/redraft`（后端早已生效，本次仅归档）。
+- 遗留：①日记页「AI周报」标签页；②`DiaryPage.goToReports` 路由名 `skin-reports` 未注册——两项已于 2026-10-30 随死代码删除一并解决（见下）。
+
+### 2026-10-21 — 手机端去大标题 + 发现更名分享 + 分享页工具栏梳理全量上线
+
+- 用户指令：同步到线上生产环境。`npm run deploy:prod` 后 `npm run build` 同源重建 staging。后端未改、未重启。
+- 验证：正式 version.json=1792544318666；/、/assessment、/community、/contribution、manifest、sw.js 均 200；无 STAGING 标识；正式包含新「分享话题」；/api/health=ok。
+- 本次归档的 Pending 条目：
+  - 手机端去大标题 + 发现更名分享 + 分享页工具栏梳理（仅前端）：问答/同行去大标题；发现→分享全站更名；同城按钮不再被压缩；就医经验改为分享话题标签。
+- 遗留：rag.py 提示词与 skin_report.py 返回文案仍为「发现」（后端共享，待用户确认后再改）。
 
 ### 2026-10-18 — 同行页手机端梳理 + 自然人体剪影全量上线
 
@@ -22,6 +52,12 @@
 
 | 日期 | 标题 | 详情 | buildTime |
 |------|------|------|-----------|
+| 2026-10-24 | 后台打开缓慢整改 P0+P1-a：admin Nginx 开 gzip + `/assets/` 长缓存，主机启用 BBR（仅 Nginx 配置与内核参数，无构建、无后端重启） | 依据 `docs/audits/2026-10-24-admin-performance-audit.md`。①`/etc/nginx/conf.d/subskin-admin.conf`（仅 admin vhost）：`gzip on` + `/assets/` 返回 `public, max-age=31536000, immutable`（刻意不带 `always`，避免 404 被长期缓存）；备份 `subskin-admin.conf.bak-2026-10-24-2151`；`nginx -t` 通过后 reload。首屏 JS/CSS 传输 ≈1.98MB → ≈0.80MB，静态资源重复访问不再下载。②内核：`/etc/sysctl.d/99-subskin-bbr.conf`（`tcp_congestion_control=bbr`、`default_qdisc=fq`）+ `/etc/modules-load.d/tcp_bbr.conf`，**全局生效、影响所有 vhost 的出站 TCP**；原值 cubic / fq_codel，回滚见报告 §6。验证：响应头 / 404 / `index.html`+`version.json` 仍 no-store / 安全头 / `/api/health` / 主站与 staging 200。待办：24h 后复查重传率与 error.log；P2（前端按需加载）、P3（打标图瘦身）未执行。 | 无构建（admin 仍为 1792823588376） |
+| 2026-10-23 | 后台新增「公开图库」栏目 + 5 张 AI 试标（共享后端重启 + 后台构建 + 共享库写入） | 用户指令：外部照片放到单独栏目看质量；试标 5 张。①后台新路由 `/#/external-gallery`（菜单「公开图库」）：按来源（PMC/维基）与状态浏览缩略图、大图灯箱（许可证/出处/原图注/原始来源链接）、去标注、标不可用；`/admin/labeling/tasks` 新增 `external` 筛选与 `external` 署名字段（增量）。②新建禁用系统账号 `ai-annotator`（user 33，is_active=0、is_test=1、不可登录）作为试标提交人；#185/186/191/201/263 各提交一版五类标注（submission #3–#7，预填来源 ai，待复核）：MediaPipe 解析 + GrabCut + 原始 ITA / 人工圈定范围内局部对比，逐张目视校正；口唇/鼻孔/指甲/头发/原图箭头标遮挡。/api/health=ok。 | admin 1792720100762 |
+| 2026-10-23 | 外部公开授权白癜风照片导入打标队列（共享库数据写入，无重启/构建） | 用户指令：搜索可下载的高清白癜风图片用于标注训练。只收许可证允许商用的来源：PMC 开放获取（CC BY/CC0，经 E-utilities + PMC Cloud 官方渠道，`scripts/harvest_pmc_vitiligo_images.py`，812 篇→253 张图注候选）与 Wikimedia Commons（CC BY/BY-SA/CC0/PD，`scripts/harvest_commons_vitiligo_images.py`，37 张）。经内容筛查（去示意图/图表/显微、伍德灯另放）和逐张人工拼图复核（去非白癜风、伍德灯混拼、外生殖器/婴儿、人物肖像、重复）后，`scripts/import_external_label_images.py` 导入 83 个「后台上传」任务（#183–#265：PMC 68、Commons 15），每条 provenance.external 带 DOI/引用/许可证/作者/原图地址，同一论文共用受试者编号。原图与清单在 `data/external/{pmc_vitiligo,commons_vitiligo}/`（gitignore）。拒绝的来源：Mendeley/Kaggle（来源不明、640 拉伸增强）、DermNet/Fitzpatrick17k/DDI（禁商用或禁演绎）、Roboflow（需账号且原图授权存疑）。`services/labeling/uploads.py` 增加可选 `external` 参数（仅导入脚本使用，后端无需重启）。 | — |
+| 2026-10-22 | 管理后台「图片打标」重构为五类标注工作台 + 复核/金标准 + 训练页重做（共享后端 + worker 重启 + 后台构建） | 用户 10-21 批准方案 P0~P3 并确认部署。方案与结果：`hermes_plan/2026-10-21-admin-labeling-rework.md`。①后端新增 `/api/vasi/admin/labeling/*`（services/labeling/*），新表 `label_submissions`、`image_labels.benchmark` 列（增量，启动时自动建）；标签为五类类别图（0–4，255 未标），与 ml/rgb_segmentation 一致；每次提交不可覆盖，复核通过才成金标准（自复核记 single_review，基准集须盲标+他人复核）；日记照片仅授权「改进识别」后可见；后台上传/旧版转入须确认来源授权。②导出：未标写 255、真实分组（部位/MST/光照/质量）、provenance、基准集锁 test、数据集 30 天到期与撤回授权时删除。③部位词表统一到 `web/shared/body-sites.json`，补 `head`（修复日记选「头部」提交被拒，需 worker 重启生效）。④旧接口修补：训练导出 500、manifest 路径越界、墓碑照片可访问、VLM 预标注下线(410)并删 SSRF 下载函数、RGB 标注禁止经旧接口定金标准。⑤后台前端：新工作台/列表页/训练页，旧编辑器与 U-Net 区下线。验证：新测试 10 项，后端 671 过/15 既有失败；隔离 E2E（库副本+临时密钥）全流程通过。部署前备份 `data/subskin.db.pre-labeling-20261022.bak`（quick_check=ok）；重启后迁移确认、/api/health=ok、worker_ready=true。用户端前端未改。 | admin 1792625730988 |
+| 2026-10-19 | 数据清理·后台图片打标页测试遗留与同图去重（共享库） | 用户指令：全部是测试数据，直接剔除，对应页面的测试记录和打标记录一并清除。标注 182→31：删除用户已删原记录的墓碑 116、测试账号（is_test：admin/137****3333/E2E）标注 33、E2E 占位图 1、同图重复 1（129 与 44 同一张，44 有唯一人工标注和在用训练样本 #3，例外保留 44）。同时删除测试账号测评记录 32 条（否则「同步测评」会重新建出标注；E2E 数据可用 `scripts/create_e2e_test_user.py` 重建），停用的重复训练样本 #2，相关标注/日志，标注合成图 8 个。保留：管理员上传 25 张（#53–77，含 77 的 126 次编辑）、user 9 日记照片对应标注 5 条、#3、#44。现库内测评仅剩 user 9 的 5 条，均有标注，同步不会再生成新行；无孤儿日志/标注，quick_check=ok，/api/health=ok。原图 25 个移入备份，2 个仍被保留标注引用（44、53）留在原处。备份与清单：`data/label_cleanup_backup_20261018/`；脚本 `tmp/label_cleanup_20261018/cleanup.py`。测试账号本身及其帖子未动。 | 无前端构建 |
+| 2026-10-18 | 数据清理·日记页同图去重 + 测试遗留清理（共享库，仅 user 9） | 用户指令：同一张照片只留最近一次上传的记录，其余重复和测试内容直接清理。同图判定：source_sha256 相同，或重新压缩后肉眼一致（dHash 距离 ≤ 8，178 与 182 属此类）。已完成记录 10→5（保留 22/174/180/181/182，删除 172/173/177/178/179）；草稿 90 + 放弃 3 全删；对比报告 12–21 全删（都是对比功能的测试产物，引用的都是被删的重复图）；健康周报/月报保留。被删记录对应：标注行 84 条置墓碑（与用户自删口径一致，无金标准受影响）、RGB 任务 8 个、对比缓存 2、反馈信号 8、自动循环队列 2。原图 11 个移入备份；另 14 个文件仍被其他测评或后台标注引用，留在原处。全库备份及清单：`data/diary_cleanup_backup_20261018/`；脚本：`tmp/diary_cleanup_20261018/cleanup.py`。实测 /vasi/history 返回 5 条、保留记录详情与原图 200、已删记录 404，quick_check=ok，无需重启。 | 无前端构建 |
 | 2026-10-18 | 同行页部位示意图换为自然人体剪影（仅测试前端） | 原图为圆/圆角矩形堆砌；改为左右对称贝塞尔曲线的正面人体剪影（头颈、斜方肌、三角肌、腰线、胯部、膝、小腿与足），各部位区域裁进同一剪影，边界贴合身体曲线；选中部位加深显示。轮廓抽为 `utils/body-silhouette.ts` 可复用。浅/深色手机截图核对。 | 1792334648824 |
 | 2026-10-17 | 同行页手机端梳理（测试前端 + 共享后端重启） | ①修复：部位示意图浅色下不可见；「待复核」改为本人有效测评中待复核的去重图片（原来数标注行，出现待复核 41 > 已上传 5）。②布局：标题按设计系统缩小，去掉跳转胶囊；我的贡献改为小成长环 + 3 个固定指标格（体检资料可点入）+ 一行上传/核对/待复核 + 合并「统计口径」，恒为待统计的医生确认/预计帮助有数据才显示；共同成果 0 贡献者不显示徽标、空态一行；手机端月份/部位合为分段切换，平板桌面并排；月份图点柱子看明细（去掉下拉框）；更多覆盖维度并入部位口径；成长徽章 4 列紧凑；删除重复的底部 CTA。390px 整页高度 2950→1533px，深色/桌面已截图核对。后端 542 通过、15 失败与基线一致。 | 1792249848308；后端/worker 已重启 |
 

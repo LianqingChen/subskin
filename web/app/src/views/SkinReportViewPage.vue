@@ -18,7 +18,7 @@ const { report, loading, error, reportRef, chartRef, showPoster, exporting, shar
 
 <template>
   <div class="report-page">
-  <ConfirmDialog :visible="confirmShareVisible" title="确认分享到社区？" message="将在发现页创建公开帖子，包含本报告的标题、叙述摘要与报告链接。原始照片与分析明细不会公开。发布后可在社区删除该帖。" confirm-text="确认分享" @confirm="shareToCommunity" @cancel="confirmShareVisible = false" />
+  <ConfirmDialog :visible="confirmShareVisible" title="确认分享到社区？" message="将在分享页创建公开帖子，包含本报告的标题、叙述摘要与报告链接。原始照片与分析明细不会公开。发布后可在社区删除该帖。" confirm-text="确认分享" @confirm="shareToCommunity" @cancel="confirmShareVisible = false" />
   <ConfirmDialog
     :visible="confirmDeleteVisible"
     title="删除确认"

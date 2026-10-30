@@ -1,0 +1,64 @@
+{
+  "task_id": 185,
+  "model_id": "pixel-reviewed-v2-perioral-ring",
+  "image": "PMC 口周环状大斑+鼻+颏双侧卫星；唇/鼻孔/箭头=遮挡；左上反光 unknown；异人非180",
+  "params": {
+    "skin": {
+      "method": "mediapipe"
+    },
+    "baseline_mode": "hybrid"
+  },
+  "lesion": [],
+  "unknown": [],
+  "reject": [],
+  "lesion_roi": [],
+  "unknown_roi": [],
+  "nails_ellipse": [],
+  "nails_hull": [],
+  "lesion_polygons": [],
+  "unknown_polygons": [],
+  "normal_polygons": [],
+  "occlusion_polygons": [],
+  "notes": {
+    "_scene": "B 面部口周大斑特写（环状而非实心含唇）",
+    "_method": "face-gb 概率分区阈值（口周/鼻/颏/上）+ MediaPipe唇/鼻孔/箭头→occlusion；颏去中线斑驳；禁止把唇当白斑",
+    "_gold": "s3 approved；human lesion_ratio 16.1%；lips occl 非 lesion",
+    "_repro_dice": 0.7276,
+    "_lesson": "L-185-1 口周病灶≠唇可标白斑；唇/鼻孔按非皮肤器官→occlusion",
+    "_lesson2": "L-185-2 颏部斑驳正常皮勿并入；收双侧高分卫星",
+    "_no_copy": "方法复现，未粘贴金标 PNG",
+    "_migrated": "迁移：原分区阈值（peri/nose/chin/upper）未在工具中实现，统一取 peri=0.77；鼻孔遮挡需用 occlusion_polygons 补（L-185-1/2）"
+  },
+  "legacy_params": {
+    "skin": {
+      "method": "mediapipe"
+    },
+    "baseline_mode": "hybrid",
+    "t_hi": 7.0,
+    "t_lo": 4.0,
+    "grow_score": 2.5,
+    "face_gb_zone_thr": {
+      "peri": 0.7700000000000004,
+      "nose": 0.8900000000000005,
+      "chin": 0.9500000000000005,
+      "upper": 0.9100000000000004
+    },
+    "occlusion": {
+      "lips": "mediapipe",
+      "nostrils": "dark_in_nose_roi",
+      "arrows": "dark_cc"
+    }
+  },
+  "base": "face-gb-v1",
+  "base_params": {
+    "threshold": 0.77
+  },
+  "ops": [
+    {
+      "op": "lips_occlusion"
+    },
+    {
+      "op": "dark_marks_occlusion"
+    }
+  ]
+}

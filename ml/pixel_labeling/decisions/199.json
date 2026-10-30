@@ -1,0 +1,146 @@
+{
+  "task_id": 199,
+  "base": "pixel-gb-v2",
+  "model_id": "pixel-gb-v2+review",
+  "image": "深肤色额面多发白斑（低头、黑帽、眼部打码）；眉上两大斑+眉间小岛；上额斑驳；鼻背/鼻周/左颊斑",
+  "base_params": {},
+  "ops": [
+    {
+      "op": "occlusion_to_background"
+    },
+    {
+      "op": "chalk_fill",
+      "roi": [
+        60,
+        345,
+        560,
+        475
+      ],
+      "dL": 12,
+      "sg": 7,
+      "min_area": 40
+    }
+  ],
+  "lesion_polygons": [],
+  "normal_polygons": [],
+  "unknown_polygons": [],
+  "unreadable_polygons": [
+    [
+      [
+        115,
+        478
+      ],
+      [
+        462,
+        478
+      ],
+      [
+        462,
+        552
+      ],
+      [
+        115,
+        552
+      ]
+    ]
+  ],
+  "occlusion_polygons": [
+    [
+      [
+        226,
+        668
+      ],
+      [
+        245,
+        682
+      ],
+      [
+        275,
+        686
+      ],
+      [
+        310,
+        686
+      ],
+      [
+        335,
+        680
+      ],
+      [
+        356,
+        670
+      ],
+      [
+        352,
+        688
+      ],
+      [
+        335,
+        700
+      ],
+      [
+        305,
+        708
+      ],
+      [
+        275,
+        706
+      ],
+      [
+        250,
+        698
+      ],
+      [
+        232,
+        684
+      ]
+    ]
+  ],
+  "background_polygons": [
+    [
+      [
+        380,
+        0
+      ],
+      [
+        602,
+        0
+      ],
+      [
+        602,
+        70
+      ],
+      [
+        380,
+        70
+      ]
+    ],
+    [
+      [
+        520,
+        112
+      ],
+      [
+        562,
+        112
+      ],
+      [
+        562,
+        148
+      ],
+      [
+        520,
+        148
+      ]
+    ]
+  ],
+  "notes": {
+    "_method": "2026-10-25 重做：旧稿（face-gb+chalk/local_contrast，63%）严重过标且眉上两大斑被 mediapipe 眉区抠成背景洞 → 改用 pixel-gb-v2 起稿",
+    "_ops": "occlusion_to_background：帽沿被模型当遮挡→背景；chalk_fill 只限眉上带（上额受光，色素皮也会过阈，2026-10-25 试过整额过标）",
+    "_unreadable": "眼部打码条不可判读 → 4",
+    "_lips": "唇红=遮挡（L-185-1）；mediapipe 低头未检出唇，手画多边形",
+    "_hair": "帽下灰白发际线暂按模型输出（L-gold-1 待定）",
+    "_prev": "旧决策备份 data/labeling_work/199/decisions_prev_facegb.json",
+    "_bg": "右上角米色墙面、右侧红色小物件被模型当皮肤/白斑 → 背景"
+  }
+}

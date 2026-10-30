@@ -80,7 +80,7 @@ const pageTitles: Record<string, string> = {
   '/': 'SubSkin - 白癜风病友的AI记录和分享社区',
   '/assessment': '日记 - SubSkin',
   '/assessment/exam': '体检解读 - SubSkin',
-  '/community': '发现 - SubSkin',
+  '/community': '分享 - SubSkin',
   '/hospitals': '就医经验 - SubSkin',
   '/contribution': '同行 - SubSkin',
   '/care': '调养 - SubSkin',

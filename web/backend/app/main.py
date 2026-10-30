@@ -50,6 +50,7 @@ from web.backend.api import (
     image_label,
     vasi_training_admin,
     rgb_training_admin,
+    labeling_admin,
     medication,
     diary,
     skin_report,
@@ -72,7 +73,7 @@ _ = models
 
 from web.backend.models.vasi import VASIAssessment, ImageQualityTag
 from web.backend.models.image_label import ImageLabel, ImageLabelAnnotation, ImageLabelLog
-from web.backend.models import data_consent as _data_consent_models, self_report as _self_report_models  # noqa: F401  (register tables for create_all)
+from web.backend.models import data_consent as _data_consent_models, self_report as _self_report_models, label_submission as _label_submission_models  # noqa: F401  (register tables for create_all)
 
 Base.metadata.create_all(bind=engine)
 
@@ -419,6 +420,7 @@ app.include_router(content_generation_admin.router)
 app.include_router(image_label.router, prefix="/api/vasi", tags=["图片打标管理"])
 app.include_router(vasi_training_admin.router, prefix="/api/vasi", tags=["模型训练管理"])
 app.include_router(rgb_training_admin.router, prefix="/api/vasi", tags=["RGB分割训练"])
+app.include_router(labeling_admin.router, prefix="/api/vasi", tags=["打标工作台"])
 
 # 初始化监控 (Sentry + Prometheus)
 from web.backend.services.monitoring import init_sentry, PrometheusMiddleware

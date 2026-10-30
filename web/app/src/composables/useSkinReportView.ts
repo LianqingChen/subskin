@@ -81,7 +81,7 @@ async function exportPdf() {
   }
 }
 
-// 分享前二次确认：明确告知将把病情摘要公开发布到发现社区
+// 分享前二次确认：明确告知将把病情摘要公开发布到分享社区
 const confirmShareVisible = ref(false)
 function requestShare() { confirmShareVisible.value = true }
 async function shareToCommunity() {
@@ -90,7 +90,7 @@ async function shareToCommunity() {
   sharing.value = true
   try {
     const { data } = await shareReportToCommunity(report.value.id)
-    toast.show('已发布到发现', 'success')
+    toast.show('已发布到分享', 'success')
     report.value.is_public = true
     report.value.post_id = data.post_id
   } catch (e: unknown) {

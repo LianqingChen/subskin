@@ -1,0 +1,37 @@
+{
+  "task_id": 180,
+  "model_id": "face-plaque-gb-v1",
+  "kind": "job",
+  "privacy": "L3 diary — local only",
+  "image": "正面面部+颈部大面积白斑；左右光照不对称",
+  "params": {
+    "skin": {
+      "method": "mediapipe"
+    },
+    "baseline_mode": "hybrid"
+  },
+  "method_note": "v5: HistGB face-plaque prior calibrated on human s13 (L-180-5). Features Lab+local/global scores (no x,y). Reproduces s13 at Dice≈0.945 / ratio≈46.7% vs human 47.2%. NOT a pixel copy of the mask. Prior drafts: v1 local absorb; v3 pure global lit-cheek; v4 hybrid under-filled cores.",
+  "lesion": [],
+  "unknown": [],
+  "reject": [],
+  "legacy_implicit_reject": true,
+  "notes": {
+    "review_s13": "AI v4 34% vs human 47%; 47k missed_lesion mostly plaque cores within 40px of AI edges; 9.7k overcall",
+    "reproduction": "python -m ml.pixel_labeling face-gb 180",
+    "model": "ml/pixel_labeling/models/face_plaque_gb_v1.joblib",
+    "_migrated": "2026-10-25 迁移：face-gb 底稿（L-180-5）"
+  },
+  "lesion_ratio": 46.72,
+  "legacy_params": {
+    "skin": {
+      "method": "mediapipe"
+    },
+    "baseline_mode": "hybrid",
+    "method": "face_gb"
+  },
+  "base": "face-gb-v1",
+  "base_params": {
+    "threshold": 0.69
+  },
+  "ops": []
+}

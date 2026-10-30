@@ -302,6 +302,7 @@ Before deploying to production, verify ALL of the following:
 | `nginx-config` | Nginx 配置管理 | 修改 nginx 配置、SSL、路由、反向代理 |
 | `llm-testing` | AI/LLM 功能测试 | RAG 向量化、智能问答、VASI 评估测试 |
 | `3d-model-work` | 3D 模型工作 | 数字人/熊猫模型的加载和渲染 |
+| `vitiligo-pixel-labeling` | 白癜风皮肤/白斑逐像素五类标注；场景路由 A手足/B面颈大斑/C颈肢特写；复盘→LESSONS；目标像素准确度≥99.99% | 管理后台图片打标、训练样本涂层、face-gb、白斑识别 |
 
 **IMPORTANT**: Before any frontend work, load the `frontend-architect` skill to ensure compliance with project standards. Before any backend work, load the `backend-architect` skill to ensure compliance with project standards.
 

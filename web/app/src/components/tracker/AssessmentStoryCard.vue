@@ -35,7 +35,7 @@ function publish() {
     </p>
     <p v-if="creative.drawing.value" role="status" class="mt-2 text-xs text-primary-700 dark:text-primary-300"><i class="ri-loader-4-line mr-1 inline-block animate-spin" aria-hidden="true"></i>正在依照轮廓创作画面，可能需要几分钟，当前创意仍可保存</p>
     <p v-else-if="creative.artNotice.value" role="status" class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">{{ creative.artNotice.value }}<button type="button" class="min-h-[44px] px-2 text-primary-700 dark:text-primary-300" @click="creative.retryArtwork">重试画面</button></p>
-    <button type="button" class="btn-primary mt-4 min-h-[44px] w-full rounded-xl text-sm" :disabled="share.busy.value || creative.loading.value || !creative.blob.value || !skin || !lesion" @click="publish"><i class="ri-share-forward-line mr-1" aria-hidden="true"></i>{{ share.busy.value ? '正在准备分享…' : '发布到发现' }}</button>
+    <button type="button" class="btn-primary mt-4 min-h-[44px] w-full rounded-xl text-sm" :disabled="share.busy.value || creative.loading.value || !creative.blob.value || !skin || !lesion" @click="publish"><i class="ri-share-forward-line mr-1" aria-hidden="true"></i>{{ share.busy.value ? '正在准备分享…' : '发布到分享' }}</button>
     <div class="mt-2 grid grid-cols-2 gap-2">
       <button type="button" class="btn-ghost min-h-[44px] rounded-xl text-sm" :disabled="disabled" @click="share.download(creative.url.value)"><i class="ri-download-line mr-1" aria-hidden="true"></i>保存图片</button>
       <button type="button" class="btn-ghost min-h-[44px] rounded-xl text-sm" :disabled="disabled" @click="creative.blob.value && share.systemShare(creative.blob.value, creative.title.value, creative.url.value)"><i class="ri-share-line mr-1" aria-hidden="true"></i>更多分享</button>
