@@ -1,0 +1,15 @@
+[Unit]
+Description=SubSkin daily SQLite database backup (encrypted DB + uploads)
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/subskin
+Environment="PATH=/root/subskin/.venv/bin:/usr/bin:/bin"
+ExecStart=/root/subskin/.venv/bin/python /root/subskin/scripts/backup_db.py
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target

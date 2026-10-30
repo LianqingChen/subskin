@@ -1,0 +1,14 @@
+[Unit]
+Description=SubSkin monthly backup restore drill
+After=subskin-db-backup.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/subskin
+Environment="PATH=/root/subskin/.venv/bin:/usr/bin:/bin"
+ExecStart=/root/subskin/.venv/bin/python /root/subskin/scripts/ops/restore_drill.py
+Nice=10
+IOSchedulingClass=idle
+StandardOutput=journal+console
+StandardError=journal+console

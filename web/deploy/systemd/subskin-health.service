@@ -1,0 +1,12 @@
+[Unit]
+Description=SubSkin health check with email alerts
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/subskin
+ExecStart=/root/subskin/.venv/bin/python /root/subskin/scripts/ops/healthcheck.py
+# Exit 1 = a check failed (alerting handled by the script), not a unit failure.
+SuccessExitStatus=1
+TimeoutStartSec=60
