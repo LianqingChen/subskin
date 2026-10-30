@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
+import { useUnsavedGuard } from '@/composables/useUnsavedGuard'
 import { useVasiUpload } from '@/composables/useVasiUpload'
 import { useVasiAssess } from '@/composables/useVasiAssess'
 import { useVasiHistory } from '@/composables/useVasiHistory'
@@ -62,6 +63,7 @@ const assessmentLabel = siteModules.modules.find(m => m.path === '/assessment')?
 const result = computed(() => assess.lastAssessment.value)
 const busy = computed(() => assess.isUploading.value || assess.isSubmittingContour.value)
 const workScreen = computed(() => screen.value === 'capture' || (screen.value === 'result' && editing.value))
+useUnsavedGuard(() => workScreen.value || busy.value)
 const pageTitle = computed(() => ({ home: assessmentLabel, capture: '添加照片', result: '本次记录', records: '我的记录' }[screen.value]))
 watch(() => route.query.tab, tab => { if (tab === 'exam' || tab === 'report') router.replace({ name: 'assessment-exam' }) }, { immediate: true })
 function requireLogin() { if (auth.isLoggedIn) return true; auth.showLoginModal = true; return false }

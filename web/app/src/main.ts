@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import router from './router'
+import { installChunkReload } from './utils/chunk-reload'
 import App from './App.vue'
 import './styles/main.css'
 import 'remixicon/fonts/remixicon.css'
@@ -8,4 +9,5 @@ import 'remixicon/fonts/remixicon.css'
 const app = createApp(App)
 app.use(createPinia())
 app.use(router)
+installChunkReload(router)
 app.mount('#app')

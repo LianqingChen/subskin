@@ -7,6 +7,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { communityApi } from '@/api/community'
+import { useUnsavedGuard } from '@/composables/useUnsavedGuard'
 import type { Post, PostImage } from '@/types'
 import { createComparisonReport, reorderPhotos, deletePhoto } from '@/api/skin_report'
 import { toProtectedFileUrl } from '@/utils/file-url'
@@ -31,6 +32,7 @@ const generating = ref(false)
 const selected = ref<Set<number>>(new Set())
 const editingImage = ref<PostImage | null>(null)
 const showEditor = ref(false)
+useUnsavedGuard(() => generating.value || showEditor.value)
 const deleting = ref(false)
 const deleteTarget = ref<PostImage | null>(null)
 const confirmDeleteVisible = ref(false)

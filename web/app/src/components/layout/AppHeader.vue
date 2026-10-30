@@ -89,7 +89,7 @@ function onGeneratePoster() {
   <header :class="['app-header surface-glass sticky top-0 z-50 border-b border-gray-200/80 dark:border-gray-800/90', isStaging ? 'app-header--staging' : '']">
     <div class="relative mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
       <router-link to="/" class="flex items-center gap-2 no-underline shrink-0 lg:hidden">
-        <img src="/subskin_logo.png?v=b4e9d1" alt="SubSkin" class="h-8 w-8 rounded-lg ring-1 ring-gray-900/5 dark:ring-white/10" />
+        <img src="/subskin_logo.png?v=e5a1c9" alt="SubSkin" class="h-8 w-8 rounded-lg ring-1 ring-gray-900/5 dark:ring-white/10" />
         <span class="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">SubSkin</span>
         <span v-if="isStaging" class="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-white">STAGING</span>
       </router-link>

@@ -1,6 +1,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 import { useAuthStore } from '@/stores/auth'
+import { hasUnsavedInput } from '@/composables/useUnsavedGuard'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>
@@ -32,6 +33,10 @@ if (typeof window !== 'undefined') {
 }
 
 const SW_UPDATE_INTERVAL_MS = 5 * 60 * 1000
+// version.json 轮询：5 分钟 ±30s 抖动，避免所有客户端同一时刻打到服务器
+const VERSION_POLL_BASE_MS = 5 * 60 * 1000
+const VERSION_POLL_JITTER_MS = 30 * 1000
+const VERSION_CHECK_MIN_GAP_MS = 60 * 1000
 
 // controllerchange → reload 仅在用户主动点击"更新"后允许（防刷新死循环）
 let reloadOnControllerChange = false
@@ -39,7 +44,35 @@ let reloadOnControllerChange = false
 export function usePWA() {
   let swRegistration: ServiceWorkerRegistration | null = null
   let updateInterval: ReturnType<typeof setInterval> | null = null
-  let pollTimer: ReturnType<typeof setInterval> | null = null
+  let pollTimer: ReturnType<typeof setTimeout> | null = null
+  let lastVersionCheckAt = 0
+  const loadedBuildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 0
+
+  function stopVersionPolling() {
+    if (pollTimer) { clearTimeout(pollTimer); pollTimer = null }
+  }
+
+  async function checkVersion() {
+    if (needRefresh.value) return
+    lastVersionCheckAt = Date.now()
+    try {
+      const resp = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' })
+      if (!resp.ok) return
+      const data = await resp.json()
+      if (data.buildTime && data.buildTime > loadedBuildTime) {
+        needRefresh.value = true
+        stopVersionPolling()
+      }
+    } catch { /* ignore network errors */ }
+  }
+
+  function scheduleVersionPoll() {
+    const delay = VERSION_POLL_BASE_MS + (Math.random() * 2 - 1) * VERSION_POLL_JITTER_MS
+    pollTimer = setTimeout(async () => {
+      await checkVersion()
+      if (!needRefresh.value) scheduleVersionPoll()
+    }, delay)
+  }
 
   const updateDismissedUntil = ref(0)  // timestamp — don't re-show banner until after this
 
@@ -314,6 +347,10 @@ export function usePWA() {
   }
 
   async function updateApp() {
+    // 更新会整页刷新：有未保存内容（拍照评估进行中、正在输入等）时先让用户确认，取消则保留横幅
+    if (hasUnsavedInput() && !window.confirm('当前页面可能有未保存的内容，更新会刷新页面。确定现在更新吗？')) {
+      return
+    }
     // 用户已主动确认更新：控制器切换时才允许整页刷新（见下方 controllerchange）
     reloadOnControllerChange = true
     const reloadFallback = setTimeout(() => window.location.reload(), 3000)
@@ -326,9 +363,9 @@ export function usePWA() {
   }
 
   function handleVisibilityChange() {
-    if (document.visibilityState === 'visible' && swRegistration) {
-      swRegistration.update().catch(() => {})
-    }
+    if (document.visibilityState !== 'visible') return
+    if (swRegistration) swRegistration.update().catch(() => {})
+    if (Date.now() - lastVersionCheckAt >= VERSION_CHECK_MIN_GAP_MS) void checkVersion()
   }
 
   onMounted(() => {
@@ -353,7 +390,7 @@ export function usePWA() {
         }
         // Don't force-reload while the user is filling a form (e.g. login modal).
         // Instead, set a flag and reload on next safe opportunity.
-        if (document.querySelector('input:focus, textarea:focus') || sessionStorage.getItem('loginModalOpen')) {
+        if (hasUnsavedInput() || sessionStorage.getItem('loginModalOpen')) {
           needRefresh.value = true
         } else {
           window.location.reload()
@@ -375,22 +412,8 @@ export function usePWA() {
       }
     }, SW_UPDATE_INTERVAL_MS)
 
-    const loadedBuildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 0
-    pollTimer = setInterval(async () => {
-      if (needRefresh.value) {
-        if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
-        return
-      }
-      try {
-        const resp = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' })
-        if (!resp.ok) return
-        const data = await resp.json()
-        if (data.buildTime && data.buildTime > loadedBuildTime) {
-          needRefresh.value = true
-          if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
-        }
-      } catch { /* ignore network errors */ }
-    }, 30000)
+    lastVersionCheckAt = Date.now()
+    scheduleVersionPoll()
 
     if (detectStandaloneMode()) {
       markInstalled()
@@ -428,10 +451,7 @@ export function usePWA() {
       clearInterval(updateInterval)
       updateInterval = null
     }
-    if (pollTimer) {
-      clearInterval(pollTimer)
-      pollTimer = null
-    }
+    stopVersionPolling()
     window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     window.removeEventListener('appinstalled', handleAppInstalled)
     window.removeEventListener('online', handleOnline)

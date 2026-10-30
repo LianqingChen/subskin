@@ -160,7 +160,7 @@ defineExpose({ sendMessage, toggleHistory })
             <span v-else class="whitespace-pre-wrap">{{ msg.content }}</span>
             <span v-if="msg.isSkeleton && msg.content" class="inline-block w-1 h-4 bg-primary-400 ml-0.5 animate-pulse align-text-bottom rounded-sm" />
             <p v-if="msg.role === 'assistant' && msg.content" class="answer-disclaimer mt-3 border-t border-gray-200/70 pt-2 text-[11px] leading-relaxed text-gray-400 dark:border-gray-700 dark:text-gray-500">
-              本平台不构成医疗建议，所有内容仅供参考。
+              <i class="ri-robot-2-line mr-0.5 align-[-1px]" aria-hidden="true"></i>内容由 AI 生成，仅供参考，不构成医疗建议。
             </p>
           </div>
           <template v-if="msg.actionCards && msg.actionCards.length && !msg.isSkeleton">

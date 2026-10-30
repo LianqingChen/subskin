@@ -50,6 +50,9 @@ function goNav(path: string) {
           <template v-else>
             <span class="whitespace-pre-wrap break-words">{{ msg.content }}</span>
             <span v-if="msg.isSkeleton && msg.content" class="inline-block w-1 h-4 bg-primary-400 ml-0.5 animate-pulse align-text-bottom rounded-sm" />
+            <p v-if="msg.role === 'assistant' && msg.content && !msg.isSkeleton" class="mt-1.5 text-[11px] leading-snug text-gray-400 dark:text-gray-500">
+              <i class="ri-robot-2-line mr-0.5 align-[-1px]" aria-hidden="true"></i>内容由 AI 生成，仅供参考
+            </p>
             <!-- 行动卡片：用户逐次确认后才保存/发布 -->
             <template v-if="msg.actionCards && msg.actionCards.length && !msg.isSkeleton">
               <ActionCardView

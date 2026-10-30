@@ -24,7 +24,7 @@ watch(userAvatar, () => { avatarLoadError.value = false })
 <template>
   <aside class="app-sidebar fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-gray-200/80 bg-white dark:border-gray-800 dark:bg-gray-900 lg:flex" aria-label="主导航">
     <router-link to="/" class="sidebar-brand flex shrink-0 flex-col items-center justify-center gap-1 no-underline xl:h-14 xl:flex-row xl:justify-start xl:gap-2.5 xl:px-5">
-      <img src="/subskin_logo.png?v=b4e9d1" alt="SubSkin" class="h-8 w-8 rounded-lg" />
+      <img src="/subskin_logo.png?v=e5a1c9" alt="SubSkin" class="h-8 w-8 rounded-lg" />
       <span class="hidden text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100 xl:inline">SubSkin</span>
       <span v-if="isStaging" class="rounded bg-slate-800 px-1 py-px text-[8px] font-semibold tracking-wide text-white xl:px-1.5 xl:py-0.5 xl:text-[10px]">STAGING</span>
     </router-link>

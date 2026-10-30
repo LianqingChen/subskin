@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && ./post-build-staging.sh",
-    "deploy:prod": "vue-tsc -b && vite build --config vite.config.prod.ts && ./post-build.sh",
+    "build": "node scripts/preserve-assets.mjs save /usr/share/nginx/html/subskin-staging && vite build && node scripts/preserve-assets.mjs restore /usr/share/nginx/html/subskin-staging && ./post-build-staging.sh",
+    "deploy:prod": "vue-tsc -b && node scripts/preserve-assets.mjs save /usr/share/nginx/html/subskin && vite build --config vite.config.prod.ts && node scripts/preserve-assets.mjs restore /usr/share/nginx/html/subskin && ./post-build.sh",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "type-check": "vue-tsc --noEmit"

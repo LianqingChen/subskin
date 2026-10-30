@@ -27,7 +27,7 @@ export default defineConfig({
     },
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['subskin_logo.png', 'og-image.png', 'icons/*.png'],
+      includeAssets: ['subskin_logo.png', 'icons/*.png'],
       manifest: {
         name: 'SubSkin - 白癜风病友的AI记录和分享社区',
         short_name: 'SubSkin',
@@ -58,6 +58,8 @@ export default defineConfig({
       injectManifest: {
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
+        // remixicon 的 SVG 字体（3MB）只给古早浏览器用，现代浏览器只取 woff2；og-image 只给爬虫
+        globIgnores: ['**/remixicon-*.svg', 'og-image.png'],
       },
     }),
   ],

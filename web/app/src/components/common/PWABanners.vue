@@ -89,7 +89,7 @@ async function handleUpdate() {
       class="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-80 z-50 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4"
     >
       <div class="flex items-start gap-3">
-        <img src="/subskin_logo.png?v=b4e9d1" alt="SubSkin" class="w-12 h-12 rounded-xl flex-shrink-0" />
+        <img src="/subskin_logo.png?v=e5a1c9" alt="SubSkin" class="w-12 h-12 rounded-xl flex-shrink-0" />
         <div class="flex-1 min-w-0">
           <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-sm">添加到桌面，体验更流畅</h3>
           <div class="flex items-center gap-2 mt-3">

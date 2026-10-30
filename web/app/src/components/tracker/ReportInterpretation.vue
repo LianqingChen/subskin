@@ -249,8 +249,8 @@ function toggleSource(item: any) {
     </div>
 
     <!-- Disclaimer -->
-    <div class="text-center text-xs text-gray-400  py-4">
-      <i class="ri-error-warning-line"></i> {{ interpretation.disclaimer || '本解读仅供参考，不构成医疗诊断建议。如有异常指标，请咨询专业医生。' }}
+    <div class="text-center text-xs text-gray-400 dark:text-gray-500 py-4">
+      <i class="ri-robot-2-line"></i> 内容由 AI 生成。{{ interpretation.disclaimer || '本解读仅供参考，不构成医疗诊断建议。如有异常指标，请咨询专业医生。' }}
     </div>
   </div>
 </template>
