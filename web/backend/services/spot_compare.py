@@ -909,11 +909,9 @@ def _call_pair_vlm(
             return None
 
         vision_model = config.get("vision_model") or "qwen-vl-max"
-        client = openai.OpenAI(
-            api_key=config["api_key"],
-            base_url=config["base_url"],
-            timeout=float(os.getenv("VASI_VLM_TIMEOUT", "120")),
-        )
+        from web.backend.utils.llm_guard import make_openai_client
+
+        client = make_openai_client(config, timeout=float(os.getenv("VASI_VLM_TIMEOUT", "120")))
 
         gap_days = max((date_b - date_a).days, 0)
         from web.backend.services.vitiligo_vision_standard import standard_rules_text

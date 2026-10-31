@@ -12,6 +12,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from web.backend.database.models import EmailVerificationCode
+from web.backend.exceptions import RateLimitExceededError
 
 logger = logging.getLogger(__name__)
 
@@ -74,10 +75,27 @@ def check_email_rate_limit(db: Session, email: str) -> None:
         )
 
 
+def check_email_global_daily_cap(db: Session) -> None:
+    """全站 24h 验证邮件总量上限，防止 SMTP 账号被刷到封禁。"""
+    cap = int(os.getenv("EMAIL_GLOBAL_DAILY_CAP", "500"))
+    since = _utcnow() - timedelta(hours=24)
+    sent = (
+        db.query(EmailVerificationCode)
+        .filter(EmailVerificationCode.created_at >= since)
+        .count()
+    )
+    if sent >= cap:
+        logger.error("Email global daily cap reached: %s/%s", sent, cap)
+        raise RateLimitExceededError("邮件服务今日繁忙，请稍后再试或使用其他登录方式")
+    if sent + 1 >= int(cap * 0.8):
+        logger.warning("Email global daily usage at %s/%s (>=80%%)", sent + 1, cap)
+
+
 def create_email_code(
     db: Session, email: str, purpose: str = "login", expire_minutes: int = 10
 ) -> str:
     check_email_rate_limit(db, email)
+    check_email_global_daily_cap(db)
 
     old_codes = (
         db.query(EmailVerificationCode)

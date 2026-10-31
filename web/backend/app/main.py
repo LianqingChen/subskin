@@ -19,8 +19,11 @@ env_path = Path(__file__).resolve().parent.parent / ".env"
 if env_path.exists():
     _ = load_dotenv(env_path, override=True)
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from web.backend.utils.llm_guard import QuotaExceeded, SlotUnavailable
 from sqlalchemy import inspect, text
 
 from web.backend.api import (
@@ -73,7 +76,7 @@ _ = models
 
 from web.backend.models.vasi import VASIAssessment, ImageQualityTag
 from web.backend.models.image_label import ImageLabel, ImageLabelAnnotation, ImageLabelLog
-from web.backend.models import data_consent as _data_consent_models, self_report as _self_report_models, label_submission as _label_submission_models  # noqa: F401  (register tables for create_all)
+from web.backend.models import data_consent as _data_consent_models, self_report as _self_report_models, label_submission as _label_submission_models, rate_limit as _rate_limit_models  # noqa: F401  (register tables for create_all)
 
 Base.metadata.create_all(bind=engine)
 
@@ -361,6 +364,16 @@ app = FastAPI(
     redoc_url=None if _is_prod_env else "/redoc",
     openapi_url=None if _is_prod_env else "/openapi.json",
 )
+
+
+@app.exception_handler(SlotUnavailable)
+async def _slot_unavailable_handler(_request: Request, exc: SlotUnavailable) -> JSONResponse:
+    return JSONResponse(status_code=503, content={"detail": exc.message}, headers={"Retry-After": "20"})
+
+
+@app.exception_handler(QuotaExceeded)
+async def _quota_exceeded_handler(_request: Request, exc: QuotaExceeded) -> JSONResponse:
+    return JSONResponse(status_code=429, content={"detail": exc.message})
 
 # CORS 配置
 app.add_middleware(

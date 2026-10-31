@@ -497,7 +497,7 @@ class LLMConfigService:
             provider_info = RECOMMENDED_PROVIDERS.get(provider, {})
             base_url = base_url or provider_info.get("base_url", "")
 
-            client = openai.OpenAI(api_key=api_key, base_url=base_url)
+            client = openai.OpenAI(api_key=api_key, base_url=base_url, timeout=30, max_retries=0)
             response = client.chat.completions.create(
                 model=chat_model or "gpt-3.5-turbo",
                 messages=[{"role": "user", "content": "你好"}],

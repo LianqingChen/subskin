@@ -9,6 +9,7 @@ import openai
 from web.backend.services.medical.indicator_normalizer import normalize_indicator_name
 from web.backend.services.medical.knowledge_base import knowledge_base
 from web.backend.utils.llm_config import get_llm_config
+from web.backend.utils.llm_guard import LLM_TIMEOUT_LONG, make_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +144,7 @@ class ReportInterpreter:
             return None
 
         vision_model = config.get("vision_model", "qwen-vl-plus")
-        client = openai.OpenAI(api_key=config["api_key"], base_url=config["base_url"])
+        client = make_openai_client(config, timeout=LLM_TIMEOUT_LONG)
         user_info = self._build_user_info(user_context)
 
         content: List[Dict[str, Any]] = []
@@ -406,7 +407,7 @@ class ReportInterpreter:
             logger.warning("LLM provider not configured")
             return None, model_name
 
-        client = openai.OpenAI(api_key=config["api_key"], base_url=config["base_url"])
+        client = make_openai_client(config, timeout=LLM_TIMEOUT_LONG)
 
         try:
             response = client.chat.completions.create(

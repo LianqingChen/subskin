@@ -1,3 +1,4 @@
+import asyncio
 import html as html_module
 import json
 import logging
@@ -6,6 +7,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
+from web.backend.utils.image_sanitize import read_upload_capped, sanitize_image
 from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.orm import Session
 
@@ -542,9 +544,10 @@ async def upload_im_image(
     upload_dir = Path("data/uploads/im") / str(current_user.id)
     upload_dir.mkdir(parents=True, exist_ok=True)
 
-    content = await file.read()
     try:
-        ext = validate_image_upload(file.filename or "image.jpg", content)
+        raw = await read_upload_capped(file)
+        content, ext = await asyncio.to_thread(sanitize_image, raw)
+        ext = validate_image_upload(f"image{ext}", content)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

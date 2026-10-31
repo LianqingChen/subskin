@@ -122,7 +122,7 @@ def test_completed_reports_are_saved_without_notification(db_session, monkeypatc
         db_session.add(row); db_session.flush(); ids.append(row.id)
     db_session.commit()
     targets = []
-    monkeypatch.setattr(api.threading, "Thread", lambda target, **kwargs: SimpleNamespace(start=lambda: targets.append(target)))
+    monkeypatch.setattr(api, "submit_background", lambda target, *args, **kwargs: targets.append(target))
     monkeypatch.setattr(api, "SessionLocal", lambda: db_session)
     notify = Mock()
     monkeypatch.setattr(notifications, "create_notification", notify)

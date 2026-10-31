@@ -19,6 +19,7 @@ from web.backend.database.database import get_db
 from web.backend.database.models import AdminGeneratedPost, User
 from web.backend.services.auth import get_current_user
 from web.backend.services.content_generation import generate_daily_posts, publish_post
+from web.backend.utils.llm_guard import LLM_TIMEOUT_LONG, make_openai_client
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/admin/content", tags=["管理员-内容生成"])
@@ -362,7 +363,7 @@ async def ai_generate_content(
         from web.backend.utils.llm_config import get_llm_config
 
         config = get_llm_config()
-        client = openai.OpenAI(api_key=config["api_key"], base_url=config["base_url"])
+        client = make_openai_client(config, timeout=LLM_TIMEOUT_LONG)
         model = config.get("chat_model", "qwen-plus")
 
         prompt = req.prompt

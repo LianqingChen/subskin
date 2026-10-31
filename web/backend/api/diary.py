@@ -297,14 +297,9 @@ async def create_diary_entry(
 
     # 异步触发AI提取（不阻塞响应）
     try:
-        import threading
         from web.backend.services.diary_ai import extract_diary_structure
-        t = threading.Thread(
-            target=extract_diary_structure,
-            args=(entry.id,),
-            daemon=True,
-        )
-        t.start()
+        from web.backend.utils.llm_guard import submit_background
+        submit_background(extract_diary_structure, entry.id)
     except Exception:
         logger.warning("AI diary extraction launch failed for entry %s", entry.id, exc_info=True)
 
@@ -807,19 +802,27 @@ async def deep_analyze_diary_image(
     if not image_bytes:
         raise HTTPException(status_code=400, detail="无法加载图片文件")
 
+    from web.backend.services.usage_quota import enforce_daily_quota
+    from web.backend.utils.llm_guard import QuotaExceeded, SlotUnavailable, async_cv_slot
+
+    enforce_daily_quota(db, current_user, "vasi")
+
     body_site = img.body_site or "face"
     try:
         from web.backend.services.vasi import VASIService
 
         svc = VASIService(db)
-        assessment = await svc.assess_vasi(
-            user_id=current_user.id,
-            image_file=image_bytes,
-            body_site=body_site,
-            image_type=_detect_mime(image_bytes),
-            image_filename=f"diary_{img.id}.jpg",
-            precision="quick",
-        )
+        async with async_cv_slot():
+            assessment = await svc.assess_vasi(
+                user_id=current_user.id,
+                image_file=image_bytes,
+                body_site=body_site,
+                image_type=_detect_mime(image_bytes),
+                image_filename=f"diary_{img.id}.jpg",
+                precision="quick",
+            )
+    except (SlotUnavailable, QuotaExceeded):
+        raise
     except Exception as e:
         logger.warning("deep analyze failed for image %s: %s", image_id, e)
         raise HTTPException(status_code=500, detail=f"深度分析失败：{e}")

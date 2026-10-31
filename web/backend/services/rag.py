@@ -27,6 +27,12 @@ from web.backend.database.models import (
 )
 from web.backend.models.rag import QuestionResponse, Source
 from web.backend.utils.llm_config import get_llm_config
+from web.backend.utils.llm_guard import (
+    LLM_BUSY_MESSAGE,
+    LLM_TIMEOUT_LONG,
+    SlotUnavailable,
+    make_openai_client,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -471,6 +477,37 @@ def is_crisis_message(question: str) -> bool:
     return any(kw in q for kw in CRISIS_KEYWORDS)
 
 
+# ── Medical red flags ──
+# Warning signs that need in-person care. Never block the answer — only prepend
+# a short referral note so the user is nudged toward a dermatologist.
+RED_FLAG_RULES = (
+    (("黑色素瘤", "恶性", "皮肤癌", "melanoma", "痣变大", "痣变黑", "痣长大", "痣出血",
+      "颜色不均", "边界不清", "边缘不规则", "形状不规则"),
+     "你描述的情况可能涉及色素痣或其他皮肤病变的变化，需要医生面诊鉴别"),
+    (("出血", "溃烂", "流脓", "破溃", "化脓", "渗液"),
+     "皮损出血、溃烂或渗液不属于白癜风的常见表现，需要医生当面检查"),
+    (("快速扩散", "扩散很快", "扩散得很快", "蔓延很快", "突然增多", "越来越多", "一下子多了", "迅速扩大"),
+     "白斑在短时间内快速扩散通常提示处于进展期，及时治疗更有利于控制"),
+    (("视力", "看不清", "眼睛疼", "眼睛痛", "眼睛红", "眼内", "葡萄膜炎"),
+     "涉及眼部不适或视力变化时，需要同时到眼科检查"),
+    (("儿童", "小孩", "孩子", "宝宝", "婴儿", "幼儿"),
+     "儿童用药和治疗方案需要由皮肤科医生根据年龄和体重制定"),
+    (("怀孕", "孕期", "孕妇", "备孕", "哺乳"),
+     "孕期、备孕或哺乳期的用药和光疗需要医生评估安全性"),
+)
+
+
+def red_flag_referral(question: str) -> str:
+    """Return a referral note (with trailing blank line) if the question hits a red flag."""
+    if not question:
+        return ""
+    q = question.lower()
+    reasons = [reason for keywords, reason in RED_FLAG_RULES if any(kw in q for kw in keywords)]
+    if not reasons:
+        return ""
+    return "**就医提示：**" + "；".join(reasons) + "。建议尽快到正规医院皮肤科线下就医。\n\n"
+
+
 def is_vitiligo_related(question: str) -> bool:
     question_lower = question.lower()
 
@@ -507,10 +544,7 @@ def get_embedding(text: str) -> List[float]:
             "未配置 LLM API Key，请设置 DASHSCOPE_API_KEY / VOLCENGINE_API_KEY / OPENAI_API_KEY"
         )
 
-    client = openai.OpenAI(
-        api_key=config["api_key"],
-        base_url=config["base_url"],
-    )
+    client = make_openai_client(config)
 
     kwargs = {
         "model": config["embedding_model"],
@@ -1374,7 +1408,7 @@ def _interpret_report(doc_text: str, question: str) -> dict:
             summary="AI服务未配置，暂时无法自动解读报告。建议结合原始报告中的异常箭头、参考范围和医生意见综合判断。",
         )
 
-    client = openai.OpenAI(api_key=config["api_key"], base_url=config["base_url"])
+    client = make_openai_client(config, timeout=LLM_TIMEOUT_LONG)
     prompt = f"""请基于以下内容解读报告。
 
 报告类型（供参考）: {REPORT_TYPE_LABELS.get(report_type, "综合医疗报告")} ({report_type})
@@ -1442,7 +1476,7 @@ def _generate_diary_draft(question: str, answer: str, action_cards: list) -> dic
             "saved": False,
         }
 
-    client = openai.OpenAI(api_key=config["api_key"], base_url=config["base_url"])
+    client = make_openai_client(config)
 
     cards_context = ""
     for card in action_cards:
@@ -1500,10 +1534,7 @@ def generate_answer(
     if config["provider"] == "none":
         return "抱歉，AI 问答服务暂未配置，请管理员设置 DASHSCOPE_API_KEY。"
 
-    client = openai.OpenAI(
-        api_key=config["api_key"],
-        base_url=config["base_url"],
-    )
+    client = make_openai_client(config)
 
     messages = _build_llm_messages(query, docs, conversation_history, mode, user_context)
     temperature = _mode_temperature(mode)
@@ -1516,6 +1547,7 @@ def generate_answer(
         temperature,
     )
 
+    referral = red_flag_referral(query)
     try:
         response = client.chat.completions.create(
             model=config["chat_model"],
@@ -1523,10 +1555,13 @@ def generate_answer(
             temperature=temperature,
         )
         content = response.choices[0].message.content if response.choices else None
-        return content.strip() if content and content.strip() else "AI 暂未返回有效回答，请重新提问。"
+        answer = content.strip() if content and content.strip() else "AI 暂未返回有效回答，请重新提问。"
+        return referral + answer
+    except SlotUnavailable:
+        return referral + LLM_BUSY_MESSAGE
     except openai.APIError as e:
-        logger.error("Chat API 调用失败: %s", str(e))
-        return f"AI 问答服务暂时不可用，请稍后再试。（错误: {type(e).__name__}）"
+        logger.error("Chat API 调用失败: %s: %s", type(e).__name__, str(e))
+        return referral + LLM_BUSY_MESSAGE
     finally:
         client.close()
 
@@ -1554,10 +1589,7 @@ def answer_question_stream(
         yield "抱歉，AI 问答服务暂未配置，请管理员设置 DASHSCOPE_API_KEY。"
         return
 
-    client = openai.OpenAI(
-        api_key=config["api_key"],
-        base_url=config["base_url"],
-    )
+    client = make_openai_client(config)
 
     user_context = ""
     if db is not None and user_id is not None:
@@ -1596,6 +1628,10 @@ def answer_question_stream(
         temperature,
     )
 
+    referral = red_flag_referral(query)
+    if referral:
+        yield referral
+
     response = None
     received_content = False
     try:
@@ -1615,9 +1651,11 @@ def answer_question_stream(
                 yield delta.content
         if not received_content:
             yield "AI 暂未返回有效回答，请重新提问。"
+    except SlotUnavailable:
+        yield LLM_BUSY_MESSAGE
     except openai.APIError as e:
-        logger.error("Chat API streaming 调用失败: %s", str(e))
-        yield f"AI 问答服务暂时不可用，请稍后再试。（错误: {type(e).__name__}）"
+        logger.error("Chat API streaming 调用失败: %s: %s", type(e).__name__, str(e))
+        yield ("\n\n" if received_content else "") + LLM_BUSY_MESSAGE
     finally:
         if response is not None:
             response.close()

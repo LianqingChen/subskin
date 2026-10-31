@@ -13,6 +13,7 @@ from web.backend.database.models import User, Tag, PostTag, PostAudio, PostAttac
 from web.backend.services.auth import auth, get_current_user, get_current_user_optional
 from web.backend.services.community import CommunityService
 from web.backend.utils.pii_detect import detect_pii, redact_pii
+from web.backend.utils.image_sanitize import read_upload_capped, sanitize_image
 from web.backend.services.recommendation import RecommendationService
 from web.backend.services.audit import AuditLogService
 from web.backend.services.content_safety import moderate_comment
@@ -834,10 +835,11 @@ async def upload_image(
 ):
     service = CommunityService(db)
     try:
-        content = await image.read()
+        raw = await read_upload_capped(image)
+        content, ext = await asyncio.to_thread(sanitize_image, raw)
         image_url = service.upload_image(
             user_id=current_user.id,
-            filename=image.filename or "upload.jpg",
+            filename=f"upload{ext}",
             content=content,
         )
         return ImageUploadResponse(image_url=image_url)

@@ -6,7 +6,6 @@ import asyncio
 import json
 import logging
 import secrets
-import threading
 from datetime import date
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Literal
@@ -25,6 +24,8 @@ from web.backend.services.skin_report import (
     preview_periodic_reports,
     synthesize_reports,
 )
+from web.backend.services.usage_quota import enforce_daily_quota
+from web.backend.utils.llm_guard import SlotUnavailable, cv_slot, submit_background
 from web.backend.utils.timeutils import iso_utc
 
 logger = logging.getLogger(__name__)
@@ -351,6 +352,8 @@ async def create_comparison_report(
             logger.exception("Manual comparison validation failed")
             raise HTTPException(status_code=503, detail="照片暂时无法校验，请稍后重试")
 
+    enforce_daily_quota(db, current_user, "skin_report")
+
     report = SkinReport(
         user_id=current_user.id,
         profile_id=req.profile_id,
@@ -372,18 +375,19 @@ async def create_comparison_report(
             row = thread_db.query(SkinReport).filter(SkinReport.id == report_id).first()
             if not row:
                 return
-            generate_comparison_report(
-                thread_db,
-                user_id,
-                image_ids=req.image_ids,
-                body_site=req.body_site,
-                profile_id=req.profile_id,
-                report_row=row,
-                vasi_ids=req.vasi_ids,
-                manual_alignment=req.manual_alignment.model_dump() if req.manual_alignment is not None else None,
-            )
+            with cv_slot(wait=300):
+                generate_comparison_report(
+                    thread_db,
+                    user_id,
+                    image_ids=req.image_ids,
+                    body_site=req.body_site,
+                    profile_id=req.profile_id,
+                    report_row=row,
+                    vasi_ids=req.vasi_ids,
+                    manual_alignment=req.manual_alignment.model_dump() if req.manual_alignment is not None else None,
+                )
             # Completed reports remain in history; no inbox notification.
-        except ValueError as e:
+        except (ValueError, SlotUnavailable) as e:
             thread_db.rollback()
             row = thread_db.query(SkinReport).filter(SkinReport.id == report_id).first()
             if row:
@@ -404,7 +408,7 @@ async def create_comparison_report(
         finally:
             thread_db.close()
 
-    threading.Thread(target=_run, daemon=True).start()
+    submit_background(_run)
     return _report_to_dict(db.query(SkinReport).filter(SkinReport.id == report_id).first())
 
 
@@ -527,6 +531,8 @@ async def create_periodic_report(
     if existing and existing.status == "completed" and not req.force:
         return _report_to_dict(existing)
 
+    enforce_daily_quota(db, current_user, "skin_report")
+
     if existing:
         report = existing
         report.profile_id = req.profile_id
@@ -560,18 +566,19 @@ async def create_periodic_report(
             row = thread_db.query(SkinReport).filter(SkinReport.id == report_id).first()
             if not row:
                 return
-            generate_periodic_report(
-                thread_db,
-                user_id,
-                req.period_type,
-                anchor_date=anchor,
-                body_sites=req.body_sites,
-                profile_id=req.profile_id,
-                force=req.force,
-                report_row=row,
-            )
+            with cv_slot(wait=300):
+                generate_periodic_report(
+                    thread_db,
+                    user_id,
+                    req.period_type,
+                    anchor_date=anchor,
+                    body_sites=req.body_sites,
+                    profile_id=req.profile_id,
+                    force=req.force,
+                    report_row=row,
+                )
             # Completed reports remain in history; no inbox notification.
-        except ValueError as e:
+        except (ValueError, SlotUnavailable) as e:
             thread_db.rollback()
             row = thread_db.query(SkinReport).filter(SkinReport.id == report_id).first()
             if row:
@@ -592,7 +599,7 @@ async def create_periodic_report(
         finally:
             thread_db.close()
 
-    threading.Thread(target=_run, daemon=True).start()
+    submit_background(_run)
     return _report_to_dict(db.query(SkinReport).filter(SkinReport.id == report_id).first())
 
 

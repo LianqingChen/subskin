@@ -22,6 +22,7 @@ from web.backend.database.models import (
     UserViolation,
     UserViolationLog,
 )
+from web.backend.utils.llm_guard import make_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ def check_content_safety(title: str, content: str) -> dict:
     prompt = SAFETY_PROMPT.format(title=title[:200], content=content[:2000])
 
     try:
-        client = OpenAI(api_key=config["api_key"], base_url=config["base_url"])
+        client = make_openai_client(config, timeout=20)
         response = client.chat.completions.create(
             model=config["chat_model"],
             messages=[{"role": "user", "content": prompt}],

@@ -4,6 +4,7 @@
 """
 from web.backend.utils.timeutils import iso_utc
 
+import asyncio
 import json
 import os
 import logging
@@ -61,17 +62,15 @@ from web.backend.services.audit import AuditLogService
 from web.backend.utils.uid import generate_uid
 from web.backend.utils.password_policy import validate_password_strength
 from web.backend.utils.upload_validation import validate_avatar_upload
+from web.backend.utils.image_sanitize import read_upload_capped, sanitize_image
 from web.backend.utils.redact import looks_like_phone
 from web.backend.services.email_service import (
     create_email_code,
     verify_email_code,
     send_email_code,
 )
-from web.backend.services.email_service import (
-    create_email_code,
-    verify_email_code,
-    send_email_code,
-)
+from web.backend.services.persistent_rate_limit import check_and_hit
+from web.backend.services.consent import record_consent, CONSENT_TYPE_AGE_18, AGE_18_VERSION
 from web.backend.services.user_serializer import get_user_response as _get_user_response
 from web.backend.services.credential import (
     bind_credential,
@@ -80,7 +79,7 @@ from web.backend.services.credential import (
     get_user_credentials,
     unbind_credential,
 )
-from web.backend.exceptions import CredentialConflictError, CredentialNotFoundError
+from web.backend.exceptions import CredentialConflictError, CredentialNotFoundError, RateLimitExceededError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -232,6 +231,9 @@ def _generate_default_username(db: Session, phone: str) -> str:
     return f"{base}{secrets.randbelow(9_000_000) + 1_000_000}"
 
 
+AVATAR_MAX_SIDE = 1024
+
+
 def _save_avatar_file(user_id: int, filename: str, content: bytes) -> str:
     upload_dir = Path("data/uploads/avatar")
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -369,11 +371,12 @@ async def upload_user_avatar(
     db: Session = Depends(get_db),
     current_user: DBUser = Depends(auth),
 ):
-    content = await file.read()
     try:
+        raw = await read_upload_capped(file)
+        content, ext = await asyncio.to_thread(sanitize_image, raw, AVATAR_MAX_SIDE)
         avatar_url = _save_avatar_file(
             cast(int, cast(object, current_user.id)),
-            file.filename or "avatar.jpg",
+            f"avatar{ext}",
             content,
         )
     except ValueError as e:
@@ -393,7 +396,7 @@ async def upload_user_avatar(
 
 @router.post("/register")
 async def register(user_create: UserCreate, request: Request, db: Session = Depends(get_db)):
-    _check_ip_register_limit(request)
+    _check_ip_register_limit(request, db)
     existing = db.query(DBUser).filter(DBUser.username == user_create.username).first()
     if existing:
         raise HTTPException(
@@ -444,6 +447,7 @@ async def register(user_create: UserCreate, request: Request, db: Session = Depe
     _sync_legacy_user_fields(db, db_user)
     db.commit()
     db.refresh(db_user)
+    _record_age_confirmation(db, db_user, request, user_create.age_confirmed)
     return _get_user_response(db_user, include_private=True, include_sensitive=True)
 
 
@@ -453,59 +457,59 @@ async def register(user_create: UserCreate, request: Request, db: Session = Depe
 import threading as _threading
 import time as _time
 
-_ip_code_send_log: dict = {}
-_ip_code_send_lock = _threading.Lock()
 
-# 注册接口 IP 限速（2026-08-30 加固）：每 IP 每小时最多 10 次注册尝试
-_ip_register_log: dict = {}
-_ip_register_lock = _threading.Lock()
-
-
-def _check_ip_register_limit(request: Request) -> None:
+def _record_age_confirmation(db: Session, user: DBUser, request: Request, confirmed: Optional[bool]) -> None:
+    """注册时勾选「已年满18周岁」则追加 age_18 同意记录；旧客户端不传则跳过（向后兼容）。"""
+    if not confirmed:
+        return
     from web.backend.utils.client_ip import get_real_client_ip
 
-    limit = int(os.getenv("REGISTER_IP_LIMIT", "10"))
-    window = 3600
-    ip = get_real_client_ip(request)
-    now = _time.time()
-    with _ip_register_lock:
-        timestamps = [t for t in _ip_register_log.get(ip, []) if now - t < window]
-        if len(timestamps) >= limit:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="注册操作过于频繁，请稍后再试",
-            )
-        timestamps.append(now)
-        _ip_register_log[ip] = timestamps
-        if len(_ip_register_log) > 10000:
-            stale = [k for k, v in _ip_register_log.items() if not v or now - v[-1] >= window]
-            for k in stale:
-                _ip_register_log.pop(k, None)
+    try:
+        record_consent(
+            db=db,
+            user_id=_db_user_id(user),
+            consent_type=CONSENT_TYPE_AGE_18,
+            version=AGE_18_VERSION,
+            ip_address=get_real_client_ip(request),
+            user_agent=request.headers.get("User-Agent"),
+            platform="web",
+            source="register",
+        )
+    except Exception as e:
+        logger.error("age consent record failed: user_id=%s err=%s", _db_user_id(user), e, exc_info=True)
 
 
-def _check_ip_code_send_limit(request: Request) -> None:
-    """每 IP 每小时最多发送 CODE_SEND_IP_LIMIT（默认20）次验证码。"""
+def _check_ip_register_limit(request: Request, db: Session) -> None:
+    """每 IP 每小时最多 REGISTER_IP_LIMIT（默认10）次注册尝试；计数持久化，重启不清零。"""
     from web.backend.utils.client_ip import get_real_client_ip
 
-    limit = int(os.getenv("CODE_SEND_IP_LIMIT", "20"))
-    window = int(os.getenv("CODE_SEND_IP_WINDOW_SECONDS", "3600"))
-    ip = get_real_client_ip(request)
-    now = _time.time()
-    with _ip_code_send_lock:
-        timestamps = _ip_code_send_log.get(ip, [])
-        timestamps = [ts for ts in timestamps if now - ts < window]
-        if len(timestamps) >= limit:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="操作过于频繁，请稍后再试",
-            )
-        timestamps.append(now)
-        _ip_code_send_log[ip] = timestamps
-        # 防止字典无限增长
-        if len(_ip_code_send_log) > 10000:
-            stale = [k for k, v in _ip_code_send_log.items() if not v or now - v[-1] >= window]
-            for k in stale:
-                _ip_code_send_log.pop(k, None)
+    try:
+        check_and_hit(
+            db,
+            "register_ip",
+            get_real_client_ip(request),
+            limit=int(os.getenv("REGISTER_IP_LIMIT", "10")),
+            window_seconds=3600,
+            message="注册操作过于频繁，请稍后再试",
+        )
+    except RateLimitExceededError as e:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(e))
+
+
+def _check_ip_code_send_limit(request: Request, db: Session) -> None:
+    """每 IP 每小时最多发送 CODE_SEND_IP_LIMIT（默认20）次验证码；计数持久化。"""
+    from web.backend.utils.client_ip import get_real_client_ip
+
+    try:
+        check_and_hit(
+            db,
+            "code_send_ip",
+            get_real_client_ip(request),
+            limit=int(os.getenv("CODE_SEND_IP_LIMIT", "20")),
+            window_seconds=int(os.getenv("CODE_SEND_IP_WINDOW_SECONDS", "3600")),
+        )
+    except RateLimitExceededError as e:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(e))
 
 
 # ── 密码登录失败限速（防暴力破解）──
@@ -561,8 +565,11 @@ def _clear_login_failures(identifier: str) -> None:
 
 @router.post("/send-sms")
 def send_sms_code(data: SendSMSCode, request: Request, db: Session = Depends(get_db)):
-    _check_ip_code_send_limit(request)
-    code = create_sms_code(db, data.phone)
+    _check_ip_code_send_limit(request, db)
+    try:
+        code = create_sms_code(db, data.phone)
+    except RateLimitExceededError as e:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(e))
     success, actual_code = send_sms(data.phone, code)
     if not success:
         raise HTTPException(
@@ -576,8 +583,11 @@ def send_sms_code(data: SendSMSCode, request: Request, db: Session = Depends(get
 
 @router.post("/send-email-code")
 def send_email_verification_code(data: SendEmailCode, request: Request, db: Session = Depends(get_db)):
-    _check_ip_code_send_limit(request)
-    code = create_email_code(db, data.email, purpose=data.purpose)
+    _check_ip_code_send_limit(request, db)
+    try:
+        code = create_email_code(db, data.email, purpose=data.purpose)
+    except RateLimitExceededError as e:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(e))
     success = send_email_code(data.email, code, purpose=data.purpose)
     if not success:
         raise HTTPException(
@@ -591,7 +601,7 @@ def send_email_verification_code(data: SendEmailCode, request: Request, db: Sess
 
 @router.post("/register-by-phone", response_model=Token)
 def register_by_phone(data: UserCreateByPhone, request: Request, db: Session = Depends(get_db)):
-    _check_ip_register_limit(request)
+    _check_ip_register_limit(request, db)
     if data.password is not None:
         strength_error = validate_password_strength(data.password)
         if strength_error is not None:
@@ -633,6 +643,7 @@ def register_by_phone(data: UserCreateByPhone, request: Request, db: Session = D
     db.commit()
     db.refresh(user)
 
+    _record_age_confirmation(db, user, request, data.age_confirmed)
     return _login_response(user, db)
 
 
@@ -722,7 +733,8 @@ def login_by_email(data: EmailLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/register-by-email", response_model=Token)
-def register_by_email(data: EmailRegister, db: Session = Depends(get_db)):
+def register_by_email(data: EmailRegister, request: Request, db: Session = Depends(get_db)):
+    _check_ip_register_limit(request, db)
     if not verify_email_code(db, data.email, data.code, purpose="register"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="验证码错误或已过期"
@@ -778,6 +790,7 @@ def register_by_email(data: EmailRegister, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
+    _record_age_confirmation(db, user, request, data.age_confirmed)
     return _login_response(user, db)
 
 

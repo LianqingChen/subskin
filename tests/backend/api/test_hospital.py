@@ -184,7 +184,16 @@ def test_admin_can_hide_community_hospital(client, admin_headers):
 
 # ── 一期：凭证图上传 / 有用投票 / 排序 / 标签聚合 ──
 
-PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"0" * 128
+def _valid_png() -> bytes:
+    import io
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (8, 8), "white").save(buf, "PNG")
+    return buf.getvalue()
+
+
+PNG_BYTES = _valid_png()
 
 
 def _serve(url: str) -> str:

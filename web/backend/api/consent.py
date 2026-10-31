@@ -5,7 +5,7 @@
 from web.backend.utils.timeutils import iso_utc
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -13,10 +13,17 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from web.backend.database.database import get_db
-from web.backend.database.models import UserConsent
+from web.backend.utils.client_ip import get_real_client_ip
 from web.backend.services.auth import get_current_user, get_current_user_optional
 from web.backend.database.models import User as DBUser
-from web.backend.services.consent import latest_consent
+from web.backend.services.consent import (
+    AGE_18_VERSION,
+    HEALTH_DATA_VERSION,
+    KNOWN_CONSENT_TYPES,
+    REVOCABLE_CONSENT_TYPES,
+    latest_consent,
+    record_consent,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -27,7 +34,7 @@ PRIVACY_VERSION = "1.1"
 
 
 class ConsentRecordRequest(BaseModel):
-    consent_type: str  # terms, privacy, ai_data, medical_photo
+    consent_type: str  # terms, privacy, ai_data, medical_photo, health_data, age_18
     version: str
     platform: Optional[str] = None  # web, pwa, ios, android
     source: Optional[str] = None  # register, login, oauth, ai_prompt, vasi_upload
@@ -49,45 +56,13 @@ class ConsentStatusResponse(BaseModel):
     privacy: Optional[dict] = None
     ai_data: Optional[dict] = None
     medical_photo: Optional[dict] = None
-
-
-def record_consent(
-    db: Session,
-    user_id: int,
-    consent_type: str,
-    version: str,
-    ip_address: Optional[str] = None,
-    user_agent: Optional[str] = None,
-    device_fingerprint: Optional[str] = None,
-    platform: Optional[str] = None,
-    source: Optional[str] = None,
-) -> UserConsent:
-    """记录用户同意行为（可在其他模块中直接调用）"""
-    consent = UserConsent(
-        user_id=user_id,
-        consent_type=consent_type,
-        consent_version=version,
-        consented_at=datetime.now(timezone.utc),
-        ip_address=ip_address,
-        user_agent=user_agent[:500] if user_agent and len(user_agent) > 500 else user_agent,
-        device_fingerprint=device_fingerprint,
-        platform=platform,
-        source=source,
-        is_active=True,
-    )
-    db.add(consent)
-    db.commit()
-    db.refresh(consent)
-    logger.info(f"Consent recorded: user_id={user_id}, type={consent_type}, version={version}, source={source}")
-    return consent
+    health_data: Optional[dict] = None
+    age_18: Optional[dict] = None
 
 
 def get_client_ip(request: Request) -> str:
-    """从请求中提取客户端IP"""
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+    """真实客户端 IP（XFF 首值可被伪造，统一走 client_ip 工具）。"""
+    return get_real_client_ip(request) or "unknown"
 
 
 @router.post("/record", response_model=ConsentRecordResponse)
@@ -98,6 +73,8 @@ async def record_user_consent(
     current_user: DBUser = Depends(get_current_user),
 ):
     """记录用户同意行为"""
+    if data.consent_type not in KNOWN_CONSENT_TYPES:
+        raise HTTPException(status_code=400, detail="未知的授权类型")
     consent = record_consent(
         db=db,
         user_id=current_user.id,
@@ -126,7 +103,11 @@ async def batch_record_consent(
         "privacy": PRIVACY_VERSION,
         "ai_data": "1.0",
         "medical_photo": "1.0",
+        "health_data": HEALTH_DATA_VERSION,
+        "age_18": AGE_18_VERSION,
     }
+    if any(ct not in KNOWN_CONSENT_TYPES for ct in consent_types):
+        raise HTTPException(status_code=400, detail="未知的授权类型")
     for ct in consent_types:
         version = version_map.get(ct, "1.0")
         consent = record_consent(
@@ -151,7 +132,7 @@ async def get_consent_status(
 ):
     """查询当前用户的同意状态"""
     result = ConsentStatusResponse()
-    for consent_type in ["terms", "privacy", "ai_data", "medical_photo"]:
+    for consent_type in KNOWN_CONSENT_TYPES:
         latest = latest_consent(db, current_user.id, consent_type)
         if latest and latest.is_active:
             setattr(result, consent_type, {
@@ -176,21 +157,19 @@ async def revoke_user_consent(
 ):
     """撤销某项授权（2026-08-30）：写入一条 is_active=False 的记录，
     后续 has_active_consent 查询即不再命中，数据外送立即停止。"""
-    if data.consent_type not in ("terms", "privacy", "ai_data", "medical_photo"):
+    if data.consent_type not in REVOCABLE_CONSENT_TYPES:
         raise HTTPException(status_code=400, detail="未知的授权类型")
-    consent = UserConsent(
+    record_consent(
+        db=db,
         user_id=current_user.id,
         consent_type=data.consent_type,
-        consent_version="revoked",
-        consented_at=datetime.now(timezone.utc),
+        version="revoked",
         ip_address=get_client_ip(request),
-        user_agent=(request.headers.get("User-Agent") or "")[:500] or None,
+        user_agent=request.headers.get("User-Agent"),
         platform="web",
         source="manual",
         is_active=False,
     )
-    db.add(consent)
-    db.commit()
     return {"success": True, "consent_type": data.consent_type, "is_active": False}
 
 
@@ -200,4 +179,6 @@ async def get_current_versions():
     return {
         "terms_version": TERMS_VERSION,
         "privacy_version": PRIVACY_VERSION,
+        "health_data_version": HEALTH_DATA_VERSION,
+        "age_18_version": AGE_18_VERSION,
     }

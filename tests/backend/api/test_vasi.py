@@ -10,6 +10,14 @@ import pytest
 from fastapi import status
 
 
+def _jpeg_bytes() -> bytes:
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (16, 16), "white").save(buf, "JPEG")
+    return buf.getvalue()
+
+
 class TestCreateAssessment:
     """Test POST /assess endpoint"""
 
@@ -44,7 +52,7 @@ class TestCreateAssessment:
         mock_service_instance.assess_vasi = AsyncMock(return_value=mock_assessment)
         mock_service.return_value = mock_service_instance
 
-        image_content = b"fake image data"
+        image_content = _jpeg_bytes()
         files = {"image": ("test.jpg", io.BytesIO(image_content), "image/jpeg")}
         data = {"body_site": "面部"}
 
@@ -60,7 +68,7 @@ class TestCreateAssessment:
     @patch("web.backend.api.vasi.VASIService")
     def test_create_assessment_unauthenticated(self, mock_service, client):
         """Test unauthenticated user cannot create assessment"""
-        image_content = b"fake image data"
+        image_content = _jpeg_bytes()
         files = {"image": ("test.jpg", io.BytesIO(image_content), "image/jpeg")}
         data = {"body_site": "面部"}
 
@@ -81,7 +89,7 @@ class TestCreateAssessment:
         )
         mock_service.return_value = mock_service_instance
 
-        image_content = b"fake image data"
+        image_content = _jpeg_bytes()
         files = {"image": ("test.gif", io.BytesIO(image_content), "image/gif")}
         data = {"body_site": "面部"}
 
@@ -104,7 +112,7 @@ class TestCreateAssessment:
         )
         mock_service.return_value = mock_service_instance
 
-        image_content = b"fake image data"
+        image_content = _jpeg_bytes()
         files = {"image": ("test.jpg", io.BytesIO(image_content), "image/jpeg")}
         data = {"body_site": "invalid_site"}
 
@@ -130,7 +138,7 @@ class TestCreateAssessment:
         self, mock_service, client, test_user, auth_headers
     ):
         """Test creating assessment without body_site returns 422"""
-        image_content = b"fake image data"
+        image_content = _jpeg_bytes()
         files = {"image": ("test.jpg", io.BytesIO(image_content), "image/jpeg")}
 
         response = client.post("/api/vasi/assess", files=files, headers=auth_headers)

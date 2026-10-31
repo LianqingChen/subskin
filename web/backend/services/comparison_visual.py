@@ -18,7 +18,9 @@ def describe_comparison(db: Any, user_id: int, before: bytes, after: bytes, site
         if config.get("provider") == "none" or not config.get("api_key"):
             return {"status": "unavailable", "summary": "已保留照片对照，AI图像观察暂未生成，可稍后重试。"}
         from openai import OpenAI
-        client = OpenAI(api_key=config["api_key"], base_url=config["base_url"], timeout=90)
+        from web.backend.utils.llm_guard import make_openai_client
+
+        client = make_openai_client(config, timeout=90)
         prompt = (
             "你是照片观察助手。比较同一身体部位两张照片中可见的白斑边缘、颜色和分布。"
             "仅写肉眼可见的差异及拍摄光线、姿态、遮挡等限制，不诊断病情，不判断疗效，"

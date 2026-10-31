@@ -18,6 +18,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from web.backend.utils.llm_guard import LLM_TIMEOUT_LONG, make_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +132,7 @@ def analyze_light(
             return None
 
         vision_model = config.get("vision_model") or "qwen-vl-max"
-        client = openai.OpenAI(api_key=config["api_key"], base_url=config["base_url"])
+        client = make_openai_client(config, timeout=LLM_TIMEOUT_LONG)
 
         b64_image = base64.b64encode(image_bytes).decode("utf-8")
         mime = _detect_mime(image_bytes)

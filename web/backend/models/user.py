@@ -19,12 +19,14 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=128)
+    age_confirmed: Optional[bool] = None
 
 
 class UserCreateByPhone(BaseModel):
     phone: str = Field(pattern=r"^1[3-9]\d{9}$")
     code: str = Field(min_length=6, max_length=6)
     password: Optional[str] = Field(default=None, min_length=8, max_length=128)
+    age_confirmed: Optional[bool] = None
 
 
 class PhoneLogin(BaseModel):
@@ -47,6 +49,7 @@ class EmailRegister(BaseModel):
     code: str = Field(min_length=6, max_length=6)
     username: str = Field(default="", max_length=20)
     password: str = Field(min_length=8, max_length=128)
+    age_confirmed: Optional[bool] = None
 
 
 class SendSMSCode(BaseModel):

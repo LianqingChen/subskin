@@ -21,6 +21,13 @@ class CredentialNotFoundError(SubSkinException):
         super().__init__(message)
 
 
+class RateLimitExceededError(SubSkinException):
+    """频率或全站配额超限，API 层转换为 429。"""
+
+    def __init__(self, message: str = "操作过于频繁，请稍后再试"):
+        super().__init__(message)
+
+
 class HospitalNotFoundError(SubSkinException):
     """医院目录条目不存在或不可见。"""
 

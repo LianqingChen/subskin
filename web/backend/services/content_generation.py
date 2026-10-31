@@ -17,6 +17,7 @@ from web.backend.database.database import SessionLocal
 from web.backend.database.models import AdminGeneratedPost, CommunityCategory, Tag, User
 from web.backend.services.community import CommunityService
 from web.backend.utils.llm_config import get_llm_config
+from web.backend.utils.llm_guard import LLM_TIMEOUT_LONG, make_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +87,7 @@ def _get_llm_client():
     """获取 LLM 客户端"""
     import openai
     config = get_llm_config("content_safety")
-    return openai.OpenAI(api_key=config["api_key"], base_url=config["base_url"])
+    return make_openai_client(config, timeout=LLM_TIMEOUT_LONG)
 
 
 def _read_latest_raw_data(max_items: int = 20) -> List[Dict[str, Any]]:

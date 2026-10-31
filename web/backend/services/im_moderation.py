@@ -10,6 +10,7 @@ from web.backend.database.models import (
     UserViolation,
 )
 from web.backend.utils.llm_config import get_llm_config
+from web.backend.utils.llm_guard import make_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +56,7 @@ def check_im_message_safety(content: str) -> dict:
     try:
         from openai import OpenAI
 
-        client = OpenAI(
-            api_key=config["api_key"], base_url=config["base_url"]
-        )
+        client = make_openai_client(config, timeout=20)
         response = client.chat.completions.create(
             model=config["chat_model"],
             messages=[

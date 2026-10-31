@@ -17,6 +17,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from web.backend.database.models import SMSCode
+from web.backend.exceptions import RateLimitExceededError
 
 logger = logging.getLogger(__name__)
 
@@ -66,8 +67,21 @@ def check_sms_rate_limit(db: Session, phone: str) -> None:
         )
 
 
+def check_sms_global_daily_cap(db: Session) -> None:
+    """全站 24h 短信总量上限：防止换 IP + 随机号码批量刷短信费。"""
+    cap = int(os.getenv("SMS_GLOBAL_DAILY_CAP", "300"))
+    since = _utcnow() - timedelta(hours=24)
+    sent = db.query(SMSCode).filter(SMSCode.created_at >= since).count()
+    if sent >= cap:
+        logger.error("SMS global daily cap reached: %s/%s", sent, cap)
+        raise RateLimitExceededError("短信服务今日繁忙，请稍后再试或使用其他登录方式")
+    if sent + 1 >= int(cap * 0.8):
+        logger.warning("SMS global daily usage at %s/%s (>=80%%)", sent + 1, cap)
+
+
 def create_sms_code(db: Session, phone: str, expire_minutes: int = 5) -> str:
     check_sms_rate_limit(db, phone)
+    check_sms_global_daily_cap(db)
 
     old_codes = (
         db.query(SMSCode)

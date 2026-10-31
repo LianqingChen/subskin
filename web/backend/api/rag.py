@@ -4,6 +4,7 @@ from web.backend.utils.timeutils import iso_utc
 import hashlib
 import json
 import logging
+import os
 import shutil
 import uuid
 from datetime import datetime, timezone
@@ -20,6 +21,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import StreamingResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from web.backend.database.database import get_db, SessionLocal
@@ -51,11 +53,14 @@ from web.backend.services.rag import (
     search_documents,
 )
 from web.backend.services.auth import auth
+from web.backend.services.usage_quota import enforce_daily_quota
+from web.backend.utils.llm_guard import SlotUnavailable, cv_slot
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 GUEST_DAILY_LIMIT = 5
+GUEST_DAILY_GLOBAL_CAP = int(os.getenv("GUEST_DAILY_GLOBAL_CAP", "500"))
 GUEST_MAX_QUESTION_LENGTH = 200
 LOGGED_IN_MAX_QUESTION_LENGTH = 2000
 ALLOWED_UPLOAD_TYPES = {
@@ -75,12 +80,9 @@ def _get_client_fingerprint(request: Request) -> str:
     # 获取真实客户端 IP，否则访客每日配额可被轻易绕过/互相挤占
     from web.backend.utils.client_ip import get_real_client_ip
 
+    # 只按 IP：UA/路径可被随意更换，混入指纹等于让配额可被无限重置
     ip = get_real_client_ip(request)
-    user_agent = request.headers.get("user-agent", "")
-    # Include request path prefix for additional entropy
-    path_prefix = request.url.path.split("/")[1] if request.url.path.startswith("/") else ""
-    raw = f"{ip}:{user_agent}:{path_prefix}"
-    return hashlib.sha256(raw.encode()).hexdigest()
+    return hashlib.sha256(f"guest-ip:{ip}".encode()).hexdigest()
 
 
 def _today_str() -> str:
@@ -145,6 +147,21 @@ def _check_guest_limit(db: Session, fingerprint: str) -> int:
     if not usage:
         return 0
     return usage.question_count
+
+
+def _enforce_guest_global_cap(db: Session) -> None:
+    """全站访客每日总量上限：防止换 IP 批量刷访客额度烧 LLM 费用。"""
+    total = (
+        db.query(func.coalesce(func.sum(GuestUsage.question_count), 0))
+        .filter(GuestUsage.date == _today_str())
+        .scalar()
+    )
+    if total >= GUEST_DAILY_GLOBAL_CAP:
+        logger.warning("guest global daily cap reached: %s", total)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="今日访客体验名额已满，请登录后继续使用AI助手。",
+        )
 
 
 def _increment_guest_usage(db: Session, fingerprint: str) -> int:
@@ -261,6 +278,7 @@ def ask_question(
     _assert_conversation_ownership(db, request.conversation_id, user_id)
     # Per-user chat rate limit (guests are separately capped by daily quota).
     _enforce_chat_rate_limit(user_id)
+    enforce_daily_quota(db, current_user, "chat")
 
     return answer_question(
         db=db,
@@ -306,7 +324,8 @@ def ask_question_public(
             detail="抱歉，当前AI助手专注于白癜风及皮肤健康相关问题。如有其他问题，建议咨询相关领域的专业人士。",
         )
 
-    # 2. 访客次数限制
+    # 2. 访客次数限制（全站总量 + 单 IP）
+    _enforce_guest_global_cap(db)
     fingerprint = _get_client_fingerprint(http_request)
     used = _check_guest_limit(db, fingerprint)
 
@@ -546,6 +565,7 @@ def ask_question_stream(
     user_id = current_user.id if current_user else None
     _assert_conversation_ownership(db, request.conversation_id, user_id)
     _enforce_chat_rate_limit(user_id)
+    enforce_daily_quota(db, current_user, "chat")
     db = SessionLocal()
     try:
         return StreamingResponse(
@@ -597,6 +617,7 @@ def ask_question_public_stream(
 
     db = SessionLocal()
     try:
+        _enforce_guest_global_cap(db)
         fingerprint = _get_client_fingerprint(http_request)
         used = _check_guest_limit(db, fingerprint)
         if used >= GUEST_DAILY_LIMIT:
@@ -724,7 +745,8 @@ def _stream_rag_response(
                         }
                     )
                     try:
-                        result = _analyze_uploaded_image(filepath)
+                        with cv_slot():
+                            result = _analyze_uploaded_image(filepath)
                         card = {
                             "type": "vasi",
                             "vasiScore": result.get("vasi_score", 0),
@@ -749,6 +771,12 @@ def _stream_rag_response(
                                 site=card["bodySite"],
                                 stage=card["stage"],
                                 area=card["areaPercentage"],
+                            )
+                        )
+                    except SlotUnavailable:
+                        attachment_notes.append(
+                            "图片附件「{name}」因当前分析排队人数较多暂未处理，请稍后重新上传。".format(
+                                name=filepath.name
                             )
                         )
                     except Exception as exc:

@@ -1,3 +1,4 @@
+import asyncio
 import json as _json
 import logging
 import os
@@ -11,6 +12,9 @@ from sqlalchemy.orm import Session
 from web.backend.database.database import get_db
 from web.backend.database.models import User, MedicalReport, MedicalReportFile
 from web.backend.services.auth import auth
+from web.backend.services.consent import HEALTH_CONSENT_REQUIRED_DETAIL, health_data_consent_missing
+from web.backend.utils.image_sanitize import read_upload_capped, sanitize_image
+from web.backend.utils.upload_validation import detect_image_ext
 from web.backend.services.community import CommunityService
 from web.backend.models.community import (
     MedicalReportResponse,
@@ -26,6 +30,7 @@ from web.backend.services.medical.report_parser import report_parser
 from web.backend.services.medical.report_interpreter import report_interpreter
 from web.backend.utils.llm_config import get_llm_config
 import openai
+from web.backend.utils.llm_guard import LLM_TIMEOUT_LONG, make_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -222,6 +227,8 @@ async def create_report(
 ):
     if not title.strip():
         raise HTTPException(status_code=400, detail="标题不能为空")
+    if health_data_consent_missing(db, _as_int(current_user.id)):
+        raise HTTPException(status_code=403, detail=HEALTH_CONSENT_REQUIRED_DETAIL)
 
     report = MedicalReport(
         user_id=current_user.id,
@@ -240,10 +247,14 @@ async def create_report(
         for idx, file in enumerate(uploaded_files):
             if not file.filename:
                 continue
-            content = await file.read()
+            content = await read_upload_capped(file)
+            stored_name = file.filename
+            if detect_image_ext(content) is not None:
+                content, ext = await asyncio.to_thread(sanitize_image, content)
+                stored_name = f"{Path(file.filename).stem or 'report'}{ext}"
             result = service.upload_file(
                 user_id=_as_int(current_user.id),
-                filename=file.filename,
+                filename=stored_name,
                 content=content,
                 subdir="reports",
             )
@@ -590,7 +601,7 @@ async def _interpret_with_vision(
         return None
 
     vision_model = config.get("vision_model", "qwen-vl-plus")
-    client = openai.OpenAI(api_key=config["api_key"], base_url=config["base_url"])
+    client = make_openai_client(config, timeout=LLM_TIMEOUT_LONG)
 
     # ─── Pass 1: Extract ALL text from ALL pages in batches ───
     all_extracted_text: List[str] = []

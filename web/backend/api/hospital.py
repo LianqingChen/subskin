@@ -3,11 +3,13 @@
 分层：本模块只做请求解析、鉴权、异常转换；业务逻辑在 services/hospital.py。
 """
 
+import asyncio
 import logging
 import threading
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
+from web.backend.utils.image_sanitize import read_upload_capped, sanitize_image
 from sqlalchemy.orm import Session
 
 from web.backend.app.middleware.rate_limit import ReadRateLimit, limit_write_for_user
@@ -239,12 +241,15 @@ async def upload_review_image(
     await limit_write_for_user(request, current_user.id)
     _reject_inactive(current_user)
     try:
-        content = await image.read()
+        raw = await read_upload_capped(image)
+        content, ext = await asyncio.to_thread(sanitize_image, raw, 2560)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception:
         logger.warning("read review image failed for user %s", current_user.id, exc_info=True)
         raise HTTPException(status_code=400, detail="图片读取失败，请重新选择")
     try:
-        url = save_review_image(current_user.id, image.filename or "receipt.jpg", content)
+        url = save_review_image(current_user.id, f"receipt{ext}", content)
     except HospitalReviewRejectedError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception:

@@ -7,6 +7,7 @@ import json
 import logging
 import os
 from typing import List, Optional
+from web.backend.utils.llm_guard import LLM_TIMEOUT_LONG, make_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -163,10 +164,7 @@ def _call_llm_extraction(raw_text: str) -> Optional[dict]:
         if config["provider"] == "none" or not config.get("api_key"):
             return None
 
-        client = openai.OpenAI(
-            api_key=config["api_key"],
-            base_url=config["base_url"],
-        )
+        client = make_openai_client(config)
 
         prompt = EXTRACTION_PROMPT.format(raw_text=raw_text[:1000])
 
@@ -219,10 +217,7 @@ def generate_weekly_ai_summary(entries_data: List[dict]) -> Optional[str]:
         if config["provider"] == "none" or not config.get("api_key"):
             return None
 
-        client = openai.OpenAI(
-            api_key=config["api_key"],
-            base_url=config["base_url"],
-        )
+        client = make_openai_client(config, timeout=LLM_TIMEOUT_LONG)
 
         prompt = WEEKLY_SUMMARY_PROMPT.format(
             entries_json=json.dumps(entries_data[:10], ensure_ascii=False)

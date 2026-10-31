@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from web.backend.database.models import SkinReport
+from web.backend.utils.llm_guard import LLM_TIMEOUT_LONG, make_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -1186,7 +1187,7 @@ def _call_periodic_llm(
         if config.get("provider") == "none" or not config.get("api_key"):
             return None
 
-        client = openai.OpenAI(api_key=config["api_key"], base_url=config["base_url"])
+        client = make_openai_client(config, timeout=LLM_TIMEOUT_LONG)
         template = _get_prompt_template("skin_report", "periodic_report", PERIODIC_REPORT_PROMPT)
         prompt = template.format(
             period_name=period_name,
@@ -1635,7 +1636,7 @@ def _call_synthesis_llm(summaries: List[Dict[str, Any]]) -> Optional[Dict[str, A
         if config.get("provider") == "none" or not config.get("api_key"):
             return None
 
-        client = openai.OpenAI(api_key=config["api_key"], base_url=config["base_url"])
+        client = make_openai_client(config, timeout=LLM_TIMEOUT_LONG)
         prompt = SYNTHESIS_PROMPT.format(
             n=len(summaries),
             payload=json.dumps(summaries, ensure_ascii=False)[:8000],

@@ -43,6 +43,20 @@ if "sqlite" in DATABASE_URL:
             # 注册失败不阻断连接，但必须可诊断——否则热度排序会以
             # "no such function: pow" 500 的形式隐性复发（2026-08-24 事故）。
             logger.warning("SQLite pow UDF registration failed: %s", e)
+
+    # WAL：读不再被写阻塞（delete 模式下任何写事务都会锁住所有读）。
+    # journal_mode 持久写在库文件里，NullPool 每次新连接重复设置开销可忽略。
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragmas(dbapi_conn, _record):
+        cursor = dbapi_conn.cursor()
+        try:
+            cursor.execute("PRAGMA busy_timeout=15000")
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+        except Exception as e:
+            logger.warning("SQLite pragma setup failed: %s", e)
+        finally:
+            cursor.close()
 else:
     engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

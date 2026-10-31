@@ -3,6 +3,7 @@ VASI评估API
 """
 from web.backend.utils.timeutils import iso_utc
 
+import asyncio
 import logging
 import json
 from typing import List, Optional, Dict, Any
@@ -19,6 +20,10 @@ from web.backend.services.vasi import VASIService, VASIAssessmentError
 from web.backend.models.vasi import VASIAssessment, ImageQualityTag
 from web.backend.services.assessment_measurement import measurement_for, context_for, read_details, measure_layers, normalize_capture
 from web.backend.database.models import User
+from web.backend.services.consent import HEALTH_CONSENT_REQUIRED_DETAIL, health_data_consent_missing
+from web.backend.utils.image_sanitize import mime_for_ext, read_upload_capped, sanitize_image
+from web.backend.services.usage_quota import enforce_daily_quota
+from web.backend.utils.llm_guard import QuotaExceeded, SlotUnavailable, async_cv_slot
 from web.backend.api.models import (
     VASIAssessmentResponse,
     VASIHistoryResponse,
@@ -74,9 +79,16 @@ async def create_assessment(
     precision: "quick" 快速评估(~10s) 或 "precise" 精确评估(~70s)
     """
     try:
-        image_bytes = await image.read()
-        image_type = image.content_type or "image/jpeg"
-        image_filename = image.filename or "upload.jpg"
+        if health_data_consent_missing(db, current_user.id):
+            raise HTTPException(status_code=403, detail=HEALTH_CONSENT_REQUIRED_DETAIL)
+        enforce_daily_quota(db, current_user, "vasi")
+        try:
+            raw_bytes = await read_upload_capped(image)
+            image_bytes, image_ext = await asyncio.to_thread(sanitize_image, raw_bytes)
+        except ValueError as exc:
+            raise VASIAssessmentError(str(exc))
+        image_type = mime_for_ext(image_ext)
+        image_filename = f"upload{image_ext}"
 
         service = VASIService(db)
         if annotation_protocol not in ("", "skin-outline-v1"):
@@ -110,15 +122,16 @@ async def create_assessment(
             "capture_date": captured.isoformat(), "date_confirmed": capture_date is not None,
             "baseline_id": baseline.id if baseline else None, "background": background.strip(),
         }
-        assessment = await service.assess_vasi(
-            user_id=current_user.id,
-            image_file=image_bytes,
-            body_site=body_site,
-            image_type=image_type,
-            image_filename=image_filename,
-            precision=precision,
-            **({"annotation_protocol": annotation_protocol} if annotation_protocol else {}),
-        )
+        async with async_cv_slot():
+            assessment = await service.assess_vasi(
+                user_id=current_user.id,
+                image_file=image_bytes,
+                body_site=body_site,
+                image_type=image_type,
+                image_filename=image_filename,
+                precision=precision,
+                **({"annotation_protocol": annotation_protocol} if annotation_protocol else {}),
+            )
 
         details = read_details(assessment.details)
         details["observation"] = observation
@@ -230,6 +243,8 @@ async def create_assessment(
 
     except VASIAssessmentError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except (HTTPException, SlotUnavailable, QuotaExceeded):
+        raise
     except Exception as e:
         logger.error("VASI评估失败: %s", str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="服务暂时不可用，请稍后重试")
@@ -450,11 +465,16 @@ async def promptable_prepare(
     cache_key: str = Form(...),
     current_user: User = Depends(get_current_user),
 ):
-    image_bytes = await image.read()
+    try:
+        raw_bytes = await read_upload_capped(image)
+        image_bytes, _ = await asyncio.to_thread(sanitize_image, raw_bytes)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
     from web.backend.services.vasi_promptable import prepare_image
 
     user_scoped_key = f"user{current_user.id}:{cache_key}"
-    meta = await __import__("asyncio").to_thread(prepare_image, user_scoped_key, image_bytes)
+    async with async_cv_slot():
+        meta = await asyncio.to_thread(prepare_image, user_scoped_key, image_bytes)
     if meta is None:
         raise HTTPException(status_code=503, detail="智能分割服务暂不可用，请稍后重试")
     return {"status": "ok", "cache_key": user_scoped_key, **meta}
@@ -486,9 +506,10 @@ async def promptable_click(
         raise HTTPException(status_code=400, detail="至少需要 1 个点")
 
     pts = [(p.x, p.y, p.label) for p in request.points]
-    result = await __import__("asyncio").to_thread(
-        predict_by_points, request.cache_key, pts, True,
-    )
+    async with async_cv_slot():
+        result = await asyncio.to_thread(
+            predict_by_points, request.cache_key, pts, True,
+        )
     if result is None:
         raise HTTPException(
             status_code=410,
@@ -520,13 +541,14 @@ async def promptable_refine_circle(
     if not request.cache_key.startswith(expected_prefix):
         raise HTTPException(status_code=403, detail="无效的 cache_key")
 
-    result = await __import__("asyncio").to_thread(
-        predict_by_circle,
-        request.cache_key,
-        (request.circle.center_x, request.circle.center_y),
-        request.circle.radius_x,
-        request.circle.radius_y,
-    )
+    async with async_cv_slot():
+        result = await asyncio.to_thread(
+            predict_by_circle,
+            request.cache_key,
+            (request.circle.center_x, request.circle.center_y),
+            request.circle.radius_x,
+            request.circle.radius_y,
+        )
     if result is None:
         raise HTTPException(
             status_code=410,
@@ -702,16 +724,14 @@ async def check_photo_quality(
     # user-uploaded photo. Without auth it is an unauthenticated CPU/IO sink
     # (anyone can POST arbitrary images). Also enforce a size cap to prevent
     # oversized uploads from exhausting memory.
-    MAX_PHOTO_BYTES = 20 * 1024 * 1024  # 20 MB
-    image_bytes = await image.read()
-    if len(image_bytes) > MAX_PHOTO_BYTES:
-        raise HTTPException(
-            status_code=413,
-            detail=f"图片过大（{len(image_bytes)} 字节），请上传小于 {MAX_PHOTO_BYTES // (1024 * 1024)}MB 的图片",
-        )
+    try:
+        image_bytes = await read_upload_capped(image)
+    except ValueError as exc:
+        raise HTTPException(status_code=413, detail=str(exc))
     from web.backend.services.vasi_quality import vasi_quality_checker
 
-    quality = vasi_quality_checker.check_all(image_bytes)
+    async with async_cv_slot():
+        quality = await asyncio.to_thread(vasi_quality_checker.check_all, image_bytes)
     return {
         "overall": quality.overall,
         "blur_score": quality.blur_score,
@@ -1673,4 +1693,5 @@ async def photo_align(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="照片为空")
         data.append(b)
     # CPU 密集（MediaPipe），线程池执行避免阻塞事件循环
-    return await run_in_threadpool(compute_align_params, data, body_site)
+    async with async_cv_slot():
+        return await run_in_threadpool(compute_align_params, data, body_site)
