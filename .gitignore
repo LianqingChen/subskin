@@ -199,3 +199,6 @@ docs/research/**/*.png
 docs/research/**/*.jpg
 docs/research/**/round*-artifacts/
 ml/pixel_labeling/models/
+
+# web/app/src/data holds source (catalogs, province list), not runtime data
+!web/app/src/data/
