@@ -21,6 +21,7 @@
     <PWABanners />
     <ToastContainer />
     <LoginModal v-if="authStore.showLoginModal" @close="authStore.showLoginModal = false" />
+    <HealthConsentDialog />
   </div>
 </template>
 
@@ -39,6 +40,7 @@ import GlobalFooter from '@/components/layout/GlobalFooter.vue'
 import ToastContainer from '@/components/common/ToastContainer.vue'
 import PWABanners from '@/components/common/PWABanners.vue'
 import LoginModal from '@/components/common/LoginModal.vue'
+import HealthConsentDialog from '@/components/common/HealthConsentDialog.vue'
 
 const route = useRoute()
 const authStore = useAuthStore()

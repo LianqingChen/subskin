@@ -66,8 +66,8 @@ export const authApi = {
     return data as LoginResponse
   },
 
-  async registerByPhone(phone: string, code: string, password?: string) {
-    const { data } = await apiClient.post('/user/register-by-phone', { phone, code, password })
+  async registerByPhone(phone: string, code: string, password: string | undefined, ageConfirmed: boolean) {
+    const { data } = await apiClient.post('/user/register-by-phone', { phone, code, password, age_confirmed: ageConfirmed })
     return data as LoginResponse
   },
 
@@ -87,8 +87,8 @@ export const authApi = {
     return data as LoginResponse
   },
 
-  async registerByEmail(email: string, code: string, password: string) {
-    const { data } = await apiClient.post('/user/register-by-email', { email, code, username: '', password })
+  async registerByEmail(email: string, code: string, password: string, ageConfirmed: boolean) {
+    const { data } = await apiClient.post('/user/register-by-email', { email, code, username: '', password, age_confirmed: ageConfirmed })
     return data as LoginResponse
   },
 

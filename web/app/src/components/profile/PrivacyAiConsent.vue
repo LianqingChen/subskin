@@ -5,6 +5,7 @@ import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { detectPii } from '@/utils/piiCheck'
+import { forgetHealthConsent } from '@/composables/useHealthConsent'
 
 /**
  * 隐私与数据面板：AI 数据授权开关 + 账户注销（被遗忘权）。
@@ -18,6 +19,7 @@ const toast = useToast()
 
 const aiData = ref(false)
 const medicalPhoto = ref(false)
+const healthData = ref(false)
 const loading = ref(false)
 
 // ── 注销状态 ──
@@ -33,6 +35,7 @@ async function loadStatus() {
     const res = await apiClient.get('/consent/status')
     aiData.value = Boolean(res.data.ai_data)
     medicalPhoto.value = Boolean(res.data.medical_photo)
+    healthData.value = Boolean(res.data.health_data)
   } catch {
     /* 保持默认关闭 */
   } finally {
@@ -45,9 +48,11 @@ watch(
   (open) => {
     if (open) loadStatus()
   },
+  // Mounted under PrivacyModal's v-if with active already true; without immediate the switches never load.
+  { immediate: true },
 )
 
-async function toggleConsent(type: 'ai_data' | 'medical_photo', current: boolean) {
+async function toggleConsent(type: 'ai_data' | 'medical_photo' | 'health_data', current: boolean) {
   const next = !current
   try {
     if (next) {
@@ -61,7 +66,11 @@ async function toggleConsent(type: 'ai_data' | 'medical_photo', current: boolean
       await apiClient.post('/consent/revoke', { consent_type: type })
     }
     if (type === 'ai_data') aiData.value = next
-    else medicalPhoto.value = next
+    else if (type === 'medical_photo') medicalPhoto.value = next
+    else {
+      healthData.value = next
+      forgetHealthConsent()
+    }
     toast.show(next ? '已开启授权' : '已关闭授权', 'success')
   } catch {
     toast.show('操作失败，请稍后重试', 'error')
@@ -144,6 +153,27 @@ async function handleDeleteAccount() {
           <span
             class="setting-switch-thumb"
             :class="medicalPhoto ? 'translate-x-7' : 'translate-x-0'"
+          />
+        </button>
+      </div>
+
+      <div class="flex items-start justify-between gap-4 mt-4">
+        <div>
+          <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">健康数据处理（单独授权）</h4>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            上传病情照片、体检报告前需要开启；关闭后不再接收新的照片和报告，已保存的记录仍可查看或删除
+          </p>
+        </div>
+        <button
+          type="button"
+          class="setting-switch"
+          :class="healthData ? 'setting-switch-on' : 'setting-switch-off'"
+          :aria-label="'健康数据处理' + (healthData ? '，已开启' : '，已关闭')"
+          @click="toggleConsent('health_data', healthData)"
+        >
+          <span
+            class="setting-switch-thumb"
+            :class="healthData ? 'translate-x-7' : 'translate-x-0'"
           />
         </button>
       </div>

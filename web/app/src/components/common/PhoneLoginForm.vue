@@ -19,6 +19,7 @@ let countdownTimer: ReturnType<typeof setInterval> | null = null
 
 const phoneForm = reactive({ phone: '', code: '', password: '', registerPassword: '' })
 const agreedToTerms = ref(false)
+const ageConfirmed = ref(false)
 
 const phoneViewOptions: { key: AuthView; label: string }[] = [
   { key: 'code', label: '快捷登录' },
@@ -72,8 +73,9 @@ async function handlePhoneRegister() {
   if (!isValidPhone(phoneForm.phone.trim())) { emit('error', '请输入有效的手机号'); return }
   if (phoneForm.code.trim().length < 6) { emit('error', '请输入6位验证码'); return }
   if (phoneForm.registerPassword && phoneForm.registerPassword.length < 6) { emit('error', '密码至少6个字符'); return }
+  if (!ageConfirmed.value) { emit('error', 'SubSkin 目前仅面向年满 18 周岁的用户'); return }
   loading.value = true
-  try { await authStore.registerByPhone(phoneForm.phone.trim(), phoneForm.code.trim(), phoneForm.registerPassword || undefined); addPhoneToHistory(phoneForm.phone.trim()); emit('close') }
+  try { await authStore.registerByPhone(phoneForm.phone.trim(), phoneForm.code.trim(), phoneForm.registerPassword || undefined, ageConfirmed.value); addPhoneToHistory(phoneForm.phone.trim()); emit('close') }
   catch (e: any) { emit('error', e?.response?.data?.detail || '注册失败') }
   finally { loading.value = false }
 }
@@ -134,7 +136,12 @@ async function handlePhoneRegister() {
       :disabled="loading || !agreedToTerms" @click="handlePhonePasswordLogin">{{ loading ? '登录中...' : '登录' }}</button>
     <button v-else type="button"
       class="btn-primary w-full py-2.5 text-sm"
-      :disabled="loading || !agreedToTerms" @click="handlePhoneRegister">{{ loading ? '注册中...' : '注册并登录' }}</button>
+      :disabled="loading || !agreedToTerms || !ageConfirmed" @click="handlePhoneRegister">{{ loading ? '注册中...' : '注册并登录' }}</button>
+
+    <label v-if="phoneView === 'register'" class="flex items-start gap-2 cursor-pointer min-h-[44px] pt-1">
+      <input v-model="ageConfirmed" type="checkbox" class="mt-0.5 w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+      <span class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">我已年满 18 周岁（SubSkin 目前仅面向成年人）</span>
+    </label>
 
     <label class="flex items-start gap-2 cursor-pointer min-h-[44px] pt-1">
       <input v-model="agreedToTerms" type="checkbox" class="mt-0.5 w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />

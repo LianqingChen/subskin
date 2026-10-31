@@ -113,8 +113,8 @@ watch(showLoginModal, (val: boolean) => {
     return data
   }
 
-  async function registerByPhone(phone: string, code: string, password?: string) {
-    const data = await authApi.registerByPhone(phone, code, password)
+  async function registerByPhone(phone: string, code: string, password: string | undefined, ageConfirmed: boolean) {
+    const data = await authApi.registerByPhone(phone, code, password, ageConfirmed)
     await _completeLogin(data)
     trackEvent({ event_type: 'register_success' })
     return data
@@ -134,8 +134,8 @@ watch(showLoginModal, (val: boolean) => {
     return data
   }
 
-  async function registerByEmail(email: string, code: string, password: string) {
-    const data = await authApi.registerByEmail(email, code, password)
+  async function registerByEmail(email: string, code: string, password: string, ageConfirmed: boolean) {
+    const data = await authApi.registerByEmail(email, code, password, ageConfirmed)
     await _completeLogin(data)
     trackEvent({ event_type: 'register_success' })
     return data

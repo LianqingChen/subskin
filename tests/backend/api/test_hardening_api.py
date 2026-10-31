@@ -65,6 +65,34 @@ def test_vasi_upload_requires_health_consent_when_enforced(client, auth_headers,
     assert r.json()["detail"]["code"] == "health_data_consent_required"
 
 
+def test_rgb_upload_requires_health_consent_when_enforced(client, auth_headers, monkeypatch):
+    monkeypatch.setenv("REQUIRE_HEALTH_DATA_CONSENT", "1")
+    r = client.post(
+        "/api/vasi/segmentation-jobs",
+        headers=auth_headers,
+        files={"image": ("a.jpg", _jpeg(), "image/jpeg")},
+        data={"body_site": "face", "idempotency_key": "test-key-0001"},
+    )
+    assert r.status_code == 403
+    assert r.json()["detail"]["code"] == "health_data_consent_required"
+
+
+def test_rgb_upload_passes_consent_gate_after_consent(client, auth_headers, monkeypatch):
+    monkeypatch.setenv("REQUIRE_HEALTH_DATA_CONSENT", "1")
+    client.post(
+        "/api/consent/record", headers=auth_headers,
+        json={"consent_type": "health_data", "version": "1.0", "source": "vasi_upload"},
+    )
+    monkeypatch.setattr("web.backend.api.rgb_segmentation.worker_ready", lambda: False)
+    r = client.post(
+        "/api/vasi/segmentation-jobs",
+        headers=auth_headers,
+        files={"image": ("a.jpg", _jpeg(), "image/jpeg")},
+        data={"body_site": "face", "idempotency_key": "test-key-0002"},
+    )
+    assert r.status_code == 503  # past the consent gate; stopped by the (stubbed) worker check
+
+
 def test_consent_record_accepts_health_data_and_rejects_unknown(client, auth_headers):
     ok = client.post(
         "/api/consent/record", headers=auth_headers,

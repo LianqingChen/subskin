@@ -1,5 +1,6 @@
 import type { PhotoMeasurement, ObservationContext } from '@/types/assessment'
 import apiClient from './client'
+import { ensureHealthConsent } from '@/composables/useHealthConsent'
 
 export interface ContourRegion {
   label: string
@@ -137,6 +138,7 @@ export interface QualityCheckResult {
 
 export const vasiApi = {
   async assess(image: File, bodySite: string, precision: string = 'quick', options: { hasReferenceCard?: boolean; observation?: ObservationContext } = {}): Promise<VasiAssessmentResponse> {
+    await ensureHealthConsent('vasi_upload')
     const capability = await apiClient.get<{ protocol: string }>('/vasi/annotation-protocol')
     if (capability.data.protocol !== 'skin-outline-v1') throw new Error('annotation-protocol-unavailable')
     const formData = new FormData()

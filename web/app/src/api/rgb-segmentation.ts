@@ -1,6 +1,7 @@
 import apiClient from './client'
 import { isAxiosError } from 'axios'
 import type { ObservationContext, PhotoMeasurement } from '@/types/assessment'
+import { ensureHealthConsent, HealthConsentDeclined, HEALTH_CONSENT_DECLINED_MESSAGE } from '@/composables/useHealthConsent'
 
 export interface RGBJob {
   id: string
@@ -25,6 +26,7 @@ const messages: Record<string, string> = {
   TIMEOUT: '分析超时，请重试当前照片',
   WORKER_RESTARTED: '分析服务已重新连接，请重试',
   CANCELLED: '分析已取消',
+  HEALTH_CONSENT_DECLINED: HEALTH_CONSENT_DECLINED_MESSAGE,
 }
 export class RGBTaskError extends Error {
   constructor(public code: string) { super(messages[code] || '图像分析暂未完成，请重试'); this.name = 'RGBTaskError' }
@@ -71,6 +73,13 @@ async function submitIdempotently<T>(url: string, body: FormData | object, key: 
 export const rgbApi = {
   async cancel(jobId: string): Promise<void> { await apiClient.post(`/vasi/segmentation-jobs/${jobId}/cancel`, {}, { timeout: 10000 }) },
   async assess(image: File, bodySite: string, context: ObservationContext | undefined, signal: AbortSignal, progress: (stage: string) => void): Promise<{ jobId: string; assessmentId: number }> {
+    try {
+      await ensureHealthConsent('vasi_upload')
+    } catch (error) {
+      if (error instanceof HealthConsentDeclined) throw new RGBTaskError('HEALTH_CONSENT_DECLINED')
+      throw error
+    }
+    if (signal.aborted) throw new RGBTaskError('CANCELLED')
     const capability = (await apiClient.get<{ protocol: string; worker_ready: boolean }>('/vasi/rgb-capabilities', { timeout: 15000 })).data
     if (signal.aborted) throw new RGBTaskError('CANCELLED')
     if (capability.protocol !== 'skin-seg-v2' || !capability.worker_ready) throw new RGBTaskError('SERVICE_UNAVAILABLE')

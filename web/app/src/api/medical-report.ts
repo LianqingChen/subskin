@@ -1,4 +1,5 @@
 import apiClient from './client'
+import { ensureHealthConsent } from '@/composables/useHealthConsent'
 
 /** Convert backend-relative file_url to the authenticated serving URL.
  *  Optionally appends access_token query param for auth (the API
@@ -190,6 +191,7 @@ export const medicalReportApi = {
   },
 
   async create(title: string, tags: string | null, files: File[]): Promise<MedicalReport> {
+    await ensureHealthConsent('medical_report_upload')
     const formData = new FormData()
     formData.append('title', title)
     if (tags) formData.append('tags', tags)

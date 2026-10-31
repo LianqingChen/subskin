@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
+import { HealthConsentDeclined } from '@/composables/useHealthConsent'
 import { getFileViewUrl, medicalReportApi } from '@/api/medical-report'
 
 const router = useRouter()
@@ -202,6 +203,7 @@ async function submitReport() {
     await loadMedicalReports()
     if (report.id) triggerInterpret(report.id)
   } catch (err: any) {
+    if (err instanceof HealthConsentDeclined) { toast.warning(err.message); return }
     const detail = err?.response?.data?.detail
     toast.error(typeof detail === 'string' ? detail : '上传失败，请稍后重试')
   } finally {

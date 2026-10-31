@@ -12,6 +12,8 @@ from web.backend.database.models import User
 from web.backend.exceptions import RGBSegmentationError
 from web.backend.models.rgb_segmentation import RGBSegmentationJob
 from web.backend.services.auth import get_current_user
+from web.backend.services.consent import HEALTH_CONSENT_REQUIRED_DETAIL, health_data_consent_missing
+from web.backend.services.usage_quota import enforce_daily_quota
 from web.backend.services.rgb_segmentation import artifacts
 from web.backend.services.rgb_segmentation.jobs import (
     create_job,
@@ -61,6 +63,9 @@ def submit_job(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if health_data_consent_missing(db, current_user.id):
+        raise HTTPException(status_code=403, detail=HEALTH_CONSENT_REQUIRED_DETAIL)
+    enforce_daily_quota(db, current_user, "vasi")
     if not worker_ready():
         raise HTTPException(status_code=503, detail="图像分析服务正在准备，请稍后重试")
     try:
