@@ -1,0 +1,254 @@
+{
+  "description": "independent procedural rendering stress test, not real clinical images",
+  "train_seed_range": [
+    10000,
+    10511
+  ],
+  "validation_seed_range": [
+    200000,
+    200127
+  ],
+  "test_seed_range": [
+    400000,
+    400127
+  ],
+  "epochs": 15,
+  "n_test": 128,
+  "n_negative": 26,
+  "n_small": 41,
+  "limitations": [
+    "binary segmentation with oracle full-image skin",
+    "no pretrained model",
+    "synthetic inputs only",
+    "same preset skin palette as training"
+  ],
+  "models": {
+    "production_lesion_draft_oracle_skin": {
+      "threshold": 0.5,
+      "test": {
+        "positive_dice": 0.4064916452734382,
+        "small_dice": 0.13153233436641226,
+        "area_mae_percentage_points": 7.7495574951171875,
+        "negative_false_positive_area_pct": 9.154334435096153,
+        "n_positive": 102,
+        "n_negative": 26,
+        "n_small": 41,
+        "perturbed": {
+          "positive_dice": 0.3294540123018028,
+          "small_dice": 0.10322236825840114,
+          "area_mae_percentage_points": 7.0587158203125,
+          "negative_false_positive_area_pct": 3.545673076923077,
+          "n_positive": 102,
+          "n_negative": 26,
+          "n_small": 41
+        },
+        "mean_abs_area_change_pp": 7.230377197265625
+      }
+    },
+    "diverse": [
+      {
+        "seed": 0,
+        "threshold": 0.4,
+        "validation_constraint_met": true,
+        "validation": {
+          "positive_dice": 0.797176131933038,
+          "small_dice": 0.6911475294301956,
+          "area_mae_percentage_points": 1.9021987915039062,
+          "negative_false_positive_area_pct": 0.6970857319078947,
+          "n_positive": 90,
+          "n_negative": 38,
+          "n_small": 35
+        },
+        "test": {
+          "positive_dice": 0.7351289609523328,
+          "small_dice": 0.7402721934794693,
+          "area_mae_percentage_points": 3.1442642211914062,
+          "negative_false_positive_area_pct": 0.3953200120192308,
+          "n_positive": 102,
+          "n_negative": 26,
+          "n_small": 41,
+          "perturbed": {
+            "positive_dice": 0.0986864189536653,
+            "small_dice": 0.14185329590880646,
+            "area_mae_percentage_points": 7.364082336425781,
+            "negative_false_positive_area_pct": 0.2976637620192308,
+            "n_positive": 102,
+            "n_negative": 26,
+            "n_small": 41
+          },
+          "mean_abs_area_change_pp": 4.68292236328125
+        }
+      },
+      {
+        "seed": 1,
+        "threshold": 0.7,
+        "validation_constraint_met": true,
+        "validation": {
+          "positive_dice": 0.770036230324009,
+          "small_dice": 0.6304856329390106,
+          "area_mae_percentage_points": 2.060699462890625,
+          "negative_false_positive_area_pct": 1.0003340871710527,
+          "n_positive": 90,
+          "n_negative": 38,
+          "n_small": 35
+        },
+        "test": {
+          "positive_dice": 0.7118785752801993,
+          "small_dice": 0.6985525555956368,
+          "area_mae_percentage_points": 3.29132080078125,
+          "negative_false_positive_area_pct": 0.6497896634615384,
+          "n_positive": 102,
+          "n_negative": 26,
+          "n_small": 41,
+          "perturbed": {
+            "positive_dice": 0.3556148932069093,
+            "small_dice": 0.4526452806203788,
+            "area_mae_percentage_points": 6.2225341796875,
+            "negative_false_positive_area_pct": 0.47513521634615385,
+            "n_positive": 102,
+            "n_negative": 26,
+            "n_small": 41
+          },
+          "mean_abs_area_change_pp": 3.7761688232421875
+        }
+      }
+    ],
+    "augmented": [
+      {
+        "seed": 0,
+        "threshold": 0.65,
+        "validation_constraint_met": true,
+        "validation": {
+          "positive_dice": 0.7586022236834141,
+          "small_dice": 0.6234296239833583,
+          "area_mae_percentage_points": 2.3237228393554688,
+          "negative_false_positive_area_pct": 0.8724814967105263,
+          "n_positive": 90,
+          "n_negative": 38,
+          "n_small": 35
+        },
+        "test": {
+          "positive_dice": 0.7335844512635564,
+          "small_dice": 0.7338580966020156,
+          "area_mae_percentage_points": 3.3077239990234375,
+          "negative_false_positive_area_pct": 0.7455679086538461,
+          "n_positive": 102,
+          "n_negative": 26,
+          "n_small": 41,
+          "perturbed": {
+            "positive_dice": 0.4675356852389744,
+            "small_dice": 0.5971258988206585,
+            "area_mae_percentage_points": 5.728340148925781,
+            "negative_false_positive_area_pct": 0.4685621995192308,
+            "n_positive": 102,
+            "n_negative": 26,
+            "n_small": 41
+          },
+          "mean_abs_area_change_pp": 3.1389236450195312
+        }
+      },
+      {
+        "seed": 1,
+        "threshold": 0.75,
+        "validation_constraint_met": true,
+        "validation": {
+          "positive_dice": 0.7470912478647302,
+          "small_dice": 0.6138996151159869,
+          "area_mae_percentage_points": 2.37579345703125,
+          "negative_false_positive_area_pct": 1.0157534950657894,
+          "n_positive": 90,
+          "n_negative": 38,
+          "n_small": 35
+        },
+        "test": {
+          "positive_dice": 0.7121369419991873,
+          "small_dice": 0.7119127283047548,
+          "area_mae_percentage_points": 3.4288406372070312,
+          "negative_false_positive_area_pct": 0.6159855769230769,
+          "n_positive": 102,
+          "n_negative": 26,
+          "n_small": 41,
+          "perturbed": {
+            "positive_dice": 0.5095533583771211,
+            "small_dice": 0.5681628011733331,
+            "area_mae_percentage_points": 5.130958557128906,
+            "negative_false_positive_area_pct": 0.6319486177884616,
+            "n_positive": 102,
+            "n_negative": 26,
+            "n_small": 41
+          },
+          "mean_abs_area_change_pp": 2.3883819580078125
+        }
+      }
+    ],
+    "consistency": [
+      {
+        "seed": 0,
+        "threshold": 0.6,
+        "validation_constraint_met": true,
+        "validation": {
+          "positive_dice": 0.7748575300885727,
+          "small_dice": 0.6446176735890121,
+          "area_mae_percentage_points": 2.1501541137695312,
+          "negative_false_positive_area_pct": 0.7356342516447368,
+          "n_positive": 90,
+          "n_negative": 38,
+          "n_small": 35
+        },
+        "test": {
+          "positive_dice": 0.7328629362397167,
+          "small_dice": 0.7385268166894533,
+          "area_mae_percentage_points": 3.2659530639648438,
+          "negative_false_positive_area_pct": 0.44039212740384615,
+          "n_positive": 102,
+          "n_negative": 26,
+          "n_small": 41,
+          "perturbed": {
+            "positive_dice": 0.424354838851795,
+            "small_dice": 0.5635606401870622,
+            "area_mae_percentage_points": 5.947113037109375,
+            "negative_false_positive_area_pct": 0.46668419471153844,
+            "n_positive": 102,
+            "n_negative": 26,
+            "n_small": 41
+          },
+          "mean_abs_area_change_pp": 3.2323837280273438
+        }
+      },
+      {
+        "seed": 1,
+        "threshold": 0.55,
+        "validation_constraint_met": true,
+        "validation": {
+          "positive_dice": 0.759736701641057,
+          "small_dice": 0.6350472080213517,
+          "area_mae_percentage_points": 2.2672653198242188,
+          "negative_false_positive_area_pct": 0.8622018914473685,
+          "n_positive": 90,
+          "n_negative": 38,
+          "n_small": 35
+        },
+        "test": {
+          "positive_dice": 0.7007348627456399,
+          "small_dice": 0.6982142095568126,
+          "area_mae_percentage_points": 3.5196304321289062,
+          "negative_false_positive_area_pct": 0.6845327524038461,
+          "n_positive": 102,
+          "n_negative": 26,
+          "n_small": 41,
+          "perturbed": {
+            "positive_dice": 0.4605046764474148,
+            "small_dice": 0.5188895012988195,
+            "area_mae_percentage_points": 5.4630279541015625,
+            "negative_false_positive_area_pct": 0.5418043870192307,
+            "n_positive": 102,
+            "n_negative": 26,
+            "n_small": 41
+          },
+          "mean_abs_area_change_pp": 2.6407241821289062
+        }
+      }
+    ]
+  },
+  "elapsed_seconds": 175.52
+}

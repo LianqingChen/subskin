@@ -72,7 +72,13 @@ const router = createRouter({
       path: '/assessment',
       name: 'assessment',
       component: () => import('@/views/AssessmentPage.vue'),
-      beforeEnter: to => ['exam', 'report'].includes(String(to.query.tab)) ? { name: 'assessment-exam' } : true,
+      beforeEnter: to => ['exam', 'report'].includes(String(to.query.tab)) ? { name: 'assessment-exam' } : to.query.story === '1' ? { name: 'assessment-story', query: { from: 'chat' } } : true,
+    },
+    {
+      path: '/assessment/story',
+      name: 'assessment-story',
+      component: () => import('@/views/AssessmentPage.vue'),
+      meta: { title: '我的轮廓故事' },
     },
     {
       path: '/assessment/exam',

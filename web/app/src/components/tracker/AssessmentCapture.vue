@@ -7,7 +7,7 @@ import ReferenceCalibration from './ReferenceCalibration.vue'
 import { PART_LABELS } from '@/constants/bodySites'
 import type { ObservationContext } from '@/types/assessment'
 import type { QualityCheckResult } from '@/api/vasi'
-const props = defineProps<{ context: ObservationContext; bodySite: string; preview: string | null; baselineUrl?: string | null; quality: QualityCheckResult | null; checking: boolean; busy: boolean; qualityError?: string; needsLogin?: boolean; dateNote?: string; stage?: string; fitScreen?: boolean }>()
+const props = defineProps<{ context: ObservationContext; bodySite: string; preview: string | null; baselineUrl?: string | null; quality: QualityCheckResult | null; checking: boolean; busy: boolean; qualityError?: string; needsLogin?: boolean; dateNote?: string; stage?: string; fitScreen?: boolean; creative?: boolean }>()
 const emit = defineEmits<{ 'update:context': [ObservationContext]; 'update:bodySite': [string]; file: [File, ('gallery' | 'camera')?]; date: [string]; 'retry-quality': []; remove: []; submit: []; cancel: [] }>()
 const camera = ref(false)
 const input = ref<HTMLInputElement | null>(null)
@@ -25,7 +25,7 @@ const ready = computed(() => !!props.preview && !!props.bodySite && !!props.cont
 const qualityMessage = computed(() => props.checking ? '检查照片中…' : !props.quality ? props.qualityError || '照片检查尚未完成' : props.quality.overall === 'poor' ? (props.quality.suggestions[0] || '照片过曝、过暗或严重模糊，请重拍') : props.quality.overall === 'good' ? '' : (props.quality.suggestions[0] || '可继续分析，请核对范围'))
 </script>
 <template>
-  <section aria-label="添加照片" class="capture-layout mx-auto grid w-full max-w-4xl items-start gap-3 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-3" :class="fitScreen ? 'capture-layout--fit' : ''">
+  <section aria-label="添加照片" class="capture-layout grid w-full items-start gap-3 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-3" :class="fitScreen ? 'capture-layout--fit' : ''">
     <figure class="capture-photo min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
       <img v-if="preview" :src="preview" alt="本次记录照片" class="max-h-[56svh] min-h-[180px] w-full object-contain lg:max-h-[calc(100svh-13rem)]" />
       <div v-else class="flex h-48 items-center justify-center gap-3 text-gray-400"><i class="ri-camera-line text-4xl" aria-hidden="true"></i><span class="text-sm">添加照片</span></div>
@@ -41,15 +41,17 @@ const qualityMessage = computed(() => props.checking ? '检查照片中…' : !p
       </figcaption>
     </figure>
     <div class="capture-controls min-w-0 space-y-2">
+      <details :open="creative ? undefined : true"><summary v-if="creative" class="min-h-[44px] cursor-pointer py-3 text-xs text-gray-500 dark:text-gray-400">照片日期 · {{ context.capture_date || '读取中…' }}</summary>
       <fieldset :disabled="busy" aria-label="照片日期" class="flex min-w-0 items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-1 dark:border-gray-700 dark:bg-gray-800">
         <span class="shrink-0 text-xs text-gray-500 dark:text-gray-400">日期</span>
         <DateWheelPicker v-if="context.capture_date && !busy" class="min-w-0 flex-1" :model-value="context.capture_date" :min-year="1900" compact @update:model-value="emit('date', $event)" />
         <time v-else class="flex min-h-[44px] items-center text-sm" :datetime="context.capture_date">{{ context.capture_date || (preview ? '读取中…' : '—') }}</time>
       </fieldset>
-      <ReferenceCalibration v-if="preview && !busy" :image="preview" @change="captureCalibration" />
+      </details>
+      <ReferenceCalibration v-if="preview && !busy && !creative" :image="preview" @change="captureCalibration" />
       <AnalysisWaitStatus v-if="busy" :active="busy" :stage="stageText" @cancel="emit('cancel')" />
       <button v-if="preview && !checking && !quality && !busy" class="min-h-[44px] w-full rounded-xl border border-primary-300 text-sm text-primary-700 dark:border-primary-700 dark:text-primary-300" @click="emit('retry-quality')">{{ needsLogin ? '登录后继续检查' : '重新检查照片' }}</button>
-      <button v-if="preview && !busy" :aria-describedby="qualityMessage ? 'capture-quality' : undefined" class="btn-primary min-h-[44px] w-full text-sm rounded-xl disabled:opacity-40" :disabled="!ready" @click="emit('submit')"><i class="ri-scan-line mr-2" aria-hidden="true"></i>开始分析</button>
+      <button v-if="preview && !busy" :aria-describedby="qualityMessage ? 'capture-quality' : undefined" class="btn-primary min-h-[44px] w-full text-sm rounded-xl disabled:opacity-40" :disabled="!ready" @click="emit('submit')"><i class="ri-scan-line mr-2" aria-hidden="true"></i>{{ creative ? '提取我的轮廓' : '开始分析' }}</button>
     </div>
     <input ref="input" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="selected" />
     <BodyPartCamera v-model="camera" :body-part="bodySite" :baseline-url="baselineUrl" @captured="captured" />

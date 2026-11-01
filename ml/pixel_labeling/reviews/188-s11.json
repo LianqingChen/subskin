@@ -1,0 +1,404 @@
+{
+ "task_id": 188,
+ "submission": {
+  "submission_id": 11,
+  "author_id": 9,
+  "status": "submitted",
+  "prefill_source": "previous",
+  "created_at": "2026-10-24 08:44:33.797371",
+  "revision": "7ed60b551acaab3a47de64cb531b7f9447f87643d6c54fb8f8d454cfe220cba6"
+ },
+ "ai_model": "pixel-reviewed-v1",
+ "summary": {
+  "lesion_dice": 0.8383,
+  "skin_dice": 0.9985,
+  "pixel_agreement_on_human_known": 0.9944,
+  "ai_lesion_ratio": 3.54,
+  "human_lesion_ratio": 4.88,
+  "changed_pixels": 4425,
+  "pixels_by_category": {
+   "missed_lesion": {
+    "substantive": 2334,
+    "boundary": 332
+   },
+   "unknown_was_lesion": {
+    "substantive": 1113,
+    "boundary": 0
+   },
+   "missed_skin": {
+    "substantive": 0,
+    "boundary": 605
+   }
+  }
+ },
+ "confusion_ai_rows_human_cols": {
+  "background": {
+   "background": 494396,
+   "normal": 605,
+   "lesion": 216,
+   "occlusion": 0,
+   "unreadable": 0,
+   "unknown": 0
+  },
+  "normal": {
+   "background": 0,
+   "normal": 267087,
+   "lesion": 2491,
+   "occlusion": 0,
+   "unreadable": 0,
+   "unknown": 0
+  },
+  "lesion": {
+   "background": 0,
+   "normal": 0,
+   "lesion": 9899,
+   "occlusion": 0,
+   "unreadable": 0,
+   "unknown": 0
+  },
+  "occlusion": {
+   "background": 0,
+   "normal": 0,
+   "lesion": 0,
+   "occlusion": 10072,
+   "unreadable": 0,
+   "unknown": 0
+  },
+  "unreadable": {
+   "background": 0,
+   "normal": 0,
+   "lesion": 0,
+   "occlusion": 0,
+   "unreadable": 0,
+   "unknown": 0
+  },
+  "unknown": {
+   "background": 0,
+   "normal": 0,
+   "lesion": 1113,
+   "occlusion": 0,
+   "unreadable": 0,
+   "unknown": 553
+  }
+ },
+ "regions": [
+  {
+   "ai": "normal",
+   "human": "lesion",
+   "category": "missed_lesion",
+   "area": 1134,
+   "cx": 501,
+   "cy": 384,
+   "bbox": [
+    477,
+    358,
+    528,
+    409
+   ],
+   "kind": "substantive",
+   "median_score": 0.6,
+   "candidates": [
+    {
+     "id": 42,
+     "ai_decision": "normal (not selected)"
+    }
+   ],
+   "adjacent_candidates": [
+    33
+   ],
+   "below_candidate_threshold": false,
+   "no": 1
+  },
+  {
+   "ai": "unknown",
+   "human": "lesion",
+   "category": "unknown_was_lesion",
+   "area": 1113,
+   "cx": 311,
+   "cy": 848,
+   "bbox": [
+    291,
+    822,
+    331,
+    865
+   ],
+   "kind": "substantive",
+   "median_score": 14.1,
+   "candidates": [
+    {
+     "id": 87,
+     "ai_decision": "unknown(partial roi)"
+    }
+   ],
+   "adjacent_candidates": [],
+   "below_candidate_threshold": false,
+   "no": 2
+  },
+  {
+   "ai": "normal",
+   "human": "lesion",
+   "category": "missed_lesion",
+   "area": 423,
+   "cx": 358,
+   "cy": 373,
+   "bbox": [
+    345,
+    361,
+    370,
+    387
+   ],
+   "kind": "substantive",
+   "median_score": 3.1,
+   "candidates": [
+    {
+     "id": 40,
+     "ai_decision": "normal (not selected)"
+    }
+   ],
+   "adjacent_candidates": [
+    35,
+    39
+   ],
+   "below_candidate_threshold": false,
+   "no": 3
+  },
+  {
+   "ai": "normal",
+   "human": "lesion",
+   "category": "missed_lesion",
+   "area": 202,
+   "cx": 507,
+   "cy": 475,
+   "bbox": [
+    500,
+    468,
+    516,
+    484
+   ],
+   "kind": "substantive",
+   "median_score": 9.9,
+   "candidates": [
+    {
+     "id": 45,
+     "ai_decision": "normal (not selected)"
+    }
+   ],
+   "adjacent_candidates": [],
+   "below_candidate_threshold": false,
+   "no": 4
+  },
+  {
+   "ai": "normal",
+   "human": "lesion",
+   "category": "missed_lesion",
+   "area": 188,
+   "cx": 363,
+   "cy": 349,
+   "bbox": [
+    356,
+    342,
+    371,
+    358
+   ],
+   "kind": "substantive",
+   "median_score": 1.6,
+   "candidates": [
+    {
+     "id": 35,
+     "ai_decision": "normal (not selected)"
+    }
+   ],
+   "adjacent_candidates": [
+    39
+   ],
+   "below_candidate_threshold": false,
+   "no": 5
+  },
+  {
+   "ai": "normal",
+   "human": "lesion",
+   "category": "missed_lesion",
+   "area": 185,
+   "cx": 470,
+   "cy": 396,
+   "bbox": [
+    463,
+    390,
+    479,
+    405
+   ],
+   "kind": "substantive",
+   "median_score": 2.9,
+   "candidates": [
+    {
+     "id": 42,
+     "ai_decision": "normal (not selected)"
+    }
+   ],
+   "adjacent_candidates": [],
+   "below_candidate_threshold": false,
+   "no": 6
+  },
+  {
+   "ai": "normal",
+   "human": "lesion",
+   "category": "missed_lesion",
+   "area": 130,
+   "cx": 437,
+   "cy": 393,
+   "bbox": [
+    430,
+    389,
+    446,
+    399
+   ],
+   "kind": "substantive",
+   "median_score": 9.0,
+   "candidates": [
+    {
+     "id": 41,
+     "ai_decision": "normal (not selected)"
+    }
+   ],
+   "adjacent_candidates": [],
+   "below_candidate_threshold": false,
+   "no": 7
+  },
+  {
+   "ai": "background",
+   "human": "lesion",
+   "category": "missed_lesion",
+   "area": 72,
+   "cx": 436,
+   "cy": 400,
+   "bbox": [
+    430,
+    398,
+    445,
+    405
+   ],
+   "kind": "substantive",
+   "median_score": 30.0,
+   "candidates": [],
+   "adjacent_candidates": [
+    41
+   ],
+   "below_candidate_threshold": false,
+   "no": 8
+  },
+  {
+   "ai": "background",
+   "human": "normal",
+   "category": "missed_skin",
+   "area": 605,
+   "cx": 697,
+   "cy": 160,
+   "bbox": [
+    643,
+    145,
+    767,
+    172
+   ],
+   "kind": "boundary",
+   "median_score": 5.9,
+   "candidates": [],
+   "adjacent_candidates": [
+    12
+   ],
+   "below_candidate_threshold": false,
+   "no": 9
+  },
+  {
+   "ai": "background",
+   "human": "lesion",
+   "category": "missed_lesion",
+   "area": 126,
+   "cx": 317,
+   "cy": 866,
+   "bbox": [
+    300,
+    864,
+    333,
+    870
+   ],
+   "kind": "boundary",
+   "median_score": 42.8,
+   "candidates": [],
+   "adjacent_candidates": [
+    87
+   ],
+   "below_candidate_threshold": false,
+   "no": 10
+  },
+  {
+   "ai": "normal",
+   "human": "lesion",
+   "category": "missed_lesion",
+   "area": 114,
+   "cx": 335,
+   "cy": 354,
+   "bbox": [
+    331,
+    347,
+    342,
+    363
+   ],
+   "kind": "boundary",
+   "median_score": -1.1,
+   "candidates": [],
+   "adjacent_candidates": [
+    38,
+    39
+   ],
+   "below_candidate_threshold": true,
+   "no": 11
+  },
+  {
+   "ai": "normal",
+   "human": "lesion",
+   "category": "missed_lesion",
+   "area": 67,
+   "cx": 315,
+   "cy": 825,
+   "bbox": [
+    304,
+    820,
+    321,
+    835
+   ],
+   "kind": "boundary",
+   "median_score": 1.5,
+   "candidates": [
+    {
+     "id": 87,
+     "ai_decision": "unknown(partial roi)"
+    }
+   ],
+   "adjacent_candidates": [],
+   "below_candidate_threshold": false,
+   "no": 12
+  },
+  {
+   "ai": "normal",
+   "human": "lesion",
+   "category": "missed_lesion",
+   "area": 25,
+   "cx": 290,
+   "cy": 853,
+   "bbox": [
+    289,
+    848,
+    293,
+    861
+   ],
+   "kind": "boundary",
+   "median_score": 2.1,
+   "candidates": [],
+   "adjacent_candidates": [
+    87
+   ],
+   "below_candidate_threshold": true,
+   "no": 13
+  }
+ ]
+}

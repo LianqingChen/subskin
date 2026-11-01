@@ -1,0 +1,143 @@
+{
+  "experiment": "procedural synthetic pilot",
+  "training_count": 512,
+  "validation_count": 128,
+  "test_count": 128,
+  "epochs": 5,
+  "seed_count": 2,
+  "data_provenance": "procedurally generated; no photographs; no pretrained weights",
+  "limitations": [
+    "oracle full-image skin mask",
+    "synthetic testing only",
+    "no pretrained large model",
+    "different test shape family but shared rendering assumptions"
+  ],
+  "rules_sha256": "a820d3529ac83e308fe44a9fe280a9297559f09b1cda69fc9dc92cd5f4445e06",
+  "models": {
+    "production_lesion_draft_oracle_skin": {
+      "threshold": 0.5,
+      "test": {
+        "positive_dice": 0.4027905198672855,
+        "small_dice": 0.04478454883524132,
+        "area_mae_percentage_points": 15.347862243652344,
+        "negative_false_positive_area_pct": 17.71537162162162,
+        "n_positive": 91,
+        "n_negative": 37,
+        "n_small": 43
+      }
+    },
+    "simple": [
+      {
+        "seed": 0,
+        "threshold": 0.35,
+        "test": {
+          "positive_dice": 0.6785852085126561,
+          "small_dice": 0.5442063617480829,
+          "area_mae_percentage_points": 4.418373107910156,
+          "negative_false_positive_area_pct": 5.134211359797297,
+          "n_positive": 91,
+          "n_negative": 37,
+          "n_small": 43
+        }
+      },
+      {
+        "seed": 1,
+        "threshold": 0.3,
+        "test": {
+          "positive_dice": 0.37879914168788537,
+          "small_dice": 0.1766394538045741,
+          "area_mae_percentage_points": 21.00505828857422,
+          "negative_false_positive_area_pct": 20.715002111486488,
+          "n_positive": 91,
+          "n_negative": 37,
+          "n_small": 43
+        }
+      }
+    ],
+    "diverse": [
+      {
+        "seed": 0,
+        "threshold": 0.5,
+        "test": {
+          "positive_dice": 0.5665613990702433,
+          "small_dice": 0.40895440803862926,
+          "area_mae_percentage_points": 3.3966064453125,
+          "negative_false_positive_area_pct": 3.4575591216216215,
+          "n_positive": 91,
+          "n_negative": 37,
+          "n_small": 43
+        }
+      },
+      {
+        "seed": 1,
+        "threshold": 0.3,
+        "test": {
+          "positive_dice": 0.41817268728591916,
+          "small_dice": 0.2016247809534668,
+          "area_mae_percentage_points": 19.069290161132812,
+          "negative_false_positive_area_pct": 18.375870988175677,
+          "n_positive": 91,
+          "n_negative": 37,
+          "n_small": 43
+        }
+      }
+    ],
+    "diverse_augmented": [
+      {
+        "seed": 0,
+        "threshold": 0.55,
+        "test": {
+          "positive_dice": 0.5381493649261806,
+          "small_dice": 0.34364864045010884,
+          "area_mae_percentage_points": 3.4532546997070312,
+          "negative_false_positive_area_pct": 3.5248627533783785,
+          "n_positive": 91,
+          "n_negative": 37,
+          "n_small": 43
+        }
+      },
+      {
+        "seed": 1,
+        "threshold": 0.4,
+        "test": {
+          "positive_dice": 0.38523749574526384,
+          "small_dice": 0.1963778323223378,
+          "area_mae_percentage_points": 20.020103454589844,
+          "negative_false_positive_area_pct": 19.856550886824323,
+          "n_positive": 91,
+          "n_negative": 37,
+          "n_small": 43
+        }
+      }
+    ],
+    "diverse_consistency": [
+      {
+        "seed": 0,
+        "threshold": 0.55,
+        "test": {
+          "positive_dice": 0.5544135575811522,
+          "small_dice": 0.4210536161190148,
+          "area_mae_percentage_points": 2.4688720703125,
+          "negative_false_positive_area_pct": 1.1303051097972974,
+          "n_positive": 91,
+          "n_negative": 37,
+          "n_small": 43
+        }
+      },
+      {
+        "seed": 1,
+        "threshold": 0.35,
+        "test": {
+          "positive_dice": 0.3818274526814855,
+          "small_dice": 0.17592863339347808,
+          "area_mae_percentage_points": 18.978500366210938,
+          "negative_false_positive_area_pct": 18.66752005912162,
+          "n_positive": 91,
+          "n_negative": 37,
+          "n_small": 43
+        }
+      }
+    ]
+  },
+  "elapsed_seconds": 82.35
+}

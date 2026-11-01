@@ -1,0 +1,461 @@
+{
+  "protocol": "round7-protocol.md",
+  "image_sha256": [
+    "101ec574b394e568ba4623e2c6153147cab1d5f7e850db970b663985aa3d4077",
+    "3521fe241957ddee2551d5ad2a5ae88edde809583ab3a49a4a2c7f2e0ac0fb57",
+    "d0141151b7e7a24f977ed567906b060a0d8e69c4892531c6dee09025753a5559"
+  ],
+  "sam_weights_sha256": "ec2df62732614e57411cdcf32a23ffdf28910380d03139ee0f4fcbe91eb8c912",
+  "rgb_unet_source_sha256": "82be9625065802c0651c750f906a9f49e4c5f36886f140b75512bc555a8d7704",
+  "sample_counts": {
+    "train": 128,
+    "validation": 64,
+    "test": 64
+  },
+  "class_names": [
+    "background",
+    "normal_skin",
+    "depigmented_skin",
+    "occlusion",
+    "unreadable"
+  ],
+  "models": {
+    "rgb_unet": [
+      {
+        "seed": 0,
+        "validation": {
+          "pixel_accuracy": 0.7775039672851562,
+          "skin_dice_mean": 0.8590474600145832,
+          "lesion_dice_positive_mean": 0.37004924105261533,
+          "lesion_positive_images": 43,
+          "negative_lesion_fp_image_pct": 15.778459821428571,
+          "negative_images": 21,
+          "area_share_mae_pp": 35.46906927072767,
+          "predicted_empty_skin_images": 0,
+          "class_iou": {
+            "occlusion": 0.6546214584300976,
+            "unreadable": 0.0
+          },
+          "confusion_matrix": [
+            [
+              150313,
+              9200,
+              1546,
+              1630,
+              0
+            ],
+            [
+              6403,
+              37615,
+              29858,
+              215,
+              0
+            ],
+            [
+              451,
+              679,
+              8843,
+              43,
+              0
+            ],
+            [
+              148,
+              1658,
+              23,
+              7047,
+              0
+            ],
+            [
+              367,
+              80,
+              6024,
+              1,
+              0
+            ]
+          ]
+        },
+        "test": {
+          "pixel_accuracy": 0.8971214294433594,
+          "skin_dice_mean": 0.9197743895729712,
+          "lesion_dice_positive_mean": 0.49745169693412705,
+          "lesion_positive_images": 49,
+          "negative_lesion_fp_image_pct": 9.861653645833334,
+          "negative_images": 15,
+          "area_share_mae_pp": 17.308921339258895,
+          "predicted_empty_skin_images": 0,
+          "class_iou": {
+            "occlusion": 0.8012390818606541,
+            "unreadable": 0.0
+          },
+          "confusion_matrix": [
+            [
+              153795,
+              2492,
+              974,
+              138,
+              0
+            ],
+            [
+              3006,
+              63682,
+              10593,
+              169,
+              0
+            ],
+            [
+              208,
+              819,
+              9809,
+              26,
+              0
+            ],
+            [
+              387,
+              804,
+              430,
+              7889,
+              0
+            ],
+            [
+              484,
+              15,
+              6421,
+              3,
+              0
+            ]
+          ]
+        },
+        "head_sha256": "2a761743d4611051e6ea0beb678900cd46106c11ee6897b9674396fccc2d124d"
+      },
+      {
+        "seed": 1,
+        "validation": {
+          "pixel_accuracy": 0.7168312072753906,
+          "skin_dice_mean": 0.8666440080416129,
+          "lesion_dice_positive_mean": 0.2557529383858846,
+          "lesion_positive_images": 43,
+          "negative_lesion_fp_image_pct": 15.988885788690476,
+          "negative_images": 21,
+          "area_share_mae_pp": 33.32158162076303,
+          "predicted_empty_skin_images": 0,
+          "class_iou": {
+            "occlusion": 0.413044646215011,
+            "unreadable": 0.6582620928470945
+          },
+          "confusion_matrix": [
+            [
+              132298,
+              17513,
+              3305,
+              9168,
+              405
+            ],
+            [
+              1554,
+              35713,
+              35765,
+              448,
+              611
+            ],
+            [
+              198,
+              1863,
+              6131,
+              72,
+              1752
+            ],
+            [
+              2,
+              1181,
+              4,
+              7688,
+              1
+            ],
+            [
+              0,
+              339,
+              1,
+              49,
+              6083
+            ]
+          ]
+        },
+        "test": {
+          "pixel_accuracy": 0.8885726928710938,
+          "skin_dice_mean": 0.9395428698822119,
+          "lesion_dice_positive_mean": 0.5437274400226644,
+          "lesion_positive_images": 49,
+          "negative_lesion_fp_image_pct": 9.099934895833334,
+          "negative_images": 15,
+          "area_share_mae_pp": 14.85083028722547,
+          "predicted_empty_skin_images": 0,
+          "class_iou": {
+            "occlusion": 0.5958251793868232,
+            "unreadable": 0.8888888888888888
+          },
+          "confusion_matrix": [
+            [
+              143037,
+              5586,
+              3497,
+              5062,
+              217
+            ],
+            [
+              678,
+              64245,
+              11594,
+              665,
+              268
+            ],
+            [
+              51,
+              786,
+              9734,
+              70,
+              221
+            ],
+            [
+              95,
+              220,
+              58,
+              9134,
+              3
+            ],
+            [
+              8,
+              73,
+              35,
+              23,
+              6784
+            ]
+          ]
+        },
+        "head_sha256": "3152bd195370ce4e8f42d455c8d8ca341a8da674b944eea11494b181d4463fd2"
+      }
+    ],
+    "pretrained_sam": [
+      {
+        "seed": 0,
+        "validation": {
+          "pixel_accuracy": 0.7804069519042969,
+          "skin_dice_mean": 0.9595825847651637,
+          "lesion_dice_positive_mean": 0.3081358775355167,
+          "lesion_positive_images": 43,
+          "negative_lesion_fp_image_pct": 20.25204613095238,
+          "negative_images": 21,
+          "area_share_mae_pp": 55.083360130427025,
+          "predicted_empty_skin_images": 0,
+          "class_iou": {
+            "occlusion": 0.6960348865379956,
+            "unreadable": 0.003553770086526576
+          },
+          "confusion_matrix": [
+            [
+              161783,
+              644,
+              24,
+              238,
+              0
+            ],
+            [
+              1985,
+              25314,
+              46510,
+              282,
+              0
+            ],
+            [
+              81,
+              1067,
+              8840,
+              28,
+              0
+            ],
+            [
+              51,
+              186,
+              20,
+              8619,
+              0
+            ],
+            [
+              29,
+              903,
+              2558,
+              2959,
+              23
+            ]
+          ]
+        },
+        "test": {
+          "pixel_accuracy": 0.8133354187011719,
+          "skin_dice_mean": 0.9583920244913359,
+          "lesion_dice_positive_mean": 0.32343163961960314,
+          "lesion_positive_images": 49,
+          "negative_lesion_fp_image_pct": 15.162760416666666,
+          "negative_images": 15,
+          "area_share_mae_pp": 41.05435021087707,
+          "predicted_empty_skin_images": 0,
+          "class_iou": {
+            "occlusion": 0.6942421740109601,
+            "unreadable": 0.0065000722230247
+          },
+          "confusion_matrix": [
+            [
+              156653,
+              423,
+              11,
+              312,
+              0
+            ],
+            [
+              2301,
+              38177,
+              36659,
+              313,
+              0
+            ],
+            [
+              121,
+              1597,
+              9088,
+              56,
+              0
+            ],
+            [
+              56,
+              192,
+              14,
+              9248,
+              0
+            ],
+            [
+              29,
+              1238,
+              2481,
+              3130,
+              45
+            ]
+          ]
+        },
+        "head_sha256": "15c778e6213605c1a86894243d021041ae117ccdd95b0c90bf29cdb978941a5b"
+      },
+      {
+        "seed": 1,
+        "validation": {
+          "pixel_accuracy": 0.7794303894042969,
+          "skin_dice_mean": 0.9768688358278979,
+          "lesion_dice_positive_mean": 0.3179287824381728,
+          "lesion_positive_images": 43,
+          "negative_lesion_fp_image_pct": 22.490001860119047,
+          "negative_images": 21,
+          "area_share_mae_pp": 63.14634846205413,
+          "predicted_empty_skin_images": 0,
+          "class_iou": {
+            "occlusion": 0.8958668813741277,
+            "unreadable": 0.8437854710556186
+          },
+          "confusion_matrix": [
+            [
+              161345,
+              819,
+              239,
+              260,
+              26
+            ],
+            [
+              1328,
+              19169,
+              53109,
+              154,
+              331
+            ],
+            [
+              51,
+              380,
+              9517,
+              8,
+              60
+            ],
+            [
+              55,
+              272,
+              45,
+              8345,
+              159
+            ],
+            [
+              12,
+              0,
+              496,
+              17,
+              5947
+            ]
+          ]
+        },
+        "test": {
+          "pixel_accuracy": 0.8563003540039062,
+          "skin_dice_mean": 0.9778791864666536,
+          "lesion_dice_positive_mean": 0.3790893045948247,
+          "lesion_positive_images": 49,
+          "negative_lesion_fp_image_pct": 11.319986979166666,
+          "negative_images": 15,
+          "area_share_mae_pp": 36.47725112145717,
+          "predicted_empty_skin_images": 0,
+          "class_iou": {
+            "occlusion": 0.8995124863197692,
+            "unreadable": 0.8673538586735385
+          },
+          "confusion_matrix": [
+            [
+              156260,
+              669,
+              119,
+              332,
+              19
+            ],
+            [
+              1642,
+              43209,
+              32165,
+              175,
+              259
+            ],
+            [
+              70,
+              1133,
+              9569,
+              27,
+              63
+            ],
+            [
+              56,
+              273,
+              31,
+              9041,
+              109
+            ],
+            [
+              19,
+              2,
+              500,
+              7,
+              6395
+            ]
+          ]
+        },
+        "head_sha256": "71a46fd8ed691fd08c0e5df812ee73373a5c1d6fc9f7a5947bdbceef4f00a0ed"
+      }
+    ]
+  },
+  "limitations": [
+    "synthetic masks and geometry only",
+    "one base per split",
+    "artificial class definitions",
+    "nonstandard SAM input",
+    "pretraining data unknown",
+    "not clinical area"
+  ],
+  "elapsed_seconds": 129.63
+}

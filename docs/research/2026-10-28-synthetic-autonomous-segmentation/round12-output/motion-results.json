@@ -1,0 +1,198 @@
+{
+  "status": "post_hoc_exploratory",
+  "cases": [
+    {
+      "source": "source-light.png",
+      "added_motion": "2 degrees rotation plus 1.02 scale after translation",
+      "methods": {
+        "affine": {
+          "control_registration": {
+            "success": true,
+            "corr": 0.9891048935166269,
+            "determinant": 1.0954291820526123,
+            "matrix": [
+              [
+                1.0227948427200317,
+                0.026679886505007744,
+                -7.1695146560668945
+              ],
+              [
+                -0.03913523256778717,
+                1.0699946880340576,
+                0.024628451094031334
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9751993222839516,
+            "determinant": 1.1134566068649292,
+            "matrix": [
+              [
+                1.0219000577926636,
+                0.043791987001895905,
+                -9.248274803161621
+              ],
+              [
+                -0.04045955836772919,
+                1.0878605842590332,
+                -1.355668067932129
+              ]
+            ]
+          },
+          "control_right_fp_pct": 0.0,
+          "scores": {
+            "precision": 0.7116724738675958,
+            "big_recall": 0.8548931383577053,
+            "small_recall": 0.9344262295081968,
+            "predicted_pixels": 1148,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "translation": {
+          "control_registration": {
+            "success": true,
+            "corr": 0.92448360501964,
+            "matrix": [
+              [
+                1.0,
+                0.0,
+                -33.41867446899414
+              ],
+              [
+                0.0,
+                1.0,
+                0.867129921913147
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.902637745919455,
+            "matrix": [
+              [
+                1.0,
+                0.0,
+                -28.473155975341797
+              ],
+              [
+                0.0,
+                1.0,
+                1.7771756649017334
+              ]
+            ]
+          },
+          "control_right_fp_pct": 0.6677140612725845,
+          "scores": {
+            "precision": 0.002403846153846154,
+            "big_recall": 0.0011248593925759281,
+            "small_recall": 0.0,
+            "predicted_pixels": 416,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "source-medium.png",
+      "added_motion": "2 degrees rotation plus 1.02 scale after translation",
+      "methods": {
+        "affine": {
+          "control_registration": {
+            "success": true,
+            "corr": 0.9943540793178846,
+            "determinant": 1.0467641353607178,
+            "matrix": [
+              [
+                1.0187956094741821,
+                0.037868767976760864,
+                -7.672924995422363
+              ],
+              [
+                -0.03695668280124664,
+                1.0260788202285767,
+                4.545068740844727
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9844599794401394,
+            "determinant": 1.0524849891662598,
+            "matrix": [
+              [
+                1.01851487159729,
+                0.03965149074792862,
+                -7.647380828857422
+              ],
+              [
+                -0.03838685527443886,
+                1.031858205795288,
+                4.355391025543213
+              ]
+            ]
+          },
+          "control_right_fp_pct": 0.08439174648719355,
+          "scores": {
+            "precision": 0.9350393700787402,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1016,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "translation": {
+          "control_registration": {
+            "success": true,
+            "corr": 0.9223177663710049,
+            "matrix": [
+              [
+                1.0,
+                0.0,
+                4.691864967346191
+              ],
+              [
+                0.0,
+                1.0,
+                -3.472867727279663
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.911610857843668,
+            "matrix": [
+              [
+                1.0,
+                0.0,
+                5.084649085998535
+              ],
+              [
+                0.0,
+                1.0,
+                -2.899207353591919
+              ]
+            ]
+          },
+          "control_right_fp_pct": 0.36288450989493226,
+          "scores": {
+            "precision": 0.0,
+            "big_recall": 0.0,
+            "small_recall": 0.0,
+            "predicted_pixels": 156,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "synthetic known edits and motion only",
+    "not a clinical reference",
+    "comparison follows observing the prior result"
+  ]
+}

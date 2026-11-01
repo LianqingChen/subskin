@@ -1,0 +1,176 @@
+{
+  "protocol": "round5-protocol.md",
+  "data_provenance": "generated skin, procedural masks, no real patient images or manual lesion annotations",
+  "hashes": [
+    "101ec574b394e568ba4623e2c6153147cab1d5f7e850db970b663985aa3d4077",
+    "3521fe241957ddee2551d5ad2a5ae88edde809583ab3a49a4a2c7f2e0ac0fb57",
+    "aec7f9dd22123ef0f15935e0c537e92f5233a61d529b79606536bac8469b69de"
+  ],
+  "sam_sha256": "ec2df62732614e57411cdcf32a23ffdf28910380d03139ee0f4fcbe91eb8c912",
+  "groups": {
+    "original": [
+      {
+        "seed": 0,
+        "threshold": 0.9,
+        "validation_constraint_met": false,
+        "validation": {
+          "positive_dice": 0.28672984736973794,
+          "small_dice": 0.11650312548139247,
+          "area_mae_percentage_points": 5.882568359375,
+          "negative_false_positive_area_pct": 6.608840654481132,
+          "n_positive": 107,
+          "n_negative": 53,
+          "n_small": 32
+        },
+        "test": {
+          "standard": {
+            "n": 32,
+            "mean_area_error_pp": 0.530242919921875,
+            "positive_dice": 0.8439894577497428,
+            "pixel_recall": 0.9148643580447556,
+            "detection_image_rate": 96.875
+          },
+          "weak": {
+            "n": 32,
+            "mean_area_error_pp": 6.612396240234375,
+            "positive_dice": 0.0002906976744172526,
+            "pixel_recall": 0.00011536686663590217,
+            "detection_image_rate": 3.125
+          },
+          "glare": {
+            "n": 32,
+            "mean_area_error_pp": 6.516265869140625,
+            "mean_fp_area_pct": 6.516265869140625,
+            "fp_image_gt_1pct": 100.0,
+            "fp_image_any": 100.0
+          }
+        },
+        "checkpoint_sha256": "947b6f7329144c94b6c898012f41bbde751587ba1e51656d667b519ba3db27d3"
+      },
+      {
+        "seed": 1,
+        "threshold": 0.9,
+        "validation_constraint_met": false,
+        "validation": {
+          "positive_dice": 0.3123789913715246,
+          "small_dice": 0.1548883176849645,
+          "area_mae_percentage_points": 5.956878662109375,
+          "negative_false_positive_area_pct": 6.912404186320755,
+          "n_positive": 107,
+          "n_negative": 53,
+          "n_small": 32
+        },
+        "test": {
+          "standard": {
+            "n": 32,
+            "mean_area_error_pp": 0.62408447265625,
+            "positive_dice": 0.8508383749272288,
+            "pixel_recall": 0.9384923115389424,
+            "detection_image_rate": 96.875
+          },
+          "weak": {
+            "n": 32,
+            "mean_area_error_pp": 6.577301025390625,
+            "positive_dice": 0.007774354287030531,
+            "pixel_recall": 0.0035763728657129674,
+            "detection_image_rate": 6.25
+          },
+          "glare": {
+            "n": 32,
+            "mean_area_error_pp": 6.5704345703125,
+            "mean_fp_area_pct": 6.5704345703125,
+            "fp_image_gt_1pct": 96.875,
+            "fp_image_any": 100.0
+          }
+        },
+        "checkpoint_sha256": "29ecdd8db2418ea58b48346134116a0f01345b2509783017ddaa2ac771a30868"
+      }
+    ],
+    "hard_examples": [
+      {
+        "seed": 0,
+        "threshold": 0.9,
+        "validation_constraint_met": false,
+        "validation": {
+          "positive_dice": 0.2061410939678934,
+          "small_dice": 0.02359026405207875,
+          "area_mae_percentage_points": 5.520477294921875,
+          "negative_false_positive_area_pct": 3.879993366745283,
+          "n_positive": 107,
+          "n_negative": 53,
+          "n_small": 32
+        },
+        "test": {
+          "standard": {
+            "n": 32,
+            "mean_area_error_pp": 2.785491943359375,
+            "positive_dice": 0.3961694598843657,
+            "pixel_recall": 0.5434429303662958,
+            "detection_image_rate": 53.125
+          },
+          "weak": {
+            "n": 32,
+            "mean_area_error_pp": 6.6131591796875,
+            "positive_dice": 0.0,
+            "pixel_recall": 0.0,
+            "detection_image_rate": 0.0
+          },
+          "glare": {
+            "n": 32,
+            "mean_area_error_pp": 2.991485595703125,
+            "mean_fp_area_pct": 2.991485595703125,
+            "fp_image_gt_1pct": 53.125,
+            "fp_image_any": 59.375
+          }
+        },
+        "checkpoint_sha256": "1c1777418b34ffad4bfcf74bca3c4c4a374a3948d5782b68727caa1dadb46e61"
+      },
+      {
+        "seed": 1,
+        "threshold": 0.9,
+        "validation_constraint_met": false,
+        "validation": {
+          "positive_dice": 0.17994528292058276,
+          "small_dice": 0.004261363636315211,
+          "area_mae_percentage_points": 5.55145263671875,
+          "negative_false_positive_area_pct": 3.4244177476415096,
+          "n_positive": 107,
+          "n_negative": 53,
+          "n_small": 32
+        },
+        "test": {
+          "standard": {
+            "n": 32,
+            "mean_area_error_pp": 3.363037109375,
+            "positive_dice": 0.3432749605958894,
+            "pixel_recall": 0.4489311163895487,
+            "detection_image_rate": 53.125
+          },
+          "weak": {
+            "n": 32,
+            "mean_area_error_pp": 6.6131591796875,
+            "positive_dice": 0.0,
+            "pixel_recall": 0.0,
+            "detection_image_rate": 0.0
+          },
+          "glare": {
+            "n": 32,
+            "mean_area_error_pp": 2.2216796875,
+            "mean_fp_area_pct": 2.2216796875,
+            "fp_image_gt_1pct": 46.875,
+            "fp_image_any": 53.125
+          }
+        },
+        "checkpoint_sha256": "a3cc0dbcc7f3bf114cabb7aa9d0d3f8b0307bb252400d0c514eee74b245ae4c4"
+      }
+    ]
+  },
+  "limitations": [
+    "one held-out generated test base",
+    "binary segmentation assumes all skin",
+    "SAM nonstandard input",
+    "pretraining source unknown",
+    "synthetic highlights and lesions may be ambiguous"
+  ],
+  "elapsed_seconds": 207.44
+}

@@ -1,0 +1,94 @@
+{
+  "kind": "offline_relevance_failure_mode_probe",
+  "model": "google/siglip-base-patch16-224",
+  "revision": "7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed",
+  "prompts": {
+    "skin_closeup": "This is a photograph of a close-up of human skin.",
+    "hand_photo": "This is a photograph of a real human hand or foot.",
+    "face_photo": "This is a photograph of a real human face or body.",
+    "document": "This is a document page with printed text.",
+    "graphic": "This is a computer generated graphic with flat colored shapes.",
+    "checkerboard": "This is a checkerboard pattern.",
+    "surface": "This is a plain wall, fabric, wood, or painted surface.",
+    "object": "This is a photograph of an object, not a human body."
+  },
+  "load_seconds": 0.21734931133687496,
+  "rows": [
+    {
+      "case": "uniform_skin_coloured_surface",
+      "input_sha256": "0738d37698592da7a19ccb50ede78dc1b454f91a3d936c55c7b8246b77b9a958",
+      "known_content": "program_generated_nonmedical",
+      "scores": {
+        "skin_closeup": -11.434538841247559,
+        "hand_photo": -19.44751739501953,
+        "face_photo": -19.436546325683594,
+        "document": -20.200157165527344,
+        "graphic": -15.740028381347656,
+        "checkerboard": -11.77833366394043,
+        "surface": -5.641195774078369,
+        "object": -16.143415451049805
+      },
+      "top_prompt": "surface",
+      "skin_minus_other_margin": -5.7933430671691895,
+      "seconds": 0.5743555799126625
+    },
+    {
+      "case": "checkerboard",
+      "input_sha256": "67df58e4683c0164ac55c5714bf6b624234d68e7fcd5c6853ca0080b75249b38",
+      "known_content": "program_generated_nonmedical",
+      "scores": {
+        "skin_closeup": -16.038387298583984,
+        "hand_photo": -20.01845932006836,
+        "face_photo": -19.27163314819336,
+        "document": -17.950580596923828,
+        "graphic": -11.949095726013184,
+        "checkerboard": 1.0338802337646484,
+        "surface": -10.372237205505371,
+        "object": -13.997456550598145
+      },
+      "top_prompt": "checkerboard",
+      "skin_minus_other_margin": -17.072267532348633,
+      "seconds": 0.5315518714487553
+    },
+    {
+      "case": "generated_text_document",
+      "input_sha256": "617f494e3a0eb4a08005b91fd5c3e8a9c3d5faa27c382cf2a2abc28f26ddf3fe",
+      "known_content": "program_generated_nonmedical",
+      "scores": {
+        "skin_closeup": -16.357065200805664,
+        "hand_photo": -18.693344116210938,
+        "face_photo": -16.04981803894043,
+        "document": -3.3565444946289062,
+        "graphic": -12.23446273803711,
+        "checkerboard": -10.533069610595703,
+        "surface": -15.800037384033203,
+        "object": -11.107297897338867
+      },
+      "top_prompt": "document",
+      "skin_minus_other_margin": -12.693273544311523,
+      "seconds": 0.5258582253009081
+    },
+    {
+      "case": "skin_coloured_rectangles",
+      "input_sha256": "1bef65e5dc67d7add6d7bb0f22585067f72f8f57ac63388290d7b773846cc0a5",
+      "known_content": "program_generated_nonmedical",
+      "scores": {
+        "skin_closeup": -8.484376907348633,
+        "hand_photo": -16.044979095458984,
+        "face_photo": -14.653358459472656,
+        "document": -15.429306030273438,
+        "graphic": -7.935416221618652,
+        "checkerboard": -6.6355743408203125,
+        "surface": -4.3250837326049805,
+        "object": -10.821137428283691
+      },
+      "top_prompt": "surface",
+      "skin_minus_other_margin": -4.159293174743652,
+      "seconds": 0.5234238356351852
+    }
+  ],
+  "calibrated": false,
+  "real_positive_images": 0,
+  "clinical_accuracy": null,
+  "limitations": "Four generated negatives only; not an OOD benchmark or a deployment threshold. No disease classification or segmentation claim."
+}

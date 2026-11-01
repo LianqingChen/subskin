@@ -1,0 +1,41 @@
+{
+  "status": "post_hoc_full_working_canvas_grid_not_ground_truth_for_real_edits",
+  "expected_forward_affine": [
+    [
+      1.0,
+      0.0,
+      2.0
+    ],
+    [
+      0.0,
+      1.0,
+      -1.5
+    ]
+  ],
+  "rows": [
+    {
+      "source": "source-light.png",
+      "kind": "registration_control",
+      "median_error_px": 6.1666916641774385,
+      "p95_error_px": 11.78344621644971
+    },
+    {
+      "source": "source-light.png",
+      "kind": "registration_edited",
+      "median_error_px": 11.244918605570973,
+      "p95_error_px": 22.16334896975746
+    },
+    {
+      "source": "source-medium.png",
+      "kind": "registration_control",
+      "median_error_px": 1.2387338383708815,
+      "p95_error_px": 2.45177354888032
+    },
+    {
+      "source": "source-medium.png",
+      "kind": "registration_edited",
+      "median_error_px": 2.5872902542271516,
+      "p95_error_px": 5.111979869185461
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "kind": "synthetic_failure_mode_probe_not_accuracy_benchmark",
+  "rows": [
+    {
+      "case": "uniform_skin_coloured_surface",
+      "known_content": "program_generated_nonmedical",
+      "information_lost": true,
+      "source": "interactive_rgb_reference",
+      "mask_pixels": {
+        "skin": 65536,
+        "lesion": 0,
+        "uncertain": 0,
+        "excluded": 0
+      },
+      "status": "retake_required",
+      "blocking_reasons": [
+        "QUALITY_INFORMATION_LOST",
+        "USER_REVIEW_REQUIRED"
+      ]
+    },
+    {
+      "case": "checkerboard",
+      "known_content": "program_generated_nonmedical",
+      "information_lost": false,
+      "source": "interactive_rgb_reference",
+      "mask_pixels": {
+        "skin": 0,
+        "lesion": 0,
+        "uncertain": 0,
+        "excluded": 0
+      },
+      "status": "review_required",
+      "blocking_reasons": [
+        "SKIN_UNVERIFIED",
+        "USER_REVIEW_REQUIRED"
+      ]
+    },
+    {
+      "case": "generated_text_document",
+      "known_content": "program_generated_nonmedical",
+      "information_lost": false,
+      "source": "interactive_rgb_reference",
+      "mask_pixels": {
+        "skin": 0,
+        "lesion": 0,
+        "uncertain": 0,
+        "excluded": 0
+      },
+      "status": "review_required",
+      "blocking_reasons": [
+        "SKIN_UNVERIFIED",
+        "USER_REVIEW_REQUIRED"
+      ]
+    },
+    {
+      "case": "skin_coloured_rectangles",
+      "known_content": "program_generated_nonmedical",
+      "information_lost": false,
+      "source": "interactive_rgb_reference",
+      "mask_pixels": {
+        "skin": 65536,
+        "lesion": 0,
+        "uncertain": 17458,
+        "excluded": 0
+      },
+      "status": "review_required",
+      "blocking_reasons": [
+        "USER_REVIEW_REQUIRED",
+        "REGIONS_UNRESOLVED"
+      ]
+    }
+  ]
+}

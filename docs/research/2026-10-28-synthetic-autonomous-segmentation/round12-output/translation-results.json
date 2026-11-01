@@ -1,0 +1,125 @@
+{
+  "status": "post_hoc_exploratory_not_pre_registered",
+  "synthetic_transform": "translation (2,-1.5) working pixels",
+  "cases": [
+    {
+      "source": "source-light.png",
+      "registration_control": {
+        "success": true,
+        "corr": 0.9990189271848349,
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            2.2578983306884766
+          ],
+          [
+            0.0,
+            1.0,
+            -2.087005138397217
+          ]
+        ]
+      },
+      "registration_edited": {
+        "success": true,
+        "corr": 0.9893316667586175,
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            1.7816606760025024
+          ],
+          [
+            0.0,
+            1.0,
+            -1.069993257522583
+          ]
+        ]
+      },
+      "translation_error_pixels": {
+        "control": 0.6411603399124423,
+        "edited": 0.4822632672925897
+      },
+      "threshold": 7.0,
+      "control_right_fp_pct": 0.06172146784872629,
+      "all_components": {
+        "precision": 0.9854771784232366,
+        "big_recall": 1.0,
+        "small_recall": 1.0,
+        "predicted_pixels": 964,
+        "big_pixels": 889,
+        "small_pixels": 61
+      },
+      "largest_only": {
+        "precision": 1.0,
+        "big_recall": 1.0,
+        "small_recall": 0.0,
+        "predicted_pixels": 889,
+        "big_pixels": 889,
+        "small_pixels": 61
+      }
+    },
+    {
+      "source": "source-medium.png",
+      "registration_control": {
+        "success": true,
+        "corr": 0.9997433237904148,
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            1.9809892177581787
+          ],
+          [
+            0.0,
+            1.0,
+            -1.3023924827575684
+          ]
+        ]
+      },
+      "registration_edited": {
+        "success": true,
+        "corr": 0.9912269024757492,
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            2.0488104820251465
+          ],
+          [
+            0.0,
+            1.0,
+            -1.1449357271194458
+          ]
+        ]
+      },
+      "translation_error_pixels": {
+        "control": 0.19851987485429226,
+        "edited": 0.35840354494860094
+      },
+      "threshold": 9.47599983215332,
+      "control_right_fp_pct": 0.10970927043335163,
+      "all_components": {
+        "precision": 0.9039010466222646,
+        "big_recall": 1.0,
+        "small_recall": 1.0,
+        "predicted_pixels": 1051,
+        "big_pixels": 889,
+        "small_pixels": 61
+      },
+      "largest_only": {
+        "precision": 0.998876404494382,
+        "big_recall": 1.0,
+        "small_recall": 0.0,
+        "predicted_pixels": 890,
+        "big_pixels": 889,
+        "small_pixels": 61
+      }
+    }
+  ],
+  "limitations": [
+    "motion was specifically translation so translation-only assumption matches this synthetic test",
+    "no evidence of performance for nonrigid or real edits",
+    "not an acceptance decision"
+  ]
+}

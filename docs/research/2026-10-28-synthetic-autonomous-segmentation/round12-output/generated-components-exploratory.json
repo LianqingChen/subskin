@@ -1,0 +1,55 @@
+{
+  "status": "post_hoc_description_no_ground_truth",
+  "rows": [
+    {
+      "case": "generated-light",
+      "mask": "raw-mask.png",
+      "component_count": 20,
+      "largest_pixels": 2370,
+      "other_component_pixels": 268,
+      "top_five_sizes": [
+        2370,
+        244,
+        3,
+        2,
+        2
+      ]
+    },
+    {
+      "case": "generated-light",
+      "mask": "aligned-mask.png",
+      "component_count": 0,
+      "largest_pixels": 0,
+      "other_component_pixels": 0,
+      "top_five_sizes": []
+    },
+    {
+      "case": "generated-medium",
+      "mask": "raw-mask.png",
+      "component_count": 54,
+      "largest_pixels": 4449,
+      "other_component_pixels": 657,
+      "top_five_sizes": [
+        4449,
+        598,
+        3,
+        2,
+        2
+      ]
+    },
+    {
+      "case": "generated-medium",
+      "mask": "aligned-mask.png",
+      "component_count": 506,
+      "largest_pixels": 3958,
+      "other_component_pixels": 3866,
+      "top_five_sizes": [
+        3958,
+        1963,
+        556,
+        51,
+        50
+      ]
+    }
+  ]
+}

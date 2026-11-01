@@ -1,0 +1,13 @@
+{
+  "status": "post_hoc_diagnostic_not_part_of_prespecified_acceptance_gate",
+  "raw_components": 31,
+  "raw_largest_component_pixels": 995,
+  "raw_small_components_under_20_pixels": 30,
+  "raw_small_component_pixels": 32,
+  "aligned_components": 348,
+  "aligned_largest_component_pixels": 966,
+  "aligned_small_components_under_20_pixels": 345,
+  "aligned_small_component_pixels": 478,
+  "largest_component_iou": 0.8344246959775491,
+  "interpretation": "Exploratory largest-component overlap is not evidence of anatomical correctness and does not reverse the prespecified gate failure; small true lesions might be removed."
+}

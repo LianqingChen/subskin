@@ -1,0 +1,246 @@
+{
+  "protocol": "round4-protocol.md",
+  "training_background": "train-medium.png",
+  "validation_background": "val-light.png",
+  "old_test_background": "test-dark.png",
+  "new_test_backgrounds": [
+    "test4-light.png",
+    "test4-dark.png"
+  ],
+  "image_sha256": [
+    "101ec574b394e568ba4623e2c6153147cab1d5f7e850db970b663985aa3d4077",
+    "3521fe241957ddee2551d5ad2a5ae88edde809583ab3a49a4a2c7f2e0ac0fb57",
+    "bd23ae3ed0f62046322b3a4debb38bfe5621765613a5e1f9d3db44e0d6a37002",
+    "47afcc407578991c0ab85fbeca913fdfeb9d5b854078bd38268ec778f54ca441",
+    "5d455d8d464b0eb2682183784275c656991cc7817899467904f388ebeee78fb3"
+  ],
+  "sam_weights_sha256": "ec2df62732614e57411cdcf32a23ffdf28910380d03139ee0f4fcbe91eb8c912",
+  "samples_per_group": 32,
+  "models": {
+    "rgb_cnn": [
+      {
+        "seed": 0,
+        "threshold": 0.7,
+        "validation_constraint_met": true,
+        "old_holdout_dice": 0.43704270779101806,
+        "reproduction_dice_difference": 0.0,
+        "reproduction_threshold_difference": 2.220446049250313e-16,
+        "groups": {
+          "test4-light/standard": {
+            "n": 32,
+            "mean_area_error_pp": 8.133697509765625,
+            "positive_dice": 0.18355482249678415,
+            "pixel_recall": 0.1255920663114269,
+            "detection_image_rate": 56.25
+          },
+          "test4-light/weak": {
+            "n": 32,
+            "mean_area_error_pp": 5.60302734375,
+            "positive_dice": 0.04451147706096931,
+            "pixel_recall": 0.023018781493357763,
+            "detection_image_rate": 21.875
+          },
+          "test4-light/glare": {
+            "n": 32,
+            "mean_area_error_pp": 2.6641845703125,
+            "mean_fp_area_pct": 2.6641845703125,
+            "fp_image_gt_1pct": 59.375,
+            "fp_image_any": 96.875
+          },
+          "test4-dark/standard": {
+            "n": 32,
+            "mean_area_error_pp": 4.279327392578125,
+            "positive_dice": 0.3488942179408189,
+            "pixel_recall": 0.27827438787407693,
+            "detection_image_rate": 62.5
+          },
+          "test4-dark/weak": {
+            "n": 32,
+            "mean_area_error_pp": 7.582855224609375,
+            "positive_dice": 0.008643617021184642,
+            "pixel_recall": 0.0013053519429661613,
+            "detection_image_rate": 3.125
+          },
+          "test4-dark/glare": {
+            "n": 32,
+            "mean_area_error_pp": 5.861663818359375,
+            "mean_fp_area_pct": 5.861663818359375,
+            "fp_image_gt_1pct": 87.5,
+            "fp_image_any": 96.875
+          }
+        },
+        "head_checkpoint_sha256": "520466c05092825befe60f40367614d7dd41f79e06c1fa396cf7b124fb4113fa"
+      },
+      {
+        "seed": 1,
+        "threshold": 0.9,
+        "validation_constraint_met": true,
+        "old_holdout_dice": 0.0,
+        "reproduction_dice_difference": 0.0,
+        "reproduction_threshold_difference": 2.220446049250313e-16,
+        "groups": {
+          "test4-light/standard": {
+            "n": 32,
+            "mean_area_error_pp": 10.308837890625,
+            "positive_dice": 0.0,
+            "pixel_recall": 0.0,
+            "detection_image_rate": 0.0
+          },
+          "test4-light/weak": {
+            "n": 32,
+            "mean_area_error_pp": 6.6619873046875,
+            "positive_dice": 0.0,
+            "pixel_recall": 0.0,
+            "detection_image_rate": 0.0
+          },
+          "test4-light/glare": {
+            "n": 32,
+            "mean_area_error_pp": 0.0,
+            "mean_fp_area_pct": 0.0,
+            "fp_image_gt_1pct": 0.0,
+            "fp_image_any": 0.0
+          },
+          "test4-dark/standard": {
+            "n": 32,
+            "mean_area_error_pp": 5.889129638671875,
+            "positive_dice": 0.0,
+            "pixel_recall": 0.0,
+            "detection_image_rate": 0.0
+          },
+          "test4-dark/weak": {
+            "n": 32,
+            "mean_area_error_pp": 7.598114013671875,
+            "positive_dice": 0.0,
+            "pixel_recall": 0.0,
+            "detection_image_rate": 0.0
+          },
+          "test4-dark/glare": {
+            "n": 32,
+            "mean_area_error_pp": 0.0,
+            "mean_fp_area_pct": 0.0,
+            "fp_image_gt_1pct": 0.0,
+            "fp_image_any": 0.0
+          }
+        },
+        "head_checkpoint_sha256": "4fd9f22041dbfbf387cf70f10f5de809d100d2e90134eeccd57fff9a21f1825c"
+      }
+    ],
+    "pretrained_sam": [
+      {
+        "seed": 0,
+        "threshold": 0.4,
+        "validation_constraint_met": true,
+        "old_holdout_dice": 0.8620916953253688,
+        "reproduction_dice_difference": 0.0,
+        "reproduction_threshold_difference": 1.1102230246251565e-16,
+        "groups": {
+          "test4-light/standard": {
+            "n": 32,
+            "mean_area_error_pp": 5.50994873046875,
+            "positive_dice": 0.5189030503734274,
+            "pixel_recall": 0.5385583185316756,
+            "detection_image_rate": 71.875
+          },
+          "test4-light/weak": {
+            "n": 32,
+            "mean_area_error_pp": 6.096649169921875,
+            "positive_dice": 0.07884434070438971,
+            "pixel_recall": 0.03870819972514888,
+            "detection_image_rate": 25.0
+          },
+          "test4-light/glare": {
+            "n": 32,
+            "mean_area_error_pp": 10.422515869140625,
+            "mean_fp_area_pct": 10.422515869140625,
+            "fp_image_gt_1pct": 100.0,
+            "fp_image_any": 100.0
+          },
+          "test4-dark/standard": {
+            "n": 32,
+            "mean_area_error_pp": 2.687835693359375,
+            "positive_dice": 0.7136962243288794,
+            "pixel_recall": 0.9623008161678974,
+            "detection_image_rate": 96.875
+          },
+          "test4-dark/weak": {
+            "n": 32,
+            "mean_area_error_pp": 6.365966796875,
+            "positive_dice": 0.10907147131135612,
+            "pixel_recall": 0.13465207350135555,
+            "detection_image_rate": 31.25
+          },
+          "test4-dark/glare": {
+            "n": 32,
+            "mean_area_error_pp": 13.006591796875,
+            "mean_fp_area_pct": 13.006591796875,
+            "fp_image_gt_1pct": 100.0,
+            "fp_image_any": 100.0
+          }
+        },
+        "head_checkpoint_sha256": "5455bc3cb159d3f76eac108d68505d6e6896d90db678a3b024b0d512cd7b6d39"
+      },
+      {
+        "seed": 1,
+        "threshold": 0.55,
+        "validation_constraint_met": true,
+        "old_holdout_dice": 0.8568636684092943,
+        "reproduction_dice_difference": 0.0,
+        "reproduction_threshold_difference": 1.1102230246251565e-16,
+        "groups": {
+          "test4-light/standard": {
+            "n": 32,
+            "mean_area_error_pp": 5.5938720703125,
+            "positive_dice": 0.5147040300855986,
+            "pixel_recall": 0.5328596802841918,
+            "detection_image_rate": 68.75
+          },
+          "test4-light/weak": {
+            "n": 32,
+            "mean_area_error_pp": 6.14166259765625,
+            "positive_dice": 0.07874043781484558,
+            "pixel_recall": 0.0385936784241869,
+            "detection_image_rate": 21.875
+          },
+          "test4-light/glare": {
+            "n": 32,
+            "mean_area_error_pp": 10.617828369140625,
+            "mean_fp_area_pct": 10.617828369140625,
+            "fp_image_gt_1pct": 100.0,
+            "fp_image_any": 100.0
+          },
+          "test4-dark/standard": {
+            "n": 32,
+            "mean_area_error_pp": 2.683258056640625,
+            "positive_dice": 0.7141434052429593,
+            "pixel_recall": 0.9617826143282808,
+            "detection_image_rate": 96.875
+          },
+          "test4-dark/weak": {
+            "n": 32,
+            "mean_area_error_pp": 6.43463134765625,
+            "positive_dice": 0.10246732476618095,
+            "pixel_recall": 0.12551460990059243,
+            "detection_image_rate": 34.375
+          },
+          "test4-dark/glare": {
+            "n": 32,
+            "mean_area_error_pp": 13.085174560546875,
+            "mean_fp_area_pct": 13.085174560546875,
+            "fp_image_gt_1pct": 100.0,
+            "fp_image_any": 100.0
+          }
+        },
+        "head_checkpoint_sha256": "28002c2d306324f149aa7350276969143215d9fd88cd017106ef67f144299b0c"
+      }
+    ]
+  },
+  "limitations": [
+    "synthetic masks only",
+    "two held-out generated test bases",
+    "3-case controlled edits",
+    "binary segmentation assumes all skin",
+    "nonstandard SAM input",
+    "SAM and generator pretraining provenance unknown"
+  ],
+  "elapsed_seconds": 185.91
+}

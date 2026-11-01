@@ -1,0 +1,18 @@
+{
+ "task_id": 207,
+ "submission": {
+  "submission_id": 22,
+  "status": "superseded (pixels identical to s23/s24)"
+ },
+ "ai_model": "pixel-reviewed-v1-abdomen-spots",
+ "summary": {
+  "lesion_dice": 0.8972,
+  "skin_dice": 1.0,
+  "pixel_agreement_on_human_known": 0.9963,
+  "ai_lesion_ratio": 2.0,
+  "human_lesion_ratio": 1.65,
+  "changed_pixels": 2762
+ },
+ "note": "Restored from the original `review 207` output; the file had been overwritten by a gold-tuned reproduction score (L-meta-1). regions not retained.",
+ "regions": []
+}

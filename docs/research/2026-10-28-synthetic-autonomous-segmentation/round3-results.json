@@ -1,0 +1,231 @@
+{
+  "experiment": "generated skin bases plus frozen SAM feature pilot",
+  "dataset": {
+    "train": 128,
+    "validation": 64,
+    "test": 64,
+    "n_negative_test": 17,
+    "n_small_test": 13,
+    "hashes": [
+      "101ec574b394e568ba4623e2c6153147cab1d5f7e850db970b663985aa3d4077",
+      "3521fe241957ddee2551d5ad2a5ae88edde809583ab3a49a4a2c7f2e0ac0fb57",
+      "bd23ae3ed0f62046322b3a4debb38bfe5621765613a5e1f9d3db44e0d6a37002"
+    ]
+  },
+  "weights_sha256": "ec2df62732614e57411cdcf32a23ffdf28910380d03139ee0f4fcbe91eb8c912",
+  "data_provenance": "three AI-generated synthetic skin bases, no real patient images or human masks",
+  "limitations": [
+    "single held-out synthetic base",
+    "binary segmentation, all pixels assumed skin",
+    "SAM pretraining data unknown",
+    "SAM nonstandard 256 input and interpolated positional embeddings",
+    "generated base exact pixel edits are not clinical ground truth"
+  ],
+  "models": {
+    "rgb_cnn": [
+      {
+        "seed": 0,
+        "threshold": 0.7,
+        "validation_constraint_met": true,
+        "validation": {
+          "positive_dice": 0.03631590475996901,
+          "small_dice": 0.0,
+          "area_mae_percentage_points": 6.18743896484375,
+          "negative_false_positive_area_pct": 0.9567987351190477,
+          "n_positive": 43,
+          "n_negative": 21,
+          "n_small": 12
+        },
+        "test": {
+          "positive_dice": 0.43704270779101806,
+          "small_dice": 0.4857126270202795,
+          "area_mae_percentage_points": 4.694366455078125,
+          "negative_false_positive_area_pct": 0.41360294117647056,
+          "n_positive": 47,
+          "n_negative": 17,
+          "n_small": 13,
+          "perturbed": {
+            "positive_dice": 0.04446838063019857,
+            "small_dice": 0.02089268755909629,
+            "area_mae_percentage_points": 6.5769195556640625,
+            "negative_false_positive_area_pct": 0.0028722426470588237,
+            "n_positive": 47,
+            "n_negative": 17,
+            "n_small": 13
+          },
+          "mean_abs_area_change_pp": 2.2342681884765625
+        }
+      },
+      {
+        "seed": 1,
+        "threshold": 0.9,
+        "validation_constraint_met": true,
+        "validation": {
+          "positive_dice": 0.0,
+          "small_dice": 0.0,
+          "area_mae_percentage_points": 6.5540313720703125,
+          "negative_false_positive_area_pct": 0.0,
+          "n_positive": 43,
+          "n_negative": 21,
+          "n_small": 12
+        },
+        "test": {
+          "positive_dice": 0.0,
+          "small_dice": 0.0,
+          "area_mae_percentage_points": 6.9171905517578125,
+          "negative_false_positive_area_pct": 0.0,
+          "n_positive": 47,
+          "n_negative": 17,
+          "n_small": 13,
+          "perturbed": {
+            "positive_dice": 0.0,
+            "small_dice": 0.0,
+            "area_mae_percentage_points": 6.9171905517578125,
+            "negative_false_positive_area_pct": 0.0,
+            "n_positive": 47,
+            "n_negative": 17,
+            "n_small": 13
+          },
+          "mean_abs_area_change_pp": 0.0
+        }
+      }
+    ],
+    "random_sam": [
+      {
+        "seed": 0,
+        "threshold": 0.75,
+        "validation_constraint_met": true,
+        "validation": {
+          "positive_dice": 0.5846103671612357,
+          "small_dice": 0.2484016874055828,
+          "area_mae_percentage_points": 3.2131195068359375,
+          "negative_false_positive_area_pct": 1.9194103422619047,
+          "n_positive": 43,
+          "n_negative": 21,
+          "n_small": 12
+        },
+        "test": {
+          "positive_dice": 0.45591459424708974,
+          "small_dice": 0.2830837054335544,
+          "area_mae_percentage_points": 6.2793731689453125,
+          "negative_false_positive_area_pct": 5.540556066176471,
+          "n_positive": 47,
+          "n_negative": 17,
+          "n_small": 13,
+          "perturbed": {
+            "positive_dice": 0.24947032350386425,
+            "small_dice": 0.0,
+            "area_mae_percentage_points": 4.89959716796875,
+            "negative_false_positive_area_pct": 0.46817555147058826,
+            "n_positive": 47,
+            "n_negative": 17,
+            "n_small": 13
+          },
+          "mean_abs_area_change_pp": 5.8666229248046875
+        }
+      },
+      {
+        "seed": 1,
+        "threshold": 0.7,
+        "validation_constraint_met": true,
+        "validation": {
+          "positive_dice": 0.6076565648892495,
+          "small_dice": 0.37641346450386354,
+          "area_mae_percentage_points": 3.3695220947265625,
+          "negative_false_positive_area_pct": 1.4846075148809523,
+          "n_positive": 43,
+          "n_negative": 21,
+          "n_small": 12
+        },
+        "test": {
+          "positive_dice": 0.48052298538122507,
+          "small_dice": 0.3103568583415796,
+          "area_mae_percentage_points": 8.168792724609375,
+          "negative_false_positive_area_pct": 8.151424632352942,
+          "n_positive": 47,
+          "n_negative": 17,
+          "n_small": 13,
+          "perturbed": {
+            "positive_dice": 0.31271122619435526,
+            "small_dice": 0.07490691557102612,
+            "area_mae_percentage_points": 4.4818878173828125,
+            "negative_false_positive_area_pct": 0.5514705882352942,
+            "n_positive": 47,
+            "n_negative": 17,
+            "n_small": 13
+          },
+          "mean_abs_area_change_pp": 8.014297485351562
+        }
+      }
+    ],
+    "pretrained_sam": [
+      {
+        "seed": 0,
+        "threshold": 0.4,
+        "validation_constraint_met": true,
+        "validation": {
+          "positive_dice": 0.6563720627702272,
+          "small_dice": 0.38409231265300914,
+          "area_mae_percentage_points": 3.1402587890625,
+          "negative_false_positive_area_pct": 1.9461495535714286,
+          "n_positive": 43,
+          "n_negative": 21,
+          "n_small": 12
+        },
+        "test": {
+          "positive_dice": 0.8620916953253688,
+          "small_dice": 0.7746773127310272,
+          "area_mae_percentage_points": 1.335906982421875,
+          "negative_false_positive_area_pct": 0.038775275735294115,
+          "n_positive": 47,
+          "n_negative": 17,
+          "n_small": 13,
+          "perturbed": {
+            "positive_dice": 0.8248695710286281,
+            "small_dice": 0.7591895380662712,
+            "area_mae_percentage_points": 1.583099365234375,
+            "negative_false_positive_area_pct": 0.004308363970588236,
+            "n_positive": 47,
+            "n_negative": 17,
+            "n_small": 13
+          },
+          "mean_abs_area_change_pp": 0.62408447265625
+        }
+      },
+      {
+        "seed": 1,
+        "threshold": 0.55,
+        "validation_constraint_met": true,
+        "validation": {
+          "positive_dice": 0.6483407291804242,
+          "small_dice": 0.3643989031611727,
+          "area_mae_percentage_points": 3.189849853515625,
+          "negative_false_positive_area_pct": 1.9019717261904763,
+          "n_positive": 43,
+          "n_negative": 21,
+          "n_small": 12
+        },
+        "test": {
+          "positive_dice": 0.8568636684092943,
+          "small_dice": 0.765794465284394,
+          "area_mae_percentage_points": 1.4190673828125,
+          "negative_false_positive_area_pct": 0.034466911764705885,
+          "n_positive": 47,
+          "n_negative": 17,
+          "n_small": 13,
+          "perturbed": {
+            "positive_dice": 0.8188523027301207,
+            "small_dice": 0.7525425417173875,
+            "area_mae_percentage_points": 1.6757965087890625,
+            "negative_false_positive_area_pct": 0.0,
+            "n_positive": 47,
+            "n_negative": 17,
+            "n_small": 13
+          },
+          "mean_abs_area_change_pp": 0.6183624267578125
+        }
+      }
+    ]
+  },
+  "elapsed_seconds": 265.51
+}

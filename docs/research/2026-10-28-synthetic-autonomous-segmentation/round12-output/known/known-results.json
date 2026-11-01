@@ -1,0 +1,140 @@
+{
+  "protocol": "round12-protocol.md",
+  "source_kind": "AI-generated skin; program-generated known edits and noise",
+  "cases": [
+    {
+      "source": "source-light.png",
+      "source_sha256": "e72976214d7720f3ca72dd160d6be38a108e522d55e47b1d66679eaad6e854b8",
+      "source_size": [
+        1536,
+        1024
+      ],
+      "seed": 12000,
+      "registration_control": {
+        "success": true,
+        "corr": 0.9916884498474376,
+        "determinant": 1.094244122505188,
+        "matrix": [
+          [
+            1.0025594234466553,
+            -0.02980956993997097,
+            5.116855144500732
+          ],
+          [
+            -0.0022150350268930197,
+            1.0915164947509766,
+            -12.117462158203125
+          ]
+        ]
+      },
+      "registration_edited": {
+        "success": true,
+        "corr": 0.9686378659168947,
+        "determinant": 1.1732447147369385,
+        "matrix": [
+          [
+            1.0054328441619873,
+            -0.05329960584640503,
+            7.0325798988342285
+          ],
+          [
+            -0.005121929571032524,
+            1.167176604270935,
+            -19.587451934814453
+          ]
+        ]
+      },
+      "ignored_pct_of_core": 0.6545525595935913,
+      "control_right_raw_pct": 0.1122208506340478,
+      "control_right_aligned_pct": 0.0,
+      "all_components": {
+        "precision": 0.0,
+        "big_recall": 0.0,
+        "small_recall": 0.0,
+        "predicted_pixels": 100,
+        "big_pixels": 889,
+        "small_pixels": 61
+      },
+      "largest_component_only": {
+        "precision": 0.0,
+        "big_recall": 0.0,
+        "small_recall": 0.0,
+        "predicted_pixels": 49,
+        "big_pixels": 889,
+        "small_pixels": 61
+      },
+      "control_fp_all_pct": 0.04671059101189891,
+      "control_fp_largest_pct": 0.017209165109646967
+    },
+    {
+      "source": "source-medium.png",
+      "source_sha256": "515add02198fc1799a82adc84a6f0e1d51eeb623d4b01859c0eb891af3ac44d8",
+      "source_size": [
+        1672,
+        941
+      ],
+      "seed": 13000,
+      "registration_control": {
+        "success": true,
+        "corr": 0.9996668056819062,
+        "determinant": 1.0187269449234009,
+        "matrix": [
+          [
+            0.9995164275169373,
+            -0.0014748191460967064,
+            2.422987222671509
+          ],
+          [
+            0.0008840509108267725,
+            1.0192185640335083,
+            -4.396471977233887
+          ]
+        ]
+      },
+      "registration_edited": {
+        "success": true,
+        "corr": 0.9893962259636471,
+        "determinant": 1.0386772155761719,
+        "matrix": [
+          [
+            0.9988710880279541,
+            0.005970928352326155,
+            1.7746535539627075
+          ],
+          [
+            -0.0021300828084349632,
+            1.039838433265686,
+            -5.617085933685303
+          ]
+        ]
+      },
+      "ignored_pct_of_core": 0.4942460902921216,
+      "control_right_raw_pct": 0.23629689016414196,
+      "control_right_aligned_pct": 0.0928309211359129,
+      "all_components": {
+        "precision": 0.8111111111111111,
+        "big_recall": 0.9988751406074241,
+        "small_recall": 1.0,
+        "predicted_pixels": 1170,
+        "big_pixels": 889,
+        "small_pixels": 61
+      },
+      "largest_component_only": {
+        "precision": 1.0,
+        "big_recall": 0.9988751406074241,
+        "small_recall": 0.0,
+        "predicted_pixels": 888,
+        "big_pixels": 889,
+        "small_pixels": 61
+      },
+      "control_fp_all_pct": 0.09637482393061013,
+      "control_fp_largest_pct": 0.005560085995996738
+    }
+  ],
+  "limitations": [
+    "programmatically imposed positive core, not medical truth",
+    "only two synthetic images",
+    "core ignores smooth lesion boundary",
+    "synthetic perturbations do not model all generative model drift"
+  ]
+}

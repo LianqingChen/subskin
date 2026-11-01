@@ -1,0 +1,274 @@
+{
+  "protocol": "round9-protocol.md",
+  "sources": [
+    "train8-arm.png",
+    "test8b-arm.png",
+    "train9-hand.png",
+    "test9-hand.png"
+  ],
+  "hashes": [
+    "5468d5b39a9beec0de5e22758ffb135983affc53304d40daf83fbd1e6607d082",
+    "e72976214d7720f3ca72dd160d6be38a108e522d55e47b1d66679eaad6e854b8",
+    "b33a7ad066a72994e97500ebcc0b79e56b0d3a436fa3df5d7df77d9dc7082069",
+    "c237a7483195e68e668c7139115ed37fd2297b0a1f438776fd912deb4883311d"
+  ],
+  "sam_sha256": "ec2df62732614e57411cdcf32a23ffdf28910380d03139ee0f4fcbe91eb8c912",
+  "data_summary": {
+    "training": {
+      "counts": [
+        255225,
+        179069,
+        8307,
+        13519,
+        7386
+      ],
+      "positive": 90,
+      "negative": 38,
+      "ignored_pct": 11.593246459960938
+    },
+    "development_arm": {
+      "counts": [
+        170003,
+        54479,
+        3660,
+        7318,
+        2320
+      ],
+      "positive": 46,
+      "negative": 18,
+      "ignored_pct": 9.29412841796875
+    },
+    "holdout_hand": {
+      "counts": [
+        145492,
+        72175,
+        3955,
+        6297,
+        4117
+      ],
+      "positive": 44,
+      "negative": 20,
+      "ignored_pct": 11.48529052734375
+    }
+  },
+  "models": [
+    {
+      "seed": 0,
+      "old_head_sha256": "9e00c9ddc25f3b4a20e804e7dcfe3dcb52372d39be4e13c17e3756f80eb0d988",
+      "arm_only": {
+        "development_arm": {
+          "ignored_pixel_pct": 9.29412841796875,
+          "pixel_accuracy_valid": 0.9598031794095382,
+          "skin_dice_mean": 0.9843255087476863,
+          "lesion_dice_positive_mean": 0.2526895331386005,
+          "area_share_mae_pp": 6.952542759204832,
+          "empty_skin": 0,
+          "positive_images": 46,
+          "negative_images": 18,
+          "negative_fp_area_pct_valid": 1.5118368965425646,
+          "class_iou": {
+            "occlusion": 0.7396580835795694,
+            "unreadable": 0.0
+          },
+          "diagnostic": {
+            "positive_count": 46,
+            "positive_images_empty_count": 0,
+            "micro_recall": 0.34863387978142074,
+            "micro_precision": 0.22732941386068056,
+            "median_truth_share_positive_pct": 7.964358485073903,
+            "median_prediction_share_positive_pct": 6.935187750397262,
+            "ignored_pixel_pct": 9.29412841796875
+          }
+        },
+        "holdout_hand": {
+          "ignored_pixel_pct": 11.48529052734375,
+          "pixel_accuracy_valid": 0.7758408178041338,
+          "skin_dice_mean": 0.9695454278572276,
+          "lesion_dice_positive_mean": 0.18866281099770274,
+          "area_share_mae_pp": 58.95206104863855,
+          "empty_skin": 0,
+          "positive_images": 44,
+          "negative_images": 20,
+          "negative_fp_area_pct_valid": 20.65956434061566,
+          "class_iou": {
+            "occlusion": 0.5535171015027196,
+            "unreadable": 0.0
+          },
+          "diagnostic": {
+            "positive_count": 44,
+            "positive_images_empty_count": 0,
+            "micro_recall": 0.838685208596713,
+            "micro_precision": 0.0702784016271876,
+            "median_truth_share_positive_pct": 7.503869969040248,
+            "median_prediction_share_positive_pct": 60.64792133258678,
+            "ignored_pixel_pct": 11.48529052734375
+          }
+        }
+      },
+      "arm_and_hand": {
+        "development_arm": {
+          "ignored_pixel_pct": 9.29412841796875,
+          "pixel_accuracy_valid": 0.965152662124653,
+          "skin_dice_mean": 0.9794177735420568,
+          "lesion_dice_positive_mean": 0.19700300299261514,
+          "area_share_mae_pp": 6.854463540435576,
+          "empty_skin": 0,
+          "positive_images": 46,
+          "negative_images": 18,
+          "negative_fp_area_pct_valid": 0.9749983570035757,
+          "class_iou": {
+            "occlusion": 0.74309541860717,
+            "unreadable": 0.0
+          },
+          "diagnostic": {
+            "positive_count": 46,
+            "positive_images_empty_count": 7,
+            "micro_recall": 0.23387978142076501,
+            "micro_precision": 0.2623352742874655,
+            "median_truth_share_positive_pct": 7.964358485073903,
+            "median_prediction_share_positive_pct": 2.6687891513581565,
+            "ignored_pixel_pct": 9.29412841796875
+          }
+        },
+        "holdout_hand": {
+          "ignored_pixel_pct": 11.48529052734375,
+          "pixel_accuracy_valid": 0.9513394473271389,
+          "skin_dice_mean": 0.9800028663998868,
+          "lesion_dice_positive_mean": 0.16191742304399565,
+          "area_share_mae_pp": 6.14575736073842,
+          "empty_skin": 0,
+          "positive_images": 44,
+          "negative_images": 20,
+          "negative_fp_area_pct_valid": 2.0056805192654705,
+          "class_iou": {
+            "occlusion": 0.6242386053350136,
+            "unreadable": 0.0
+          },
+          "diagnostic": {
+            "positive_count": 44,
+            "positive_images_empty_count": 2,
+            "micro_recall": 0.1802781289506953,
+            "micro_precision": 0.16911764705882354,
+            "median_truth_share_positive_pct": 7.503869969040248,
+            "median_prediction_share_positive_pct": 2.8950376024720272,
+            "ignored_pixel_pct": 11.48529052734375
+          }
+        }
+      },
+      "new_head_sha256": "801a6bd95b0d645662e832550ad6e40eaabee8169ba2f8b384b1c102255f5c34"
+    },
+    {
+      "seed": 1,
+      "old_head_sha256": "2da866acd15d5500ed4a2fded24a84d5f8572596c5285c15bc8dccbb499ce92a",
+      "arm_only": {
+        "development_arm": {
+          "ignored_pixel_pct": 9.29412841796875,
+          "pixel_accuracy_valid": 0.9712297081335688,
+          "skin_dice_mean": 0.9850960064161635,
+          "lesion_dice_positive_mean": 0.18932038493749034,
+          "area_share_mae_pp": 5.015458908088267,
+          "empty_skin": 0,
+          "positive_images": 46,
+          "negative_images": 18,
+          "negative_fp_area_pct_valid": 0.6022474301685844,
+          "class_iou": {
+            "occlusion": 0.794631344508264,
+            "unreadable": 0.49257530759439966
+          },
+          "diagnostic": {
+            "positive_count": 46,
+            "positive_images_empty_count": 3,
+            "micro_recall": 0.20437158469945355,
+            "micro_precision": 0.29612034837688045,
+            "median_truth_share_positive_pct": 7.964358485073903,
+            "median_prediction_share_positive_pct": 3.6730008288105234,
+            "ignored_pixel_pct": 9.29412841796875
+          }
+        },
+        "holdout_hand": {
+          "ignored_pixel_pct": 11.48529052734375,
+          "pixel_accuracy_valid": 0.7941569411643021,
+          "skin_dice_mean": 0.9667549999742777,
+          "lesion_dice_positive_mean": 0.20447993109256374,
+          "area_share_mae_pp": 55.150144075833595,
+          "empty_skin": 0,
+          "positive_images": 44,
+          "negative_images": 20,
+          "negative_fp_area_pct_valid": 18.750286207484695,
+          "class_iou": {
+            "occlusion": 0.5973374295954941,
+            "unreadable": 0.3984997655883732
+          },
+          "diagnostic": {
+            "positive_count": 44,
+            "positive_images_empty_count": 0,
+            "micro_recall": 0.8586599241466498,
+            "micro_precision": 0.07774547286005357,
+            "median_truth_share_positive_pct": 7.503869969040248,
+            "median_prediction_share_positive_pct": 61.50163591646837,
+            "ignored_pixel_pct": 11.48529052734375
+          }
+        }
+      },
+      "arm_and_hand": {
+        "development_arm": {
+          "ignored_pixel_pct": 9.29412841796875,
+          "pixel_accuracy_valid": 0.9685507612078392,
+          "skin_dice_mean": 0.9832930357521865,
+          "lesion_dice_positive_mean": 0.10986244342666257,
+          "area_share_mae_pp": 6.243480670133317,
+          "empty_skin": 0,
+          "positive_images": 46,
+          "negative_images": 18,
+          "negative_fp_area_pct_valid": 0.005929894667254965,
+          "class_iou": {
+            "occlusion": 0.7327462850853055,
+            "unreadable": 0.0
+          },
+          "diagnostic": {
+            "positive_count": 46,
+            "positive_images_empty_count": 27,
+            "micro_recall": 0.12486338797814207,
+            "micro_precision": 0.48462354188759277,
+            "median_truth_share_positive_pct": 7.964358485073903,
+            "median_prediction_share_positive_pct": 0.0,
+            "ignored_pixel_pct": 9.29412841796875
+          }
+        },
+        "holdout_hand": {
+          "ignored_pixel_pct": 11.48529052734375,
+          "pixel_accuracy_valid": 0.9567006843765623,
+          "skin_dice_mean": 0.9853154129448153,
+          "lesion_dice_positive_mean": 0.13638943683710955,
+          "area_share_mae_pp": 4.9097852161098405,
+          "empty_skin": 0,
+          "positive_images": 44,
+          "negative_images": 20,
+          "negative_fp_area_pct_valid": 0.5168533810197757,
+          "class_iou": {
+            "occlusion": 0.5964125560538116,
+            "unreadable": 0.0
+          },
+          "diagnostic": {
+            "positive_count": 44,
+            "positive_images_empty_count": 15,
+            "micro_recall": 0.11201011378002529,
+            "micro_precision": 0.39342806394316165,
+            "median_truth_share_positive_pct": 7.503869969040248,
+            "median_prediction_share_positive_pct": 0.26562964851884907,
+            "ignored_pixel_pct": 11.48529052734375
+          }
+        }
+      },
+      "new_head_sha256": "f0964c5416c316c100adb3e5a02caeb20c40a1f9c195ba574dbc9e232e70516f"
+    }
+  ],
+  "limitations": [
+    "one new generated hand per partition",
+    "approximate chroma skin masks",
+    "binary lesion construction not clinical truth",
+    "same edit generator across split",
+    "SAM nonstandard input and unknown pretraining sources"
+  ],
+  "elapsed_seconds": 116.75
+}

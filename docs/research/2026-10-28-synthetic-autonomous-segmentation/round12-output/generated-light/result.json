@@ -1,0 +1,95 @@
+{
+  "source_size": [
+    1536,
+    1024
+  ],
+  "control_size": [
+    1536,
+    1024
+  ],
+  "edited_size": [
+    1536,
+    1024
+  ],
+  "working_size": [
+    512,
+    256
+  ],
+  "aspect_ratio_source": 1.5,
+  "aspect_ratio_control": 1.5,
+  "aspect_ratio_edited": 1.5,
+  "hashes": {
+    "source": "e72976214d7720f3ca72dd160d6be38a108e522d55e47b1d66679eaad6e854b8",
+    "control": "63e58bfa3b9be0eb55606c8a4d032dcdc903ec77faa7f4ded8245b4eb9606bfb",
+    "edited": "a7b9a9ff8a80ace02c2e28421afcacdc12e6a45ba253889551b87b5b75967062"
+  },
+  "source_core_pixels": 40944,
+  "raw": {
+    "threshold_l_encoded": 4.0,
+    "control_left_calibration_count": 23122,
+    "control_right_test_count": 17822,
+    "control_right_false_positive_pct": 0.09538772303894064,
+    "candidate_skin_pct": 6.44294646346229,
+    "candidate_pixels": 2638
+  },
+  "aligned": {
+    "threshold_l_encoded": 54.0,
+    "control_left_calibration_count": 23122,
+    "control_right_test_count": 17822,
+    "control_right_false_positive_pct": 0.0,
+    "candidate_skin_pct": 0.0,
+    "candidate_pixels": 0
+  },
+  "candidate_iou": 0.0,
+  "control_registration": {
+    "success": true,
+    "corr": 0.9825822256768663,
+    "determinant": 1.1134448051452637,
+    "matrix": [
+      [
+        1.003244400024414,
+        -0.022421035915613174,
+        1.58469820022583
+      ],
+      [
+        -0.004048739094287157,
+        1.1099345684051514,
+        -11.682429313659668
+      ]
+    ]
+  },
+  "edit_registration": {
+    "success": true,
+    "corr": 0.9237827984972301,
+    "determinant": 1.2737023830413818,
+    "matrix": [
+      [
+        1.0054290294647217,
+        -0.05061472952365875,
+        3.722755193710327
+      ],
+      [
+        -0.012744113802909851,
+        1.2674663066864014,
+        -25.34928321838379
+      ]
+    ]
+  },
+  "gates": {
+    "control_raw_fp_at_most_0_5pct": true,
+    "control_aligned_fp_at_most_0_5pct": true,
+    "raw_candidate_nonempty_under_30pct": true,
+    "aligned_candidate_nonempty_under_30pct": false,
+    "candidate_iou_at_least_0_6": false,
+    "both_affine_registrations_valid": true
+  },
+  "eligible_for_further_label_study": false,
+  "not_a_clinical_label": true,
+  "limitations": [
+    "control and edited images are generated, not ground truth",
+    "spatial split on one source is correlated",
+    "luma difference can be illumination or generative drift",
+    "candidate precision and recall are unknown",
+    "scaling may distort if aspect differs"
+  ]
+}

@@ -9,12 +9,12 @@ import AssessmentStoryCard from './AssessmentStoryCard.vue'
 import MicroAskCard from '@/components/contribution/MicroAskCard.vue'
 const props = defineProps<{ result: AssessmentResult; skinLayer?: string | null; lesionLayer?: string | null; visualFeatures?: VisualFeatures | null; saved?: boolean; busy?: boolean; canCompare?: boolean; readonly?: boolean }>()
 const emit = defineEmits<{ save: []; adjust: []; compare: []; done: []; share: []; retake: [] }>()
-const showOriginal = ref(false), showDetails = ref(false)
+const showOriginal = ref(false), showDetails = ref(false), showStory = ref(false)
 const summary = computed(() => journalSummary(props.result))
 const measure = computed(() => props.result.measurement)
 </script>
 <template>
-  <article class="mx-auto w-full max-w-4xl space-y-4">
+  <article class="w-full space-y-4">
     <header class="flex items-center justify-between gap-3">
       <div><h2 class="whitespace-nowrap text-lg font-semibold">本次记录</h2><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ summary.site }}<template v-if="summary.date"> · {{ summary.date }}</template></p></div>
       <span v-if="saved" class="shrink-0 text-xs text-primary-700 dark:text-primary-300"><i class="ri-check-line mr-1" aria-hidden="true"></i>已保存</span>
@@ -45,7 +45,14 @@ const measure = computed(() => props.result.measurement)
           </div>
         </div>
       </section>
-      <AssessmentStoryCard v-if="saved && !readonly" :key="result.id" :result="result" :skin="skinLayer" :lesion="lesionLayer" :saved="saved" />
+      <section v-if="saved && !readonly && !showStory" aria-label="我的轮廓故事" class="rounded-2xl border border-primary-200 bg-white p-4 dark:border-primary-800 dark:bg-gray-800">
+        <h2 class="text-base font-semibold"><i class="ri-sparkling-line mr-1 text-primary-700 dark:text-primary-300" aria-hidden="true"></i>我的轮廓故事</h2>
+        <p class="mt-2 text-sm text-gray-700 dark:text-gray-200">把你的白斑轮廓变成一幅画</p>
+        <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">用本次确认的轮廓，创作云朵、海岛或星光。作品可保存，分享由你决定。</p>
+        <button v-if="summary.reviewed && lesionLayer && summary.revision" type="button" data-track-id="story_start" class="btn-primary mt-3 min-h-[44px] w-full rounded-xl text-sm" @click="showStory = true">开始创作</button>
+        <button v-else type="button" class="btn-secondary mt-3 min-h-[44px] w-full rounded-xl text-sm" @click="emit('adjust')">核对范围后创作</button>
+      </section>
+      <AssessmentStoryCard v-else-if="saved && !readonly && showStory" :key="result.id" :result="result" :skin="skinLayer" :lesion="lesionLayer" :saved="saved" />
     </div>
     <MicroAskCard v-if="saved && !readonly" :key="'ask-' + result.id" trigger="record_saved" :body-site="result.bodySite" />
     <footer v-if="saved && !readonly" class="flex justify-end gap-3 text-xs text-gray-500 dark:text-gray-400"><button class="min-h-[44px]" @click="emit('retake')">继续拍</button><button v-if="canCompare" class="min-h-[44px]" @click="emit('compare')">与上次对比</button><button class="min-h-[44px]" @click="emit('done')">查看记录</button></footer>

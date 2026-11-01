@@ -6,11 +6,15 @@
 
 ## Pending Changes
 
-> 2026-10-30 已全量同步到正式环境（见下方 Production History）。当前无待同步项。
+> 以下变更待测试环境验证，尚未同步到正式环境。
 
 | 日期 | 环境 | 说明 |
 |------|------|------|
-| — | — | （空） |
+| 2026-10-31 | staging | 日记响应式布局统一：Tab/正文共享容器，桌面记录与历史双栏，手机单列；统一工具栏与滚动规则、拍照工作区宽度及体检上传入口；修复体检对比栏手机遮挡底部导航/窄屏挤出，改善深色选中 Tab 对比度与首页标题层级；独立测试发现并修复报告长文件名/标签溢出，补齐报告操作触控与键盘入口。buildTime 1793414478921；三内核及触控模拟 504 组通过，见 docs/audits/2026-10-31-diary-responsive-qa.md。 |
+| 2026-10-31 | staging（后端改动待重启） | 年龄门槛+健康数据单独同意（faca1da）：注册须勾选年满 18 周岁并记录 age_18；上传病情照片/体检报告前弹出健康数据授权，拒绝即不上传；隐私设置新增健康数据开关，并修复该面板开关状态从不加载的旧 bug。后端 `/vasi/segmentation-jobs` 补同意门槛与日配额（需下次后端重启生效；强制开关 `REQUIRE_HEALTH_DATA_CONSENT` 仍关闭）。隔离环境浏览器验证 a–f 通过（空库 :8010 + vite :5180，未触碰线上库）。staging buildTime 1793408441102（含 story-flow 在途改动）。 |
+| 2026-10-31 | 共享后端+staging | 千人规模加固（见下方同日章节）：后端 WAL、LLM 超时/并发上限、每用户日配额、短信/邮件全站上限、上传图片转码去 EXIF；前端 AI 生成标识、旧 chunk 自愈、PWA 更新不丢输入、预缓存瘦身；nginx gzip/限流/20m。staging buildTime 1793406846534（含下条 story-flow 在途改动的合并构建）。 |
+| 2026-10-31 | staging | 创作直达与日记减负：独立创作路由，拍照→确认轮廓→作品；首页单主操作、最近三条与轻量创意入口；对比收至记录内。仅前端，buildTime 1793382707017。 |
+| 2026-10-31 | staging | 我的轮廓故事推广：问答与日记入口、记录结果主动创作、保存优先及分享提示；仅前端，buildTime 1793380704816。 |
 
 ## Production Deployment History
 
@@ -368,6 +372,43 @@
 | 2026-06-21 | 后端·VASI白斑识别 | **⚠️共享后端，已立即生效于全环境**。增强白斑范围与边缘识别精准度，3步改动：①重写VLM静态prompt(vasi.py)——恢复输出bbox+edge_points+skin_region，注入色素脱失量化标准(0级<0.10/1级0.10-0.20/2级0.20-0.40/3级>0.40)、Fitzpatrick肤色自适应提示、非白斑反例约束(高光/疤痕/白化痣/参考卡)、边缘几何约束(edge_points紧贴bbox内)；修复旧prompt"bbox已不再需要"与SAM代码优先用bbox的矛盾。②接通edge_points——vasi.py主流程重建lesion_edge_points并传入segment_vitiligo_guided；vasi_segmentation.py签名新增参数，在VLM bbox盒提示基础上叠加edge_points作为SAM正提示点(box+points组合提示)，精修不规则边缘。③超参可调——temperature/max_tokens/timeout改为环境变量读取(VASI_VLM_TEMPERATURE=0.0/VASI_VLM_MAX_TOKENS=8192/VASI_VLM_TIMEOUT=120，原硬编码0.1/4096/90)，边缘定位更确定性、大图多斑不截断。④VLM模型qwen-vl-max→qwen3-vl-plus(.env+DB llm_module_configs双改)。离线验证：样本图返回4个病灶，每个含bbox+6-7个edge_points+boundary_type，JSON一次解析成功。无DB schema变更。 | 后端重启即生效 |
 
 ## Staging Deployment History
+
+### 2026-10-31 — 日记布局统一与跨浏览器验收（1793414478921）
+
+- 统一白斑记录/体检解读工具栏、正文容器与滚动；桌面左操作右历史，手机/平板单列；拍照/轮廓工作区的工具栏与正文一起限宽。修复桌面 184px 错位。
+- 进一步修复：体检对比栏手机底部导航遮挡、窄屏按钮换行；深色选中 Tab 由 28% 透明文字改为不透明浅青；报告长文件名截断、多个文件换行、长标签换行，补齐 44px 操作与报告标题键盘入口。
+- 本轮依次构建：`1793413026497`（布局/工具栏）、`1793413326154`（对比栏）、`1793413607801`（深色对比度/标题）、`1793414478921`（长文件名与触控）。各次构建前记录 pending；本节汇总完整测试历史。仅前端，本任务未改后端、未重启服务、未部署正式环境。
+- 验证：type-check/build/diff-check 通过。独立测试使用最终部署静态产物本地副本，API 全部模拟；Chrome 156、Firefox 157、WebKit 27.2 主矩阵各 128 组，三内核空记录 36 组，iPhone/iPad/Android 触控模拟共 84 组，合计 **504 组全部通过**，额外截图检查 8 组通过。曾发现的长文件名越界已修复并重跑。
+- 最终 staging version=1793414478921/env=staging；正式仍为1793314103483；首页相关路由 `/assessment`、`/assessment/exam`、`/assessment/story`、manifest、sw.js 返回200；9个PWA图标与入口JS/CSS存在，SW=26719 bytes；后端 health=ok。
+- 验收边界：浏览器内核与触控设备模拟不等于真机验收；微信/华为真实浏览器、相机权限/系统相册/软键盘/刘海安全区、真实AI生图仍需实机测试。测试没有上传真实病情照片，也没有向线上接口写入模拟数据。详细报告：`docs/audits/2026-10-31-diary-responsive-qa.md`。
+
+
+### 2026-10-31 — 千人规模加固（共享后端重启 + nginx + staging 前端）
+
+- 触发：用户要求评估 1000 真实用户的风险并全量修复。基线 tag `baseline-2026-10-30`；提交 f667600（运维）、5724b5d（前端）、2c893cc（后端）、e13415d（补入被 `data/` 忽略规则漏掉的 `web/app/src/data/*` 源文件，此前干净检出无法通过 type-check）。
+- 共享后端已于 08:27 重启（影响三个环境，约 4 秒恢复）；重启前备份 `data/backups/subskin-20261031-002715.tar.gpg` 及同批数据库。验证：/api/health=ok、三站点 200、访客问答走真实 LLM 正常（配额递减）、`journal_mode=wal`、quick_check=ok、journal 无错误。注意：此前一次未隔离的 `import main` 已提前把线上库切成 WAL 并建好 `rate_limit_events` 表（仅增量）。
+- 后端：WAL+busy_timeout；LLM 客户端 60s/120s 超时、max_retries=1、全局并发 16、CV 并发 2（超时返回 503 友好提示）；每用户日配额（评估 30/对比报告 5/日记 AI 30/体检解读 10/问答 200）；访客按 IP 限流并设全站日上限；红旗词就医提示；验证码 IP 限流持久化（`rate_limit_events`）+ 全站日短信 300/邮件 500；上传统一 Pillow 转码去 EXIF/GPS、服务端定扩展名、20MB 上限。健康数据强制同意开关 `REQUIRE_HEALTH_DATA_CONSENT` 默认关闭，待前端同意界面上线后再开。测试：tests/backend 564 过，15 个既有失败不变。
+- nginx（subskin.conf / subskin-staging.conf，备份 `/root/backups/nginx-20261030-0822/`）：gzip（主 JS 526KB→166KB）、`limit_req` 三区（认证 10r/m、AI 20r/m、通用 30r/s）、上传上限 10m→20m；新增 `00-subskin-ratelimit.conf`、`snippets/subskin-gzip.conf`、`subskin-api-proxy.conf`。
+- 运维：`subskin-health.timer` 每分钟探活并邮件告警；备份加密（gpg AES256，含 `data/uploads` 照片），`subskin-restore-drill.timer` 每月恢复演练。备份密钥 `/root/.config/subskin/backup.key` 需用户离线另存。
+- 前端：AI 生成标识；chunk 加载失败自动刷新一次；`scripts/preserve-assets.mjs` 保留旧构建资源 14 天；`version.json` 轮询 5 分钟±30s；有未保存内容时更新前确认；预缓存 ≈10MB→4.9MB。
+- staging 操作记录：先按用户选择仅用 HEAD 构建（1793406572863），随后发现这覆盖了另一会话已部署到 staging 的 story-flow，经用户确认改用完整工作区重建，buildTime 1793406846534（story-flow + 加固）。正式前端未动（1793314103483）。
+- 未完成/待办：注册年龄门槛与健康数据单独同意的前端界面（后端接口已就绪，契约文件未生成，需补）；ICP 备案号（用户确认尚未备案）；PIPL/AI 生成内容登记；测试后端与压测；清理散落的明文数据库副本；PostgreSQL 评估。
+
+### 2026-10-31 — 创作直达与日记首页减负（1793382707017）
+
+- 问答入口改至 `/assessment/story`（旧 `?story=1` 重定向兼容），专注照片、轮廓确认与创作；已核对保存后明确“确认轮廓并创作”，直接进入作品。已有记录也支持创作意图，未保存/未核对记录仍需先确认，原有鉴权与发布预览保留。
+- 日记首屏改为拍照记录主操作、最近三条记录及轻量创意链接；部位/相册按需展开；移除首屏 3D 模型与拖动面板，照片对比移至全部记录的白斑对比分区。
+- `npm run type-check`、`npm run build`、`git diff --check` 通过；隔离组件测试通过：首页展开/收起、登录前相机门禁、保存/核对生成门禁及已有记录显式创作。测试使用合成状态与生成组件桩，无真实生图、无用户数据写入。
+- staging 首页入口资源、`/assessment`、`/assessment/story`、旧入口、sw.js 均 200；manifest 名称/主题/9个图标正常，入口 JS/CSS 文件存在，SW 大小正常；后端 health=ok。正式版本保持 1793314103483，无后端改动/重启，无正式部署。
+- 限制：浏览器库存可读，但 IAB/Chrome 标签页控制持续超时，未完成 375/768/1024/1440px 的真实浏览器视觉验收与真实拍照生图验收。
+
+
+### 2026-10-31 — 我的轮廓故事推广（1793380704816）
+
+- 问答输入框附近新增入口；日记展示创作说明与已有记录入口；已保存且确认范围的记录改为主动开始创作，保存图片优先，站内分享提示照片与标注并保留原有发布预览。
+- 仅前端；未更改或重启共享后端。`npm run type-check`、`npm run build` 通过，staging 首页、日记路由、manifest、sw.js 返回 200；staging 版本为 1793380704816，正式版本仍为 1793314103483；后端健康检查 ok。浏览器预览工具超时，尚未完成交互及多尺寸视觉验收。
+- 测试环境 manifest 名称、主题色和 9 个图标符合 staging 设置，sw.js 26720 bytes。正式 manifest 实际 theme_color 为 #ffffff，与项目规范描述的 #26A69A 不一致，属于既有状态，本次未修改。
+
 
 ### 2026-10-17 — 正式环境全量发布后同源重建测试环境（1792220818155）
 

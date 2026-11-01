@@ -1,0 +1,10 @@
+{
+  "status": "post_hoc_single_case_diagnostic",
+  "model": "negative",
+  "split": "validation",
+  "sample_id": "image_validation_arm_004",
+  "policy_status": "retake_required",
+  "blocking_reasons": ["QUALITY_INFORMATION_LOST", "USER_REVIEW_REQUIRED"],
+  "quality": {"status": "retake_required", "clipped_fraction": 0.0, "dark_fraction": 0.0, "shadow_fraction": 0.0, "blur_score": 3.77, "soft_issues": [], "reasons": ["QUALITY_INFORMATION_LOST"]},
+  "interpretation": "Generated 64-to-128 sample; policy outcome depends on predicted skin. This does not establish a real photo quality failure."
+}

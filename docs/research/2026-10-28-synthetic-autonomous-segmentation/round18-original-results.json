@@ -1,0 +1,3177 @@
+{
+  "protocol": "round18-protocol.md",
+  "source_hashes": [
+    "df9c191aff007e093234d9ea251fa767bb5f39953e6c8a00d487e82d58e95e24",
+    "c798232fde74ab3df1b4b86d81cabe269342f6e5c3eaa1511fce4b48c3d2fdda"
+  ],
+  "registry_sha256": "6dd7d5f542cdd813b9dac1327cea01ab1f4fb7df0a1253a6d2162559c1a8eeea",
+  "registry_enabled": false,
+  "opencv_version": "5.0.0",
+  "mediapipe_version": "1.0.1",
+  "torch_version": "2.13.0+cu130",
+  "source_records": [
+    {
+      "model": "current",
+      "outcome": "error",
+      "error_type": "ValueError",
+      "subject": 0,
+      "kind": "source",
+      "meta": {
+        "color_core_pixels": 13642
+      }
+    },
+    {
+      "model": "ce_0",
+      "outcome": "processed",
+      "branch": "offline_candidate_emulation",
+      "policy_status": "review_required",
+      "blocking_reasons": [
+        "USER_REVIEW_REQUIRED",
+        "REGIONS_UNRESOLVED"
+      ],
+      "lesion_pct_image": 0.005906628024193549,
+      "proposal_pct_image": 35.15113092237903,
+      "subject": 0,
+      "kind": "source",
+      "meta": {
+        "color_core_pixels": 13642
+      }
+    },
+    {
+      "model": "ce_dice_0",
+      "outcome": "processed",
+      "branch": "offline_candidate_emulation",
+      "policy_status": "review_required",
+      "blocking_reasons": [
+        "USER_REVIEW_REQUIRED",
+        "REGIONS_UNRESOLVED"
+      ],
+      "lesion_pct_image": 9.58370085685484,
+      "proposal_pct_image": 37.544496597782256,
+      "subject": 0,
+      "kind": "source",
+      "meta": {
+        "color_core_pixels": 13642
+      }
+    },
+    {
+      "model": "ce_1",
+      "outcome": "processed",
+      "branch": "offline_candidate_emulation",
+      "policy_status": "review_required",
+      "blocking_reasons": [
+        "USER_REVIEW_REQUIRED",
+        "REGIONS_UNRESOLVED"
+      ],
+      "lesion_pct_image": 0.0,
+      "proposal_pct_image": 33.73038999495967,
+      "subject": 0,
+      "kind": "source",
+      "meta": {
+        "color_core_pixels": 13642
+      }
+    },
+    {
+      "model": "ce_dice_1",
+      "outcome": "processed",
+      "branch": "offline_candidate_emulation",
+      "policy_status": "review_required",
+      "blocking_reasons": [
+        "USER_REVIEW_REQUIRED",
+        "REGIONS_UNRESOLVED"
+      ],
+      "lesion_pct_image": 3.5660282258064515,
+      "proposal_pct_image": 33.24329007056452,
+      "subject": 0,
+      "kind": "source",
+      "meta": {
+        "color_core_pixels": 13642
+      }
+    },
+    {
+      "model": "current",
+      "outcome": "error",
+      "error_type": "ValueError",
+      "subject": 1,
+      "kind": "source",
+      "meta": {
+        "color_core_pixels": 6010
+      }
+    },
+    {
+      "model": "ce_0",
+      "outcome": "processed",
+      "branch": "offline_candidate_emulation",
+      "policy_status": "review_required",
+      "blocking_reasons": [
+        "USER_REVIEW_REQUIRED",
+        "REGIONS_UNRESOLVED"
+      ],
+      "lesion_pct_image": 1.7903645833333333,
+      "proposal_pct_image": 32.7678452190171,
+      "subject": 1,
+      "kind": "source",
+      "meta": {
+        "color_core_pixels": 6010
+      }
+    },
+    {
+      "model": "ce_dice_0",
+      "outcome": "processed",
+      "branch": "offline_candidate_emulation",
+      "policy_status": "review_required",
+      "blocking_reasons": [
+        "USER_REVIEW_REQUIRED",
+        "REGIONS_UNRESOLVED"
+      ],
+      "lesion_pct_image": 13.114733573717949,
+      "proposal_pct_image": 33.66720085470086,
+      "subject": 1,
+      "kind": "source",
+      "meta": {
+        "color_core_pixels": 6010
+      }
+    },
+    {
+      "model": "ce_1",
+      "outcome": "processed",
+      "branch": "offline_candidate_emulation",
+      "policy_status": "review_required",
+      "blocking_reasons": [
+        "USER_REVIEW_REQUIRED",
+        "REGIONS_UNRESOLVED"
+      ],
+      "lesion_pct_image": 0.06218282585470085,
+      "proposal_pct_image": 28.680472088675213,
+      "subject": 1,
+      "kind": "source",
+      "meta": {
+        "color_core_pixels": 6010
+      }
+    },
+    {
+      "model": "ce_dice_1",
+      "outcome": "processed",
+      "branch": "offline_candidate_emulation",
+      "policy_status": "review_required",
+      "blocking_reasons": [
+        "USER_REVIEW_REQUIRED",
+        "REGIONS_UNRESOLVED"
+      ],
+      "lesion_pct_image": 7.396834935897435,
+      "proposal_pct_image": 28.258129674145298,
+      "subject": 1,
+      "kind": "source",
+      "meta": {
+        "color_core_pixels": 6010
+      }
+    }
+  ],
+  "input_failures": [],
+  "models": {
+    "current": {
+      "overall": {
+        "total": 24,
+        "outcomes": {
+          "error": 24
+        },
+        "branches": {},
+        "policies": {},
+        "formal_coverage_mean": null,
+        "proposal_coverage_mean": null,
+        "new_formal_coverage_mean": null,
+        "new_proposal_coverage_mean": null
+      },
+      "by_strength": {
+        "0.12": {
+          "total": 8,
+          "outcomes": {
+            "error": 8
+          },
+          "branches": {},
+          "policies": {},
+          "formal_coverage_mean": null,
+          "proposal_coverage_mean": null,
+          "new_formal_coverage_mean": null,
+          "new_proposal_coverage_mean": null
+        },
+        "0.2": {
+          "total": 8,
+          "outcomes": {
+            "error": 8
+          },
+          "branches": {},
+          "policies": {},
+          "formal_coverage_mean": null,
+          "proposal_coverage_mean": null,
+          "new_formal_coverage_mean": null,
+          "new_proposal_coverage_mean": null
+        },
+        "0.3": {
+          "total": 8,
+          "outcomes": {
+            "error": 8
+          },
+          "branches": {},
+          "policies": {},
+          "formal_coverage_mean": null,
+          "proposal_coverage_mean": null,
+          "new_formal_coverage_mean": null,
+          "new_proposal_coverage_mean": null
+        }
+      },
+      "by_subject": {
+        "0": {
+          "total": 12,
+          "outcomes": {
+            "error": 12
+          },
+          "branches": {},
+          "policies": {},
+          "formal_coverage_mean": null,
+          "proposal_coverage_mean": null,
+          "new_formal_coverage_mean": null,
+          "new_proposal_coverage_mean": null
+        },
+        "1": {
+          "total": 12,
+          "outcomes": {
+            "error": 12
+          },
+          "branches": {},
+          "policies": {},
+          "formal_coverage_mean": null,
+          "proposal_coverage_mean": null,
+          "new_formal_coverage_mean": null,
+          "new_proposal_coverage_mean": null
+        }
+      }
+    },
+    "ce_0": {
+      "overall": {
+        "total": 24,
+        "outcomes": {
+          "processed": 24
+        },
+        "branches": {
+          "offline_candidate_emulation": 24
+        },
+        "policies": {
+          "review_required": 24
+        },
+        "formal_coverage_mean": 0.0,
+        "proposal_coverage_mean": 0.7412865073499417,
+        "new_formal_coverage_mean": 0.0,
+        "new_proposal_coverage_mean": 0.13973593515898725
+      },
+      "by_strength": {
+        "0.12": {
+          "total": 8,
+          "outcomes": {
+            "processed": 8
+          },
+          "branches": {
+            "offline_candidate_emulation": 8
+          },
+          "policies": {
+            "review_required": 8
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.5582116788321168,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.006997231311351623
+        },
+        "0.2": {
+          "total": 8,
+          "outcomes": {
+            "processed": 8
+          },
+          "branches": {
+            "offline_candidate_emulation": 8
+          },
+          "policies": {
+            "review_required": 8
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.9244364249715278,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.2485983384955988
+        },
+        "0.3": {
+          "total": 8,
+          "outcomes": {
+            "processed": 8
+          },
+          "branches": {
+            "offline_candidate_emulation": 8
+          },
+          "policies": {
+            "review_required": 8
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.7412114182461808,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.16361223567001132
+        }
+      },
+      "by_subject": {
+        "0": {
+          "total": 12,
+          "outcomes": {
+            "processed": 12
+          },
+          "branches": {
+            "offline_candidate_emulation": 12
+          },
+          "policies": {
+            "review_required": 12
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.5378177699446388,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.2690305874628985
+        },
+        "1": {
+          "total": 12,
+          "outcomes": {
+            "processed": 12
+          },
+          "branches": {
+            "offline_candidate_emulation": 12
+          },
+          "policies": {
+            "review_required": 12
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.9447552447552447,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.01044128285507596
+        }
+      }
+    },
+    "ce_dice_0": {
+      "overall": {
+        "total": 24,
+        "outcomes": {
+          "processed": 24
+        },
+        "branches": {
+          "offline_candidate_emulation": 24
+        },
+        "policies": {
+          "review_required": 24
+        },
+        "formal_coverage_mean": 0.0,
+        "proposal_coverage_mean": 0.7994640091301868,
+        "new_formal_coverage_mean": 0.0,
+        "new_proposal_coverage_mean": 0.06501686255357068
+      },
+      "by_strength": {
+        "0.12": {
+          "total": 8,
+          "outcomes": {
+            "processed": 8
+          },
+          "branches": {
+            "offline_candidate_emulation": 8
+          },
+          "policies": {
+            "review_required": 8
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.7379310344827587,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.020072992700729927
+        },
+        "0.2": {
+          "total": 8,
+          "outcomes": {
+            "processed": 8
+          },
+          "branches": {
+            "offline_candidate_emulation": 8
+          },
+          "policies": {
+            "review_required": 8
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.7845744680851063,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.016733156028368792
+        },
+        "0.3": {
+          "total": 8,
+          "outcomes": {
+            "processed": 8
+          },
+          "branches": {
+            "offline_candidate_emulation": 8
+          },
+          "policies": {
+            "review_required": 8
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.875886524822695,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.15824443893161333
+        }
+      },
+      "by_subject": {
+        "0": {
+          "total": 12,
+          "outcomes": {
+            "processed": 12
+          },
+          "branches": {
+            "offline_candidate_emulation": 12
+          },
+          "policies": {
+            "review_required": 12
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.8258783728703024,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.12235050997711773
+        },
+        "1": {
+          "total": 12,
+          "outcomes": {
+            "processed": 12
+          },
+          "branches": {
+            "offline_candidate_emulation": 12
+          },
+          "policies": {
+            "review_required": 12
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.7730496453900709,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.0076832151300236405
+        }
+      }
+    },
+    "ce_1": {
+      "overall": {
+        "total": 24,
+        "outcomes": {
+          "processed": 24
+        },
+        "branches": {
+          "offline_candidate_emulation": 24
+        },
+        "policies": {
+          "review_required": 24
+        },
+        "formal_coverage_mean": 0.0,
+        "proposal_coverage_mean": 0.3561464567565055,
+        "new_formal_coverage_mean": 0.0,
+        "new_proposal_coverage_mean": 0.033920419695965806
+      },
+      "by_strength": {
+        "0.12": {
+          "total": 8,
+          "outcomes": {
+            "processed": 8
+          },
+          "branches": {
+            "offline_candidate_emulation": 8
+          },
+          "policies": {
+            "review_required": 8
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.3035559291293093,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.009903436739659367
+        },
+        "0.2": {
+          "total": 8,
+          "outcomes": {
+            "processed": 8
+          },
+          "branches": {
+            "offline_candidate_emulation": 8
+          },
+          "policies": {
+            "review_required": 8
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.6745345744680851,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.053431336830855915
+        },
+        "0.3": {
+          "total": 8,
+          "outcomes": {
+            "processed": 8
+          },
+          "branches": {
+            "offline_candidate_emulation": 8
+          },
+          "policies": {
+            "review_required": 8
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.09034886667212208,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.038426485517382133
+        }
+      },
+      "by_subject": {
+        "0": {
+          "total": 12,
+          "outcomes": {
+            "processed": 12
+          },
+          "branches": {
+            "offline_candidate_emulation": 12
+          },
+          "policies": {
+            "review_required": 12
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.3832893586004645,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.06784083939193161
+        },
+        "1": {
+          "total": 12,
+          "outcomes": {
+            "processed": 12
+          },
+          "branches": {
+            "offline_candidate_emulation": 12
+          },
+          "policies": {
+            "review_required": 12
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.32900355491254646,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.0
+        }
+      }
+    },
+    "ce_dice_1": {
+      "overall": {
+        "total": 24,
+        "outcomes": {
+          "processed": 24
+        },
+        "branches": {
+          "offline_candidate_emulation": 24
+        },
+        "policies": {
+          "review_required": 24
+        },
+        "formal_coverage_mean": 0.0,
+        "proposal_coverage_mean": 0.4203865505381561,
+        "new_formal_coverage_mean": 0.0,
+        "new_proposal_coverage_mean": 0.09930395895669247
+      },
+      "by_strength": {
+        "0.12": {
+          "total": 8,
+          "outcomes": {
+            "processed": 8
+          },
+          "branches": {
+            "offline_candidate_emulation": 8
+          },
+          "policies": {
+            "review_required": 8
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.26135162345834384,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.010036496350364963
+        },
+        "0.2": {
+          "total": 8,
+          "outcomes": {
+            "processed": 8
+          },
+          "branches": {
+            "offline_candidate_emulation": 8
+          },
+          "policies": {
+            "review_required": 8
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.6804645007770007,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.022575514763014764
+        },
+        "0.3": {
+          "total": 8,
+          "outcomes": {
+            "processed": 8
+          },
+          "branches": {
+            "offline_candidate_emulation": 8
+          },
+          "policies": {
+            "review_required": 8
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.31934352737912386,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.2652998657566976
+        }
+      },
+      "by_subject": {
+        "0": {
+          "total": 12,
+          "outcomes": {
+            "processed": 12
+          },
+          "branches": {
+            "offline_candidate_emulation": 12
+          },
+          "policies": {
+            "review_required": 12
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.6041120609669963,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.19802516733063433
+        },
+        "1": {
+          "total": 12,
+          "outcomes": {
+            "processed": 12
+          },
+          "branches": {
+            "offline_candidate_emulation": 12
+          },
+          "policies": {
+            "review_required": 12
+          },
+          "formal_coverage_mean": 0.0,
+          "proposal_coverage_mean": 0.23666104010931596,
+          "new_formal_coverage_mean": 0.0,
+          "new_proposal_coverage_mean": 0.0005827505827505828
+        }
+      }
+    }
+  },
+  "records": {
+    "current": [
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300000,
+          "strength": 0.12,
+          "core_pixels": 138,
+          "soft_boundary_pixels": 89
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300001,
+          "strength": 0.12,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300002,
+          "strength": 0.12,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300003,
+          "strength": 0.12,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 92
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300010,
+          "strength": 0.2,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 90
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300011,
+          "strength": 0.2,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300012,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300013,
+          "strength": 0.2,
+          "core_pixels": 146,
+          "soft_boundary_pixels": 92
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300020,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 90
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300021,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 86
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300022,
+          "strength": 0.3,
+          "core_pixels": 139,
+          "soft_boundary_pixels": 92
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300023,
+          "strength": 0.3,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 88
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301000,
+          "strength": 0.12,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301001,
+          "strength": 0.12,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 88
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301002,
+          "strength": 0.12,
+          "core_pixels": 146,
+          "soft_boundary_pixels": 84
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301003,
+          "strength": 0.12,
+          "core_pixels": 139,
+          "soft_boundary_pixels": 89
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301010,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301011,
+          "strength": 0.2,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 92
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301012,
+          "strength": 0.2,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301013,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 90
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301020,
+          "strength": 0.3,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301021,
+          "strength": 0.3,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 90
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301022,
+          "strength": 0.3,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 88
+        }
+      },
+      {
+        "outcome": "error",
+        "error_type": "ValueError",
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301023,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        }
+      }
+    ],
+    "ce_0": [
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.005119077620967742,
+        "proposal_pct_image": 35.14522429435484,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300000,
+          "strength": 0.12,
+          "core_pixels": 138,
+          "soft_boundary_pixels": 89
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.008269279233870967,
+        "proposal_pct_image": 35.11490360383064,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300001,
+          "strength": 0.12,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.007087953629032259,
+        "proposal_pct_image": 35.173969884072584,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300002,
+          "strength": 0.12,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.06569343065693431,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.014598540145985401
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.005906628024193549,
+        "proposal_pct_image": 35.123960433467744,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300003,
+          "strength": 0.12,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.003937752016129032,
+        "proposal_pct_image": 35.16609438004033,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300010,
+          "strength": 0.2,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.9513888888888888,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.8958333333333334
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.005906628024193549,
+        "proposal_pct_image": 35.229885962701616,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300011,
+          "strength": 0.2,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.5138888888888888,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.1597222222222222
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0066941784274193545,
+        "proposal_pct_image": 35.170425907258064,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300012,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.004725302419354839,
+        "proposal_pct_image": 35.253512474798384,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300013,
+          "strength": 0.2,
+          "core_pixels": 146,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.9931506849315068,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.8493150684931506
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0003937752016129032,
+        "proposal_pct_image": 35.18302671370967,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300020,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.7588652482269503,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.6453900709219859
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.003937752016129032,
+        "proposal_pct_image": 35.12081023185484,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300021,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 86
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.005906628024193549,
+        "proposal_pct_image": 35.181451612903224,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300022,
+          "strength": 0.3,
+          "core_pixels": 139,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.2949640287769784,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.2014388489208633
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0007875504032258064,
+        "proposal_pct_image": 35.32321068548387,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300023,
+          "strength": 0.3,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.8758620689655172,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.46206896551724136
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 1.7891125801282053,
+        "proposal_pct_image": 32.75991586538461,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301000,
+          "strength": 0.12,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 1.794120592948718,
+        "proposal_pct_image": 32.77953058226496,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301001,
+          "strength": 0.12,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.4,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.041379310344827586
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 1.7707498664529915,
+        "proposal_pct_image": 32.75407318376068,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301002,
+          "strength": 0.12,
+          "core_pixels": 146,
+          "soft_boundary_pixels": 84
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 1.7853565705128205,
+        "proposal_pct_image": 32.75365584935898,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301003,
+          "strength": 0.12,
+          "core_pixels": 139,
+          "soft_boundary_pixels": 89
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 1.7644898504273505,
+        "proposal_pct_image": 32.73487580128205,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301010,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 1.78577390491453,
+        "proposal_pct_image": 32.78537326388889,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301011,
+          "strength": 0.2,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.9370629370629371,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.08391608391608392
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 1.7895299145299144,
+        "proposal_pct_image": 32.72861578525641,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301012,
+          "strength": 0.2,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 1.7920339209401708,
+        "proposal_pct_image": 32.7678452190171,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301013,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 1.7845219017094016,
+        "proposal_pct_image": 32.70441038995727,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301020,
+          "strength": 0.3,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 1.7532218215811963,
+        "proposal_pct_image": 32.745726495726494,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301021,
+          "strength": 0.3,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 1.7749232104700856,
+        "proposal_pct_image": 32.6747796474359,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301022,
+          "strength": 0.3,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 1.7853565705128205,
+        "proposal_pct_image": 32.746978498931625,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301023,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      }
+    ],
+    "ce_dice_0": [
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 9.577794228830646,
+        "proposal_pct_image": 37.54370904737903,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300000,
+          "strength": 0.12,
+          "core_pixels": 138,
+          "soft_boundary_pixels": 89
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 9.583307081653226,
+        "proposal_pct_image": 37.487005418346776,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300001,
+          "strength": 0.12,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 9.587638608870968,
+        "proposal_pct_image": 37.56221648185484,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300002,
+          "strength": 0.12,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.16058394160583941
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 9.577794228830646,
+        "proposal_pct_image": 37.38541141633064,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300003,
+          "strength": 0.12,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.903448275862069,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 9.529359879032258,
+        "proposal_pct_image": 37.16056577620967,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300010,
+          "strength": 0.2,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 9.596301663306452,
+        "proposal_pct_image": 37.727602066532256,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300011,
+          "strength": 0.2,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.041666666666666664
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 9.598270539314516,
+        "proposal_pct_image": 37.57481728830645,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300012,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 9.532903855846774,
+        "proposal_pct_image": 37.18773626512097,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300013,
+          "strength": 0.2,
+          "core_pixels": 146,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 9.54983618951613,
+        "proposal_pct_image": 37.5244140625,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300020,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.3262411347517731
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 9.577400453629032,
+        "proposal_pct_image": 37.57166708669355,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300021,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 86
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0070921985815602835,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0070921985815602835
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 9.602602066532258,
+        "proposal_pct_image": 37.69649382560484,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300022,
+          "strength": 0.3,
+          "core_pixels": 139,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.7050359712230215
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 9.622290826612904,
+        "proposal_pct_image": 37.677592615927416,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300023,
+          "strength": 0.3,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.22758620689655173
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 13.1214109241453,
+        "proposal_pct_image": 33.65092481303419,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301000,
+          "strength": 0.12,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 13.119741586538462,
+        "proposal_pct_image": 33.68639823717949,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301001,
+          "strength": 0.12,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 13.100961538461538,
+        "proposal_pct_image": 33.66261017628205,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301002,
+          "strength": 0.12,
+          "core_pixels": 146,
+          "soft_boundary_pixels": 84
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 13.119741586538462,
+        "proposal_pct_image": 33.66636618589743,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301003,
+          "strength": 0.12,
+          "core_pixels": 139,
+          "soft_boundary_pixels": 89
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 13.087606837606838,
+        "proposal_pct_image": 33.65217681623932,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301010,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.2765957446808511,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.09219858156028368
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 13.106804220085468,
+        "proposal_pct_image": 33.66803552350427,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301011,
+          "strength": 0.2,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 13.098457532051283,
+        "proposal_pct_image": 33.644247462606835,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301012,
+          "strength": 0.2,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 13.131426949786324,
+        "proposal_pct_image": 33.660523504273506,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301013,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 13.110977564102564,
+        "proposal_pct_image": 33.62797142094017,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301020,
+          "strength": 0.3,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 13.08718950320513,
+        "proposal_pct_image": 33.65259415064102,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301021,
+          "strength": 0.3,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 13.082598824786324,
+        "proposal_pct_image": 33.60376602564102,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301022,
+          "strength": 0.3,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 13.115150908119658,
+        "proposal_pct_image": 33.650090144230774,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301023,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      }
+    ],
+    "ce_1": [
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0,
+        "proposal_pct_image": 33.73078377016129,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300000,
+          "strength": 0.12,
+          "core_pixels": 138,
+          "soft_boundary_pixels": 89
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0,
+        "proposal_pct_image": 33.709126134072584,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300001,
+          "strength": 0.12,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.020833333333333332
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0,
+        "proposal_pct_image": 33.749291204637096,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300002,
+          "strength": 0.12,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.058394160583941604,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.058394160583941604
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0,
+        "proposal_pct_image": 33.75480405745967,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300003,
+          "strength": 0.12,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0,
+        "proposal_pct_image": 33.92333984375,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300010,
+          "strength": 0.2,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0,
+        "proposal_pct_image": 33.759135584677416,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300011,
+          "strength": 0.2,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.375,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.08333333333333333
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0,
+        "proposal_pct_image": 33.73511529737903,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300012,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.8226950354609929,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.24822695035460993
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0,
+        "proposal_pct_image": 33.96744266633064,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300013,
+          "strength": 0.2,
+          "core_pixels": 146,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0958904109589041
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0,
+        "proposal_pct_image": 33.812689012096776,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300020,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0,
+        "proposal_pct_image": 33.86072958669355,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300021,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 86
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.014184397163120567,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.014184397163120567
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0,
+        "proposal_pct_image": 33.70991368447581,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300022,
+          "strength": 0.3,
+          "core_pixels": 139,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.1223021582733813,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.08633093525179857
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.0,
+        "proposal_pct_image": 33.79654422883064,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300023,
+          "strength": 0.3,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.20689655172413793,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.20689655172413793
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.05759214743589744,
+        "proposal_pct_image": 28.589493189102566,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301000,
+          "strength": 0.12,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.013888888888888888,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.06385216346153846,
+        "proposal_pct_image": 28.689653445512818,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301001,
+          "strength": 0.12,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.05759214743589744,
+        "proposal_pct_image": 28.64165998931624,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301002,
+          "strength": 0.12,
+          "core_pixels": 146,
+          "soft_boundary_pixels": 84
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.3561643835616438,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.06009615384615385,
+        "proposal_pct_image": 28.57196514423077,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301003,
+          "strength": 0.12,
+          "core_pixels": 139,
+          "soft_boundary_pixels": 89
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.05967881944444445,
+        "proposal_pct_image": 28.680472088675213,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301010,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.06635616987179488,
+        "proposal_pct_image": 28.703842815170937,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301011,
+          "strength": 0.2,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.06134815705128205,
+        "proposal_pct_image": 28.633313301282055,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301012,
+          "strength": 0.2,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.05800948183760684,
+        "proposal_pct_image": 28.585737179487182,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301013,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.19858156028368795,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.05759214743589744,
+        "proposal_pct_image": 28.47263955662393,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301020,
+          "strength": 0.3,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.050914797008547015,
+        "proposal_pct_image": 28.652510683760685,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301021,
+          "strength": 0.3,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.2517482517482518,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.06385216346153846,
+        "proposal_pct_image": 28.602430555555557,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301022,
+          "strength": 0.3,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 0.05717481303418804,
+        "proposal_pct_image": 28.587406517094017,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301023,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.1276595744680851,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      }
+    ],
+    "ce_dice_1": [
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 3.553033644153226,
+        "proposal_pct_image": 33.23698966733871,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300000,
+          "strength": 0.12,
+          "core_pixels": 138,
+          "soft_boundary_pixels": 89
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 3.5447643649193545,
+        "proposal_pct_image": 33.19958102318548,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300001,
+          "strength": 0.12,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 3.562484248991935,
+        "proposal_pct_image": 33.251165574596776,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300002,
+          "strength": 0.12,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.145985401459854,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.08029197080291971
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 3.5620904737903225,
+        "proposal_pct_image": 33.237777217741936,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300003,
+          "strength": 0.12,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 3.5609091481854835,
+        "proposal_pct_image": 33.283061365927416,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300010,
+          "strength": 0.2,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 3.562484248991935,
+        "proposal_pct_image": 33.27912361391129,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300011,
+          "strength": 0.2,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.5486111111111112,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.1736111111111111
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 3.526650705645161,
+        "proposal_pct_image": 33.24959047379033,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300012,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 3.574691280241935,
+        "proposal_pct_image": 33.32913306451613,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300013,
+          "strength": 0.2,
+          "core_pixels": 146,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 3.499480216733871,
+        "proposal_pct_image": 33.53389616935484,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300020,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.5177304964539007,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.5177304964539007
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 3.5668157762096775,
+        "proposal_pct_image": 33.39607484879033,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300021,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 86
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.11347517730496454,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.11347517730496454
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 3.547127016129032,
+        "proposal_pct_image": 33.325589087701616,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300022,
+          "strength": 0.3,
+          "core_pixels": 139,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.9856115107913669,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.8705035971223022
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 3.547127016129032,
+        "proposal_pct_image": 33.41655115927419,
+        "subject": 0,
+        "kind": "edited",
+        "meta": {
+          "seed": 1300023,
+          "strength": 0.3,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.9379310344827586,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.6206896551724138
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 7.373881543803419,
+        "proposal_pct_image": 28.232254941239315,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301000,
+          "strength": 0.12,
+          "core_pixels": 144,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 7.396834935897435,
+        "proposal_pct_image": 28.27941372863248,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301001,
+          "strength": 0.12,
+          "core_pixels": 145,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.9448275862068966,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 7.394330929487179,
+        "proposal_pct_image": 28.24435763888889,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301002,
+          "strength": 0.12,
+          "core_pixels": 146,
+          "soft_boundary_pixels": 84
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 7.385149572649572,
+        "proposal_pct_image": 28.229333600427353,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301003,
+          "strength": 0.12,
+          "core_pixels": 139,
+          "soft_boundary_pixels": 89
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 7.40768563034188,
+        "proposal_pct_image": 28.296941773504276,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301010,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 1.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 7.401842948717949,
+        "proposal_pct_image": 28.308209802350426,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301011,
+          "strength": 0.2,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 92
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.8951048951048951,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.006993006993006993
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 7.4126936431623935,
+        "proposal_pct_image": 28.284839075854702,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301012,
+          "strength": 0.2,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 7.335069444444445,
+        "proposal_pct_image": 28.23934962606838,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301013,
+          "strength": 0.2,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 7.380558894230769,
+        "proposal_pct_image": 28.220569577991455,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301020,
+          "strength": 0.3,
+          "core_pixels": 137,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 7.367621527777778,
+        "proposal_pct_image": 28.24978298611111,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301021,
+          "strength": 0.3,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 90
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 7.4615217681623935,
+        "proposal_pct_image": 28.31780849358974,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301022,
+          "strength": 0.3,
+          "core_pixels": 143,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      },
+      {
+        "outcome": "processed",
+        "branch": "offline_candidate_emulation",
+        "policy_status": "review_required",
+        "blocking_reasons": [
+          "USER_REVIEW_REQUIRED",
+          "REGIONS_UNRESOLVED"
+        ],
+        "lesion_pct_image": 7.33840811965812,
+        "proposal_pct_image": 28.259799011752136,
+        "subject": 1,
+        "kind": "edited",
+        "meta": {
+          "seed": 1301023,
+          "strength": 0.3,
+          "core_pixels": 141,
+          "soft_boundary_pixels": 88
+        },
+        "formal_coverage": 0.0,
+        "proposal_coverage": 0.0,
+        "new_formal_coverage": 0.0,
+        "new_proposal_coverage": 0.0
+      }
+    ]
+  },
+  "limitations": [
+    "two AI-generated fictional people, not patients",
+    "skin-color heuristic is not ground truth",
+    "known programmatic bright intervention, not vitiligo reference",
+    "only image-coverage, no clinical precision",
+    "candidate uses low-resolution offline emulation",
+    "local dependencies differ from production",
+    "unreviewed policy withholds measurements"
+  ],
+  "elapsed_seconds": 46.67
+}

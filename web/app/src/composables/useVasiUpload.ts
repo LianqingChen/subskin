@@ -35,7 +35,7 @@ export function useVasiUpload() {
 
   function ensureBodySiteSelected(): boolean {
     if (!selectedBodySite.value) {
-      toast.show('请先选择评估部位（在数字人上点击对应部位），再上传照片', 'warning', 4000)
+      toast.show('请先选择照片部位，再添加照片', 'warning', 4000)
       return false
     }
     return true

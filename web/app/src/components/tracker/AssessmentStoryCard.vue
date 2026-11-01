@@ -18,6 +18,7 @@ function publish() {
 <template>
   <section aria-label="我的轮廓故事" class="overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
     <header class="mb-3 flex items-center justify-between gap-2"><h2 class="whitespace-nowrap text-base font-semibold">我的轮廓故事</h2><span v-if="creative.story.value" class="text-xs text-gray-400">{{ creative.drawing.value ? '画面生成中' : creative.enhancing.value ? '文案生成中' : creative.artGenerated.value ? 'AI 图案 · AI 文案' : creative.story.value.source === 'ai' ? 'AI 文案' : '模板创意' }}</span></header>
+    <p class="mb-3 text-xs leading-5 text-gray-500 dark:text-gray-400">把你的白斑轮廓变成一幅画。选择喜欢的风格，创作属于你的图案。</p>
     <div role="group" aria-label="选择创意风格" class="mb-3 grid grid-cols-3 gap-2">
       <button v-for="item in STORY_THEMES" :key="item.id" type="button" :disabled="share.busy.value" :aria-pressed="creative.selectedTheme.value === item.id" class="flex min-h-[44px] items-center justify-center gap-1 whitespace-nowrap rounded-lg border px-1 text-xs transition-colors disabled:opacity-50" :class="creative.selectedTheme.value === item.id ? 'border-primary-500 bg-primary-50 font-medium text-primary-800 dark:border-primary-400 dark:bg-primary-900 dark:text-primary-200' : 'border-gray-200 text-gray-500 dark:border-gray-600 dark:text-gray-300'" @click="creative.selectedTheme.value = item.id"><i :class="item.icon" aria-hidden="true"></i>{{ item.id === 'sky' ? '云朵' : item.id === 'island' ? '海岛' : '星光' }}</button>
     </div>
@@ -35,11 +36,11 @@ function publish() {
     </p>
     <p v-if="creative.drawing.value" role="status" class="mt-2 text-xs text-primary-700 dark:text-primary-300"><i class="ri-loader-4-line mr-1 inline-block animate-spin" aria-hidden="true"></i>正在依照轮廓创作画面，可能需要几分钟，当前创意仍可保存</p>
     <p v-else-if="creative.artNotice.value" role="status" class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">{{ creative.artNotice.value }}<button type="button" class="min-h-[44px] px-2 text-primary-700 dark:text-primary-300" @click="creative.retryArtwork">重试画面</button></p>
-    <button type="button" class="btn-primary mt-4 min-h-[44px] w-full rounded-xl text-sm" :disabled="share.busy.value || creative.loading.value || !creative.blob.value || !skin || !lesion" @click="publish"><i class="ri-share-forward-line mr-1" aria-hidden="true"></i>{{ share.busy.value ? '正在准备分享…' : '发布到分享' }}</button>
-    <div class="mt-2 grid grid-cols-2 gap-2">
-      <button type="button" class="btn-ghost min-h-[44px] rounded-xl text-sm" :disabled="disabled" @click="share.download(creative.url.value)"><i class="ri-download-line mr-1" aria-hidden="true"></i>保存图片</button>
+    <div class="mt-4 grid grid-cols-2 gap-2">
+      <button type="button" data-track-id="story_save" class="btn-primary min-h-[44px] rounded-xl text-sm" :disabled="disabled" @click="share.download(creative.url.value)"><i class="ri-download-line mr-1" aria-hidden="true"></i>保存图片</button>
       <button type="button" class="btn-ghost min-h-[44px] rounded-xl text-sm" :disabled="disabled" @click="creative.blob.value && share.systemShare(creative.blob.value, creative.title.value, creative.url.value)"><i class="ri-share-line mr-1" aria-hidden="true"></i>更多分享</button>
     </div>
-    <p class="mt-1 text-center text-xs leading-5 text-gray-400">站内分享含照片与标注，保存图片仅含创意卡</p>
+    <button type="button" class="btn-ghost mt-2 min-h-[44px] w-full rounded-xl text-sm" :disabled="share.busy.value || creative.loading.value || !creative.blob.value || !skin || !lesion" @click="publish"><i class="ri-share-forward-line mr-1" aria-hidden="true"></i>{{ share.busy.value ? '正在准备分享…' : '发布到分享' }}</button>
+    <p class="mt-1 text-center text-xs leading-5 text-gray-400">站内分享含照片与标注，发布前可预览；保存图片仅含创意卡</p>
   </section>
 </template>

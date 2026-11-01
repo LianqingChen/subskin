@@ -14,11 +14,18 @@ def main() -> int:
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--side", type=int, default=512)
     parser.add_argument("--allow-synthetic", action="store_true")
+    parser.add_argument("--evaluation-only", action="store_true",
+                        help="Use an explicitly evaluation-authorized locked test cohort")
     args = parser.parse_args()
+    if args.evaluation_only and args.command == "train":
+        parser.error("--evaluation-only cannot authorize training")
     from ml.rgb_segmentation.dataset import validate_manifest
 
     if args.command == "validate":
-        document = validate_manifest(args.manifest, args.allow_synthetic)
+        document = validate_manifest(
+            args.manifest, args.allow_synthetic,
+            purpose="evaluation" if args.evaluation_only else "training",
+        )
         print(
             json.dumps(
                 {
@@ -50,7 +57,8 @@ def main() -> int:
             from ml.rgb_segmentation.evaluate import evaluate
 
             report = evaluate(
-                args.manifest, args.weights, args.output, args.allow_synthetic
+                args.manifest, args.weights, args.output, args.allow_synthetic,
+                evaluation_only=args.evaluation_only
             )
             print(
                 json.dumps(

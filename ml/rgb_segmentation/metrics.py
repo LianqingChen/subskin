@@ -108,6 +108,14 @@ def score_labels(
         ),
         "area_absolute_pixels": abs(pcount - tcount),
         "area_relative_error": abs(pcount - tcount) / tcount if tcount else None,
+        # Pixel-count error alone misses errors in the visible-skin denominator.
+        "reference_area_percentage": truth_pct,
+        "predicted_area_percentage": pred_pct,
+        "area_ratio_relative_error": (
+            abs(pred_pct - truth_pct) / truth_pct
+            if pred_pct is not None and truth_pct is not None and truth_pct > 0
+            else None
+        ),
         "area_percentage_point_error": (
             abs(pred_pct - truth_pct)
             if pred_pct is not None and truth_pct is not None
@@ -138,6 +146,7 @@ def aggregate(rows: list) -> Dict[str, Any]:
         "recall",
         "boundary_f1",
         "area_relative_error",
+        "area_ratio_relative_error",
         "area_percentage_point_error",
         "color_delta_e76",
     ]
@@ -148,7 +157,7 @@ def aggregate(rows: list) -> Dict[str, Any]:
     }
     for key in keys:
         values = [
-            r["metrics"][key] for r in successful if r["metrics"][key] is not None
+            r["metrics"][key] for r in successful if r["metrics"].get(key) is not None
         ]
         result[key] = (
             {

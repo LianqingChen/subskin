@@ -1,0 +1,188 @@
+{
+  "protocol": "round6-protocol.md",
+  "image_sha256": [
+    "101ec574b394e568ba4623e2c6153147cab1d5f7e850db970b663985aa3d4077",
+    "3521fe241957ddee2551d5ad2a5ae88edde809583ab3a49a4a2c7f2e0ac0fb57",
+    "47afcc407578991c0ab85fbeca913fdfeb9d5b854078bd38268ec778f54ca441",
+    "5d455d8d464b0eb2682183784275c656991cc7817899467904f388ebeee78fb3",
+    "aec7f9dd22123ef0f15935e0c537e92f5233a61d529b79606536bac8469b69de",
+    "7e5b759b6f62640b2d41d420bb45549573c5da8e8372b014834b1ba3ca9fa294"
+  ],
+  "heads": [
+    {
+      "group": "original",
+      "seed": 0,
+      "sha256": "947b6f7329144c94b6c898012f41bbde751587ba1e51656d667b519ba3db27d3"
+    },
+    {
+      "group": "original",
+      "seed": 1,
+      "sha256": "29ecdd8db2418ea58b48346134116a0f01345b2509783017ddaa2ac771a30868"
+    },
+    {
+      "group": "hard_examples",
+      "seed": 0,
+      "sha256": "1c1777418b34ffad4bfcf74bca3c4c4a374a3948d5782b68727caa1dadb46e61"
+    },
+    {
+      "group": "hard_examples",
+      "seed": 1,
+      "sha256": "a3cc0dbcc7f3bf114cabb7aa9d0d3f8b0307bb252400d0c514eee74b245ae4c4"
+    }
+  ],
+  "sam_sha256": "ec2df62732614e57411cdcf32a23ffdf28910380d03139ee0f4fcbe91eb8c912",
+  "calibration_count": 192,
+  "test_count": 96,
+  "calibration_thresholds": {
+    "0.2": 0.10574773699045181,
+    "0.5": 0.1266762912273407,
+    "0.8": 0.15103305876255035
+  },
+  "rules": {
+    "all": {
+      "overall_coverage_pct": 100.0,
+      "groups": {
+        "standard": {
+          "n_total": 32,
+          "n_accepted": 32,
+          "coverage_pct": 100.0,
+          "rejected_pct": 0.0,
+          "accepted_dice": 0.5123359932841494,
+          "accepted_pixel_recall": 0.6512903627976562,
+          "all_cases_effective_pixel_recall": 0.6512903627976562,
+          "all_cases_effective_detected_pct": 68.75
+        },
+        "weak": {
+          "n_total": 32,
+          "n_accepted": 32,
+          "coverage_pct": 100.0,
+          "rejected_pct": 0.0,
+          "accepted_dice": 0.03576391420975074,
+          "accepted_pixel_recall": 0.03776607919432364,
+          "all_cases_effective_pixel_recall": 0.03776607919432364,
+          "all_cases_effective_detected_pct": 12.5
+        },
+        "glare": {
+          "n_total": 32,
+          "n_accepted": 32,
+          "coverage_pct": 100.0,
+          "rejected_pct": 0.0,
+          "accepted_fp_image_gt_1pct": 71.875,
+          "accepted_mean_fp_area_pct": 5.74493408203125,
+          "all_cases_auto_fp_gt_1pct": 71.875
+        }
+      }
+    },
+    "0.2": {
+      "overall_coverage_pct": 62.5,
+      "groups": {
+        "standard": {
+          "n_total": 32,
+          "n_accepted": 19,
+          "coverage_pct": 59.375,
+          "rejected_pct": 40.625,
+          "accepted_dice": 0.4047434269959539,
+          "accepted_pixel_recall": 0.625,
+          "all_cases_effective_pixel_recall": 0.1620745542949757,
+          "all_cases_effective_detected_pct": 37.5
+        },
+        "weak": {
+          "n_total": 32,
+          "n_accepted": 22,
+          "coverage_pct": 68.75,
+          "rejected_pct": 31.25,
+          "accepted_dice": 0.05138746095558913,
+          "accepted_pixel_recall": 0.05468227424749164,
+          "all_cases_effective_pixel_recall": 0.03742275120164797,
+          "all_cases_effective_detected_pct": 9.375
+        },
+        "glare": {
+          "n_total": 32,
+          "n_accepted": 19,
+          "coverage_pct": 59.375,
+          "rejected_pct": 40.625,
+          "accepted_fp_image_gt_1pct": 52.63157894736842,
+          "accepted_mean_fp_area_pct": 2.0597759046052633,
+          "all_cases_auto_fp_gt_1pct": 31.25
+        }
+      }
+    },
+    "0.5": {
+      "overall_coverage_pct": 88.54166666666666,
+      "groups": {
+        "standard": {
+          "n_total": 32,
+          "n_accepted": 29,
+          "coverage_pct": 90.625,
+          "rejected_pct": 9.375,
+          "accepted_dice": 0.5066306163488451,
+          "accepted_pixel_recall": 0.7088966783508597,
+          "all_cases_effective_pixel_recall": 0.5294851016082782,
+          "all_cases_effective_detected_pct": 62.5
+        },
+        "weak": {
+          "n_total": 32,
+          "n_accepted": 28,
+          "coverage_pct": 87.5,
+          "rejected_pct": 12.5,
+          "accepted_dice": 0.0408730448111437,
+          "accepted_pixel_recall": 0.043772383605252686,
+          "all_cases_effective_pixel_recall": 0.03776607919432364,
+          "all_cases_effective_detected_pct": 12.5
+        },
+        "glare": {
+          "n_total": 32,
+          "n_accepted": 28,
+          "coverage_pct": 87.5,
+          "rejected_pct": 12.5,
+          "accepted_fp_image_gt_1pct": 67.85714285714286,
+          "accepted_mean_fp_area_pct": 4.648263113839286,
+          "all_cases_auto_fp_gt_1pct": 59.375
+        }
+      }
+    },
+    "0.8": {
+      "overall_coverage_pct": 100.0,
+      "groups": {
+        "standard": {
+          "n_total": 32,
+          "n_accepted": 32,
+          "coverage_pct": 100.0,
+          "rejected_pct": 0.0,
+          "accepted_dice": 0.5123359932841494,
+          "accepted_pixel_recall": 0.6512903627976562,
+          "all_cases_effective_pixel_recall": 0.6512903627976562,
+          "all_cases_effective_detected_pct": 68.75
+        },
+        "weak": {
+          "n_total": 32,
+          "n_accepted": 32,
+          "coverage_pct": 100.0,
+          "rejected_pct": 0.0,
+          "accepted_dice": 0.03576391420975074,
+          "accepted_pixel_recall": 0.03776607919432364,
+          "all_cases_effective_pixel_recall": 0.03776607919432364,
+          "all_cases_effective_detected_pct": 12.5
+        },
+        "glare": {
+          "n_total": 32,
+          "n_accepted": 32,
+          "coverage_pct": 100.0,
+          "rejected_pct": 0.0,
+          "accepted_fp_image_gt_1pct": 71.875,
+          "accepted_mean_fp_area_pct": 5.74493408203125,
+          "all_cases_auto_fp_gt_1pct": 71.875
+        }
+      }
+    }
+  },
+  "limitations": [
+    "192 correlated synthetic calibration crops from two bases",
+    "96 correlated synthetic test crops from one base",
+    "0.9 model threshold failed prior validation gate",
+    "image-level disagreement not calibrated risk",
+    "no real patient images",
+    "binary segmentation assumes skin"
+  ],
+  "elapsed_seconds": 117.89
+}

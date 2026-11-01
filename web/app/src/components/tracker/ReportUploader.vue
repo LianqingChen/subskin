@@ -285,7 +285,7 @@ defineExpose({ loadMedicalReports })
 
 <template>
   <!-- 桌面端两栏：左侧上传，右侧历史报告；手机/平板单栏 -->
-  <div class="grid gap-4 lg:grid-cols-[minmax(0,21rem)_minmax(0,1fr)] lg:items-start lg:gap-6">
+  <div class="grid gap-4 lg:grid-cols-[minmax(0,21rem)_minmax(0,1fr)] lg:items-start lg:gap-6" :class="isCompareMode ? 'pb-36 md:pb-24' : ''">
   <ConfirmDialog
     :visible="confirmDeleteVisible"
     title="删除确认"
@@ -295,20 +295,7 @@ defineExpose({ loadMedicalReports })
     @cancel="confirmDeleteVisible = false"
   />
 
-    <div class="card p-4 relative lg:p-5">
-      <!-- 历史入口（卡片左上角）：定位到下方历史报告列表；桌面端历史就在右侧，不显示 -->
-      <button
-        type="button"
-        class="lg:hidden absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1 pl-2 pr-2.5 h-9 rounded-full text-xs font-medium
-          text-gray-500 dark:text-gray-400 bg-white/85 dark:bg-gray-800/85 backdrop-blur border border-gray-200/80 dark:border-gray-600/80 shadow-sm
-          hover:text-primary-600 dark:hover:text-primary-300 hover:border-primary-200 dark:hover:border-primary-700 transition-colors"
-        data-track-id="report_history_btn"
-        aria-label="查看历史报告"
-        @click="scrollToHistory"
-      >
-        <i class="ri-history-line text-base"></i>历史
-      </button>
-
+    <div class="card min-w-0 p-4 relative lg:p-5">
       <!-- File upload box — prompt when empty, file list when selected -->
       <div
         class="relative border border-dashed rounded-xl p-5 lg:py-10 text-center cursor-pointer transition-all duration-200"
@@ -326,13 +313,13 @@ defineExpose({ loadMedicalReports })
         />
 
         <!-- Empty state: upload prompt -->
-        <div v-if="!reportFiles.length" class="flex flex-col items-center" @click="($refs.reportFileInput as HTMLInputElement).click()">
+        <button type="button" v-if="!reportFiles.length" class="flex min-h-[120px] w-full flex-col items-center justify-center" @click="($refs.reportFileInput as HTMLInputElement).click()">
           <div class="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-900/40 border border-primary-200/60 dark:border-primary-700/40 flex items-center justify-center mb-2.5 text-primary-600 dark:text-primary-400">
             <i class="ri-file-upload-line text-2xl" aria-hidden="true"></i>
           </div>
-          <p class="text-sm font-medium text-gray-700 dark:text-gray-200">上传体检报告 AI 解读</p>
-          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">支持图片或 PDF · 单个文件最大 20MB</p>
-        </div>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-200">上传体检报告，查看解读</span>
+          <span class="mt-1 text-xs text-gray-500 dark:text-gray-400">支持图片或 PDF · 单个文件最大 20MB</span>
+        </button>
 
         <!-- Files selected: show file list inside the box -->
         <div v-else class="space-y-2 text-left">
@@ -363,6 +350,7 @@ defineExpose({ loadMedicalReports })
         </div>
       </div>
 
+      <button type="button" class="mt-2 min-h-[44px] w-full text-xs text-gray-500 lg:hidden dark:text-gray-400" data-track-id="report_history_btn" @click="scrollToHistory">查看历史报告<i class="ri-arrow-down-line ml-1" aria-hidden="true"></i></button>
       <!-- Submit button -->
       <button v-if="reportFiles.length" class="btn-primary w-full py-3 text-base mt-3"
         :disabled="isUploadingReport"
@@ -372,10 +360,10 @@ defineExpose({ loadMedicalReports })
       </button>
     </div>
 
-    <div ref="historyCardRef" class="card p-4 scroll-mt-2 lg:p-5 transition-all duration-500" :class="historyHighlighted ? 'ring-2 ring-primary-300 bg-primary-50 dark:bg-primary-900' : ''">
+    <div ref="historyCardRef" class="card min-w-0 p-4 scroll-mt-32 lg:p-5 transition-all duration-500" :class="historyHighlighted ? 'ring-2 ring-primary-300 bg-primary-50 dark:bg-primary-900' : ''">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100"><i class="ri-file-list-3-line mr-1"></i>历史报告</h2>
-        <button v-if="medicalReports.length > 1" type="button" @click="toggleCompareMode" class="min-h-[36px] text-[13px] text-primary-600 dark:text-primary-400 hover:text-primary-700 flex items-center gap-1">
+        <button v-if="medicalReports.length > 1" type="button" @click="toggleCompareMode" class="min-h-[44px] text-[13px] text-primary-600 dark:text-primary-400 hover:text-primary-700 flex items-center gap-1">
           <i class="ri-scales-line"></i> {{ isCompareMode ? '取消对比' : '对比报告' }}
         </button>
       </div>
@@ -383,19 +371,19 @@ defineExpose({ loadMedicalReports })
       <!-- Filters -->
       <div v-if="medicalReports.length > 0" class="flex flex-wrap gap-2 mb-4">
         <button type="button" @click="resetFilters"
-          class="control-slim"
+          class="control-slim min-h-[44px]"
           :class="timeFilter === 'all' && !personFilter ? 'control-slim-active' : ''">
           全部
         </button>
         <div class="relative">
           <button type="button" @click="showTimeMenu = !showTimeMenu; showPersonMenu = false"
-            class="control-slim"
+            class="control-slim min-h-[44px]"
             :class="timeFilter !== 'all' ? 'control-slim-active' : ''">
             {{ timeFilterLabel }} <i class="ri-arrow-down-s-line"></i>
           </button>
           <div v-if="showTimeMenu" class="menu-slim min-w-[130px]">
             <button v-for="opt in TIME_OPTIONS" :key="opt.value" type="button" @click="setTimeFilter(opt.value)"
-              class="menu-slim-item"
+              class="menu-slim-item min-h-[44px]"
               :class="timeFilter === opt.value ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-700 dark:text-gray-300'">
               {{ opt.label }}
             </button>
@@ -403,18 +391,18 @@ defineExpose({ loadMedicalReports })
         </div>
         <div class="relative">
           <button type="button" @click="showPersonMenu = !showPersonMenu; showTimeMenu = false"
-            class="control-slim"
+            class="control-slim min-h-[44px]"
             :class="personFilter ? 'control-slim-active' : ''">
             {{ personFilter ? '体检人：' + personFilter : '体检人' }} <i class="ri-arrow-down-s-line"></i>
           </button>
           <div v-if="showPersonMenu" class="menu-slim min-w-[160px] max-h-56 overflow-y-auto">
             <button type="button" @click="setPersonFilter('')"
-              class="menu-slim-item"
+              class="menu-slim-item min-h-[44px]"
               :class="!personFilter ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-700 dark:text-gray-300'">
               全部体检人
             </button>
             <button v-for="name in patientNames" :key="name" type="button" @click="setPersonFilter(name)"
-              class="menu-slim-item"
+              class="menu-slim-item min-h-[44px]"
               :class="personFilter === name ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-700 dark:text-gray-300'">
               {{ name }}
             </button>
@@ -446,25 +434,25 @@ defineExpose({ loadMedicalReports })
 
           <!-- Row 1: title + delete -->
           <div class="flex items-center justify-between pr-8">
-            <h3 class="font-medium text-gray-900 dark:text-gray-100 text-sm truncate flex-1 min-w-0">{{ report.title }}</h3>
-            <button v-if="!isCompareMode" class="p-1.5 text-red-400 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0 ml-2"
+            <h3 class="min-w-0 flex-1 text-sm font-medium text-gray-900 dark:text-gray-100"><button type="button" class="min-h-[44px] w-full truncate text-left" @click.stop="isCompareMode ? toggleReportSelection(report.id) : viewInterpretation(report)">{{ report.title }}</button></h3>
+            <button v-if="!isCompareMode" class="min-h-[44px] min-w-[44px] p-1.5 text-red-400 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0 ml-2"
               title="删除" @click.stop="deleteReport(report.id)"><i class="ri-delete-bin-line"></i></button>
           </div>
           <!-- Row 2: tags + date -->
           <div class="flex items-center gap-2 mt-1 flex-wrap">
             <span v-for="tag in (report.tags || '').split(',').filter(Boolean)" :key="tag"
-              class="px-2 py-0.5 rounded-full text-xs bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300">{{ tag }}</span>
+              class="min-w-0 max-w-full break-all px-2 py-0.5 rounded-full text-xs bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300">{{ tag }}</span>
             <span class="text-xs text-gray-400 dark:text-gray-500">{{ formatDate(report.created_at) }}</span>
           </div>
-          <!-- Row 3: files + AI badge -->
-          <div class="flex items-center gap-2 mt-2">
+          <!-- Row 3: filenames truncate within the card; multiple files wrap. -->
+          <div class="mt-2 flex min-w-0 flex-wrap items-center gap-2">
             <button v-for="file in report.files" :key="file.id"
               @click.stop="handleFileClick(file.id)"
-              class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs bg-gray-100 dark:bg-gray-700 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900 transition-colors cursor-pointer">
-              <i :class="file.file_type?.startsWith('image/') ? 'ri-image-line' : 'ri-file-text-line'"></i> {{ file.file_name }}
+              class="inline-flex min-h-[44px] min-w-0 max-w-full items-center gap-1 px-2.5 py-1.5 rounded-md text-xs bg-gray-100 dark:bg-gray-700 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900 transition-colors cursor-pointer">
+              <i :class="file.file_type?.startsWith('image/') ? 'ri-image-line' : 'ri-file-text-line'" class="shrink-0" aria-hidden="true"></i><span class="truncate" :title="file.file_name">{{ file.file_name }}</span>
             </button>
             <button v-if="!report.interpretation_json"
-              class="inline-flex items-center px-2.5 py-1.5 rounded-md text-xs bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 transition-colors flex-shrink-0 whitespace-nowrap"
+              class="inline-flex min-h-[44px] items-center px-2.5 py-1.5 rounded-md text-xs bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 transition-colors flex-shrink-0 whitespace-nowrap"
               @click.stop="triggerInterpret(report.id)" :disabled="interpretLoading[report.id]">
               <i class="ri-robot-line mr-1" v-if="!interpretLoading[report.id]"></i>
               {{ interpretLoading[report.id] ? '解读中...' : 'AI解读' }}
@@ -480,11 +468,11 @@ defineExpose({ loadMedicalReports })
     </section>
 
     <!-- Compare Mode Sticky Bar -->
-    <div v-if="isCompareMode" class="app-fixed-x fixed bottom-0 bg-gray-900  text-white p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-50 flex items-center justify-between" style="padding-bottom: calc(1rem + env(safe-area-inset-bottom));">
+    <div v-if="isCompareMode" class="app-fixed-x fixed bottom-[calc(55px+env(safe-area-inset-bottom,0px))] z-40 flex flex-wrap items-center justify-between gap-3 bg-gray-900 p-4 text-white shadow-sm md:bottom-0">
       <div class="text-sm">已选择 <span class="font-bold text-primary-400">{{ selectedForCompare.length }}</span>/3 份报告</div>
-      <div class="flex gap-3">
-        <button @click="toggleCompareMode" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white bg-gray-800 hover:bg-gray-700 transition-colors">取消</button>
-        <button @click="startCompare" :disabled="selectedForCompare.length < 2" class="px-4 py-2 rounded-lg text-sm font-medium bg-primary-500 hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">开始对比</button>
+      <div class="flex w-full gap-3 sm:w-auto">
+        <button @click="toggleCompareMode" class="min-h-[44px] flex-1 px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white bg-gray-800 hover:bg-gray-700 transition-colors">取消</button>
+        <button @click="startCompare" :disabled="selectedForCompare.length < 2" class="min-h-[44px] flex-1 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium bg-primary-500 hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">开始对比</button>
       </div>
     </div>
   </div>

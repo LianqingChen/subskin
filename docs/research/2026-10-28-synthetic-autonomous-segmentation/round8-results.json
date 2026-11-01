@@ -1,0 +1,167 @@
+{
+  "protocol": "round8-protocol.md",
+  "source_sha256": [
+    "5468d5b39a9beec0de5e22758ffb135983affc53304d40daf83fbd1e6607d082",
+    "e72976214d7720f3ca72dd160d6be38a108e522d55e47b1d66679eaad6e854b8"
+  ],
+  "sam_sha256": "ec2df62732614e57411cdcf32a23ffdf28910380d03139ee0f4fcbe91eb8c912",
+  "source_skin_fraction": [
+    0.49755859375,
+    0.3369140625
+  ],
+  "models": {
+    "rgb_unet": [
+      {
+        "seed": 0,
+        "old": {
+          "ignored_pixel_pct": 9.29412841796875,
+          "pixel_accuracy_valid": 0.8258558331230549,
+          "skin_dice_mean": 0.8699556392477805,
+          "lesion_dice_positive_mean": 0.24296772823834417,
+          "area_share_mae_pp": 39.249132842345475,
+          "empty_skin": 0,
+          "positive_images": 46,
+          "negative_images": 18,
+          "negative_fp_area_pct_valid": 13.557381350203787,
+          "class_iou": {
+            "occlusion": 0.6569860507660645,
+            "unreadable": 0.0
+          }
+        },
+        "new": {
+          "ignored_pixel_pct": 9.29412841796875,
+          "pixel_accuracy_valid": 0.8732315585835646,
+          "skin_dice_mean": 0.8259917407914044,
+          "lesion_dice_positive_mean": 0.19844471843179826,
+          "area_share_mae_pp": 7.171886972025504,
+          "empty_skin": 0,
+          "positive_images": 46,
+          "negative_images": 18,
+          "negative_fp_area_pct_valid": 3.5147827645086056,
+          "class_iou": {
+            "occlusion": 0.24271974352123965,
+            "unreadable": 0.0
+          }
+        },
+        "old_sha256": "2a761743d4611051e6ea0beb678900cd46106c11ee6897b9674396fccc2d124d",
+        "new_sha256": "d2c8ee2f088380e0c2e42d84dfedbc63e73f5129086696b00b8d10c91807273f"
+      },
+      {
+        "seed": 1,
+        "old": {
+          "ignored_pixel_pct": 9.29412841796875,
+          "pixel_accuracy_valid": 0.7562452687358062,
+          "skin_dice_mean": 0.8414348493766639,
+          "lesion_dice_positive_mean": 0.19635858085345048,
+          "area_share_mae_pp": 33.729202178158275,
+          "empty_skin": 0,
+          "positive_images": 46,
+          "negative_images": 18,
+          "negative_fp_area_pct_valid": 13.190172258296919,
+          "class_iou": {
+            "occlusion": 0.29795854760791646,
+            "unreadable": 0.43129622421175556
+          }
+        },
+        "new": {
+          "ignored_pixel_pct": 9.29412841796875,
+          "pixel_accuracy_valid": 0.81012280259063,
+          "skin_dice_mean": 0.8209732624151942,
+          "lesion_dice_positive_mean": 0.07923484999253154,
+          "area_share_mae_pp": 15.131262838481346,
+          "empty_skin": 0,
+          "positive_images": 46,
+          "negative_images": 18,
+          "negative_fp_area_pct_valid": 5.6279305273086875,
+          "class_iou": {
+            "occlusion": 0.26758228747336016,
+            "unreadable": 0.24909707781547555
+          }
+        },
+        "old_sha256": "3152bd195370ce4e8f42d455c8d8ca341a8da674b944eea11494b181d4463fd2",
+        "new_sha256": "ba757991e2d7ffaab51d5042155ff6591e3b7b9f79e63ea00c6d80c59bc8580d"
+      }
+    ],
+    "pretrained_sam": [
+      {
+        "seed": 0,
+        "old": {
+          "ignored_pixel_pct": 9.29412841796875,
+          "pixel_accuracy_valid": 0.7874589957103205,
+          "skin_dice_mean": 0.9739694396757006,
+          "lesion_dice_positive_mean": 0.17513190956608268,
+          "area_share_mae_pp": 80.45213645239664,
+          "empty_skin": 0,
+          "positive_images": 46,
+          "negative_images": 18,
+          "negative_fp_area_pct_valid": 22.688963666519996,
+          "class_iou": {
+            "occlusion": 0.8074040426981604,
+            "unreadable": 0.0
+          }
+        },
+        "new": {
+          "ignored_pixel_pct": 9.29412841796875,
+          "pixel_accuracy_valid": 0.9598031794095382,
+          "skin_dice_mean": 0.9843255087476863,
+          "lesion_dice_positive_mean": 0.2526895331386005,
+          "area_share_mae_pp": 6.952542759204832,
+          "empty_skin": 0,
+          "positive_images": 46,
+          "negative_images": 18,
+          "negative_fp_area_pct_valid": 1.5118368965425646,
+          "class_iou": {
+            "occlusion": 0.7396580835795694,
+            "unreadable": 0.0
+          }
+        },
+        "old_sha256": "15c778e6213605c1a86894243d021041ae117ccdd95b0c90bf29cdb978941a5b",
+        "new_sha256": "9e00c9ddc25f3b4a20e804e7dcfe3dcb52372d39be4e13c17e3756f80eb0d988"
+      },
+      {
+        "seed": 1,
+        "old": {
+          "ignored_pixel_pct": 9.29412841796875,
+          "pixel_accuracy_valid": 0.7758852721002607,
+          "skin_dice_mean": 0.9841016832788585,
+          "lesion_dice_positive_mean": 0.16485500647371948,
+          "area_share_mae_pp": 88.49326383247163,
+          "empty_skin": 0,
+          "positive_images": 46,
+          "negative_images": 18,
+          "negative_fp_area_pct_valid": 24.310504389173968,
+          "class_iou": {
+            "occlusion": 0.8855313700384123,
+            "unreadable": 0.6864406779661016
+          }
+        },
+        "new": {
+          "ignored_pixel_pct": 9.29412841796875,
+          "pixel_accuracy_valid": 0.9712297081335688,
+          "skin_dice_mean": 0.9850960064161635,
+          "lesion_dice_positive_mean": 0.18932038493749034,
+          "area_share_mae_pp": 5.015458908088267,
+          "empty_skin": 0,
+          "positive_images": 46,
+          "negative_images": 18,
+          "negative_fp_area_pct_valid": 0.6022474301685844,
+          "class_iou": {
+            "occlusion": 0.794631344508264,
+            "unreadable": 0.49257530759439966
+          }
+        },
+        "old_sha256": "71a46fd8ed691fd08c0e5df812ee73373a5c1d6fc9f7a5947bdbceef4f00a0ed",
+        "new_sha256": "2da866acd15d5500ed4a2fded24a84d5f8572596c5285c15bc8dccbb499ce92a"
+      }
+    ]
+  },
+  "limitations": [
+    "automatic chroma masks and ignored boundaries",
+    "one AI-generated arm per partition",
+    "synthetic lesions and geometry",
+    "old/new train sources and labels differ",
+    "nonstandard SAM input",
+    "pretraining provenance unknown"
+  ],
+  "elapsed_seconds": 104.11
+}

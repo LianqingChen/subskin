@@ -20,7 +20,11 @@ def inside(root: Path, value: str) -> Path:
     return path
 
 
-def validate_manifest(path: Path, allow_synthetic: bool = False) -> Dict[str, Any]:
+def validate_manifest(
+    path: Path, allow_synthetic: bool = False, purpose: str = "training"
+) -> Dict[str, Any]:
+    if purpose not in {"training", "evaluation"}:
+        raise ValueError("Unsupported dataset authorization purpose")
     document = json.loads(path.read_text())
     if (
         document.get("labels") != LABELS
@@ -33,8 +37,8 @@ def validate_manifest(path: Path, allow_synthetic: bool = False) -> Dict[str, An
             "Synthetic dataset requires --allow-synthetic and cannot be registered"
         )
     authorization = document.get("authorization") or {}
-    if authorization.get("training") is not True or not authorization.get("reference"):
-        raise ValueError("Explicit dataset training authorization required")
+    if authorization.get(purpose) is not True or not authorization.get("reference"):
+        raise ValueError(f"Explicit dataset {purpose} authorization required")
     if (
         authorization.get("expires_at")
         and date.fromisoformat(authorization["expires_at"]) < date.today()
@@ -98,10 +102,13 @@ def validate_manifest(path: Path, allow_synthetic: bool = False) -> Dict[str, An
                 "Evaluation grouping metadata required; use unknown when unavailable"
             )
         counts[split] += 1
-    if not all(counts.values()):
+    if purpose == "evaluation" and counts["test"] == 0:
+        raise ValueError("Evaluation requires locked test items")
+    if purpose == "training" and not all(counts.values()):
         raise ValueError("Training, validation and locked test splits are all required")
     return {
         **document,
+        "authorization_purpose": purpose,
         "root": str(root.resolve()),
         "manifest_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
         "counts": counts,

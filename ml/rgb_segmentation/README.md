@@ -56,3 +56,7 @@ python -m ml.rgb_segmentation evaluate /private/dataset/manifest.json --weights 
 注册是人工维护操作，不会因训练完成自动发生。来源为synthetic、缺少审核记录、路径逃逸或校验和不符时拒绝加载。当前发布版本即使注册了真实模型，也只给候选，仍需用户核对；开放自动测量必须另行完成独立验收和策略变更。
 
 权重和报告放在私有、Git忽略的目录，不提交患者图片、标签或身份信息。
+
+### Independent evaluation-only cohorts
+
+`python -m ml.rgb_segmentation validate manifest.json --evaluation-only` and `evaluate ... --evaluation-only` accept explicitly evaluation-authorized data with a locked test split, without requiring training permission or fabricated train/validation subsets. `authorization.evaluation=true` and an authorization reference are mandatory. Existing integrity, image/mask alignment, authorization expiry and subject/duplicate leakage checks remain. The training command rejects `--evaluation-only`; default training validation still requires training authorization and all three splits. This option is a data-scope mechanism, not deployment approval.

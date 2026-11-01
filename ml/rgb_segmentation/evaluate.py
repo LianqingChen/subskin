@@ -32,9 +32,12 @@ def predict(model, rgb: np.ndarray) -> np.ndarray:
 
 
 def evaluate(
-    manifest: Path, weights: Optional[Path], output: Path, allow_synthetic: bool = False
+    manifest: Path, weights: Optional[Path], output: Path, allow_synthetic: bool = False,
+    evaluation_only: bool = False
 ) -> Dict[str, Any]:
-    document = validate_manifest(manifest, allow_synthetic)
+    document = validate_manifest(
+        manifest, allow_synthetic, purpose="evaluation" if evaluation_only else "training"
+    )
     torch.set_num_threads(2)
     weights_bytes = weights.read_bytes() if weights else None
     model = (
@@ -89,6 +92,7 @@ def evaluate(
         }
     report = {
         "kind": "offline_model_benchmark",
+        "authorization_purpose": document["authorization_purpose"],
         "baseline": (
             "torchscript" if model is not None else "current_runtime_draft"
         ),

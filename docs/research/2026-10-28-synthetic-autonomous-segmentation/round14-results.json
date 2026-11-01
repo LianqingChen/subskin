@@ -1,0 +1,6393 @@
+{
+  "protocol": "round14-protocol.md",
+  "source_sha256": [
+    "e72976214d7720f3ca72dd160d6be38a108e522d55e47b1d66679eaad6e854b8",
+    "515add02198fc1799a82adc84a6f0e1d51eeb623d4b01859c0eb891af3ac44d8"
+  ],
+  "cases": [
+    {
+      "source": "test8b-arm.png",
+      "seed": 18000,
+      "condition": "translation",
+      "truth": [
+        [
+          1.0,
+          0.0,
+          2.0
+        ],
+        [
+          0.0,
+          1.0,
+          -1.5
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9918724225485227,
+            "determinant": 1.1051679849624634,
+            "matrix": [
+              [
+                1.0027157068252563,
+                -0.04014149680733681,
+                6.495353698730469
+              ],
+              [
+                -0.0018076951382681727,
+                1.1022471189498901,
+                -13.757389068603516
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9698714816149444,
+            "determinant": 1.1607637405395508,
+            "matrix": [
+              [
+                1.0051895380020142,
+                -0.04819369316101074,
+                6.427072525024414
+              ],
+              [
+                -0.005036243703216314,
+                1.1550124883651733,
+                -17.9121036529541
+              ]
+            ]
+          },
+          "edit_p95_error_px": 8.71403398450468,
+          "control_p95_error_px": 4.666422587525823,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0,
+          "known_lesion_scores": {
+            "precision": 0.0,
+            "big_recall": 0.0,
+            "small_recall": 0.0,
+            "predicted_pixels": 101,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 114,
+            "mutual_matches": 46,
+            "inliers": 44,
+            "inlier_fraction": 0.9565217391304348,
+            "determinant": 0.9986419163363743,
+            "matrix": [
+              [
+                1.000395345983539,
+                -0.0013629272609549815,
+                2.072425506931774
+              ],
+              [
+                0.00017054742194276388,
+                0.9982470309383824,
+                -1.3118199740979992
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 123,
+            "mutual_matches": 34,
+            "inliers": 34,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9993180679447535,
+            "matrix": [
+              [
+                1.0005244903462713,
+                -0.0006174239635562636,
+                1.9069819777426094
+              ],
+              [
+                0.00014692333356828297,
+                0.9987941193572512,
+                -1.3730975395131473
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.16490410551956344,
+          "control_p95_error_px": 0.14729794447414707,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.011222085063404781,
+          "known_lesion_scores": {
+            "precision": 0.9824198552223371,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 967,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18001,
+      "condition": "translation",
+      "truth": [
+        [
+          1.0,
+          0.0,
+          2.0
+        ],
+        [
+          0.0,
+          1.0,
+          -1.5
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9910022453636226,
+            "determinant": 1.1108026504516602,
+            "matrix": [
+              [
+                1.003583550453186,
+                -0.0320901945233345,
+                5.189794540405273
+              ],
+              [
+                -0.0007751787779852748,
+                1.1068609952926636,
+                -14.793481826782227
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9693563560053824,
+            "determinant": 1.1784090995788574,
+            "matrix": [
+              [
+                1.0062135457992554,
+                -0.05796460434794426,
+                7.418085098266602
+              ],
+              [
+                -0.004550761543214321,
+                1.1713943481445312,
+                -20.51414680480957
+              ]
+            ]
+          },
+          "edit_p95_error_px": 9.016159555953575,
+          "control_p95_error_px": 4.709078339711307,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0,
+          "known_lesion_scores": {
+            "precision": 0.0,
+            "big_recall": 0.0,
+            "small_recall": 0.0,
+            "predicted_pixels": 99,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 111,
+            "mutual_matches": 40,
+            "inliers": 39,
+            "inlier_fraction": 0.975,
+            "determinant": 0.997889536422474,
+            "matrix": [
+              [
+                1.000220204728282,
+                0.002098590535251976,
+                1.6758462235485652
+              ],
+              [
+                0.0001595436486877965,
+                0.9976701795484626,
+                -1.2438842773745191
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 132,
+            "mutual_matches": 39,
+            "inliers": 39,
+            "inlier_fraction": 1.0,
+            "determinant": 1.001232955322727,
+            "matrix": [
+              [
+                1.0002289764514045,
+                0.0002763764190752393,
+                1.8256807472570595
+              ],
+              [
+                0.00038489393401016953,
+                1.0010038553876854,
+                -1.730986967116441
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.1793504639749885,
+          "control_p95_error_px": 0.1387058619185923,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.033666255190214336,
+          "known_lesion_scores": {
+            "precision": 0.9895833333333334,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 960,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18002,
+      "condition": "translation",
+      "truth": [
+        [
+          1.0,
+          0.0,
+          2.0
+        ],
+        [
+          0.0,
+          1.0,
+          -1.5
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9912778440721695,
+            "determinant": 1.0854237079620361,
+            "matrix": [
+              [
+                1.002312183380127,
+                -0.03990352898836136,
+                6.550302505493164
+              ],
+              [
+                -0.0015731838066130877,
+                1.0829824209213257,
+                -11.017495155334473
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9720142604342448,
+            "determinant": 1.1661708354949951,
+            "matrix": [
+              [
+                1.0048186779022217,
+                -0.04767417907714844,
+                6.474645137786865
+              ],
+              [
+                -0.005965640768408775,
+                1.1608613729476929,
+                -18.53240203857422
+              ]
+            ]
+          },
+          "edit_p95_error_px": 8.885968002249466,
+          "control_p95_error_px": 4.202527942151379,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0,
+          "known_lesion_scores": {
+            "precision": 0.0,
+            "big_recall": 0.0,
+            "small_recall": 0.0,
+            "predicted_pixels": 135,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 118,
+            "mutual_matches": 41,
+            "inliers": 40,
+            "inlier_fraction": 0.975609756097561,
+            "determinant": 0.999479920752971,
+            "matrix": [
+              [
+                1.000066286988762,
+                0.002603393604894362,
+                1.682396412036399
+              ],
+              [
+                4.041546547759935e-05,
+                0.999413777840475,
+                -1.430651732835576
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 135,
+            "mutual_matches": 32,
+            "inliers": 32,
+            "inlier_fraction": 1.0,
+            "determinant": 1.0021240936905527,
+            "matrix": [
+              [
+                0.99979391522122,
+                -0.006076883313422879,
+                2.801991459867212
+              ],
+              [
+                -0.00015325256139522533,
+                1.0023315902725314,
+                -1.74744846012706
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.28396277438687595,
+          "control_p95_error_px": 0.12667762390446718,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.08977668050723825,
+          "known_lesion_scores": {
+            "precision": 0.9595959595959596,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 990,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18000,
+      "condition": "rotate_plus",
+      "truth": [
+        [
+          0.9993908405303955,
+          0.03489949554204941,
+          -2.36475482955575
+        ],
+        [
+          -0.03489949554204941,
+          0.9993908405303955,
+          7.443359926342964
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9935483545083695,
+            "determinant": 1.0357083082199097,
+            "matrix": [
+              [
+                1.0010708570480347,
+                0.04155460000038147,
+                -3.6094930171966553
+              ],
+              [
+                -0.03742152079939842,
+                1.033047080039978,
+                4.087892532348633
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9803607274785385,
+            "determinant": 1.0555254220962524,
+            "matrix": [
+              [
+                1.0014984607696533,
+                0.03120267763733864,
+                -2.534536838531494
+              ],
+              [
+                -0.03879818320274353,
+                1.0527373552322388,
+                2.474844455718994
+              ]
+            ]
+          },
+          "edit_p95_error_px": 3.2834989543603585,
+          "control_p95_error_px": 1.8224863144218806,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.07294355291213107,
+          "known_lesion_scores": {
+            "precision": 0.8321492007104796,
+            "big_recall": 0.9853768278965129,
+            "small_recall": 1.0,
+            "predicted_pixels": 1126,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 85,
+            "mutual_matches": 35,
+            "inliers": 35,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9970006842867553,
+            "matrix": [
+              [
+                0.9998948906307609,
+                0.03565533482199717,
+                -2.6924400422611092
+              ],
+              [
+                -0.034406885984834115,
+                0.995878571415264,
+                7.7035607349731965
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 105,
+            "mutual_matches": 32,
+            "inliers": 32,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9982662027733247,
+            "matrix": [
+              [
+                0.9994997029654272,
+                0.035331794717409916,
+                -2.456505875230428
+              ],
+              [
+                -0.034835799818527746,
+                0.9975344549750278,
+                7.6637126122997605
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.08374276182699687,
+          "control_p95_error_px": 0.3068082621832276,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.10099876557064302,
+          "known_lesion_scores": {
+            "precision": 0.9664292980671414,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 983,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18001,
+      "condition": "rotate_plus",
+      "truth": [
+        [
+          0.9993908405303955,
+          0.03489949554204941,
+          -2.36475482955575
+        ],
+        [
+          -0.03489949554204941,
+          0.9993908405303955,
+          7.443359926342964
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9958660485130022,
+            "determinant": 1.03322172164917,
+            "matrix": [
+              [
+                1.0018082857131958,
+                0.02814590558409691,
+                -2.0566651821136475
+              ],
+              [
+                -0.03725709021091461,
+                1.030310034751892,
+                4.378141403198242
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9816754723784131,
+            "determinant": 1.049777626991272,
+            "matrix": [
+              [
+                1.001240611076355,
+                0.04197334498167038,
+                -3.7462828159332275
+              ],
+              [
+                -0.038594961166381836,
+                1.0468589067459106,
+                3.017390012741089
+              ]
+            ]
+          },
+          "edit_p95_error_px": 2.855687913325805,
+          "control_p95_error_px": 1.7611006371333278,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.20760857367298843,
+          "known_lesion_scores": {
+            "precision": 0.8577898550724637,
+            "big_recall": 0.9966254218222722,
+            "small_recall": 1.0,
+            "predicted_pixels": 1104,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 89,
+            "mutual_matches": 33,
+            "inliers": 33,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9959166292702472,
+            "matrix": [
+              [
+                0.999253696223746,
+                0.03406169952580003,
+                -2.231458366257346
+              ],
+              [
+                -0.0346811347782179,
+                0.9954782600628814,
+                7.882525680069031
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 106,
+            "mutual_matches": 30,
+            "inliers": 30,
+            "inlier_fraction": 1.0,
+            "determinant": 1.0005502116111933,
+            "matrix": [
+              [
+                0.9996090220770436,
+                0.03507386677984083,
+                -2.5490702307439768
+              ],
+              [
+                -0.034553590663975196,
+                0.9997291556042568,
+                7.322223544664512
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.17558986537578009,
+          "control_p95_error_px": 0.17697915218150273,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.08977668050723825,
+          "known_lesion_scores": {
+            "precision": 0.9743589743589743,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 975,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18002,
+      "condition": "rotate_plus",
+      "truth": [
+        [
+          0.9993908405303955,
+          0.03489949554204941,
+          -2.36475482955575
+        ],
+        [
+          -0.03489949554204941,
+          0.9993908405303955,
+          7.443359926342964
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.993595103565296,
+            "determinant": 1.035526990890503,
+            "matrix": [
+              [
+                1.0009329319000244,
+                0.0411328449845314,
+                -3.5267391204833984
+              ],
+              [
+                -0.03735051304101944,
+                1.033026933670044,
+                4.066254138946533
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.981767383752205,
+            "determinant": 1.0491712093353271,
+            "matrix": [
+              [
+                1.001344919204712,
+                0.0419982448220253,
+                -3.7497854232788086
+              ],
+              [
+                -0.038693901151418686,
+                1.046139121055603,
+                3.1291277408599854
+              ]
+            ]
+          },
+          "edit_p95_error_px": 2.8387827702861625,
+          "control_p95_error_px": 1.805101635245416,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.06172146784872629,
+          "known_lesion_scores": {
+            "precision": 0.9086538461538461,
+            "big_recall": 0.9943757030371203,
+            "small_recall": 1.0,
+            "predicted_pixels": 1040,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 89,
+            "mutual_matches": 32,
+            "inliers": 32,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9966851415020447,
+            "matrix": [
+              [
+                0.9996554336221243,
+                0.0372266706284319,
+                -2.7819778776587896
+              ],
+              [
+                -0.03478780113463693,
+                0.9957332036706376,
+                7.887465754725399
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 108,
+            "mutual_matches": 30,
+            "inliers": 30,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9991413419680119,
+            "matrix": [
+              [
+                1.0001531753157051,
+                0.029091256157132626,
+                -1.9161589133609032
+              ],
+              [
+                -0.035119201871083014,
+                0.9979668163881826,
+                7.708534224800815
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.4086768869917446,
+          "control_p95_error_px": 0.22595985516532974,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.1122208506340478,
+          "known_lesion_scores": {
+            "precision": 0.9713701431492843,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 978,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18000,
+      "condition": "rotate_minus",
+      "truth": [
+        [
+          0.9993908405303955,
+          -0.03489949554204941,
+          6.674214992672205
+        ],
+        [
+          0.03489949554204941,
+          0.9993908405303955,
+          -10.285583809018135
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9961889064699379,
+            "determinant": 1.0241690874099731,
+            "matrix": [
+              [
+                0.9989214539527893,
+                -0.05498158186674118,
+                9.398228645324707
+              ],
+              [
+                0.03787492215633392,
+                1.0231902599334717,
+                -14.326172828674316
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9868017988687542,
+            "determinant": 1.025805115699768,
+            "matrix": [
+              [
+                0.9994641542434692,
+                -0.047840625047683716,
+                8.290782928466797
+              ],
+              [
+                0.03752868250012398,
+                1.0245587825775146,
+                -14.269622802734375
+              ]
+            ]
+          },
+          "edit_p95_error_px": 1.5791110518994729,
+          "control_p95_error_px": 1.8821695994964778,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.011222085063404781,
+          "known_lesion_scores": {
+            "precision": 0.9895724713242962,
+            "big_recall": 0.9988751406074241,
+            "small_recall": 1.0,
+            "predicted_pixels": 959,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 82,
+            "mutual_matches": 35,
+            "inliers": 31,
+            "inlier_fraction": 0.8857142857142857,
+            "determinant": 0.9977928764756531,
+            "matrix": [
+              [
+                0.9996036914080235,
+                -0.030799306811487643,
+                6.052557530235288
+              ],
+              [
+                0.035262336091518354,
+                0.9971019810496474,
+                -10.089113909005771
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 94,
+            "mutual_matches": 31,
+            "inliers": 31,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9986866511801439,
+            "matrix": [
+              [
+                0.9999226526571106,
+                -0.0365616759078557,
+                6.660813184611697
+              ],
+              [
+                0.03500511358624719,
+                0.9974839582958348,
+                -10.058331367150396
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.2418770037128506,
+          "control_p95_error_px": 0.23924648224476866,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.03927729772191674,
+          "known_lesion_scores": {
+            "precision": 0.9753593429158111,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 974,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18001,
+      "condition": "rotate_minus",
+      "truth": [
+        [
+          0.9993908405303955,
+          -0.03489949554204941,
+          6.674214992672205
+        ],
+        [
+          0.03489949554204941,
+          0.9993908405303955,
+          -10.285583809018135
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9961571072258055,
+            "determinant": 1.0241461992263794,
+            "matrix": [
+              [
+                0.9992731213569641,
+                -0.0493788868188858,
+                8.562257766723633
+              ],
+              [
+                0.03779589757323265,
+                1.0230234861373901,
+                -14.283647537231445
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9865687815974923,
+            "determinant": 1.0253874063491821,
+            "matrix": [
+              [
+                0.9995461702346802,
+                -0.04677200689911842,
+                8.137523651123047
+              ],
+              [
+                0.03752933070063591,
+                1.0240968465805054,
+                -14.189797401428223
+              ]
+            ]
+          },
+          "edit_p95_error_px": 1.5281970238169977,
+          "control_p95_error_px": 1.7409441140394568,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.0056110425317023906,
+          "known_lesion_scores": {
+            "precision": 0.9885416666666667,
+            "big_recall": 0.9988751406074241,
+            "small_recall": 1.0,
+            "predicted_pixels": 960,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 91,
+            "mutual_matches": 34,
+            "inliers": 34,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9962258162123064,
+            "matrix": [
+              [
+                0.9991857234733059,
+                -0.03289283462493263,
+                6.549919876031704
+              ],
+              [
+                0.035221334616248746,
+                0.9958782069248499,
+                -9.981598684917012
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 116,
+            "mutual_matches": 37,
+            "inliers": 36,
+            "inlier_fraction": 0.972972972972973,
+            "determinant": 1.001330672269325,
+            "matrix": [
+              [
+                0.9995521569815136,
+                -0.03337241788692847,
+                6.2966304028058335
+              ],
+              [
+                0.035444069359048085,
+                1.0005959278756866,
+                -10.614825517048356
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.2921685289495707,
+          "control_p95_error_px": 0.2896720197665127,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.05049938278532151,
+          "known_lesion_scores": {
+            "precision": 0.9834368530020704,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 966,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18002,
+      "condition": "rotate_minus",
+      "truth": [
+        [
+          0.9993908405303955,
+          -0.03489949554204941,
+          6.674214992672205
+        ],
+        [
+          0.03489949554204941,
+          0.9993908405303955,
+          -10.285583809018135
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9962327271654713,
+            "determinant": 1.023821473121643,
+            "matrix": [
+              [
+                0.9988057613372803,
+                -0.05677862465381622,
+                9.663371086120605
+              ],
+              [
+                0.03784187510609627,
+                1.0228945016860962,
+                -14.285585403442383
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.986847254417403,
+            "determinant": 1.0251004695892334,
+            "matrix": [
+              [
+                0.9994012117385864,
+                -0.04672547057271004,
+                8.171924591064453
+              ],
+              [
+                0.037444278597831726,
+                1.0239640474319458,
+                -14.147820472717285
+              ]
+            ]
+          },
+          "edit_p95_error_px": 1.5134110415239523,
+          "control_p95_error_px": 1.9181619889031103,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.011222085063404781,
+          "known_lesion_scores": {
+            "precision": 0.9926854754440961,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 957,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 83,
+            "mutual_matches": 32,
+            "inliers": 32,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9980487783387425,
+            "matrix": [
+              [
+                0.9996992402361158,
+                -0.03462392229207397,
+                6.565422609188064
+              ],
+              [
+                0.03509218670956842,
+                0.997133646873246,
+                -10.064134139913214
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 105,
+            "mutual_matches": 33,
+            "inliers": 33,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9992663461372173,
+            "matrix": [
+              [
+                0.9995020512233923,
+                -0.04222948450048507,
+                7.5363655157089955
+              ],
+              [
+                0.0350673816509595,
+                0.9982825622679057,
+                -10.222263949950847
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.3378841355033939,
+          "control_p95_error_px": 0.12907908815349076,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.033666255190214336,
+          "known_lesion_scores": {
+            "precision": 0.977366255144033,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 972,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18000,
+      "condition": "scale_down",
+      "truth": [
+        [
+          0.9800000190734863,
+          0.0,
+          7.079999923706055
+        ],
+        [
+          0.0,
+          0.9800000190734863,
+          1.0899999141693115
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9959467267295812,
+            "determinant": 1.032451868057251,
+            "matrix": [
+              [
+                0.9815494418144226,
+                -0.02643122710287571,
+                10.130281448364258
+              ],
+              [
+                0.0003917610738426447,
+                1.0518487691879272,
+                -8.192352294921875
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9857578282992691,
+            "determinant": 1.045865535736084,
+            "matrix": [
+              [
+                0.9824657440185547,
+                -0.018297135829925537,
+                8.595342636108398
+              ],
+              [
+                -0.0018382493872195482,
+                1.0645655393600464,
+                -8.516632080078125
+              ]
+            ]
+          },
+          "edit_p95_error_px": 4.150874793244602,
+          "control_p95_error_px": 3.211866416204143,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0,
+          "known_lesion_scores": {
+            "precision": 0.5089903181189488,
+            "big_recall": 0.3779527559055118,
+            "small_recall": 0.5245901639344263,
+            "predicted_pixels": 723,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 90,
+            "mutual_matches": 37,
+            "inliers": 36,
+            "inlier_fraction": 0.972972972972973,
+            "determinant": 0.9569746419868747,
+            "matrix": [
+              [
+                0.9801284876522239,
+                0.0024110965960636205,
+                6.744911221933871
+              ],
+              [
+                0.0003953353776371416,
+                0.9763776966334017,
+                1.4335557775102579
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 101,
+            "mutual_matches": 35,
+            "inliers": 35,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9594637011260682,
+            "matrix": [
+              [
+                0.9800774407065743,
+                -0.00164937355811492,
+                7.257601438581571
+              ],
+              [
+                -3.0511932108954288e-05,
+                0.9789672852381227,
+                1.2540464670372873
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.08902460025717604,
+          "control_p95_error_px": 0.21355247290030363,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.21883065873639324,
+          "known_lesion_scores": {
+            "precision": 0.9519038076152304,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 998,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18001,
+      "condition": "scale_down",
+      "truth": [
+        [
+          0.9800000190734863,
+          0.0,
+          7.079999923706055
+        ],
+        [
+          0.0,
+          0.9800000190734863,
+          1.0899999141693115
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9985807791023998,
+            "determinant": 0.9990538358688354,
+            "matrix": [
+              [
+                0.9809055924415588,
+                0.0017115995287895203,
+                6.681674003601074
+              ],
+              [
+                -0.001765106339007616,
+                1.018498420715332,
+                -3.148151397705078
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9838338393973292,
+            "determinant": 1.0689103603363037,
+            "matrix": [
+              [
+                0.9833942651748657,
+                -0.02152974158525467,
+                8.738569259643555
+              ],
+              [
+                -0.0028301523998379707,
+                1.087022066116333,
+                -11.204935073852539
+              ]
+            ]
+          },
+          "edit_p95_error_px": 5.036591732488718,
+          "control_p95_error_px": 1.8216939203069809,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.14027606329255976,
+          "known_lesion_scores": {
+            "precision": 0.5002739726027398,
+            "big_recall": 0.9583802024746907,
+            "small_recall": 1.0,
+            "predicted_pixels": 1825,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 93,
+            "mutual_matches": 32,
+            "inliers": 32,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9563392896462684,
+            "matrix": [
+              [
+                0.9799602351681976,
+                0.004100612775750347,
+                6.671823073319635
+              ],
+              [
+                0.00023182561327736496,
+                0.9758969863804692,
+                1.5582417627639749
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 114,
+            "mutual_matches": 36,
+            "inliers": 36,
+            "inlier_fraction": 1.0,
+            "determinant": 0.960858018027722,
+            "matrix": [
+              [
+                0.9802813114958859,
+                0.00497882680232059,
+                6.199736099865839
+              ],
+              [
+                0.00044591630836957426,
+                0.9801882652455547,
+                0.9558235608033868
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.41861652629738433,
+          "control_p95_error_px": 0.309914024462247,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.19077544607788127,
+          "known_lesion_scores": {
+            "precision": 0.95,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1000,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18002,
+      "condition": "scale_down",
+      "truth": [
+        [
+          0.9800000190734863,
+          0.0,
+          7.079999923706055
+        ],
+        [
+          0.0,
+          0.9800000190734863,
+          1.0899999141693115
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9945665061675042,
+            "determinant": 1.0266460180282593,
+            "matrix": [
+              [
+                0.9823253154754639,
+                -0.02076234109699726,
+                9.172195434570312
+              ],
+              [
+                0.0009864831808954477,
+                1.0450973510742188,
+                -7.7962260246276855
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9844021776721156,
+            "determinant": 1.0376343727111816,
+            "matrix": [
+              [
+                0.9822117686271667,
+                -0.0138652753084898,
+                8.111654281616211
+              ],
+              [
+                -0.0018809479661285877,
+                1.0564528703689575,
+                -7.29505729675293
+              ]
+            ]
+          },
+          "edit_p95_error_px": 3.986685412369464,
+          "control_p95_error_px": 3.0490402035352475,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.10099876557064302,
+          "known_lesion_scores": {
+            "precision": 0.6880664652567976,
+            "big_recall": 0.9572553430821147,
+            "small_recall": 0.9836065573770492,
+            "predicted_pixels": 1324,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 94,
+            "mutual_matches": 37,
+            "inliers": 36,
+            "inlier_fraction": 0.972972972972973,
+            "determinant": 0.9580546382540803,
+            "matrix": [
+              [
+                0.9806464991857166,
+                0.0006814128071642776,
+                6.673624431063217
+              ],
+              [
+                6.585933542163344e-05,
+                0.9769623242697538,
+                1.5139695485242908
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 96,
+            "mutual_matches": 24,
+            "inliers": 24,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9606147214652935,
+            "matrix": [
+              [
+                0.9809736718454609,
+                -0.0077439356176426145,
+                7.61146524275288
+              ],
+              [
+                0.00018395473502805752,
+                0.9792447284793189,
+                1.1100884989844946
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.6201046099562062,
+          "control_p95_error_px": 0.3395963210452453,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.20199753114128605,
+          "known_lesion_scores": {
+            "precision": 0.95,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1000,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18000,
+      "condition": "scale_up",
+      "truth": [
+        [
+          1.0199999809265137,
+          0.0,
+          -3.0799999237060547
+        ],
+        [
+          0.0,
+          1.0199999809265137,
+          -4.0899999141693115
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9834962483005771,
+            "determinant": 1.1652681827545166,
+            "matrix": [
+              [
+                1.0235252380371094,
+                -0.03623896464705467,
+                0.46093928813934326
+              ],
+              [
+                -0.0026851301081478596,
+                1.138580083847046,
+                -17.45564079284668
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9496207853136167,
+            "determinant": 1.2953873872756958,
+            "matrix": [
+              [
+                1.0254511833190918,
+                -0.11964135617017746,
+                9.271210670471191
+              ],
+              [
+                -0.006920429412275553,
+                1.264043927192688,
+                -30.303030014038086
+              ]
+            ]
+          },
+          "edit_p95_error_px": 14.335302013934017,
+          "control_p95_error_px": 5.994588601953921,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0,
+          "known_lesion_scores": {
+            "precision": 0.0,
+            "big_recall": 0.0,
+            "small_recall": 0.0,
+            "predicted_pixels": 16,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 90,
+            "mutual_matches": 32,
+            "inliers": 32,
+            "inlier_fraction": 1.0,
+            "determinant": 1.0383470701364559,
+            "matrix": [
+              [
+                1.0207525448182757,
+                -0.0008119392374850129,
+                -3.2100288828250574
+              ],
+              [
+                0.0004837084659880138,
+                1.0172364327334882,
+                -3.939756047970958
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 87,
+            "mutual_matches": 31,
+            "inliers": 31,
+            "inlier_fraction": 1.0,
+            "determinant": 1.0386662710927388,
+            "matrix": [
+              [
+                1.0195759554654364,
+                0.0016013077895643368,
+                -3.2013202459183496
+              ],
+              [
+                -0.0001454951957550334,
+                1.018723551239493,
+                -3.8730040521829103
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.14018877177614888,
+          "control_p95_error_px": 0.3186802609850508,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.022444170126809562,
+          "known_lesion_scores": {
+            "precision": 0.9763617677286742,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 973,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18001,
+      "condition": "scale_up",
+      "truth": [
+        [
+          1.0199999809265137,
+          0.0,
+          -3.0799999237060547
+        ],
+        [
+          0.0,
+          1.0199999809265137,
+          -4.0899999141693115
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9852993710020475,
+            "determinant": 1.1501213312149048,
+            "matrix": [
+              [
+                1.0235217809677124,
+                -0.046098850667476654,
+                1.676030158996582
+              ],
+              [
+                -0.003439381020143628,
+                1.123845100402832,
+                -15.203468322753906
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9497471696552613,
+            "determinant": 1.269365906715393,
+            "matrix": [
+              [
+                1.0247491598129272,
+                -0.1293068379163742,
+                10.249505996704102
+              ],
+              [
+                -0.007664731238037348,
+                1.2396761178970337,
+                -26.608116149902344
+              ]
+            ]
+          },
+          "edit_p95_error_px": 14.317452790166454,
+          "control_p95_error_px": 5.8805020762331495,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0,
+          "known_lesion_scores": {
+            "precision": 0.0,
+            "big_recall": 0.0,
+            "small_recall": 0.0,
+            "predicted_pixels": 32,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 87,
+            "mutual_matches": 36,
+            "inliers": 36,
+            "inlier_fraction": 1.0,
+            "determinant": 1.0378990540754598,
+            "matrix": [
+              [
+                1.0203253773560492,
+                -0.0018451654272764355,
+                -2.8933116089351723
+              ],
+              [
+                0.00019365202795431128,
+                1.0172232503369867,
+                -3.7957752825459137
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 99,
+            "mutual_matches": 30,
+            "inliers": 29,
+            "inlier_fraction": 0.9666666666666667,
+            "determinant": 1.0401519101379595,
+            "matrix": [
+              [
+                1.0208857771614555,
+                -0.0016371112684981702,
+                -3.283860043191687
+              ],
+              [
+                0.00044518723873291245,
+                1.0188712631583778,
+                -4.06485912223453
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.4185975810512664,
+          "control_p95_error_px": 0.17494590315574154,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.044888340253619124,
+          "known_lesion_scores": {
+            "precision": 0.9803921568627451,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 969,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18002,
+      "condition": "scale_up",
+      "truth": [
+        [
+          1.0199999809265137,
+          0.0,
+          -3.0799999237060547
+        ],
+        [
+          0.0,
+          1.0199999809265137,
+          -4.0899999141693115
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9848480469471692,
+            "determinant": 1.1577441692352295,
+            "matrix": [
+              [
+                1.0232657194137573,
+                -0.04626758396625519,
+                1.7543585300445557
+              ],
+              [
+                -0.0030037760734558105,
+                1.1315566301345825,
+                -16.397241592407227
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9513599984792264,
+            "determinant": 1.2765542268753052,
+            "matrix": [
+              [
+                1.0254162549972534,
+                -0.12036717683076859,
+                9.242247581481934
+              ],
+              [
+                -0.007454292848706245,
+                1.2457882165908813,
+                -27.529422760009766
+              ]
+            ]
+          },
+          "edit_p95_error_px": 14.148490487977545,
+          "control_p95_error_px": 5.995422813955158,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0,
+          "known_lesion_scores": {
+            "precision": 0.0,
+            "big_recall": 0.0,
+            "small_recall": 0.0,
+            "predicted_pixels": 33,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 91,
+            "mutual_matches": 32,
+            "inliers": 32,
+            "inlier_fraction": 1.0,
+            "determinant": 1.039041185731789,
+            "matrix": [
+              [
+                1.0207982143932177,
+                -0.0013965503259718026,
+                -3.184733667840014
+              ],
+              [
+                8.813482769087473e-05,
+                1.0178711600359653,
+                -3.847068313794269
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 99,
+            "mutual_matches": 30,
+            "inliers": 30,
+            "inlier_fraction": 1.0,
+            "determinant": 1.0401309427915657,
+            "matrix": [
+              [
+                1.0207195309514554,
+                -0.005316673625720631,
+                -2.7091653492407697
+              ],
+              [
+                4.045246237382061e-05,
+                1.019017169926666,
+                -4.002290029184268
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.41615325075388004,
+          "control_p95_error_px": 0.2805959030851548,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.033666255190214336,
+          "known_lesion_scores": {
+            "precision": 0.979381443298969,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 970,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18000,
+      "condition": "rotate_scale",
+      "truth": [
+        [
+          1.019378662109375,
+          0.03559748828411102,
+          -7.532050140202045
+        ],
+        [
+          -0.03559748828411102,
+          1.019378662109375,
+          5.03222718834877
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.988884548469173,
+            "determinant": 1.0951547622680664,
+            "matrix": [
+              [
+                1.0231225490570068,
+                0.025157207623124123,
+                -7.0430779457092285
+              ],
+              [
+                -0.039035920053720474,
+                1.0694444179534912,
+                0.07215369492769241
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9737013560624338,
+            "determinant": 1.123551607131958,
+            "matrix": [
+              [
+                1.0224860906600952,
+                0.03924652189016342,
+                -8.854290962219238
+              ],
+              [
+                -0.04121984913945198,
+                1.0972607135772705,
+                -2.170988082885742
+              ]
+            ]
+          },
+          "edit_p95_error_px": 4.807466182106997,
+          "control_p95_error_px": 2.8790257371698775,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0056110425317023906,
+          "known_lesion_scores": {
+            "precision": 0.6148796498905909,
+            "big_recall": 0.8852643419572553,
+            "small_recall": 0.9180327868852459,
+            "predicted_pixels": 1371,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 87,
+            "mutual_matches": 34,
+            "inliers": 34,
+            "inlier_fraction": 1.0,
+            "determinant": 1.0386493296383033,
+            "matrix": [
+              [
+                1.0199961674817266,
+                0.038247324620272805,
+                -8.096248611572523
+              ],
+              [
+                -0.0352943629169435,
+                1.0169640315841055,
+                5.232779173887262
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 93,
+            "mutual_matches": 29,
+            "inliers": 29,
+            "inlier_fraction": 1.0,
+            "determinant": 1.0397955378603538,
+            "matrix": [
+              [
+                1.0191663832438749,
+                0.039351441071241895,
+                -7.968354894998347
+              ],
+              [
+                -0.03571472576931453,
+                1.0188622083754426,
+                5.155497610429698
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.16879962635747897,
+          "control_p95_error_px": 0.28273868964360677,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.03927729772191674,
+          "known_lesion_scores": {
+            "precision": 0.977366255144033,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 972,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18001,
+      "condition": "rotate_scale",
+      "truth": [
+        [
+          1.019378662109375,
+          0.03559748828411102,
+          -7.532050140202045
+        ],
+        [
+          -0.03559748828411102,
+          1.019378662109375,
+          5.03222718834877
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9892061704052297,
+            "determinant": 1.0956320762634277,
+            "matrix": [
+              [
+                1.0227251052856445,
+                0.026965292170643806,
+                -7.178132057189941
+              ],
+              [
+                -0.03908152133226395,
+                1.0702565908432007,
+                -0.021553633734583855
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9742200446257159,
+            "determinant": 1.1223335266113281,
+            "matrix": [
+              [
+                1.0219975709915161,
+                0.04230119287967682,
+                -9.078479766845703
+              ],
+              [
+                -0.0411246158182621,
+                1.0964741706848145,
+                -2.1223926544189453
+              ]
+            ]
+          },
+          "edit_p95_error_px": 4.727108799647109,
+          "control_p95_error_px": 2.883109320770629,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0,
+          "known_lesion_scores": {
+            "precision": 0.5984848484848485,
+            "big_recall": 0.7412823397075365,
+            "small_recall": 0.8524590163934426,
+            "predicted_pixels": 1188,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 90,
+            "mutual_matches": 30,
+            "inliers": 30,
+            "inlier_fraction": 1.0,
+            "determinant": 1.0394881209337892,
+            "matrix": [
+              [
+                1.0192766111849718,
+                0.03752765345284609,
+                -7.6479068949636115
+              ],
+              [
+                -0.03557242513432101,
+                1.0185195656397472,
+                5.118116147680438
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 95,
+            "mutual_matches": 30,
+            "inliers": 30,
+            "inlier_fraction": 1.0,
+            "determinant": 1.0406276768401161,
+            "matrix": [
+              [
+                1.0188544674089604,
+                0.038964628005231976,
+                -7.7577429444623975
+              ],
+              [
+                -0.035234972962533855,
+                1.0200227730941556,
+                4.847827981034534
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.26848007046099615,
+          "control_p95_error_px": 0.1930008167515446,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.05049938278532151,
+          "known_lesion_scores": {
+            "precision": 0.9834368530020704,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 966,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18002,
+      "condition": "rotate_scale",
+      "truth": [
+        [
+          1.019378662109375,
+          0.03559748828411102,
+          -7.532050140202045
+        ],
+        [
+          -0.03559748828411102,
+          1.019378662109375,
+          5.03222718834877
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9890612044485109,
+            "determinant": 1.0955052375793457,
+            "matrix": [
+              [
+                1.0230202674865723,
+                0.02622254192829132,
+                -7.10213565826416
+              ],
+              [
+                -0.03907712548971176,
+                1.0698522329330444,
+                0.016203738749027252
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9736412109730921,
+            "determinant": 1.1247557401657104,
+            "matrix": [
+              [
+                1.0225534439086914,
+                0.033118072897195816,
+                -8.131952285766602
+              ],
+              [
+                -0.04128183424472809,
+                1.0986111164093018,
+                -2.2769203186035156
+              ]
+            ]
+          },
+          "edit_p95_error_px": 4.938619813434987,
+          "control_p95_error_px": 2.8590167986822648,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0,
+          "known_lesion_scores": {
+            "precision": 0.5939306358381503,
+            "big_recall": 0.8627671541057368,
+            "small_recall": 0.9016393442622951,
+            "predicted_pixels": 1384,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 88,
+            "mutual_matches": 33,
+            "inliers": 33,
+            "inlier_fraction": 1.0,
+            "determinant": 1.03784358614616,
+            "matrix": [
+              [
+                1.0193478312740527,
+                0.04280313692450741,
+                -8.449174496632802
+              ],
+              [
+                -0.03559793813787456,
+                1.0166499117681438,
+                5.392530065794137
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 97,
+            "mutual_matches": 29,
+            "inliers": 29,
+            "inlier_fraction": 1.0,
+            "determinant": 1.0420514684704543,
+            "matrix": [
+              [
+                1.0197249068845948,
+                0.029032487316773783,
+                -6.843474053379948
+              ],
+              [
+                -0.03598983367770912,
+                1.0208700278402507,
+                4.980808323928537
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.36763292738796577,
+          "control_p95_error_px": 0.32318880742346917,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.06172146784872629,
+          "known_lesion_scores": {
+            "precision": 0.9844559585492227,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 965,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18000,
+      "condition": "shear",
+      "truth": [
+        [
+          1.0,
+          0.019999999552965164,
+          -0.5899999421089888
+        ],
+        [
+          0.0,
+          1.0,
+          -1.5
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9929641178773179,
+            "determinant": 1.0693577527999878,
+            "matrix": [
+              [
+                1.0027128458023071,
+                -0.008839387446641922,
+                2.449936866760254
+              ],
+              [
+                -0.0013490645214915276,
+                1.0664764642715454,
+                -9.003874778747559
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9723795662910609,
+            "determinant": 1.161504864692688,
+            "matrix": [
+              [
+                1.0042846202850342,
+                -0.012745298445224762,
+                2.1415934562683105
+              ],
+              [
+                -0.004943063948303461,
+                1.1566122770309448,
+                -18.258262634277344
+              ]
+            ]
+          },
+          "edit_p95_error_px": 8.450836313921652,
+          "control_p95_error_px": 3.453480330926186,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0,
+          "known_lesion_scores": {
+            "precision": 0.0,
+            "big_recall": 0.0,
+            "small_recall": 0.0,
+            "predicted_pixels": 1577,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 101,
+            "mutual_matches": 36,
+            "inliers": 36,
+            "inlier_fraction": 1.0,
+            "determinant": 1.0002854906623224,
+            "matrix": [
+              [
+                1.000836076261442,
+                0.01873413754221093,
+                -0.7259274821091175
+              ],
+              [
+                0.00018453772795789137,
+                0.9994533286150254,
+                -1.480414493093924
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 116,
+            "mutual_matches": 35,
+            "inliers": 35,
+            "inlier_fraction": 1.0,
+            "determinant": 0.999187448130729,
+            "matrix": [
+              [
+                1.0001254204282883,
+                0.018731706081333666,
+                -0.514725914404247
+              ],
+              [
+                0.0001743078817099497,
+                0.9990654100031262,
+                -1.4054471309348395
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.12204593805583884,
+          "control_p95_error_px": 0.2863782394289265,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.022444170126809562,
+          "known_lesion_scores": {
+            "precision": 0.9824198552223371,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 967,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18001,
+      "condition": "shear",
+      "truth": [
+        [
+          1.0,
+          0.019999999552965164,
+          -0.5899999421089888
+        ],
+        [
+          0.0,
+          1.0,
+          -1.5
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9929777855318531,
+            "determinant": 1.0980415344238281,
+            "matrix": [
+              [
+                1.0031605958938599,
+                0.00165227719116956,
+                1.0125311613082886
+              ],
+              [
+                -0.0013515125028789043,
+                1.094579815864563,
+                -12.833968162536621
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9702430774635662,
+            "determinant": 1.151879072189331,
+            "matrix": [
+              [
+                1.0047513246536255,
+                -0.021073022857308388,
+                3.0143635272979736
+              ],
+              [
+                -0.005614432506263256,
+                1.1465497016906738,
+                -16.55430793762207
+              ]
+            ]
+          },
+          "edit_p95_error_px": 8.525638770429593,
+          "control_p95_error_px": 4.152357803843036,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0,
+          "known_lesion_scores": {
+            "precision": 0.0,
+            "big_recall": 0.0,
+            "small_recall": 0.0,
+            "predicted_pixels": 132,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 109,
+            "mutual_matches": 38,
+            "inliers": 38,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9984806326458449,
+            "matrix": [
+              [
+                0.9999753437681486,
+                0.023378346555361293,
+                -0.9927391870314889
+              ],
+              [
+                5.492437416090398e-05,
+                0.9985065360955574,
+                -1.2957705251090106
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 120,
+            "mutual_matches": 33,
+            "inliers": 32,
+            "inlier_fraction": 0.9696969696969697,
+            "determinant": 1.0007045710319944,
+            "matrix": [
+              [
+                1.000822606549135,
+                0.019308477370374288,
+                -0.9208723978280824
+              ],
+              [
+                0.00045116882828389124,
+                0.9998907657228023,
+                -1.6181298866506193
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.41468367587951616,
+          "control_p95_error_px": 0.15899363135602354,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.044888340253619124,
+          "known_lesion_scores": {
+            "precision": 0.9844559585492227,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 965,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18002,
+      "condition": "shear",
+      "truth": [
+        [
+          1.0,
+          0.019999999552965164,
+          -0.5899999421089888
+        ],
+        [
+          0.0,
+          1.0,
+          -1.5
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9910628243694101,
+            "determinant": 1.0814764499664307,
+            "matrix": [
+              [
+                1.002522587776184,
+                -0.008904035203158855,
+                2.479461431503296
+              ],
+              [
+                -0.0007185225840657949,
+                1.0787615776062012,
+                -11.063921928405762
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9703972675041288,
+            "determinant": 1.167212724685669,
+            "matrix": [
+              [
+                1.0047523975372314,
+                -0.025856539607048035,
+                3.7043838500976562
+              ],
+              [
+                -0.004800330847501755,
+                1.1618154048919678,
+                -19.026023864746094
+              ]
+            ]
+          },
+          "edit_p95_error_px": 8.689281736518703,
+          "control_p95_error_px": 3.584864374731004,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0,
+          "known_lesion_scores": {
+            "precision": 0.0,
+            "big_recall": 0.0,
+            "small_recall": 0.0,
+            "predicted_pixels": 1391,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 107,
+            "mutual_matches": 34,
+            "inliers": 34,
+            "inlier_fraction": 1.0,
+            "determinant": 0.999316703563843,
+            "matrix": [
+              [
+                0.9996826707352919,
+                0.02554108195024189,
+                -1.115434317369969
+              ],
+              [
+                0.00015717933305431616,
+                0.9996379324641526,
+                -1.5014643645341843
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 115,
+            "mutual_matches": 26,
+            "inliers": 26,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9998461582861834,
+            "matrix": [
+              [
+                0.9999820256586349,
+                0.017315018498906983,
+                -0.3118704428074173
+              ],
+              [
+                -0.00013129441337018046,
+                0.9998618567793187,
+                -1.420963478331594
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.17100056906691527,
+          "control_p95_error_px": 0.3407268487512271,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.033666255190214336,
+          "known_lesion_scores": {
+            "precision": 0.9834368530020704,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 966,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18000,
+      "condition": "anisotropic",
+      "truth": [
+        [
+          1.0299999713897705,
+          0.0,
+          -5.619999885559082
+        ],
+        [
+          0.0,
+          0.9700000286102295,
+          2.3849998712539673
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9882578230805316,
+            "determinant": 1.096920132637024,
+            "matrix": [
+              [
+                1.0335047245025635,
+                -0.03027970716357231,
+                -2.6571483612060547
+              ],
+              [
+                -0.0019019416067749262,
+                1.0614153146743774,
+                -8.070147514343262
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.965932439402363,
+            "determinant": 1.1872295141220093,
+            "matrix": [
+              [
+                1.035774827003479,
+                -0.04200698435306549,
+                -2.151726245880127
+              ],
+              [
+                -0.007321299519389868,
+                1.1465204954147339,
+                -15.97481918334961
+              ]
+            ]
+          },
+          "edit_p95_error_px": 9.88116099985449,
+          "control_p95_error_px": 4.515386625174887,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0,
+          "known_lesion_scores": {
+            "precision": 0.0,
+            "big_recall": 0.0,
+            "small_recall": 0.0,
+            "predicted_pixels": 76,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 84,
+            "mutual_matches": 34,
+            "inliers": 34,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9952851265052248,
+            "matrix": [
+              [
+                1.0308315442687621,
+                0.0010168484224111639,
+                -6.096252190589714
+              ],
+              [
+                0.0005582812260667661,
+                0.9655173046713773,
+                2.795794704160735
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 87,
+            "mutual_matches": 34,
+            "inliers": 34,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9983925830094392,
+            "matrix": [
+              [
+                1.0302851997388756,
+                0.002629273554435755,
+                -6.08549427223571
+              ],
+              [
+                -8.042176382211195e-05,
+                0.9690446604606799,
+                2.6124388153134688
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.2465783668879158,
+          "control_p95_error_px": 0.3770096020736338,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.03927729772191674,
+          "known_lesion_scores": {
+            "precision": 0.9783728115345005,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 971,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18001,
+      "condition": "anisotropic",
+      "truth": [
+        [
+          1.0299999713897705,
+          0.0,
+          -5.619999885559082
+        ],
+        [
+          0.0,
+          0.9700000286102295,
+          2.3849998712539673
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9943693421130221,
+            "determinant": 1.0490790605545044,
+            "matrix": [
+              [
+                1.031015157699585,
+                0.006428592838346958,
+                -6.619574546813965
+              ],
+              [
+                -0.0022807647474110126,
+                1.0175062417984009,
+                -2.682615041732788
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9630671353405544,
+            "determinant": 1.1873695850372314,
+            "matrix": [
+              [
+                1.036030888557434,
+                -0.044504374265670776,
+                -2.1110763549804688
+              ],
+              [
+                -0.005862036254256964,
+                1.146327257156372,
+                -16.318832397460938
+              ]
+            ]
+          },
+          "edit_p95_error_px": 9.807010326331163,
+          "control_p95_error_px": 2.403778426185551,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.016833127595107168,
+          "known_lesion_scores": {
+            "precision": 0.24321025328043944,
+            "big_recall": 0.8391451068616423,
+            "small_recall": 0.8360655737704918,
+            "predicted_pixels": 3277,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 77,
+            "mutual_matches": 34,
+            "inliers": 34,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9963223004477901,
+            "matrix": [
+              [
+                1.0304318952446485,
+                0.0020057311769510924,
+                -5.9887965441890385
+              ],
+              [
+                1.3816859766310586e-05,
+                0.9668977957287963,
+                2.8149151294373147
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 103,
+            "mutual_matches": 31,
+            "inliers": 31,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9988703237014767,
+            "matrix": [
+              [
+                1.0302037889089173,
+                -7.537919810493979e-05,
+                -5.819668413514127
+              ],
+              [
+                0.0003437565676275393,
+                0.9695851525136399,
+                2.3443847329196092
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.2205343077070733,
+          "control_p95_error_px": 0.21697410823214947,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.05049938278532151,
+          "known_lesion_scores": {
+            "precision": 0.979381443298969,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 970,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test8b-arm.png",
+      "seed": 18002,
+      "condition": "anisotropic",
+      "truth": [
+        [
+          1.0299999713897705,
+          0.0,
+          -5.619999885559082
+        ],
+        [
+          0.0,
+          0.9700000286102295,
+          2.3849998712539673
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9875879642493249,
+            "determinant": 1.0911496877670288,
+            "matrix": [
+              [
+                1.0340511798858643,
+                -0.019199751317501068,
+                -4.309126377105713
+              ],
+              [
+                -0.0026082866825163364,
+                1.0552667379379272,
+                -6.936705589294434
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.965414221214037,
+            "determinant": 1.1661834716796875,
+            "matrix": [
+              [
+                1.0348271131515503,
+                -0.03312021493911743,
+                -3.155738592147827
+              ],
+              [
+                -0.007650294341146946,
+                1.1271804571151733,
+                -13.04609489440918
+              ]
+            ]
+          },
+          "edit_p95_error_px": 9.529295811031636,
+          "control_p95_error_px": 4.46893795064972,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.0,
+          "known_lesion_scores": {
+            "precision": 0.0,
+            "big_recall": 0.0,
+            "small_recall": 0.0,
+            "predicted_pixels": 71,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 82,
+            "mutual_matches": 27,
+            "inliers": 27,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9956464627481394,
+            "matrix": [
+              [
+                1.030292609352194,
+                0.0006040847028827265,
+                -5.840374180625145
+              ],
+              [
+                8.387405355994609e-05,
+                0.9663725667615863,
+                2.8386093676087114
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 72,
+            "moving_keypoints": 91,
+            "mutual_matches": 28,
+            "inliers": 28,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9982235414823108,
+            "matrix": [
+              [
+                1.030977410965972,
+                -0.006334153418394084,
+                -5.190511118761104
+              ],
+              [
+                2.8820125979650633e-05,
+                0.9682300972976006,
+                2.622359392823502
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.49221241977921654,
+          "control_p95_error_px": 0.1972465245669596,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.033666255190214336,
+          "known_lesion_scores": {
+            "precision": 0.9753593429158111,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 974,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18000,
+      "condition": "translation",
+      "truth": [
+        [
+          1.0,
+          0.0,
+          2.0
+        ],
+        [
+          0.0,
+          1.0,
+          -1.5
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9991244257431912,
+            "determinant": 1.010777235031128,
+            "matrix": [
+              [
+                0.9994874596595764,
+                -0.0014326382661238313,
+                2.4092681407928467
+              ],
+              [
+                0.0006994979921728373,
+                1.0112946033477783,
+                -3.161579132080078
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9892124367959189,
+            "determinant": 1.029463291168213,
+            "matrix": [
+              [
+                0.9996243715286255,
+                -0.0011935667134821415,
+                2.4271788597106934
+              ],
+              [
+                -0.0021202026400715113,
+                1.0298526287078857,
+                -3.9780097007751465
+              ]
+            ]
+          },
+          "edit_p95_error_px": 2.4604575695797637,
+          "control_p95_error_px": 0.7820693049068871,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.0928309211359129,
+          "known_lesion_scores": {
+            "precision": 0.8112724167378309,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1171,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 249,
+            "mutual_matches": 77,
+            "inliers": 75,
+            "inlier_fraction": 0.974025974025974,
+            "determinant": 0.9988394994364657,
+            "matrix": [
+              [
+                1.0001916574461063,
+                0.0004457080906243242,
+                1.8887367026727115
+              ],
+              [
+                0.000273355242998696,
+                0.9986482229051485,
+                -1.430031054620346
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 292,
+            "mutual_matches": 78,
+            "inliers": 78,
+            "inlier_fraction": 1.0,
+            "determinant": 1.0006406002530182,
+            "matrix": [
+              [
+                0.9995528677866722,
+                0.0006914058255277701,
+                2.076105972342351
+              ],
+              [
+                -0.00033009173447237254,
+                1.0010879907146941,
+                -1.502475802191099
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.22487085647525334,
+          "control_p95_error_px": 0.13937854341835362,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.06329380986539516,
+          "known_lesion_scores": {
+            "precision": 0.9753593429158111,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 974,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18001,
+      "condition": "translation",
+      "truth": [
+        [
+          1.0,
+          0.0,
+          2.0
+        ],
+        [
+          0.0,
+          1.0,
+          -1.5
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9989127983945314,
+            "determinant": 1.0108704566955566,
+            "matrix": [
+              [
+                0.9993975162506104,
+                0.0011274938005954027,
+                2.1016697883605957
+              ],
+              [
+                7.583410479128361e-06,
+                1.0114798545837402,
+                -2.96041202545166
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9904297762867309,
+            "determinant": 1.0287175178527832,
+            "matrix": [
+              [
+                0.9991385340690613,
+                0.0036428796593099833,
+                1.9263737201690674
+              ],
+              [
+                -0.0013987735146656632,
+                1.0295994281768799,
+                -4.28988790512085
+              ]
+            ]
+          },
+          "edit_p95_error_px": 2.2272921970657737,
+          "control_p95_error_px": 0.6777087244729213,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.12236803240643064,
+          "known_lesion_scores": {
+            "precision": 0.8497316636851521,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1118,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 284,
+            "mutual_matches": 81,
+            "inliers": 80,
+            "inlier_fraction": 0.9876543209876543,
+            "determinant": 1.0001866759254456,
+            "matrix": [
+              [
+                0.9999646887400706,
+                0.0014534960267159145,
+                1.8231493821792228
+              ],
+              [
+                9.896103530311135e-05,
+                1.00022213886885,
+                -1.5771898560158597
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 281,
+            "mutual_matches": 80,
+            "inliers": 79,
+            "inlier_fraction": 0.9875,
+            "determinant": 0.999127085146431,
+            "matrix": [
+              [
+                0.9998660449622502,
+                -0.0012168938784028987,
+                2.176306709456029
+              ],
+              [
+                -5.10066225115702e-05,
+                0.9992610032614915,
+                -1.3696051627581172
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.10028755720504562,
+          "control_p95_error_px": 0.09295401346522389,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.12236803240643064,
+          "known_lesion_scores": {
+            "precision": 0.9387351778656127,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1012,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18002,
+      "condition": "translation",
+      "truth": [
+        [
+          1.0,
+          0.0,
+          2.0
+        ],
+        [
+          0.0,
+          1.0,
+          -1.5
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9967322984626875,
+            "determinant": 1.0180455446243286,
+            "matrix": [
+              [
+                0.9994890093803406,
+                -0.0019251289777457714,
+                2.4789485931396484
+              ],
+              [
+                5.114683881402016e-05,
+                1.0185658931732178,
+                -3.903712272644043
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9901714934206713,
+            "determinant": 1.0336544513702393,
+            "matrix": [
+              [
+                0.9989113807678223,
+                0.0029097015503793955,
+                2.1384096145629883
+              ],
+              [
+                -0.0014081314438953996,
+                1.0347768068313599,
+                -5.012088298797607
+              ]
+            ]
+          },
+          "edit_p95_error_px": 2.416527837327804,
+          "control_p95_error_px": 1.085151882306291,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.09705050846027258,
+          "known_lesion_scores": {
+            "precision": 0.8512544802867383,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1116,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 248,
+            "mutual_matches": 73,
+            "inliers": 73,
+            "inlier_fraction": 1.0,
+            "determinant": 1.000646525858063,
+            "matrix": [
+              [
+                0.9997839791710832,
+                -0.0011327887241988157,
+                2.214833357942032
+              ],
+              [
+                5.76340913468352e-05,
+                1.0008626677539343,
+                -1.6187743181919112
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 282,
+            "mutual_matches": 87,
+            "inliers": 87,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9993579729831619,
+            "matrix": [
+              [
+                0.9995823141290576,
+                0.0015447359656078764,
+                1.9839223285556797
+              ],
+              [
+                -6.938485602745275e-05,
+                0.9997754578847527,
+                -1.4627222458782858
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.2124666687622141,
+          "control_p95_error_px": 0.12043101943941528,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.054854635216675815,
+          "known_lesion_scores": {
+            "precision": 0.9743589743589743,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 975,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18000,
+      "condition": "rotate_plus",
+      "truth": [
+        [
+          0.9993908405303955,
+          0.03489949554204941,
+          -2.36475482955575
+        ],
+        [
+          -0.03489949554204941,
+          0.9993908405303955,
+          7.443359926342964
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9973270336198585,
+            "determinant": 1.0011729001998901,
+            "matrix": [
+              [
+                0.9987097382545471,
+                0.034550704061985016,
+                -2.1963002681732178
+              ],
+              [
+                -0.035955868661403656,
+                1.0012224912643433,
+                7.482396602630615
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9882009564241524,
+            "determinant": 1.0056296586990356,
+            "matrix": [
+              [
+                0.9990506172180176,
+                0.032867271453142166,
+                -1.9701950550079346
+              ],
+              [
+                -0.03706200793385506,
+                1.0053659677505493,
+                7.397563457489014
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.8074309326758781,
+          "control_p95_error_px": 0.348260626162673,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.10127009578463227,
+          "known_lesion_scores": {
+            "precision": 0.9405940594059405,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1010,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 245,
+            "mutual_matches": 71,
+            "inliers": 68,
+            "inlier_fraction": 0.9577464788732394,
+            "determinant": 0.9988283273333504,
+            "matrix": [
+              [
+                0.999103530654439,
+                0.0355654987609408,
+                -2.4322540994013457
+              ],
+              [
+                -0.03477207998575093,
+                0.9984867537323716,
+                7.490234431557414
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 278,
+            "mutual_matches": 70,
+            "inliers": 68,
+            "inlier_fraction": 0.9714285714285714,
+            "determinant": 1.000904448619838,
+            "matrix": [
+              [
+                0.9990581578433201,
+                0.035417921807365166,
+                -2.3362676948260326
+              ],
+              [
+                -0.03503500916679321,
+                1.0006059943123182,
+                7.383486033030382
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.1623888383133597,
+          "control_p95_error_px": 0.13985466655231815,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.10127009578463227,
+          "known_lesion_scores": {
+            "precision": 0.9566968781470292,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 993,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18001,
+      "condition": "rotate_plus",
+      "truth": [
+        [
+          0.9993908405303955,
+          0.03489949554204941,
+          -2.36475482955575
+        ],
+        [
+          -0.03489949554204941,
+          0.9993908405303955,
+          7.443359926342964
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9972087868502235,
+            "determinant": 1.0013341903686523,
+            "matrix": [
+              [
+                0.9987548589706421,
+                0.03470279276371002,
+                -2.2263402938842773
+              ],
+              [
+                -0.035942479968070984,
+                1.0013337135314941,
+                7.465850353240967
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.988068733688062,
+            "determinant": 1.0057215690612793,
+            "matrix": [
+              [
+                0.9989584684371948,
+                0.03325881436467171,
+                -1.958166480064392
+              ],
+              [
+                -0.03708380088210106,
+                1.0055354833602905,
+                7.3764214515686035
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.820160428389021,
+          "control_p95_error_px": 0.346036998695365,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.11814844508207098,
+          "known_lesion_scores": {
+            "precision": 0.9462151394422311,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1004,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 248,
+            "mutual_matches": 75,
+            "inliers": 73,
+            "inlier_fraction": 0.9733333333333334,
+            "determinant": 1.0004891700134533,
+            "matrix": [
+              [
+                0.9988226414109953,
+                0.0375592948041608,
+                -2.5092432725682063
+              ],
+              [
+                -0.035038043211793685,
+                1.0003509375874882,
+                7.390436146975293
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 270,
+            "mutual_matches": 70,
+            "inliers": 68,
+            "inlier_fraction": 0.9714285714285714,
+            "determinant": 1.0002778129904426,
+            "matrix": [
+              [
+                0.9992127702428336,
+                0.03465085049258363,
+                -2.2703577520686427
+              ],
+              [
+                -0.03508041869349438,
+                0.9998493578142323,
+                7.449201053883298
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.08561061655157173,
+          "control_p95_error_px": 0.28100271449049513,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.11814844508207098,
+          "known_lesion_scores": {
+            "precision": 0.9519038076152304,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 998,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18002,
+      "condition": "rotate_plus",
+      "truth": [
+        [
+          0.9993908405303955,
+          0.03489949554204941,
+          -2.36475482955575
+        ],
+        [
+          -0.03489949554204941,
+          0.9993908405303955,
+          7.443359926342964
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9972738127475559,
+            "determinant": 1.0009369850158691,
+            "matrix": [
+              [
+                0.9987080693244934,
+                0.03464044630527496,
+                -2.20650577545166
+              ],
+              [
+                -0.03589504957199097,
+                1.0009868144989014,
+                7.487739562988281
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9881698467696252,
+            "determinant": 1.0055991411209106,
+            "matrix": [
+              [
+                0.998977541923523,
+                0.033225882798433304,
+                -1.984890103340149
+              ],
+              [
+                -0.03706607222557068,
+                1.005395531654358,
+                7.390806674957275
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.8083445223460016,
+          "control_p95_error_px": 0.33414694138090917,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.10127009578463227,
+          "known_lesion_scores": {
+            "precision": 0.9471585244267199,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1003,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 253,
+            "mutual_matches": 73,
+            "inliers": 71,
+            "inlier_fraction": 0.9726027397260274,
+            "determinant": 1.000784110248286,
+            "matrix": [
+              [
+                0.9992991956801068,
+                0.03422873692105152,
+                -2.265004506381125
+              ],
+              [
+                -0.03486019297748313,
+                1.0002918987576461,
+                7.34175373874406
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 269,
+            "mutual_matches": 73,
+            "inliers": 71,
+            "inlier_fraction": 0.9726027397260274,
+            "determinant": 0.9992294647933354,
+            "matrix": [
+              [
+                0.9991938383089759,
+                0.0338339151105485,
+                -2.204607400637985
+              ],
+              [
+                -0.034951825322683254,
+                0.998852144035928,
+                7.533174060347844
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.09025053059799101,
+          "control_p95_error_px": 0.07329102055658483,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.09705050846027258,
+          "known_lesion_scores": {
+            "precision": 0.950950950950951,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 999,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18000,
+      "condition": "rotate_minus",
+      "truth": [
+        [
+          0.9993908405303955,
+          -0.03489949554204941,
+          6.674214992672205
+        ],
+        [
+          0.03489949554204941,
+          0.9993908405303955,
+          -10.285583809018135
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9968416633278931,
+            "determinant": 1.0058035850524902,
+            "matrix": [
+              [
+                0.9990111589431763,
+                -0.043117325752973557,
+                7.775749206542969
+              ],
+              [
+                0.03638710826635361,
+                1.0052286386489868,
+                -11.600883483886719
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9892323645305835,
+            "determinant": 1.0045382976531982,
+            "matrix": [
+              [
+                0.9995816946029663,
+                -0.04155082255601883,
+                7.47466516494751
+              ],
+              [
+                0.03629213571548462,
+                1.0034500360488892,
+                -11.232099533081055
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.6087613387078946,
+          "control_p95_error_px": 0.8682349585716318,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.07595257183847419,
+          "known_lesion_scores": {
+            "precision": 0.9625126646403243,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 987,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 259,
+            "mutual_matches": 70,
+            "inliers": 67,
+            "inlier_fraction": 0.9571428571428572,
+            "determinant": 0.9990515432773522,
+            "matrix": [
+              [
+                0.9996580636360866,
+                -0.03575655407158651,
+                6.675486546742057
+              ],
+              [
+                0.03517911469398029,
+                0.9981349579988394,
+                -10.225358573914816
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 266,
+            "mutual_matches": 66,
+            "inliers": 58,
+            "inlier_fraction": 0.8787878787878788,
+            "determinant": 0.999012579926943,
+            "matrix": [
+              [
+                0.9993609744454992,
+                -0.03525902270873339,
+                6.737911199329996
+              ],
+              [
+                0.03458514632159487,
+                0.9984311644959278,
+                -10.055023597655378
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.13785482631407336,
+          "control_p95_error_px": 0.178751861796642,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.10970927043335163,
+          "known_lesion_scores": {
+            "precision": 0.95,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1000,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18001,
+      "condition": "rotate_minus",
+      "truth": [
+        [
+          0.9993908405303955,
+          -0.03489949554204941,
+          6.674214992672205
+        ],
+        [
+          0.03489949554204941,
+          0.9993908405303955,
+          -10.285583809018135
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9968407976799671,
+            "determinant": 1.0058852434158325,
+            "matrix": [
+              [
+                0.9990176558494568,
+                -0.04345085844397545,
+                7.8194403648376465
+              ],
+              [
+                0.03642898425459862,
+                1.005289912223816,
+                -11.616467475891113
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9891533850321275,
+            "determinant": 1.0044169425964355,
+            "matrix": [
+              [
+                0.9997289180755615,
+                -0.040605805814266205,
+                7.310712814331055
+              ],
+              [
+                0.03619362413883209,
+                1.0032192468643188,
+                -11.17577075958252
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.5456581083750343,
+          "control_p95_error_px": 0.8844606971274501,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.10970927043335163,
+          "known_lesion_scores": {
+            "precision": 0.9566968781470292,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 993,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 242,
+            "mutual_matches": 71,
+            "inliers": 70,
+            "inlier_fraction": 0.9859154929577465,
+            "determinant": 0.9986979866908482,
+            "matrix": [
+              [
+                0.9994930406647187,
+                -0.03309822971021698,
+                6.419188697163824
+              ],
+              [
+                0.03510235206908705,
+                0.9980421277523647,
+                -10.173518532311745
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 259,
+            "mutual_matches": 67,
+            "inliers": 66,
+            "inlier_fraction": 0.9850746268656716,
+            "determinant": 0.9993704842124307,
+            "matrix": [
+              [
+                0.9992856204872532,
+                -0.035879517488581966,
+                6.870118781002461
+              ],
+              [
+                0.03471178247295579,
+                0.9988385920328215,
+                -10.12227995924787
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.15448804174405353,
+          "control_p95_error_px": 0.136176509601845,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.13924638170386938,
+          "known_lesion_scores": {
+            "precision": 0.9424603174603174,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1008,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18002,
+      "condition": "rotate_minus",
+      "truth": [
+        [
+          0.9993908405303955,
+          -0.03489949554204941,
+          6.674214992672205
+        ],
+        [
+          0.03489949554204941,
+          0.9993908405303955,
+          -10.285583809018135
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9968875680206717,
+            "determinant": 1.005789041519165,
+            "matrix": [
+              [
+                0.9989752173423767,
+                -0.04320717230439186,
+                7.807791709899902
+              ],
+              [
+                0.036382921040058136,
+                1.0052472352981567,
+                -11.6048583984375
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9892308816043376,
+            "determinant": 1.0042669773101807,
+            "matrix": [
+              [
+                0.9994888305664062,
+                -0.041328974068164825,
+                7.471972465515137
+              ],
+              [
+                0.03620311617851257,
+                1.0032836198806763,
+                -11.190276145935059
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.5926801426622363,
+          "control_p95_error_px": 0.8821073697529859,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.08861133381155323,
+          "known_lesion_scores": {
+            "precision": 0.9547738693467337,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 995,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 239,
+            "mutual_matches": 70,
+            "inliers": 67,
+            "inlier_fraction": 0.9571428571428572,
+            "determinant": 1.0001193801583708,
+            "matrix": [
+              [
+                0.9990902942581529,
+                -0.03599126069217227,
+                6.919912134513293
+              ],
+              [
+                0.03494742455063304,
+                0.9997710757790179,
+                -10.325823956179384
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 249,
+            "mutual_matches": 76,
+            "inliers": 73,
+            "inlier_fraction": 0.9605263157894737,
+            "determinant": 0.9989481977661767,
+            "matrix": [
+              [
+                0.9991913324930896,
+                -0.03539370620427411,
+                6.785304268929969
+              ],
+              [
+                0.03500202020001359,
+                0.9985168146497724,
+                -10.203686089042456
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.07150028670763005,
+          "control_p95_error_px": 0.13938903768499,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.11392885775771129,
+          "known_lesion_scores": {
+            "precision": 0.949050949050949,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1001,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18000,
+      "condition": "scale_down",
+      "truth": [
+        [
+          0.9800000190734863,
+          0.0,
+          7.079999923706055
+        ],
+        [
+          0.0,
+          0.9800000190734863,
+          1.0899999141693115
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9995752508375251,
+            "determinant": 0.9628591537475586,
+            "matrix": [
+              [
+                0.9794111251831055,
+                0.0005958571564406157,
+                7.189927577972412
+              ],
+              [
+                0.001314027002081275,
+                0.9831008911132812,
+                0.16484546661376953
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9907286591969636,
+            "determinant": 0.9867095351219177,
+            "matrix": [
+              [
+                0.979269802570343,
+                0.0035801175981760025,
+                6.960139751434326
+              ],
+              [
+                -0.0013423340860754251,
+                1.0075923204421997,
+                -1.916629672050476
+              ]
+            ]
+          },
+          "edit_p95_error_px": 1.7455902051317234,
+          "control_p95_error_px": 0.6107331895805602,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.08861133381155323,
+          "known_lesion_scores": {
+            "precision": 0.8489722966934763,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1119,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 226,
+            "mutual_matches": 69,
+            "inliers": 66,
+            "inlier_fraction": 0.9565217391304348,
+            "determinant": 0.9597305632139548,
+            "matrix": [
+              [
+                0.9802028748245888,
+                0.0006321440721646062,
+                6.964881299599945
+              ],
+              [
+                0.00010699333247058657,
+                0.9791142787873411,
+                1.1760629045121445
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 261,
+            "mutual_matches": 69,
+            "inliers": 68,
+            "inlier_fraction": 0.9855072463768116,
+            "determinant": 0.960179323311064,
+            "matrix": [
+              [
+                0.9795615279249388,
+                -0.00018172857496609576,
+                7.26331504279492
+              ],
+              [
+                -0.00044115880617203086,
+                0.9802134690979832,
+                1.2286701462928142
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.21756502715363743,
+          "control_p95_error_px": 0.0757829056494413,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.11814844508207098,
+          "known_lesion_scores": {
+            "precision": 0.9519038076152304,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 998,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18001,
+      "condition": "scale_down",
+      "truth": [
+        [
+          0.9800000190734863,
+          0.0,
+          7.079999923706055
+        ],
+        [
+          0.0,
+          0.9800000190734863,
+          1.0899999141693115
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9996431754040378,
+            "determinant": 0.9750147461891174,
+            "matrix": [
+              [
+                0.9795225858688354,
+                -0.0012781654950231314,
+                7.499797821044922
+              ],
+              [
+                0.0009924464393407106,
+                0.995396614074707,
+                -1.5310821533203125
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.990971075591243,
+            "determinant": 0.982674241065979,
+            "matrix": [
+              [
+                0.9784134030342102,
+                0.005681391805410385,
+                6.9589128494262695
+              ],
+              [
+                -0.00012054413673467934,
+                1.0043541193008423,
+                -1.727883219718933
+              ]
+            ]
+          },
+          "edit_p95_error_px": 1.5687576840340047,
+          "control_p95_error_px": 1.3891559563899618,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.12236803240643064,
+          "known_lesion_scores": {
+            "precision": 0.970317297850563,
+            "big_recall": 0.9977502812148481,
+            "small_recall": 1.0,
+            "predicted_pixels": 977,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 227,
+            "mutual_matches": 68,
+            "inliers": 65,
+            "inlier_fraction": 0.9558823529411765,
+            "determinant": 0.9600941267826409,
+            "matrix": [
+              [
+                0.9795504023005025,
+                0.0019082567031158523,
+                7.01706499725985
+              ],
+              [
+                -0.00010967373352172726,
+                0.9801373316188687,
+                1.1472228191971519
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 247,
+            "mutual_matches": 67,
+            "inliers": 66,
+            "inlier_fraction": 0.9850746268656716,
+            "determinant": 0.9592990476858291,
+            "matrix": [
+              [
+                0.9800056473021526,
+                -0.00182666836702135,
+                7.295921135773885
+              ],
+              [
+                -3.692595070607286e-05,
+                0.9788710073030088,
+                1.2561778106051702
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.12318827252119885,
+          "control_p95_error_px": 0.23543409593259676,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.13924638170386938,
+          "known_lesion_scores": {
+            "precision": 0.945273631840796,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1005,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18002,
+      "condition": "scale_down",
+      "truth": [
+        [
+          0.9800000190734863,
+          0.0,
+          7.079999923706055
+        ],
+        [
+          0.0,
+          0.9800000190734863,
+          1.0899999141693115
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9997769634605771,
+            "determinant": 0.9629193544387817,
+            "matrix": [
+              [
+                0.9795811176300049,
+                0.0026031716261059046,
+                6.871181964874268
+              ],
+              [
+                0.00019705898012034595,
+                0.9829914569854736,
+                0.6101440787315369
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9910413975868798,
+            "determinant": 0.985072672367096,
+            "matrix": [
+              [
+                0.9784852266311646,
+                0.004554017446935177,
+                7.082069396972656
+              ],
+              [
+                0.00014008281868882477,
+                1.0067329406738281,
+                -2.1600329875946045
+              ]
+            ]
+          },
+          "edit_p95_error_px": 1.6055370366928667,
+          "control_p95_error_px": 0.2625236439883435,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.09705050846027258,
+          "known_lesion_scores": {
+            "precision": 0.8747697974217311,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1086,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 254,
+            "mutual_matches": 72,
+            "inliers": 72,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9618268600485809,
+            "matrix": [
+              [
+                0.9799110878937031,
+                -0.0016436403337096413,
+                7.286483809963604
+              ],
+              [
+                1.908331925086774e-05,
+                0.9815449999141175,
+                0.918877899881876
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 276,
+            "mutual_matches": 71,
+            "inliers": 71,
+            "inlier_fraction": 1.0,
+            "determinant": 0.9590128851362467,
+            "matrix": [
+              [
+                0.9797573169591265,
+                -0.0009218415074385327,
+                7.296207996659708
+              ],
+              [
+                -4.1243577365189964e-05,
+                0.978827008031721,
+                1.2672755676389171
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.15142421672573406,
+          "control_p95_error_px": 0.13872933489419498,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.09705050846027258,
+          "known_lesion_scores": {
+            "precision": 0.9415262636273538,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1009,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18000,
+      "condition": "scale_up",
+      "truth": [
+        [
+          1.0199999809265137,
+          0.0,
+          -3.0799999237060547
+        ],
+        [
+          0.0,
+          1.0199999809265137,
+          -4.0899999141693115
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9977463910403891,
+            "determinant": 1.0681276321411133,
+            "matrix": [
+              [
+                1.0186803340911865,
+                0.005299698561429977,
+                -3.30932879447937
+              ],
+              [
+                -0.0013295651879161596,
+                1.0485336780548096,
+                -6.978503704071045
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9817857154452119,
+            "determinant": 1.094272494316101,
+            "matrix": [
+              [
+                1.01802659034729,
+                0.0060570817440748215,
+                -2.980966806411743
+              ],
+              [
+                -0.0031303497962653637,
+                1.074877142906189,
+                -9.213618278503418
+              ]
+            ]
+          },
+          "edit_p95_error_px": 4.135003784631963,
+          "control_p95_error_px": 1.9977483958318443,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.11392885775771129,
+          "known_lesion_scores": {
+            "precision": 0.5884590995561192,
+            "big_recall": 0.9752530933633295,
+            "small_recall": 1.0,
+            "predicted_pixels": 1577,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 256,
+            "mutual_matches": 63,
+            "inliers": 63,
+            "inlier_fraction": 1.0,
+            "determinant": 1.038532729683905,
+            "matrix": [
+              [
+                1.0203869661116955,
+                -0.0001585203349865111,
+                -3.1998700125376787
+              ],
+              [
+                0.00011806653834234433,
+                1.0177831993732818,
+                -3.8534612390620637
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 277,
+            "mutual_matches": 59,
+            "inliers": 57,
+            "inlier_fraction": 0.9661016949152542,
+            "determinant": 1.041435159885185,
+            "matrix": [
+              [
+                1.0195625980541738,
+                0.0014461687400529283,
+                -3.107840885893228
+              ],
+              [
+                -0.0002570247187671769,
+                1.0214525230443334,
+                -4.15955546143131
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.23965629510299738,
+          "control_p95_error_px": 0.1767367028532129,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.10127009578463227,
+          "known_lesion_scores": {
+            "precision": 0.9625126646403243,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 987,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18001,
+      "condition": "scale_up",
+      "truth": [
+        [
+          1.0199999809265137,
+          0.0,
+          -3.0799999237060547
+        ],
+        [
+          0.0,
+          1.0199999809265137,
+          -4.0899999141693115
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9983416008718319,
+            "determinant": 1.0693960189819336,
+            "matrix": [
+              [
+                1.018833041191101,
+                0.0026222204323858023,
+                -2.9693167209625244
+              ],
+              [
+                -0.0006553423008881509,
+                1.0496265888214111,
+                -7.3804707527160645
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9850715252238319,
+            "determinant": 1.092179298400879,
+            "matrix": [
+              [
+                1.0177525281906128,
+                0.003936781082302332,
+                -2.5707614421844482
+              ],
+              [
+                -0.0028674928471446037,
+                1.0731174945831299,
+                -9.05626106262207
+              ]
+            ]
+          },
+          "edit_p95_error_px": 4.023046910608495,
+          "control_p95_error_px": 1.851179858886621,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.14346596902822903,
+          "known_lesion_scores": {
+            "precision": 0.6157929661579297,
+            "big_recall": 0.9752530933633295,
+            "small_recall": 1.0,
+            "predicted_pixels": 1507,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 258,
+            "mutual_matches": 74,
+            "inliers": 72,
+            "inlier_fraction": 0.972972972972973,
+            "determinant": 1.0405509851839307,
+            "matrix": [
+              [
+                1.0198394308891299,
+                0.0011346850541288057,
+                -3.171292848760923
+              ],
+              [
+                -1.0358418136853182e-05,
+                1.0203086308628033,
+                -4.095750855936287
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 282,
+            "mutual_matches": 68,
+            "inliers": 66,
+            "inlier_fraction": 0.9705882352941176,
+            "determinant": 1.0399085848386862,
+            "matrix": [
+              [
+                1.0197651007071817,
+                -0.00016233298160622683,
+                -2.938390044420065
+              ],
+              [
+                -0.0002827898029750344,
+                1.0197531078712612,
+                -3.9565964100254036
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.1545258756619455,
+          "control_p95_error_px": 0.1012203444277797,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.10548968310899194,
+          "known_lesion_scores": {
+            "precision": 0.95,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1000,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18002,
+      "condition": "scale_up",
+      "truth": [
+        [
+          1.0199999809265137,
+          0.0,
+          -3.0799999237060547
+        ],
+        [
+          0.0,
+          1.0199999809265137,
+          -4.0899999141693115
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9971844963093778,
+            "determinant": 1.067360758781433,
+            "matrix": [
+              [
+                1.0188241004943848,
+                0.004059717990458012,
+                -3.1711483001708984
+              ],
+              [
+                -0.001136399107053876,
+                1.0476353168487549,
+                -6.883942604064941
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9813636776693079,
+            "determinant": 1.0942710638046265,
+            "matrix": [
+              [
+                1.0178664922714233,
+                0.00638806214556098,
+                -2.961914539337158
+              ],
+              [
+                -0.003258845768868923,
+                1.075042963027954,
+                -9.187443733215332
+              ]
+            ]
+          },
+          "edit_p95_error_px": 4.188201524228222,
+          "control_p95_error_px": 1.933390821971897,
+          "geometry_bad_if_accepted": true,
+          "control_right_fp_pct": 0.11814844508207098,
+          "known_lesion_scores": {
+            "precision": 0.5883470550981634,
+            "big_recall": 0.9763779527559056,
+            "small_recall": 1.0,
+            "predicted_pixels": 1579,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 265,
+            "mutual_matches": 71,
+            "inliers": 68,
+            "inlier_fraction": 0.9577464788732394,
+            "determinant": 1.0406755788438498,
+            "matrix": [
+              [
+                1.0197467087908363,
+                -0.0015799147993795482,
+                -2.8283623055160256
+              ],
+              [
+                1.5023561227947147e-05,
+                1.0205235732919238,
+                -4.133507189350016
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 270,
+            "mutual_matches": 73,
+            "inliers": 72,
+            "inlier_fraction": 0.9863013698630136,
+            "determinant": 1.0392172016833294,
+            "matrix": [
+              [
+                1.019763744422282,
+                7.448827232896986e-05,
+                -3.038214668749386
+              ],
+              [
+                -0.00013429515793881926,
+                1.0190764256564682,
+                -3.9425624901370777
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.08135986685198368,
+          "control_p95_error_px": 0.11955946355393866,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.10548968310899194,
+          "known_lesion_scores": {
+            "precision": 0.9538152610441767,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 996,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18000,
+      "condition": "rotate_scale",
+      "truth": [
+        [
+          1.019378662109375,
+          0.03559748828411102,
+          -7.532050140202045
+        ],
+        [
+          -0.03559748828411102,
+          1.019378662109375,
+          5.03222718834877
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9944102811003412,
+            "determinant": 1.0464004278182983,
+            "matrix": [
+              [
+                1.0188512802124023,
+                0.036846812814474106,
+                -7.541175842285156
+              ],
+              [
+                -0.03693217784166336,
+                1.02570378780365,
+                4.579077243804932
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9847437632668371,
+            "determinant": 1.0522022247314453,
+            "matrix": [
+              [
+                1.0187410116195679,
+                0.038246039301157,
+                -7.548577308654785
+              ],
+              [
+                -0.038390956819057465,
+                1.0314043760299683,
+                4.427402019500732
+              ]
+            ]
+          },
+          "edit_p95_error_px": 1.2829555709550753,
+          "control_p95_error_px": 0.5956205995234843,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.09705050846027258,
+          "known_lesion_scores": {
+            "precision": 0.95,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1000,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 241,
+            "mutual_matches": 60,
+            "inliers": 58,
+            "inlier_fraction": 0.9666666666666667,
+            "determinant": 1.039862750594117,
+            "matrix": [
+              [
+                1.0190057601466005,
+                0.036294777591138874,
+                -7.512642103579347
+              ],
+              [
+                -0.03589837471927989,
+                1.0191893585747578,
+                5.156255041394715
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 275,
+            "mutual_matches": 66,
+            "inliers": 63,
+            "inlier_fraction": 0.9545454545454546,
+            "determinant": 1.0404295657593459,
+            "matrix": [
+              [
+                1.0193404950127045,
+                0.0365444669523011,
+                -7.635211836997459
+              ],
+              [
+                -0.03583929856689744,
+                1.019404058586256,
+                5.149059835275333
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.12077100819957214,
+          "control_p95_error_px": 0.13912808298346582,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.10548968310899194,
+          "known_lesion_scores": {
+            "precision": 0.9528585757271816,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 997,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18001,
+      "condition": "rotate_scale",
+      "truth": [
+        [
+          1.019378662109375,
+          0.03559748828411102,
+          -7.532050140202045
+        ],
+        [
+          -0.03559748828411102,
+          1.019378662109375,
+          5.03222718834877
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9943655842391798,
+            "determinant": 1.0468116998672485,
+            "matrix": [
+              [
+                1.0188018083572388,
+                0.03766893967986107,
+                -7.631634712219238
+              ],
+              [
+                -0.03696000203490257,
+                1.0261263847351074,
+                4.532928466796875
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9843892716220844,
+            "determinant": 1.0519239902496338,
+            "matrix": [
+              [
+                1.0186792612075806,
+                0.03818410262465477,
+                -7.495450496673584
+              ],
+              [
+                -0.038352012634277344,
+                1.0311975479125977,
+                4.4506940841674805
+              ]
+            ]
+          },
+          "edit_p95_error_px": 1.2817514794869938,
+          "control_p95_error_px": 0.6353784043438472,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.12236803240643064,
+          "known_lesion_scores": {
+            "precision": 0.945273631840796,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1005,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 260,
+            "mutual_matches": 74,
+            "inliers": 70,
+            "inlier_fraction": 0.9459459459459459,
+            "determinant": 1.036521080548615,
+            "matrix": [
+              [
+                1.0206918266964182,
+                0.03327016560183506,
+                -7.829782691598185
+              ],
+              [
+                -0.0346426362500909,
+                1.0143791565910494,
+                5.256276968155818
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 281,
+            "mutual_matches": 69,
+            "inliers": 66,
+            "inlier_fraction": 0.9565217391304348,
+            "determinant": 1.0392592703527717,
+            "matrix": [
+              [
+                1.0192817793081197,
+                0.03433241101520126,
+                -7.342244135546948
+              ],
+              [
+                -0.03563556440006996,
+                1.0183992656217598,
+                5.204257506846948
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.1269461720888746,
+          "control_p95_error_px": 0.8057100240648007,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.06751339718975484,
+          "known_lesion_scores": {
+            "precision": 0.9713701431492843,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 978,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18002,
+      "condition": "rotate_scale",
+      "truth": [
+        [
+          1.019378662109375,
+          0.03559748828411102,
+          -7.532050140202045
+        ],
+        [
+          -0.03559748828411102,
+          1.019378662109375,
+          5.03222718834877
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9944014221049922,
+            "determinant": 1.0463327169418335,
+            "matrix": [
+              [
+                1.0188565254211426,
+                0.03718728944659233,
+                -7.592532157897949
+              ],
+              [
+                -0.03687885031104088,
+                1.0256216526031494,
+                4.566460609436035
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9844571545596214,
+            "determinant": 1.0522648096084595,
+            "matrix": [
+              [
+                1.0185219049453735,
+                0.03942003473639488,
+                -7.627747058868408
+              ],
+              [
+                -0.03845514729619026,
+                1.0316410064697266,
+                4.411144733428955
+              ]
+            ]
+          },
+          "edit_p95_error_px": 1.3356944385436598,
+          "control_p95_error_px": 0.5835957840717855,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.0928309211359129,
+          "known_lesion_scores": {
+            "precision": 0.9433962264150944,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1007,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 252,
+            "mutual_matches": 72,
+            "inliers": 70,
+            "inlier_fraction": 0.9722222222222222,
+            "determinant": 1.039868288914083,
+            "matrix": [
+              [
+                1.0192926113837457,
+                0.03425932213689454,
+                -7.358340951373361
+              ],
+              [
+                -0.035513452465700084,
+                1.018992593987158,
+                5.049674355311304
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 273,
+            "mutual_matches": 67,
+            "inliers": 60,
+            "inlier_fraction": 0.8955223880597015,
+            "determinant": 1.0388348549212474,
+            "matrix": [
+              [
+                1.019071403193569,
+                0.03569927131087527,
+                -7.440268619460748
+              ],
+              [
+                -0.03569085768435381,
+                1.0181432960025616,
+                5.215914982867896
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.11450097384764857,
+          "control_p95_error_px": 0.0849676682497387,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.09705050846027258,
+          "known_lesion_scores": {
+            "precision": 0.9481037924151696,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1002,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18000,
+      "condition": "shear",
+      "truth": [
+        [
+          1.0,
+          0.019999999552965164,
+          -0.5899999421089888
+        ],
+        [
+          0.0,
+          1.0,
+          -1.5
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9971058539371997,
+            "determinant": 1.0260891914367676,
+            "matrix": [
+              [
+                0.9991796016693115,
+                0.0193806029856205,
+                -0.10762947797775269
+              ],
+              [
+                0.0008130675996653736,
+                1.0269474983215332,
+                -4.911121368408203
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9888129229695196,
+            "determinant": 1.0270271301269531,
+            "matrix": [
+              [
+                0.99960857629776,
+                0.020687663927674294,
+                -0.40672141313552856
+              ],
+              [
+                -0.001759123639203608,
+                1.027392864227295,
+                -3.8019602298736572
+              ]
+            ]
+          },
+          "edit_p95_error_px": 2.259025652564858,
+          "control_p95_error_px": 1.551059862245814,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.06751339718975484,
+          "known_lesion_scores": {
+            "precision": 0.9536290322580645,
+            "big_recall": 0.9955005624296963,
+            "small_recall": 1.0,
+            "predicted_pixels": 992,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 239,
+            "mutual_matches": 78,
+            "inliers": 75,
+            "inlier_fraction": 0.9615384615384616,
+            "determinant": 0.9988890768116839,
+            "matrix": [
+              [
+                1.000288099632715,
+                0.019766606450348344,
+                -0.6567541215861028
+              ],
+              [
+                0.0004244229440485579,
+                0.9986097671058586,
+                -1.4965586722773518
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 280,
+            "mutual_matches": 77,
+            "inliers": 76,
+            "inlier_fraction": 0.987012987012987,
+            "determinant": 1.0005957720266017,
+            "matrix": [
+              [
+                0.9994885880675232,
+                0.019998056847800507,
+                -0.42491029014529613
+              ],
+              [
+                -0.00029459175674194425,
+                1.001101856198788,
+                -1.5165265748037196
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.20117358997849363,
+          "control_p95_error_px": 0.21692809887802136,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.06329380986539516,
+          "known_lesion_scores": {
+            "precision": 0.9693877551020408,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 980,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18001,
+      "condition": "shear",
+      "truth": [
+        [
+          1.0,
+          0.019999999552965164,
+          -0.5899999421089888
+        ],
+        [
+          0.0,
+          1.0,
+          -1.5
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9966117743708048,
+            "determinant": 1.0273346900939941,
+            "matrix": [
+              [
+                0.9987888336181641,
+                0.025161059573292732,
+                -0.760128378868103
+              ],
+              [
+                0.0010282410075888038,
+                1.0286064147949219,
+                -5.19570255279541
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.988489144778359,
+            "determinant": 1.0254638195037842,
+            "matrix": [
+              [
+                0.9995501041412354,
+                0.020381828770041466,
+                -0.317058801651001
+              ],
+              [
+                -0.0019930878188461065,
+                1.025884747505188,
+                -3.510704755783081
+              ]
+            ]
+          },
+          "edit_p95_error_px": 2.2680234382619404,
+          "control_p95_error_px": 1.675637808436068,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.037976285919237095,
+          "known_lesion_scores": {
+            "precision": 0.9681724845995893,
+            "big_recall": 0.9921259842519685,
+            "small_recall": 1.0,
+            "predicted_pixels": 974,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 252,
+            "mutual_matches": 85,
+            "inliers": 84,
+            "inlier_fraction": 0.9882352941176471,
+            "determinant": 1.0005620062650578,
+            "matrix": [
+              [
+                0.9998645759915151,
+                0.02230028822346966,
+                -0.8409550349665101
+              ],
+              [
+                -2.5806714545231994e-05,
+                1.000696949160019,
+                -1.5631402589713608
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 275,
+            "mutual_matches": 75,
+            "inliers": 74,
+            "inlier_fraction": 0.9866666666666667,
+            "determinant": 0.9992948575443744,
+            "matrix": [
+              [
+                0.9999254179936219,
+                0.018023158277468126,
+                -0.3591835447650155
+              ],
+              [
+                -6.0033210702189785e-05,
+                0.9993683104500201,
+                -1.3935111077183198
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.1280234276367894,
+          "control_p95_error_px": 0.15093900499542426,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.07595257183847419,
+          "known_lesion_scores": {
+            "precision": 0.9654471544715447,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 984,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18002,
+      "condition": "shear",
+      "truth": [
+        [
+          1.0,
+          0.019999999552965164,
+          -0.5899999421089888
+        ],
+        [
+          0.0,
+          1.0,
+          -1.5
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9966749224876262,
+            "determinant": 1.025533676147461,
+            "matrix": [
+              [
+                0.9985100626945496,
+                0.02282765693962574,
+                -0.3947182595729828
+              ],
+              [
+                0.0008305850788019598,
+                1.027082920074463,
+                -4.9678120613098145
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9883442944774948,
+            "determinant": 1.0255054235458374,
+            "matrix": [
+              [
+                0.9995179176330566,
+                0.020672377198934555,
+                -0.36067506670951843
+              ],
+              [
+                -0.0019644161220639944,
+                1.0259593725204468,
+                -3.523181676864624
+              ]
+            ]
+          },
+          "edit_p95_error_px": 2.2720526941677153,
+          "control_p95_error_px": 1.583174687775241,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.05063504789231613,
+          "known_lesion_scores": {
+            "precision": 0.958502024291498,
+            "big_recall": 0.9966254218222722,
+            "small_recall": 1.0,
+            "predicted_pixels": 988,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 248,
+            "mutual_matches": 76,
+            "inliers": 74,
+            "inlier_fraction": 0.9736842105263158,
+            "determinant": 1.0005276505913894,
+            "matrix": [
+              [
+                1.0001021563977608,
+                0.01977563310848159,
+                -0.6220045841231056
+              ],
+              [
+                -0.00013614445605499966,
+                1.0004227586633139,
+                -1.489097223249934
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 273,
+            "mutual_matches": 86,
+            "inliers": 85,
+            "inlier_fraction": 0.9883720930232558,
+            "determinant": 0.9995912063912125,
+            "matrix": [
+              [
+                0.9997699843871961,
+                0.01965005843589083,
+                -0.47597704843139094
+              ],
+              [
+                -4.924862982847555e-06,
+                0.9998210840767152,
+                -1.4737610051245127
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.07372065737112174,
+          "control_p95_error_px": 0.09524747437121611,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.06329380986539516,
+          "known_lesion_scores": {
+            "precision": 0.9693877551020408,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 980,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18000,
+      "condition": "anisotropic",
+      "truth": [
+        [
+          1.0299999713897705,
+          0.0,
+          -5.619999885559082
+        ],
+        [
+          0.0,
+          0.9700000286102295,
+          2.3849998712539673
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9935450847041161,
+            "determinant": 1.0129410028457642,
+            "matrix": [
+              [
+                1.029955267906189,
+                0.0017342891078442335,
+                -5.68154764175415
+              ],
+              [
+                -0.0003016419941559434,
+                0.9834800958633423,
+                0.5323338508605957
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9818793823266196,
+            "determinant": 1.0145384073257446,
+            "matrix": [
+              [
+                1.030668020248413,
+                0.005055055022239685,
+                -6.275320053100586
+              ],
+              [
+                -0.0013925929088145494,
+                0.9843434691429138,
+                0.8836339116096497
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.9917341771766507,
+          "control_p95_error_px": 0.9442103233732306,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.08861133381155323,
+          "known_lesion_scores": {
+            "precision": 0.9557344064386318,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 994,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 227,
+            "mutual_matches": 62,
+            "inliers": 61,
+            "inlier_fraction": 0.9838709677419355,
+            "determinant": 0.9979492362377985,
+            "matrix": [
+              [
+                1.0301734397909348,
+                0.0019104567200339195,
+                -5.921500895512012
+              ],
+              [
+                0.00010613510631177411,
+                0.9687198295530228,
+                2.5021299912036037
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 263,
+            "mutual_matches": 66,
+            "inliers": 64,
+            "inlier_fraction": 0.9696969696969697,
+            "determinant": 0.9983149451592821,
+            "matrix": [
+              [
+                1.0298264399133759,
+                0.0008203107900074588,
+                -5.66362127299732
+              ],
+              [
+                -0.00050010955346867,
+                0.9694007613535274,
+                2.6753618672349684
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.21845909099171978,
+          "control_p95_error_px": 0.14525474402831684,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.0928309211359129,
+          "known_lesion_scores": {
+            "precision": 0.9415262636273538,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1009,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18001,
+      "condition": "anisotropic",
+      "truth": [
+        [
+          1.0299999713897705,
+          0.0,
+          -5.619999885559082
+        ],
+        [
+          0.0,
+          0.9700000286102295,
+          2.3849998712539673
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9868361331333934,
+            "determinant": 1.0058982372283936,
+            "matrix": [
+              [
+                1.0302457809448242,
+                5.0922681111842394e-05,
+                -5.637901782989502
+              ],
+              [
+                0.0003573322028387338,
+                0.9763672351837158,
+                1.4125208854675293
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9839604454715617,
+            "determinant": 1.0123151540756226,
+            "matrix": [
+              [
+                1.0303456783294678,
+                0.0022025713697075844,
+                -5.67643928527832
+              ],
+              [
+                -0.0013139699585735798,
+                0.9824976921081543,
+                1.3674856424331665
+              ]
+            ]
+          },
+          "edit_p95_error_px": 1.0670720518444248,
+          "control_p95_error_px": 0.45867457133377354,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.11392885775771129,
+          "known_lesion_scores": {
+            "precision": 0.945273631840796,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1005,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 246,
+            "mutual_matches": 71,
+            "inliers": 69,
+            "inlier_fraction": 0.971830985915493,
+            "determinant": 0.9980815776499986,
+            "matrix": [
+              [
+                1.029766745626283,
+                0.0005566363724390901,
+                -5.633503013769682
+              ],
+              [
+                -1.4187388377777053e-05,
+                0.969230725299611,
+                2.5462006870689002
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 257,
+            "mutual_matches": 64,
+            "inliers": 62,
+            "inlier_fraction": 0.96875,
+            "determinant": 0.9978317876520635,
+            "matrix": [
+              [
+                1.0297015804231446,
+                -0.001374858450060959,
+                -5.3213689920489395
+              ],
+              [
+                -0.00031565112632145093,
+                0.9690499078554716,
+                2.6345350946156483
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.22873126692944612,
+          "control_p95_error_px": 0.11307761180934747,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.11392885775771129,
+          "known_lesion_scores": {
+            "precision": 0.9415262636273538,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 1009,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    },
+    {
+      "source": "test10-arm.png",
+      "seed": 18002,
+      "condition": "anisotropic",
+      "truth": [
+        [
+          1.0299999713897705,
+          0.0,
+          -5.619999885559082
+        ],
+        [
+          0.0,
+          0.9700000286102295,
+          2.3849998712539673
+        ]
+      ],
+      "methods": {
+        "ecc_affine": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "corr": 0.9926326977935404,
+            "determinant": 1.01178777217865,
+            "matrix": [
+              [
+                1.0296351909637451,
+                0.004031357355415821,
+                -5.842041969299316
+              ],
+              [
+                0.0008485442958772182,
+                0.9826695919036865,
+                0.4120004177093506
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "corr": 0.9867170994053279,
+            "determinant": 1.0063626766204834,
+            "matrix": [
+              [
+                1.0304604768753052,
+                0.005479184910655022,
+                -6.250551700592041
+              ],
+              [
+                -0.0012592810671776533,
+                0.9766078591346741,
+                2.0155820846557617
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.7391499444897643,
+          "control_p95_error_px": 0.9355551298246356,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.05063504789231613,
+          "known_lesion_scores": {
+            "precision": 0.9743589743589743,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 975,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        },
+        "sift_ransac": {
+          "accepted": true,
+          "control_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 240,
+            "mutual_matches": 63,
+            "inliers": 61,
+            "inlier_fraction": 0.9682539682539683,
+            "determinant": 0.9992185610985084,
+            "matrix": [
+              [
+                1.029503326403691,
+                -0.0005428093097263762,
+                -5.401091458177714
+              ],
+              [
+                -6.380822195097292e-06,
+                0.9705831335704324,
+                2.356524273050375
+              ]
+            ]
+          },
+          "edited_registration": {
+            "success": true,
+            "source_keypoints": 158,
+            "moving_keypoints": 251,
+            "mutual_matches": 65,
+            "inliers": 63,
+            "inlier_fraction": 0.9692307692307692,
+            "determinant": 0.998278085730685,
+            "matrix": [
+              [
+                1.0296529314018046,
+                0.0010858749500765956,
+                -5.6144375107971705
+              ],
+              [
+                -0.00020186137113756088,
+                0.9695285043042505,
+                2.534305434345709
+              ]
+            ]
+          },
+          "edit_p95_error_px": 0.17370262820729823,
+          "control_p95_error_px": 0.15258755526675813,
+          "geometry_bad_if_accepted": false,
+          "control_right_fp_pct": 0.10548968310899194,
+          "known_lesion_scores": {
+            "precision": 0.9519038076152304,
+            "big_recall": 1.0,
+            "small_recall": 1.0,
+            "predicted_pixels": 998,
+            "big_pixels": 889,
+            "small_pixels": 61
+          }
+        }
+      }
+    }
+  ],
+  "overall": {
+    "ecc_affine": {
+      "n": 48,
+      "accepted": 48,
+      "coverage_pct": 100.0,
+      "bad_edit_geometry_count": 22,
+      "bad_among_accepted_pct": 45.833333333333336,
+      "accepted_low_small_recall": 11,
+      "mean_control_right_fp_pct": 0.06138295124648902
+    },
+    "sift_ransac": {
+      "n": 48,
+      "accepted": 48,
+      "coverage_pct": 100.0,
+      "bad_edit_geometry_count": 0,
+      "bad_among_accepted_pct": 0.0,
+      "accepted_low_small_recall": 0,
+      "mean_control_right_fp_pct": 0.08377197042938837
+    }
+  },
+  "by_source": {
+    "test8b-arm.png": {
+      "ecc_affine": {
+        "n": 24,
+        "accepted": 24,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 19,
+        "bad_among_accepted_pct": 79.16666666666667,
+        "accepted_low_small_recall": 11,
+        "mean_control_right_fp_pct": 0.026418658586765422
+      },
+      "sift_ransac": {
+        "n": 24,
+        "accepted": 24,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 0,
+        "bad_among_accepted_pct": 0.0,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.06873527101335429
+      }
+    },
+    "test10-arm.png": {
+      "ecc_affine": {
+        "n": 24,
+        "accepted": 24,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 3,
+        "bad_among_accepted_pct": 12.5,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.09634724390621263
+      },
+      "sift_ransac": {
+        "n": 24,
+        "accepted": 24,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 0,
+        "bad_among_accepted_pct": 0.0,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.09880866984542246
+      }
+    }
+  },
+  "by_condition": {
+    "translation": {
+      "ecc_affine": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 3,
+        "bad_among_accepted_pct": 50.0,
+        "accepted_low_small_recall": 3,
+        "mean_control_right_fp_pct": 0.05204157700043602
+      },
+      "sift_ransac": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 0,
+        "bad_among_accepted_pct": 0.0,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.0625302497082265
+      }
+    },
+    "rotate_plus": {
+      "ecc_affine": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 1,
+        "bad_among_accepted_pct": 16.666666666666668,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.11049370518086356
+      },
+      "sift_ransac": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 0,
+        "bad_among_accepted_pct": 0.0,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.10324422433981746
+      }
+    },
+    "rotate_minus": {
+      "ecc_affine": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 0,
+        "bad_among_accepted_pct": 0.0,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.050388064790315164
+      },
+      "sift_ransac": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 0,
+        "bad_among_accepted_pct": 0.0,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.08105457426539749
+      }
+    },
+    "scale_down": {
+      "ecc_affine": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 3,
+        "bad_among_accepted_pct": 50.0,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.09155078392357653
+      },
+      "sift_ransac": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 0,
+        "bad_among_accepted_pct": 0.0,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.16100816186696223
+      }
+    },
+    "scale_up": {
+      "ecc_affine": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 6,
+        "bad_among_accepted_pct": 100.0,
+        "accepted_low_small_recall": 3,
+        "mean_control_right_fp_pct": 0.06259054531133522
+      },
+      "sift_ransac": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 0,
+        "bad_among_accepted_pct": 0.0,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.06887470459554319
+      }
+    },
+    "rotate_scale": {
+      "ecc_affine": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 3,
+        "bad_among_accepted_pct": 50.0,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.052976750755719754
+      },
+      "sift_ransac": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 0,
+        "bad_among_accepted_pct": 0.0,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.07025862285249732
+      }
+    },
+    "shear": {
+      "ecc_affine": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 3,
+        "bad_among_accepted_pct": 50.0,
+        "accepted_low_small_recall": 3,
+        "mean_control_right_fp_pct": 0.02602078850021801
+      },
+      "sift_ransac": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 0,
+        "bad_among_accepted_pct": 0.0,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.050589826189984595
+      }
+    },
+    "anisotropic": {
+      "ecc_affine": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 3,
+        "bad_among_accepted_pct": 50.0,
+        "accepted_low_small_recall": 2,
+        "mean_control_right_fp_pct": 0.04500139450944798
+      },
+      "sift_ransac": {
+        "n": 6,
+        "accepted": 6,
+        "coverage_pct": 100.0,
+        "bad_edit_geometry_count": 0,
+        "bad_among_accepted_pct": 0.0,
+        "accepted_low_small_recall": 0,
+        "mean_control_right_fp_pct": 0.07261539961667811
+      }
+    }
+  },
+  "direct_generated": [
+    {
+      "source": "test8b-arm.png",
+      "source_size": [
+        1536,
+        1024
+      ],
+      "control_size": [
+        1536,
+        1024
+      ],
+      "edited_size": [
+        1536,
+        1024
+      ],
+      "control": {
+        "success": true,
+        "source_keypoints": 72,
+        "moving_keypoints": 175,
+        "mutual_matches": 31,
+        "inliers": 29,
+        "inlier_fraction": 0.9354838709677419,
+        "determinant": 0.9942659570139627,
+        "matrix": [
+          [
+            1.0005328732608134,
+            0.003809048012837909,
+            -0.7971715732346242
+          ],
+          [
+            0.000840530664421351,
+            0.9937396213631845,
+            0.3900055608930845
+          ]
+        ]
+      },
+      "edited": {
+        "success": true,
+        "source_keypoints": 72,
+        "moving_keypoints": 182,
+        "mutual_matches": 39,
+        "inliers": 33,
+        "inlier_fraction": 0.8461538461538461,
+        "determinant": 0.99645735008419,
+        "matrix": [
+          [
+            0.9993026583674917,
+            0.003196862015963578,
+            -0.26460626792528197
+          ],
+          [
+            0.0005261057237370894,
+            0.997154389241251,
+            0.0660917605019044
+          ]
+        ]
+      },
+      "limitation": "no real or synthetic ground truth lesion mask, so precision/recall unknown",
+      "raw": {
+        "threshold_l_encoded": 4.0,
+        "control_left_calibration_count": 23122,
+        "control_right_test_count": 17822,
+        "control_right_false_positive_pct": 0.09538772303894064,
+        "candidate_skin_pct": 6.44294646346229,
+        "candidate_pixels": 2638
+      },
+      "aligned": {
+        "threshold_l_encoded": 5.0,
+        "control_left_calibration_count": 23122,
+        "control_right_test_count": 17822,
+        "control_right_false_positive_pct": 0.033666255190214336,
+        "candidate_skin_pct": 6.242672919109027,
+        "candidate_pixels": 2556
+      },
+      "candidate_raw_vs_feature_iou": 0.9563088512241055
+    },
+    {
+      "source": "test10-arm.png",
+      "source_size": [
+        1672,
+        941
+      ],
+      "control_size": [
+        1672,
+        941
+      ],
+      "edited_size": [
+        1672,
+        941
+      ],
+      "control": {
+        "success": true,
+        "source_keypoints": 158,
+        "moving_keypoints": 231,
+        "mutual_matches": 58,
+        "inliers": 57,
+        "inlier_fraction": 0.9827586206896551,
+        "determinant": 0.9991656125921231,
+        "matrix": [
+          [
+            0.9993853731743186,
+            0.00015543100790050182,
+            0.09093539829636799
+          ],
+          [
+            0.00010963329999748208,
+            0.9997801213148805,
+            -0.14600367668243835
+          ]
+        ]
+      },
+      "edited": {
+        "success": true,
+        "source_keypoints": 158,
+        "moving_keypoints": 284,
+        "mutual_matches": 61,
+        "inliers": 49,
+        "inlier_fraction": 0.8032786885245902,
+        "determinant": 0.998329958170269,
+        "matrix": [
+          [
+            0.9976183523317318,
+            -0.0026807642167310844,
+            1.2024768929289023
+          ],
+          [
+            0.00012973551168825553,
+            1.0007129560583539,
+            -0.14825093544773232
+          ]
+        ]
+      },
+      "limitation": "no real or synthetic ground truth lesion mask, so precision/recall unknown",
+      "raw": {
+        "threshold_l_encoded": 6.0,
+        "control_left_calibration_count": 30525,
+        "control_right_test_count": 23699,
+        "control_right_false_positive_pct": 0.054854635216675815,
+        "candidate_skin_pct": 9.416494541162585,
+        "candidate_pixels": 5106
+      },
+      "aligned": {
+        "threshold_l_encoded": 6.0,
+        "control_left_calibration_count": 30525,
+        "control_right_test_count": 23699,
+        "control_right_false_positive_pct": 0.021097936621798388,
+        "candidate_skin_pct": 9.728164650339334,
+        "candidate_pixels": 5275
+      },
+      "candidate_raw_vs_feature_iou": 0.9400112128574099
+    }
+  ],
+  "limitations": [
+    "two previously used generated sources",
+    "controlled affine synthetic edits and masks",
+    "feature matches do not prove clinical label quality",
+    "one shared morphology, correlated seeds",
+    "pretraining source unknown"
+  ],
+  "elapsed_seconds": 49.34
+}

@@ -328,6 +328,10 @@ function teardownScrollChain() {
     <!-- Companion tools + Input bar（固定在底部导航上方，键盘弹出也不被遮挡） -->
     <div ref="inputWrapEl" class="chat-input-wrap">
       <div class="max-w-3xl mx-auto w-full px-4 pb-1.5">
+      <router-link :to="{ name: 'assessment-story', query: { from: 'chat' } }" data-track-id="chat_story_entry"
+        class="mb-1 inline-flex min-h-[44px] max-w-full items-center gap-2 rounded-lg px-2 text-xs text-primary-700 hover:bg-primary-50 dark:text-primary-300 dark:hover:bg-gray-800">
+        <i class="ri-sparkling-line text-base" aria-hidden="true"></i><span class="font-medium">我的轮廓故事</span><span class="hidden text-gray-500 sm:inline dark:text-gray-400">把你的白斑轮廓变成一幅画</span><i class="ri-arrow-right-s-line" aria-hidden="true"></i>
+      </router-link>
       <!-- 附件预览 -->
       <div v-if="attachments.length" class="flex flex-wrap gap-1.5 mb-1.5">
         <span v-for="att in attachments" :key="att.tempId"

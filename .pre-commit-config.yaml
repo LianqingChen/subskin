@@ -13,5 +13,8 @@ repos:
             data/|
             logs/|
             docs/.*/(source-sha256|compact-source-sha256|source-manifest|release-manifest|deployment-verification|brush-before|label-sync-before|viewport-before|offline-probes)\.json|
-            docs/research/.*/github-evidence\.json
+            docs/research/.*/github-evidence\.json|
+            docs/research/2026-10-28-synthetic-autonomous-segmentation/|
+            docs/research/2026-11-01-autonomous-95/|
+            ml/pixel_labeling/reviews/
           )

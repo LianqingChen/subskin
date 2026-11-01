@@ -128,3 +128,85 @@ def test_missing_lesion_is_measured_as_miss_not_silently_dropped():
         result["dice"] == 0 and result["recall"] == 0 and result["missed_regions"] == 1
     )
     assert result["area_relative_error"] == 1
+
+
+def test_area_ratio_detects_wrong_skin_denominator_with_correct_lesion():
+    truth = np.zeros((64, 64), np.uint8)
+    truth[:32] = 1
+    truth[8:16, 8:16] = 2
+    prediction = np.ones_like(truth)
+    prediction[truth == 2] = 2
+    metrics = score_labels(prediction, truth, np.full((64, 64, 3), 170, np.uint8))
+    assert metrics["area_relative_error"] == 0
+    assert metrics["area_ratio_relative_error"] == pytest.approx(0.5)
+    assert metrics["reference_area_percentage"] == pytest.approx(3.125)
+    assert metrics["predicted_area_percentage"] == pytest.approx(1.5625)
+
+
+def test_correct_ratio_does_not_hide_wrong_masks():
+    truth = np.zeros((64, 64), np.uint8)
+    truth[:32] = 1
+    truth[:8] = 2
+    prediction = np.ones_like(truth)
+    prediction[:16] = 2
+    metrics = score_labels(prediction, truth, np.full((64, 64, 3), 170, np.uint8))
+    assert metrics["area_ratio_relative_error"] == 0
+    assert metrics["dice"] < 0.95 and metrics["skin_dice"] < 0.95
+    assert metrics["area_relative_error"] == 1
+
+
+def test_ratio_missing_skin_and_zero_truth_are_not_perfect_scores():
+    rgb = np.full((64, 64, 3), 170, np.uint8)
+    truth = np.ones((64, 64), np.uint8)
+    truth[:8] = 2
+    missing = score_labels(np.zeros_like(truth), truth, rgb)
+    negative = score_labels(np.ones_like(truth), np.ones_like(truth), rgb)
+    assert missing["area_ratio_relative_error"] is None
+    assert missing["measurement_denominator_missing"]
+    assert negative["area_ratio_relative_error"] is None
+    assert aggregate([{"subject_id": "synthetic_a", "metrics": missing}])["area_ratio_relative_error"] is None
+
+
+def test_ratio_aggregation_keeps_legacy_rows_readable():
+    truth = np.ones((64, 64), np.uint8)
+    truth[:8] = 2
+    metrics = score_labels(truth, truth, np.full((64, 64, 3), 170, np.uint8))
+    legacy = dict(metrics)
+    legacy.pop("area_ratio_relative_error")
+    report = aggregate([{"subject_id": "synthetic_a", "metrics": metrics},
+                        {"subject_id": "synthetic_b", "metrics": legacy},
+                        {"subject_id": "synthetic_c", "metrics": None}])
+    assert report["area_ratio_relative_error"]["n"] == 1
+    assert report["area_ratio_relative_error"]["mean"] == 0
+    assert report["inference_failures"] == 1
+
+
+def test_evaluation_only_permission_never_authorizes_training(tmp_path):
+    path = write_dataset(tmp_path / "cohort")
+    doc = json.loads(path.read_text())
+    doc["items"] = [i for i in doc["items"] if i["split"] == "test"]
+    doc["authorization"] = {"training": False, "evaluation": True, "reference": "synthetic-eval-only"}
+    path.write_text(json.dumps(doc))
+    accepted = validate_manifest(path, True, purpose="evaluation")
+    assert accepted["counts"] == {"train": 0, "validation": 0, "test": 2}
+    assert accepted["authorization_purpose"] == "evaluation"
+    with pytest.raises(ValueError, match="training authorization"):
+        validate_manifest(path, True)
+    with pytest.raises(ValueError, match="Unsupported"):
+        validate_manifest(path, True, purpose="anything")
+
+
+def test_evaluation_only_retains_integrity_split_and_permission_gates(tmp_path):
+    path = write_dataset(tmp_path / "cohort")
+    doc = json.loads(path.read_text())
+    with pytest.raises(ValueError, match="evaluation authorization"):
+        validate_manifest(path, True, purpose="evaluation")
+    doc["authorization"]["evaluation"] = True
+    doc["items"][-1]["subject_id"] = doc["items"][0]["subject_id"]
+    path.write_text(json.dumps(doc))
+    with pytest.raises(ValueError, match="leakage"):
+        validate_manifest(path, True, purpose="evaluation")
+    doc["items"] = [i for i in doc["items"] if i["split"] != "test"]
+    path.write_text(json.dumps(doc))
+    with pytest.raises(ValueError, match="locked test"):
+        validate_manifest(path, True, purpose="evaluation")
