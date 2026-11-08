@@ -16,6 +16,20 @@
 
 | 日期 | 环境 | 说明 |
 |------|------|------|
+
+## Production Deployment History
+
+> Latest: 2026-11-08 — buildTime: 1794121413135（同源重建 staging 1794121446968）
+
+### 2026-11-08 — 同行知识中枢 + 10-30 以来累积改动 全量同步
+
+- 用户确认「确认全量推送」后执行 `npm run deploy:prod`，production buildTime 1794121413135；随后同源重建 staging，buildTime 1794121446968（lastProdBuildTime 一致）。
+- 代码：分支 design/peer-page-knowledge-hub 合入 main（fa11836）并推送 origin/main；共享后端 11-07 已重启生效，本次仅前端。
+- 验证：type-check 通过；subskin.cn `/`、`/contribution`、`/contribution?tab=frontier` 200；version.json 与产物一致；后端健康检查正常。
+- 本批包含（原 Pending 全部条目）：
+
+| 日期 | 环境 | 说明 |
+|------|------|------|
 | 2026-11-07 | 共享后端重启 + 管理后台构建（用户确认） | 后端：新增 knowledge_* 8 张表（仅增量 create_all）；公开 `/api/knowledge/{cards,cards/{slug},pipeline,digests,entities/{key}/graph,research}`（仅已发布，管理员 preview=1 可看草稿）；管理 `/api/admin/knowledge/*`（状态流转、审核记录、种子导入）；贡献统计接受 RGB 工作台金标准（不改 training_eligible）、采纳月份识别 rgb-gold-approved；贡献部位桶从 body-sites.json 派生；rag.py 新增同行导航词。重启后健康检查正常，新旧接口抽查 200，管理接口未登录 401。管理后台新增「知识审核」页并同步 STD-01/03 开发文档，admin buildTime 1794016690651。知识内容尚未导入（种子待后台「导入种子」，全部草稿）。 |
 | 2026-11-07 | staging（仅前端；后端改动未重启） | 同行页改为「知识 / 前沿 / 共建 / 科研」四栏目（`?tab=` 深链，未登录默认知识，登录记住上次栏目；共建=原同行页内容不变）；知识卡证据等级徽标与详情抽屉、研发管线卡片、论文速递、科研栏数据去向与承诺；共同里程碑条；管理员可预览草稿。后端 `/api/knowledge/*` 未上线前新栏目显示「内容正在医学审核」空状态。同步 site-modules.json 同行说明/关键词。buildTime 1794016524199。分支 design/peer-page-knowledge-hub；计划 hermes_plan/2026-11-07-peer-hub-p0-p1.md。**待用户确认**：后端重启（knowledge_* 新表、RGB 金标准计入贡献、部位口径派生自 body-sites.json、rag.py 导航词）与管理后台「知识审核」构建。 |
 | 2026-11-05 | staging | 问答页撤掉页面内免责声明（输入栏下方那行）：回答下方已有免责标识，页面不再重复放置；仅前端，buildTime 1793891941297。 |
@@ -27,10 +41,6 @@
 | 2026-10-31 | 共享后端+staging | 千人规模加固（见下方同日章节）：后端 WAL、LLM 超时/并发上限、每用户日配额、短信/邮件全站上限、上传图片转码去 EXIF；前端 AI 生成标识、旧 chunk 自愈、PWA 更新不丢输入、预缓存瘦身；nginx gzip/限流/20m。staging buildTime 1793406846534（含下条 story-flow 在途改动的合并构建）。 |
 | 2026-10-31 | staging | 创作直达与日记减负：独立创作路由，拍照→确认轮廓→作品；首页单主操作、最近三条与轻量创意入口；对比收至记录内。仅前端，buildTime 1793382707017。 |
 | 2026-10-31 | staging | 我的轮廓故事推广：问答与日记入口、记录结果主动创作、保存优先及分享提示；仅前端，buildTime 1793380704816。 |
-
-## Production Deployment History
-
-> Latest: 2026-10-30 — buildTime: 1793314103483（同源重建 staging 1793314119194）
 
 ### 2026-10-30 — 前端周报/报告列表死代码清理 全量同步
 
