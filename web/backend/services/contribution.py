@@ -8,7 +8,7 @@ so the totals cannot reveal a hidden cell by subtraction.
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session, joinedload, load_only
 
@@ -42,6 +42,13 @@ def public_count(value: int, note: str, unit: str) -> dict:
     return metric(value, note, unit=unit)
 
 
+def is_rgb_gold(label: ImageLabel) -> bool:
+    """A user diary RGB task whose gold is currently bound (not revoked)."""
+    from web.backend.services.labeling import sources
+
+    return sources.kind(label) == "job" and bool(sources.sync_of(label).get("gold"))
+
+
 def eligible_labels(db: Session, user_id: Optional[int] = None) -> List[ImageLabel]:
     """Only user-owned, currently consented and accepted, deduplicated assets."""
     query = (
@@ -52,8 +59,16 @@ def eligible_labels(db: Session, user_id: Optional[int] = None) -> List[ImageLab
             User.is_test.isnot(True),
             User.user_status != "banned",
             ImageLabel.is_user_deleted.is_(False),
-            ImageLabel.label_status == "labeled",
-            ImageLabel.training_eligible.is_(True),
+            or_(
+                # Legacy flow: accepted into the (mask) training set.
+                and_(
+                    ImageLabel.label_status == "labeled",
+                    ImageLabel.training_eligible.is_(True),
+                ),
+                # RGB workbench: reviewed gold. training_eligible stays False by
+                # design (keeps the legacy U-Net pipeline away); gold is checked below.
+                ImageLabel.label_status == "gold",
+            ),
             ImageLabel.image_hash.isnot(None),
         )
         .options(
@@ -66,6 +81,8 @@ def eligible_labels(db: Session, user_id: Optional[int] = None) -> List[ImageLab
                 ImageLabel.user_body_site,
                 ImageLabel.admin_body_site,
                 ImageLabel.labeled_at,
+                ImageLabel.label_status,
+                ImageLabel.ai_details,
             ),
             joinedload(ImageLabel.assessment).load_only(
                 VASIAssessment.id,
@@ -92,6 +109,8 @@ def eligible_labels(db: Session, user_id: Optional[int] = None) -> List[ImageLab
         ):
             continue
         if assessment.image_hash != label.image_hash:
+            continue
+        if label.label_status == "gold" and not is_rgb_gold(label):
             continue
         if (
             not label.image_hash

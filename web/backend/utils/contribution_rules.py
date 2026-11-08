@@ -58,7 +58,7 @@ RULES = [
 BODY_SITES = [
     ("face", "面部"),
     ("neck", "颈部"),
-    ("scalp", "头皮"),
+    ("scalp", "头部（含头皮）"),
     ("front", "躯干前面"),
     ("back", "躯干后面"),
     ("upper_arm", "上肢近端"),
@@ -117,11 +117,47 @@ BODY_ALIASES = {
 }
 
 
+# Chart buckets are a coarse public view; the site vocabulary itself comes from
+# web/shared/body-sites.json. New shared sites fall into their group's bucket,
+# so the contribution chart never drifts from what the diary can record.
+GROUP_BUCKETS = {
+    "head": "scalp",
+    "torso": "front",
+    "arm": "arms",
+    "hand": "hands",
+    "leg": "legs",
+    "foot": "feet",
+    "other": "other",
+}
+SITE_BUCKETS = {
+    "face": "face",
+    "neck": "neck",
+    "back": "back",
+    "upper_back": "back",
+    "lower_back": "back",
+}
+
+
+def shared_site_bucket(code: str, group: str) -> str:
+    return SITE_BUCKETS.get(code) or GROUP_BUCKETS.get(group, "unknown")
+
+
 def body_site_code(value: Optional[str]) -> str:
-    """Map facts to broad buckets without guessing finer sites."""
+    """Map facts to broad buckets without guessing finer sites.
+
+    Legacy finer values (上肢近端 …) keep their existing finer bucket; anything
+    else is resolved through the shared taxonomy (codes, stored labels, aliases).
+    """
+    from web.backend.utils import body_sites
+
     if value in dict(BODY_SITES):
         return value
-    return BODY_ALIASES.get(value or "", "unknown")
+    if value and value in BODY_ALIASES:
+        return BODY_ALIASES[value]
+    code = body_sites.normalize(value)
+    if code is None:
+        return "unknown"
+    return shared_site_bucket(code, body_sites.group_of(code))
 
 
 def award_key(fingerprint: str, kind: str) -> str:

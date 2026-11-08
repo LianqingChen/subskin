@@ -63,6 +63,8 @@ from web.backend.api.rgb_segmentation import router as rgb_segmentation_router
 from web.backend.api.data_consent import router as data_consent_router
 from web.backend.api.self_report import router as self_report_router
 from web.backend.api.contribution import router as contribution_router
+from web.backend.api.knowledge import router as knowledge_router
+from web.backend.api.knowledge_admin import router as knowledge_admin_router
 from web.backend.api.assessment_story import router as assessment_story_router
 from web.backend.api.files import router as files_router
 from web.backend.database.database import Base, engine
@@ -76,7 +78,7 @@ _ = models
 
 from web.backend.models.vasi import VASIAssessment, ImageQualityTag
 from web.backend.models.image_label import ImageLabel, ImageLabelAnnotation, ImageLabelLog
-from web.backend.models import data_consent as _data_consent_models, self_report as _self_report_models, label_submission as _label_submission_models, rate_limit as _rate_limit_models  # noqa: F401  (register tables for create_all)
+from web.backend.models import data_consent as _data_consent_models, self_report as _self_report_models, label_submission as _label_submission_models, rate_limit as _rate_limit_models, knowledge as _knowledge_models  # noqa: F401  (register tables for create_all)
 
 Base.metadata.create_all(bind=engine)
 
@@ -401,6 +403,8 @@ app.include_router(rgb_segmentation_router, prefix="/api/vasi", tags=["RGB图像
 app.include_router(data_consent_router, prefix="/api/data-consents", tags=["数据授权"])
 app.include_router(self_report_router, prefix="/api/self-report", tags=["自报事实"])
 app.include_router(contribution_router, prefix="/api/contributions", tags=["同行"])
+app.include_router(knowledge_router, prefix="/api/knowledge", tags=["同行·知识"])
+app.include_router(knowledge_admin_router)
 app.include_router(assessment_story_router, prefix="/api/vasi", tags=["轮廓创意"])
 app.include_router(oauth.router, prefix="/api/oauth", tags=["第三方登录"])
 app.include_router(community.router, prefix="/api/community", tags=["社区帖子"])

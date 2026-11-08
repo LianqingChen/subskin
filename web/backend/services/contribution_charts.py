@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from sqlalchemy import func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from web.backend.models.image_label import ImageLabelLog
@@ -40,9 +40,15 @@ def acceptance_months(db: Session, labels: list) -> dict[int, str]:
         db.query(ImageLabelLog.image_label_id, func.min(ImageLabelLog.created_at))
         .filter(
             ImageLabelLog.image_label_id.in_(ids),
-            ImageLabelLog.action.in_(["update", "add_training_sample"]),
-            ImageLabelLog.field_name == "training_eligible",
-            ImageLabelLog.new_value.in_(["True", "true", "1"]),
+            or_(
+                and_(
+                    ImageLabelLog.action.in_(["update", "add_training_sample"]),
+                    ImageLabelLog.field_name == "training_eligible",
+                    ImageLabelLog.new_value.in_(["True", "true", "1"]),
+                ),
+                # RGB workbench gold approval is the acceptance event there.
+                ImageLabelLog.action == "rgb-gold-approved",
+            ),
         )
         .group_by(ImageLabelLog.image_label_id)
         .all()

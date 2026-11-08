@@ -256,3 +256,66 @@ def test_pending_counts_distinct_photos_not_label_rows(db_session, test_user):
     summary = service.my_summary(db_session, test_user.id)
     assert summary["pending"] == 2
     assert summary["pending"] <= summary["uploaded"]
+
+
+# --- RGB workbench gold (2026-11-07): counts as accepted without training_eligible ---
+
+import json  # noqa: E402
+
+from web.backend.models.image_label import ImageLabelLog  # noqa: E402
+from web.backend.services import contribution_charts as charts  # noqa: E402
+from web.backend.utils.contribution_rules import BODY_SITES  # noqa: E402
+from web.backend.utils import body_sites  # noqa: E402
+
+
+def rgb_gold(db, owner, fingerprint="rgb", gold=True, kind="job", **kw):
+    row = label(db, owner, fingerprint=fingerprint, **kw)
+    sync = {"job_id": "j1", "ai_revision": "r1"} if kind == "job" else {"source_id": "s1"}
+    if gold:
+        sync["gold"] = {"revision": "a1", "approved_by": 1}
+    row.label_status = "gold"
+    row.training_eligible = False  # legacy pipeline isolation stays intact
+    row.ai_details = json.dumps({"rgb_sync": sync})
+    db.commit()
+    return row
+
+
+def test_rgb_gold_counts_as_accepted_and_earns_once(db_session, test_user):
+    rgb_gold(db_session, test_user)
+    grant(db_session, test_user)
+    assert service.sync_credits(db_session, test_user.id) == 2
+    assert service.sync_credits(db_session, test_user.id) == 0
+    assert service.my_summary(db_session, test_user.id)["images"]["value"] == 1
+
+
+@pytest.mark.parametrize("variant", ["revoked", "upload_source", "no_consent", "in_review"])
+def test_rgb_label_without_valid_gold_does_not_count(db_session, test_user, variant):
+    row = rgb_gold(
+        db_session,
+        test_user,
+        gold=variant != "revoked",
+        kind="upload" if variant == "upload_source" else "job",
+    )
+    if variant == "in_review":
+        row.label_status = "in_review"
+        db_session.commit()
+    if variant != "no_consent":
+        grant(db_session, test_user)
+    assert service.sync_credits(db_session, test_user.id) == 0
+
+
+def test_rgb_gold_acceptance_month_comes_from_gold_log(db_session, test_user):
+    row = rgb_gold(db_session, test_user)
+    grant(db_session, test_user)
+    db_session.add(ImageLabelLog(image_label_id=row.id, operator_id=1, action="rgb-gold-approved", new_value="{}"))
+    db_session.commit()
+    months = charts.acceptance_months(db_session, [row])
+    assert row.id in months
+
+
+def test_every_shared_body_site_maps_to_a_chart_bucket():
+    buckets = dict(BODY_SITES)
+    for site in body_sites.sites():
+        assert body_site_code(site["code"]) in buckets
+        assert body_site_code(site["code"]) != "unknown"
+        assert body_site_code(site["label"]) == body_site_code(site["code"])

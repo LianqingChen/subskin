@@ -39,6 +39,11 @@ const router = createRouter({
           component: () => import('@/views/HospitalRisk.vue')
         },
         {
+          path: 'knowledge-review',
+          name: 'KnowledgeReview',
+          component: () => import('@/views/KnowledgeReview.vue')
+        },
+        {
           path: 'content-gen',
           name: 'ContentGen',
           component: () => import('@/views/ContentGen.vue')

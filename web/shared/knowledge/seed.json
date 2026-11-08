@@ -1,0 +1,2280 @@
+{
+  "version": "2026-11-07-draft1",
+  "topics": [
+    {
+      "key": "basics",
+      "label": "认识白癜风"
+    },
+    {
+      "key": "causes",
+      "label": "为什么会得"
+    },
+    {
+      "key": "treatment",
+      "label": "就医与治疗"
+    },
+    {
+      "key": "daily_care",
+      "label": "日常照护"
+    },
+    {
+      "key": "mind",
+      "label": "心理与社交"
+    },
+    {
+      "key": "children",
+      "label": "儿童与家庭"
+    }
+  ],
+  "cards": [
+    {
+      "slug": "what-is-vitiligo",
+      "topic": "basics",
+      "title": "白癜风是什么？分哪几种类型？",
+      "summary": "白癜风是后天出现的皮肤色素脱失，主要分节段型和非节段型，需由皮肤科医生判断类型与所处阶段。",
+      "body_md": "## 一句话认识\n白癜风是一种后天出现的皮肤色素脱失性疾病：皮肤或毛发里产生色素的细胞（黑素细胞）减少或失去功能，皮肤上就出现边界清楚的乳白色斑片，毛发也可能变白[1]。全球患病率估计约为 0.5%–2%[3]。多数人的白斑处没有明显不适，但外观变化可能带来心理负担[3]。\n\n## 两大类型\n- **节段型**：白斑多局限在身体一侧或某个区域，病情通常相对稳定[3]。\n- **非节段型**：最常见，白斑常左右对称分布，包括泛发型、肢端面部型等；节段型与非节段型同时存在时称为混合型[2][3]。\n\n国际共识把节段型单独分类，用“白癜风”统称所有非节段型[2]。中国《白癜风诊疗共识（2024版）》分为节段型、非节段型、混合型和未定类型，未定类型需随访 1–2 年才能确定[4]。\n\n## 活动期与稳定期\n医生会关注白斑近期是否扩大、是否出现新白斑。国际共识建议逐块白斑判断是否稳定，而不是笼统地说“整体稳定”[2]。\n\n## 为什么要分清类型\n类型不同，预后和治疗思路都不同[1]。如果发现不明原因的白斑，建议尽早到皮肤科就诊，由医生判断类型和所处阶段。",
+      "evidence_level": "A",
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "25596811",
+          "title": "Vitiligo (Lancet Seminar)",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/25596811/",
+          "year": 2015,
+          "evidence_level": "C"
+        },
+        {
+          "type": "pmid",
+          "ref": "22417114",
+          "title": "Revised classification/nomenclature of vitiligo and related issues: the Vitiligo Global Issues Consensus Conference",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/22417114/",
+          "year": 2012,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "title": "Canadian Consensus Guidelines for the Management of Vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/40253664/",
+          "year": 2025,
+          "evidence_level": "A"
+        },
+        {
+          "type": "guideline",
+          "ref": "中华皮肤科杂志 2024;57(12):1065-1070",
+          "title": "白癜风诊疗共识（2024版）",
+          "url": "https://www.pfizermedicalinformation.cn/clinical-guidelines/3753",
+          "year": 2024,
+          "evidence_level": "A"
+        }
+      ],
+      "related": [
+        "why-vitiligo-happens",
+        "contagious-heritable-spread",
+        "visit-and-exams"
+      ],
+      "reviewer_notes": "1) 国际共识把混合型归入非节段型亚组，而中国2024共识将混合型与非节段型并列，正文已分别表述，请确认措辞。2) 中国2024共识的分型与“未定类型随访1-2年”来自医脉通摘要的二手转述（经腾讯新闻转载），我未能打开全文，请对照原文核对。3) 患病率0.5-2%引自加拿大共识正文；各地区数据差异大，如需中国数据请补充。4) “节段型病情通常相对稳定”来自加拿大共识对节段型的描述。"
+    },
+    {
+      "slug": "why-vitiligo-happens",
+      "topic": "causes",
+      "title": "为什么会得白癜风？一个通俗的机制故事",
+      "summary": "确切原因尚未完全明确；目前认为是遗传易感、诱因、黑素细胞受损和免疫攻击等多个环节共同作用。",
+      "body_md": "## 先说结论\n白癜风的确切原因目前还没有完全弄清[6]。研究已拼出一幅被广泛讨论的“大致图景”，可以看成几个环节，其中后几步仍在研究中。\n\n## 几个环节\n1. **先天易感**：家系和基因研究提示白癜风有较强的遗传背景，涉及许多基因位点[4]。易感不等于一定发病。\n2. **诱因**：药物（如某些肿瘤免疫治疗药物）和含酚类的化学物质的证据相对较多；压力、外伤、晒伤、睡眠等常被提到，但证据级别较低[3]。很多人找不到明确诱因。\n3. **黑素细胞受损**：氧化应激（细胞内“自由基”失衡）可能损伤黑素细胞，并向免疫系统发出“危险信号”[2]。\n4. **免疫系统被激活**：免疫细胞分泌干扰素-γ（IFN-γ），促使皮肤产生趋化因子 CXCL9/CXCL10，把带 CXCR3 受体的 CD8⁺ T 细胞“召集”到皮肤，这些细胞可促使黑素细胞脱落、凋亡[1]。IFN-γ 还能形成正反馈，放大免疫反应[1]。\n5. **局部“记忆”（研究中）**：皮肤中的组织驻留记忆 T 细胞可能与局部复发有关[2]。\n6. **力学因素（研究中）**：实验室研究发现，IFN-γ 与机械压力共同作用会让黑素细胞更容易从基底膜脱落，这或许有助于理解摩擦、外伤处为何容易出现白斑[5]。\n\n## 这意味着什么\n白癜风被认为是免疫系统攻击黑素细胞所致的自身免疫相关疾病[1]。多数患者无法追溯到某个单一原因，不必为“是不是自己做错了什么”而自责。\n\n了解机制有助于理解为什么医生会评估病情活动度，并选择不同治疗。具体情况请咨询皮肤科医生。",
+      "evidence_level": "C",
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "37937817",
+          "title": "The IFN-γ-CXCL9/CXCL10-CXCR3 axis in vitiligo: Pathological mechanism and treatment",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/37937817/",
+          "year": 2024,
+          "evidence_level": "C"
+        },
+        {
+          "type": "pmid",
+          "ref": "42857697",
+          "title": "Oxidative stress in refractory and recurrent vitiligo: from immune amplification mechanisms to potential stratified antioxidant combination therapy",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/42857697/",
+          "year": 2026,
+          "evidence_level": "C"
+        },
+        {
+          "type": "pmid",
+          "ref": "41849116",
+          "title": "Exposome Risk Factors for Vitiligo: A Systematic Evidence Review",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/41849116/",
+          "year": 2026,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "31943001",
+          "title": "Deep genotype imputation captures virtually all heritability of autoimmune vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/31943001/",
+          "year": 2020,
+          "evidence_level": "C"
+        },
+        {
+          "type": "pmid",
+          "ref": "41913313",
+          "title": "Unanchored by two hits: IFNγ and mechanical stress synergize to undermine melanocyte adhesion and promote vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/41913313/",
+          "year": 2026,
+          "evidence_level": "C"
+        },
+        {
+          "type": "pmid",
+          "ref": "25596811",
+          "title": "Vitiligo (Lancet Seminar)",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/25596811/",
+          "year": 2015,
+          "evidence_level": "C"
+        }
+      ],
+      "related": [
+        "what-is-vitiligo",
+        "koebner-and-friction",
+        "contagious-heritable-spread"
+      ],
+      "reviewer_notes": "机制部分主要来自综述（C级），第5、6步标注为“研究中”。第2步压力/睡眠等的证据等级依据2026 Exposome系统综述的表述（lower-level evidence）。“不必自责”为支持性语句，非文献原句，请医学审核确认。IFN-γ正反馈引自Liu 2024综述摘要。"
+    },
+    {
+      "slug": "contagious-heritable-spread",
+      "topic": "basics",
+      "title": "会传染吗？会遗传吗？会扩散吗？",
+      "summary": "白癜风不会传染；遗传背景明显但并非一定遗传；扩散速度因人而异，出现活动期迹象应及时就诊。",
+      "body_md": "## 会传染吗？\n不会。美国皮肤科学会明确写道：不会从别人身上“染上”白癜风，也不会传给别人[1]。\n\n## 会遗传吗？\n- 患者的亲属中偶尔也会有人患病[2]。\n- 一项欧洲裔人群的大样本研究估计，白癜风易感性中遗传因素占比很高（家系估计值 0.75–0.83）[3]。\n- 注意：这个数字描述的是“人群中易感性差异有多少来自基因”，并不是“孩子发病的概率”。发病还受环境等因素影响[2][3]。\n\n## 会扩散吗？\n- 因人而异，进展可快可慢，复色通常较慢[4]。\n- 节段型通常病情稳定[4]。\n- 中国共识把以下情况视为提示病情活动的迹象：碎纸屑样色素脱失、三色征（白斑与正常皮肤之间出现一圈浅色过渡区）、白斑边缘炎性红晕、同形反应（外伤处出现新白斑）[5]。\n- 出现这些迹象或白斑在短期内增多，建议尽早就诊[5]。\n\n## 会合并其他疾病吗？\n白癜风患者合并自身免疫性疾病的比例相对较高。美国成人研究的汇总结果中，甲状腺疾病约 14%，斑秃约 3%[6]。多数患者并无这些问题；是否需要检查，请咨询皮肤科医生。",
+      "evidence_level": "C",
+      "sources": [
+        {
+          "type": "url",
+          "ref": "aad.org Vitiligo: FAQs",
+          "title": "Vitiligo: FAQs（美国皮肤科学会 AAD 患者科普，2026-04 更新）",
+          "url": "https://www.aad.org/public/diseases/a-z/vitiligo-overview",
+          "year": 2026,
+          "evidence_level": "D"
+        },
+        {
+          "type": "url",
+          "ref": "niams.nih.gov vitiligo",
+          "title": "Vitiligo（美国 NIAMS 患者科普，2022-10 审阅）",
+          "url": "https://www.niams.nih.gov/health-topics/vitiligo",
+          "year": 2022,
+          "evidence_level": "D"
+        },
+        {
+          "type": "pmid",
+          "ref": "31943001",
+          "title": "Deep genotype imputation captures virtually all heritability of autoimmune vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/31943001/",
+          "year": 2020,
+          "evidence_level": "C"
+        },
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "title": "Canadian Consensus Guidelines for the Management of Vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/40253664/",
+          "year": 2025,
+          "evidence_level": "A"
+        },
+        {
+          "type": "guideline",
+          "ref": "中华皮肤科杂志 2024;57(12):1065-1070",
+          "title": "白癜风诊疗共识（2024版）",
+          "url": "https://www.pfizermedicalinformation.cn/clinical-guidelines/3753",
+          "year": 2024,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "40828230",
+          "title": "Prevalence and Association of Autoimmune Comorbidities Among Adults with Vitiligo: A Systematic Literature Review and Meta-analysis of USA-Based Studies",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/40828230/",
+          "year": 2025,
+          "evidence_level": "A"
+        }
+      ],
+      "related": [
+        "what-is-vitiligo",
+        "why-vitiligo-happens",
+        "koebner-and-friction",
+        "visit-and-exams"
+      ],
+      "reviewer_notes": "1) 本卡“不传染”的直接来源是AAD患者科普（D级），未检索到指南原句，建议补充权威指南或教材引用。2) 遗传部分对0.75–0.83的解释（群体易感性方差占比，不等于子女发病概率）是我的释义，请遗传/皮肤科医生确认表述。3) 三色征的括号解释为通俗说明，非原文。4) 活动期迹象列表来自中国2024共识的二手摘要，请对照全文。5) 甲状腺14.2%、斑秃2.7%为美国成人研究汇总，不一定适用于中国人群。"
+    },
+    {
+      "slug": "visit-and-exams",
+      "topic": "treatment",
+      "title": "怎么就医？常见检查有哪些？",
+      "summary": "就诊前拍照并记录变化；医生常用视诊、伍德灯等判断，并结合活动度和心理影响评估严重程度。",
+      "body_md": "## 看哪个科\n建议先到皮肤科就诊。\n\n## 就诊前可以准备\n- 定期拍照留存，便于医生对比变化；医生也常用连续照片来监测病情和治疗反应[1]。\n- 记下：白斑最早出现的时间，近几个月是否增多，近期是否有外伤、晒伤、用药、压力较大的事件，家人是否有白癜风或甲状腺等自身免疫病。\n\n## 常见检查\n- **问诊与视诊**：看白斑的分布、边界和形态。\n- **伍德灯**：一种特殊波长的紫外线灯，在暗室照射皮肤，能让色素脱失区更清楚，对肤色较浅、白斑不明显的人尤其有帮助[1]。\n- **皮肤镜、皮肤 CT 等**：中国共识提到可辅助判断病情是否处于活动期[2]。\n- **其他检查**：医生会根据情况评估是否需要检查甲状腺等自身免疫相关指标[1]。\n- **评分量表**（如 VASI）：主要用于临床研究，日常诊疗中并非必须[1]。\n\n## 医生如何看“严重程度”\n体表面积是起点，但国际共识认为仅看面积不够；病情扩散或活动、面部等显眼部位受累、心理困扰、被歧视感等也会让医生上调对严重程度的判断[3]。所以把心理感受如实告诉医生很重要。\n\n## 沟通治疗目标\n国际共识强调医患共同决策：是先稳定病情，还是以复色为目标，需要讨论清楚[4]。请在皮肤科医生指导下制定方案。",
+      "evidence_level": "A",
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "title": "Canadian Consensus Guidelines for the Management of Vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/40253664/",
+          "year": 2025,
+          "evidence_level": "A"
+        },
+        {
+          "type": "guideline",
+          "ref": "中华皮肤科杂志 2024;57(12):1065-1070",
+          "title": "白癜风诊疗共识（2024版）",
+          "url": "https://www.pfizermedicalinformation.cn/clinical-guidelines/3753",
+          "year": 2024,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "41879771",
+          "title": "Definition of Severity and Relapse for Vitiligo: An International Consensus Statement",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/41879771/",
+          "year": 2026,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "37746876",
+          "title": "Worldwide expert recommendations for the diagnosis and management of vitiligo: International Vitiligo Task Force Part 1",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/37746876/",
+          "year": 2023,
+          "evidence_level": "A"
+        }
+      ],
+      "related": [
+        "treatment-options-overview",
+        "mental-health-and-social-support",
+        "what-is-vitiligo"
+      ],
+      "reviewer_notes": "1) “就诊前准备”清单中的问诊要点（外伤、晒伤、用药、家族史）为常规问诊内容，非逐条出自所引文献，请医生确认是否合适。2) “评估是否需要查甲状腺”的表述保守，未写具体检查项目与频率，因为我未核实指南是否有常规筛查建议（加拿大共识仅说明合并风险更高）。3) 皮肤镜/皮肤CT判断活动期来自中国共识二手摘要。4) 伍德灯描述引自加拿大共识（simple and reliable adjunctive tool, particularly in lighter skin）。"
+    },
+    {
+      "slug": "treatment-options-overview",
+      "topic": "treatment",
+      "title": "白癜风治疗方式概览",
+      "summary": "常见方式包括外用药、光疗、手术和遮盖，选择因人而异；本文只做介绍，不构成用药建议。",
+      "body_md": "## 先说目标\n白癜风通常需要长期管理。常见目标是控制病情进展、促进复色，具体目标应与医生讨论确定[1][2]。以下仅为介绍，不是用药建议。\n\n## 常见方式\n- **外用糖皮质激素**：常作为外用治疗选择之一，使用时间需要限定，长期使用有皮肤变薄（萎缩）风险[5]。\n- **钙调磷酸酶抑制剂**（如他克莫司软膏）：专家共识认为可作为一线选择之一，除短暂的灼热感外耐受性较好[4]。\n- **外用 JAK 抑制剂**：芦可替尼乳膏在两项 III 期试验中，24 周时“面部白斑面积改善 ≥75%”的比例，乳膏组为 29.8% 和 30.9%，对照组为 7.4% 和 11.4%；常见不良反应有用药处痤疮和瘙痒[6]。在不同国家和地区获批的适应症不同，详见“前沿进展”。\n- **光疗**：窄谱 UVB（NB-UVB）和 308nm 准分子激光/光；常需持续 6–12 个月以上，且应在医疗机构进行；不建议自行日晒或使用晒黑床[3]。\n- **手术/移植**：多用于局限、稳定至少 12 个月且对药物和光疗反应不佳的皮损[3][7]。\n- **系统用药**：病情快速进展时，医生可能考虑口服激素小剂量冲击等免疫调节方案，多为超说明书使用，需严格遵医嘱[3]。\n- **遮盖**：衣物或化妆遮盖可改善部分患者的生活质量[3]。\n\n## 几点说明\n- 不同方法常联合使用，是否联合由医生决定[3]。\n- 部分治疗在达到复色后继续维持，可能降低复发风险[3]。\n- 治疗反应因人、因部位而异，请和皮肤科医生商量适合自己的方案。",
+      "evidence_level": "A",
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "37746876",
+          "title": "Worldwide expert recommendations for the diagnosis and management of vitiligo: International Vitiligo Task Force Part 1",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/37746876/",
+          "year": 2023,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "37715487",
+          "title": "Worldwide expert recommendations for the diagnosis and management of vitiligo: International Vitiligo Task Force Part 2",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/37715487/",
+          "year": 2023,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "title": "Canadian Consensus Guidelines for the Management of Vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/40253664/",
+          "year": 2025,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "39717835",
+          "title": "Topical Tacrolimus in Vitiligo: Consensus Paper from the Pigmentary Disorders Society",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/39717835/",
+          "year": 2024,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "38477910",
+          "title": "Expert Recommendations on Use of Topical Therapeutics for Vitiligo in Pediatric, Adolescent, and Young Adult Patients",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/38477910/",
+          "year": 2024,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "36260792",
+          "title": "Two Phase 3, Randomized, Controlled Trials of Ruxolitinib Cream for Vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/36260792/",
+          "year": 2022,
+          "evidence_level": "B"
+        },
+        {
+          "type": "pmid",
+          "ref": "40027541",
+          "title": "Consensus statement on the surgical management of vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/40027541/",
+          "year": 2025,
+          "evidence_level": "A"
+        }
+      ],
+      "related": [
+        "visit-and-exams",
+        "sun-protection",
+        "children-vitiligo-care",
+        "mental-health-and-social-support"
+      ],
+      "reviewer_notes": "1) 芦可替尼乳膏数字取自NEJM 2022两项III期（TRuE-V1: 29.8% vs 7.4%；TRuE-V2: 30.9% vs 11.4%，F-VASI75，24周，对照为载体乳膏），按“事实+终点+周数+来源”写法，请合规/医学确认是否可保留数字，也可改为不含百分比。2) “激素有萎缩风险、需限定时间”引自2024美国儿童/青少年专家共识（pedstopical），成人同样适用但该文针对儿童，请确认。3) 本卡未列任何剂量、频次、品牌；“系统用药”只做类别描述。4) 手术“稳定≥12个月”引自加拿大共识。5) 引用的指南多为专家共识，我按规范标A，实际证据基础为专家意见，请注意。6) 未引用BAD 2021指南(PMID 34160061)和德国S1指南(35246935)，因我仅核实到题录/摘要；建议医生补充。"
+    },
+    {
+      "slug": "sun-protection",
+      "topic": "daily_care",
+      "title": "防晒与光照：白斑处该怎么保护？",
+      "summary": "白斑处更易晒伤，晒伤可能诱发新白斑；建议做好防晒，不建议自行日晒或使用晒黑床作为治疗。",
+      "body_md": "## 为什么要防晒\n- 白斑处缺少黑素的保护，更容易晒伤；做好防晒可减少晒伤风险[1]。\n- 晒伤可能在受损处诱发新的白斑（同形反应）[1]。作为诱因，晒伤的证据级别相对较低，但避免晒伤仍是稳妥做法[2]。\n- 周围正常皮肤被晒黑后，白斑对比会更明显；防晒也有助于减小这种反差[1]。\n\n## 日常可以怎么做\n- 使用防晒霜、防晒衣物、帽子和遮阳伞，尽量避免长时间暴晒[1]。\n- 防晒霜要涂足量，并按产品说明补涂。研究提示，实际使用量常不足，会削弱防护效果[3]。\n- 对肤色较深的人群，可见光也可能影响色素，这一领域的研究仍有限[3]。\n\n## 常见误区\n- **“多晒太阳白斑就能变回来”**：指南不建议为治疗白癜风而自行日晒或使用晒黑床；晒黑床还可能在晒伤后诱发同形反应，并增加皮肤癌风险[1]。\n- 医院里的光疗使用特定波长、剂量受控的设备，由医生决定，与自行晒太阳不是一回事[1]。\n\n## 就诊时\n如果白斑处晒后发红、起疱，或正在使用光疗/可能增加光敏感的药物，请告诉皮肤科医生，由医生给出个体化建议。",
+      "evidence_level": "A",
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "title": "Canadian Consensus Guidelines for the Management of Vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/40253664/",
+          "year": 2025,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "41849116",
+          "title": "Exposome Risk Factors for Vitiligo: A Systematic Evidence Review",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/41849116/",
+          "year": 2026,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "42793277",
+          "title": "The Influence of Sunscreen Use on Skin Pigmentation Disorders: Melasma, Post-Inflammatory Hyperpigmentation, and Vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/42793277/",
+          "year": 2026,
+          "evidence_level": "C"
+        }
+      ],
+      "related": [
+        "koebner-and-friction",
+        "treatment-options-overview",
+        "children-vitiligo-care"
+      ],
+      "reviewer_notes": "1) 核心建议引自加拿大共识（防晒、不建议日晒/晒黑床）。2) 防晒霜用量不足、可见光相关内容引自一篇2026综述（C级，摘要层面），请医生判断是否保留。3) 末段“可能增加光敏感的药物请告知医生”为一般性提醒，未附具体药物名，未核实对应指南条文。4) 未写SPF数值和任何产品。"
+    },
+    {
+      "slug": "koebner-and-friction",
+      "topic": "daily_care",
+      "title": "避免摩擦与外伤：什么是同形反应（Koebner）？",
+      "summary": "同形反应指在受伤、摩擦或晒伤处出现新白斑；日常尽量减少皮肤外伤，有助于降低风险。",
+      "body_md": "## 什么是同形反应\n同形反应（Koebner 现象）是指在皮肤受到外伤、摩擦、压迫或晒伤的部位，出现新的白斑。国际共识按依据把它分为三类：根据病史判断、根据临床观察判断、实验诱发[1]。它并不是每个人都会出现，但出现时通常被视为病情可能处于活动期的信号[3]。\n\n## 为什么会这样（研究中）\n实验室研究发现，IFN-γ 和机械压力共同作用会让黑素细胞更容易从基底膜脱落，这或许有助于解释同形反应[2]。\n\n## 日常可以怎么做\n- 加拿大共识建议，让患者了解并尽量减少皮肤的物理性创伤，以避免同形反应[4]。\n- 做好防晒，避免晒伤；不建议使用晒黑床[4]。\n- 留意长期受摩擦、压迫的部位（如紧勒的衣物边缘、饰品、反复搓抓处），尽量减轻刺激。\n- 含酚类的化学物质与黑素细胞毒性存在较一致的关联，接触前后注意防护[5]。\n- 纹身、激光、磨削等可能造成皮肤损伤的操作，请先咨询皮肤科医生。\n\n## 需要知道的\n中国共识把“稳定期”定义之一设为超过 1 年没有同形反应[3]。若在某处反复出现新白斑，请告诉皮肤科医生，便于判断病情活动度。",
+      "evidence_level": "A",
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "22417114",
+          "title": "Revised classification/nomenclature of vitiligo and related issues: the Vitiligo Global Issues Consensus Conference",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/22417114/",
+          "year": 2012,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "41913313",
+          "title": "Unanchored by two hits: IFNγ and mechanical stress synergize to undermine melanocyte adhesion and promote vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/41913313/",
+          "year": 2026,
+          "evidence_level": "C"
+        },
+        {
+          "type": "guideline",
+          "ref": "中华皮肤科杂志 2024;57(12):1065-1070",
+          "title": "白癜风诊疗共识（2024版）",
+          "url": "https://www.pfizermedicalinformation.cn/clinical-guidelines/3753",
+          "year": 2024,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "title": "Canadian Consensus Guidelines for the Management of Vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/40253664/",
+          "year": 2025,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "41849116",
+          "title": "Exposome Risk Factors for Vitiligo: A Systematic Evidence Review",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/41849116/",
+          "year": 2026,
+          "evidence_level": "A"
+        }
+      ],
+      "related": [
+        "sun-protection",
+        "why-vitiligo-happens",
+        "contagious-heritable-spread"
+      ],
+      "reviewer_notes": "1) 三分类与加拿大共识的“减少物理性创伤、避免晒黑床”来自已核实的文献。2) 具体生活例子（紧勒衣物、饰品、反复搓抓）以及“纹身/激光/磨削前先咨询”为我基于常识的补充，并无逐条文献来源，请医生确认或删改。3) 酚类防护建议基于Exposome系统综述“phenol-based chemicals consistently linked to melanocyte toxicity”，未列具体产品类别。4) “稳定期要求超过1年无同形反应”来自中国共识二手摘要。5) 力学机制为体外/离体研究(C级)。"
+    },
+    {
+      "slug": "diet-and-myths",
+      "topic": "daily_care",
+      "title": "饮食与常见误区",
+      "summary": "目前没有公认的“白癜风专用食谱”；网络上的饮食和偏方说法多缺乏证据，别因此过度忌口或自行用药。",
+      "body_md": "## 饮食：没有“专用食谱”\n- 网上流传的饮食建议很多，但相关科学证据有限[2]。\n- 研究者在探索抗氧化食物、维生素 D 等与白癜风的关系，但综述强调这些仍属探索性，效果和安全性还需更多研究，尚未成为标准治疗的一部分[1]。\n- 一篇综述指出，目前尚无证据表明抗氧化治疗能阻止复发，应视为研究性的辅助手段[5]。\n- 日常以均衡饮食为主；如合并甲状腺病、糖尿病等，按医生的饮食建议执行。\n\n## 常见误区\n- **“必须长期严格忌口”**：现有研究不足以支持对所有人统一忌口[2]。过度忌口还可能影响营养。\n- **“吃保健品、偏方能让白斑消退”**：关于草药和膳食补充剂的疗效，现有资料有限[3]。来源不明的偏方、药膏成分和安全性无法确认，请先咨询医生。\n- **“只是影响美观，不用管”**：这是国际共识中提到的常见误解；白癜风是免疫相关疾病，且常伴随心理负担[3]。\n- **“完全无法干预”**：同样是常见误解。实际上有多种方案，目标是控制进展、促进复色，但效果因人而异[3]。\n- **“会传染”**：不会，详见“会传染吗？会遗传吗？”。\n- **“多晒太阳就好”**：详见“防晒与光照”。\n\n## 提示\n含酚类的化学物质与黑素细胞损伤有关联[4]。如在工作中接触，请做好防护。任何饮食调整、补充剂或外用产品，都建议先咨询皮肤科医生。",
+      "evidence_level": "C",
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "39861486",
+          "title": "Dietary Interventions, Supplements, and Plant-Derived Compounds for Adjunct Vitiligo Management: A Review of the Literature",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/39861486/",
+          "year": 2025,
+          "evidence_level": "C"
+        },
+        {
+          "type": "pmid",
+          "ref": "38478939",
+          "title": "Analysis of Online Diet Recommendations for Vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/38478939/",
+          "year": 2024,
+          "evidence_level": "C"
+        },
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "title": "Canadian Consensus Guidelines for the Management of Vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/40253664/",
+          "year": 2025,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "41849116",
+          "title": "Exposome Risk Factors for Vitiligo: A Systematic Evidence Review",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/41849116/",
+          "year": 2026,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "42857697",
+          "title": "Oxidative stress in refractory and recurrent vitiligo: from immune amplification mechanisms to potential stratified antioxidant combination therapy",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/42857697/",
+          "year": 2026,
+          "evidence_level": "C"
+        }
+      ],
+      "related": [
+        "sun-protection",
+        "contagious-heritable-spread",
+        "treatment-options-overview"
+      ],
+      "reviewer_notes": "1) 饮食证据均来自综述（C级），全文刻意不推荐具体食物、补充剂或剂量。2) “过度忌口可能影响营养”和“偏方成分无法确认”为一般性提醒，非文献原句，请确认。3) 综述中提到某些食物（如麸质、高酚坚果浆果）可能加重病情，属探索性且证据薄弱，我没有写入，请医生决定是否需要说明。4) “维生素C使白斑加重”等流行说法我未找到可核实的证据来源，所以没有逐条驳斥，仅表述为“证据有限”。"
+    },
+    {
+      "slug": "mental-health-and-social-support",
+      "topic": "mind",
+      "title": "心理与社交：你的感受值得被认真对待",
+      "summary": "白癜风可能带来焦虑、情绪低落和社交压力；把心理感受告诉医生，并寻求家人和专业支持，是照护的一部分。",
+      "body_md": "## 你不是“想太多”\n白癜风常带来外观相关的压力。研究汇总显示，白癜风患者的心理和社交负担确实存在：面部、生殖器等显眼部位受累、病情活动、病程较长、年纪较轻、生活在污名较重的环境中，往往负担更重[2]。\n\n## 数据怎么看\n一项英国人群队列研究发现，与未患病的对照相比，白癜风患者在确诊后 2 年内出现抑郁、焦虑的风险略有升高（抑郁校正比值比 1.08，焦虑 1.19）[1]。也就是说，风险升高是真实存在的，但多数人并不会因此患上精神疾病。\n\n## 心理困扰是病情的一部分\n国际共识把心理困扰、被歧视感、缺乏自我接纳等列为需要上调严重程度的主要因素[3]。所以，请把这些感受如实告诉医生，这不是“矫情”。\n\n## 可以尝试的支持\n- 与医生讨论治疗目标，把“稳住病情”“减少反差”等目标说清楚。\n- 衣物或化妆遮盖可改善部分患者的生活质量，是否使用由你自己决定[5]。\n- 与家人、可信任的朋友沟通；必要时寻求心理咨询或精神科的专业帮助。研究者建议把心理评估纳入常规诊疗[4]。\n- 照护者也可能感到焦虑，需要被关心[5]。\n\n## 什么时候要尽快求助\n如果持续情绪低落、睡眠明显变差、不愿出门或出现自伤念头，请尽快联系专业人员或身边可信任的人，不要独自承受。具体情况请咨询皮肤科医生或精神心理科医生。",
+      "evidence_level": "C",
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "39018020",
+          "title": "The lifetime risk and impact of vitiligo across sociodemographic groups: a UK population-based cohort study",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/39018020/",
+          "year": 2024,
+          "evidence_level": "C"
+        },
+        {
+          "type": "pmid",
+          "ref": "42082425",
+          "title": "Quality of life impairment in vitiligo: A comprehensive review of psychosocial and clinical determinants",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/42082425/",
+          "year": 2026,
+          "evidence_level": "C"
+        },
+        {
+          "type": "pmid",
+          "ref": "41879771",
+          "title": "Definition of Severity and Relapse for Vitiligo: An International Consensus Statement",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/41879771/",
+          "year": 2026,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "41084130",
+          "title": "Psychiatric Comorbidities and Quality-of-Life Burden in Pediatric Patients With Vitiligo: A Systematic Review and Meta-Analysis",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/41084130/",
+          "year": 2026,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "title": "Canadian Consensus Guidelines for the Management of Vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/40253664/",
+          "year": 2025,
+          "evidence_level": "A"
+        }
+      ],
+      "related": [
+        "visit-and-exams",
+        "children-vitiligo-care",
+        "treatment-options-overview"
+      ],
+      "reviewer_notes": "1) 英国队列数据（aOR 1.08/1.19）如实呈现“风险略升”，并强调多数人不会患精神疾病；后半句“多数人不会因此患上精神疾病”为合理推断，非文献原句，请确认。2) 引用的加拿大共识来自全文（照护者焦虑、遮盖改善QoL）。3) 未列具体热线号码（未核实），请编辑按地区补充。4) “病友交流/支持小组”未写入，因为我未检索到证据；病友经验应走E级通道。"
+    },
+    {
+      "slug": "children-vitiligo-care",
+      "topic": "children",
+      "title": "儿童白癜风照护要点",
+      "summary": "儿童患者约占三成；用药强度和疗程需由医生按年龄与部位决定，家长的情绪支持与学校沟通同样重要。",
+      "body_md": "## 基本情况\n儿童白癜风约占全部白癜风的 30%[1]。儿童常面临疗程长、治疗可及性受限，以及心理社交压力等问题[1]。\n\n## 治疗上要知道的\n- 美国专家共识指出，外用钙调磷酸酶抑制剂、限时使用的外用激素（因有皮肤萎缩风险）等可作为儿童和青少年的一线外用选择；治疗反应的观察期至少 6 个月，且需要较长时间维持以防复发[2]。\n- 外用芦可替尼乳膏在不同地区获批的年龄为 12 岁及以上；12 岁以下使用在美国共识中属于超说明书使用[2]，中国共识认为 12 岁以下的疗效和安全性尚未证实[3]。\n- 中国共识提到，儿童外用激素的强度要按年龄选择（如 2 岁以下常用中效激素）[3]。具体用药请遵医嘱，不要把成人的药直接给孩子用。\n- 光疗也是儿童常见的治疗选项，需在医院进行[3]。\n- 针对儿童的临床试验正在进行，例如 2–11 岁芦可替尼乳膏 III 期[5]、6–<12 岁乌帕替尼 III 期（尚未开始招募）[6]；结果出来之前，请不要期待或自行使用。\n\n## 家庭与学校\n- 儿童和青少年的荟萃分析显示，患者存在轻至中度的生活质量受损，青少年和白斑明显者更明显[4]。\n- 留意孩子是否被取笑或回避社交；与老师沟通，必要时寻求心理支持。\n- 做好防晒、避免皮肤外伤，家长也要关注自己的情绪[7]。\n\n请带孩子到皮肤科就诊，由医生评估后制定个体化方案。",
+      "evidence_level": "A",
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "42771302",
+          "title": "Current Management and Emerging Therapies for Pediatric Vitiligo: A Narrative Review",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/42771302/",
+          "year": 2026,
+          "evidence_level": "C"
+        },
+        {
+          "type": "pmid",
+          "ref": "38477910",
+          "title": "Expert Recommendations on Use of Topical Therapeutics for Vitiligo in Pediatric, Adolescent, and Young Adult Patients",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/38477910/",
+          "year": 2024,
+          "evidence_level": "A"
+        },
+        {
+          "type": "guideline",
+          "ref": "中华皮肤科杂志 2024;57(12):1065-1070",
+          "title": "白癜风诊疗共识（2024版）",
+          "url": "https://www.pfizermedicalinformation.cn/clinical-guidelines/3753",
+          "year": 2024,
+          "evidence_level": "A"
+        },
+        {
+          "type": "pmid",
+          "ref": "41084130",
+          "title": "Psychiatric Comorbidities and Quality-of-Life Burden in Pediatric Patients With Vitiligo: A Systematic Review and Meta-Analysis",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/41084130/",
+          "year": 2026,
+          "evidence_level": "A"
+        },
+        {
+          "type": "nct",
+          "ref": "NCT06548360",
+          "title": "Ruxolitinib Cream in Pediatric Participants With Nonsegmental Vitiligo（III期，招募中）",
+          "url": "https://clinicaltrials.gov/study/NCT06548360",
+          "year": 2025,
+          "evidence_level": "B"
+        },
+        {
+          "type": "nct",
+          "ref": "NCT07896434",
+          "title": "Upadacitinib in Pediatric Subjects 6 to <12 Years Old With Non-Segmental Vitiligo（III期，尚未招募）",
+          "url": "https://clinicaltrials.gov/study/NCT07896434",
+          "year": 2026,
+          "evidence_level": "B"
+        },
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "title": "Canadian Consensus Guidelines for the Management of Vitiligo",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/40253664/",
+          "year": 2025,
+          "evidence_level": "A"
+        }
+      ],
+      "related": [
+        "treatment-options-overview",
+        "mental-health-and-social-support",
+        "sun-protection",
+        "koebner-and-friction"
+      ],
+      "reviewer_notes": "1) 中国共识儿童部分（激素强度分龄、<12岁芦可替尼未证实）来自二手摘要，请对照全文。2) 本卡刻意不写具体激素名称、剂量、频次。3) 提到的儿童临床试验仅作事实陈述（CT.gov），无结果，已提醒“不要自行使用”。4) 荟萃分析的结论为“mild-to-moderate QoL impairment”，样本14项研究1576人，数据异质性大。5) “30%”来自2026儿童叙述性综述摘要。"
+    }
+  ],
+  "pipeline": [
+    {
+      "key": "ruxolitinib-cream",
+      "drug_zh": "芦可替尼乳膏",
+      "drug_en": "Ruxolitinib cream",
+      "mechanism": "JAK1/JAK2 抑制剂",
+      "route": "外用",
+      "sponsor": "Incyte（中国权益：康哲药业/德镁医药）",
+      "phase": "已获批",
+      "regions": [
+        {
+          "region": "美国",
+          "status": "已批准：12 岁及以上非节段型白癜风",
+          "date": "2022-07"
+        },
+        {
+          "region": "欧盟",
+          "status": "已批准：12 岁及以上伴面部受累的非节段型白癜风",
+          "date": "2023-04"
+        },
+        {
+          "region": "中国",
+          "status": "已批准（康哲药业公告）：12 岁及以上伴面部受累的非节段型白癜风",
+          "date": "2026-01"
+        }
+      ],
+      "latest_event": "2026-01-30 康哲药业公告其附属公司德镁医药获 NMPA 批准磷酸芦可替尼乳膏用于治疗 12 岁及以上伴面部受累的非节段型白癜风。",
+      "event_date": "2026-01",
+      "sources": [
+        {
+          "label": "康哲药业公告转载（腾讯新闻，2026-01-30）",
+          "url": "https://news.qq.com/rain/a/20260130A03OEA00"
+        },
+        {
+          "label": "Incyte：FDA 批准 Opzelura 用于白癜风（新闻稿）",
+          "url": "https://investor.incyte.com/news-releases/news-release-details/incyte-announces-us-fda-approval-opzeluratm-ruxolitinib-cream-0"
+        },
+        {
+          "label": "Dermatology Times：欧盟委员会批准（2023-04-21）",
+          "url": "https://www.dermatologytimes.com/view/european-commission-approves-ruxolitinib-cream-for-non-segmental-vitiligo"
+        },
+        {
+          "label": "NEJM 2022 两项 III 期（PMID 36260792）",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/36260792/"
+        },
+        {
+          "label": "儿童（2 至 <12 岁）III 期 NCT06548360",
+          "url": "https://clinicaltrials.gov/study/NCT06548360"
+        }
+      ],
+      "checked_at": "2026-11-07",
+      "reviewer_notes": "中国批准日期：已核实康哲药业2026-01-30的公告（经腾讯新闻转载，原文说明批准日期即公告日），但我没有打开NMPA/CDE官网的批准信息，且不能排除NMPA批件日期与公告日有出入；发布前请用NMPA药品查询核对批准文号与日期。适应症措辞取自公告原文。美国2022-07-18、欧盟2023-04为检索结果与二手媒体（Incyte新闻稿页面和Dermatology Times文章，其中EC的准确决定日期未给出，仅有Incyte 2023-04-20新闻稿日期），Incyte页面我这边抓取被403拒绝，日期来自搜索摘要，请复核。临床数据（TRuE-V：24周F-VASI75 29.8% vs 7.4%，30.9% vs 11.4%）见NEJM摘要。儿童2-<12岁III期NCT06548360招募中（CT.gov，2026-09更新）。"
+    },
+    {
+      "key": "upadacitinib",
+      "drug_zh": "乌帕替尼",
+      "drug_en": "Upadacitinib",
+      "mechanism": "选择性 JAK 抑制剂（对 JAK1 抑制作用更强）",
+      "route": "口服",
+      "sponsor": "AbbVie",
+      "phase": "已获批",
+      "regions": [
+        {
+          "region": "欧盟",
+          "status": "已批准：适合系统治疗的 12 岁及以上非节段型白癜风",
+          "date": "2026-07"
+        },
+        {
+          "region": "美国",
+          "status": "审评中（截至 AbbVie 2026-07-29 新闻稿；之后状态未核实）",
+          "date": null
+        },
+        {
+          "region": "中国",
+          "status": "未检索到白癜风适应症的公开申报或批准信息",
+          "date": null
+        }
+      ],
+      "latest_event": "2026-08-15 两项 III 期（Viti-Up，n=614）结果发表于《柳叶刀》：第 48 周 T-VASI 50 达标 19%/21%（对照 6%/6%），F-VASI 75 达标 25%/23%（对照 6%/7%）。",
+      "event_date": "2026-08",
+      "sources": [
+        {
+          "label": "AbbVie：欧盟委员会批准（2026-07-29）",
+          "url": "https://news.abbvie.com/2026-07-29-AbbVie-Announces-European-Commission-Approval-of-RINVOQ-R-upadacitinib-for-the-Treatment-of-Adults-and-Adolescents-with-Non-Segmental-Vitiligo"
+        },
+        {
+          "label": "Lancet 2026 Viti-Up（PMID 42594914）",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/42594914/"
+        },
+        {
+          "label": "Viti-Up III 期 NCT06118411",
+          "url": "https://clinicaltrials.gov/study/NCT06118411"
+        },
+        {
+          "label": "儿童（6 至 <12 岁）III 期 NCT07896434（尚未招募）",
+          "url": "https://clinicaltrials.gov/study/NCT07896434"
+        }
+      ],
+      "checked_at": "2026-11-07",
+      "reviewer_notes": "欧盟批准与美国“审评中”已对照AbbVie新闻稿原文核实（新闻稿未给出百分比，未提及日本）。我另在搜索结果中看到CHMP积极意见日期2026-06-29，但未打开该页面。美国当前最新状态未核实（有二手来源称当前美国标签无白癜风适应症）。references.md中提到的“2026-10 公布76周持续复色数据”我未能核实，故未写入。JAK1选择性表述引自AD试验论文（PMID 38528257: greater inhibitory potency for JAK1 than JAK2, JAK3, TYK2），非白癜风文献。百分比为Lancet摘要四舍五入后数字（40/206 vs 6/102等）。中国情况为“未检索到”，不等于不存在。"
+    },
+    {
+      "key": "ritlecitinib",
+      "drug_zh": "利特昔替尼",
+      "drug_en": "Ritlecitinib",
+      "mechanism": "JAK3/TEC 家族激酶抑制剂",
+      "route": "口服",
+      "sponsor": "Pfizer",
+      "phase": "III期",
+      "regions": [
+        {
+          "region": "全球",
+          "status": "两项 III 期达到主要终点；Pfizer 表示计划递交成人非节段型白癜风的全球监管申请",
+          "date": "2026-07"
+        },
+        {
+          "region": "美国",
+          "status": "未检索到白癜风适应症的申报信息",
+          "date": null
+        },
+        {
+          "region": "中国",
+          "status": "未检索到公开信息",
+          "date": null
+        }
+      ],
+      "latest_event": "2026-07-30 Pfizer 宣布 TRANQUILLO 与 TRANQUILLO 2 两项 III 期在第 52 周达到共同主要终点（F-VASI75 与 T-VASI50 优于安慰剂），新闻稿未披露具体比例。",
+      "event_date": "2026-07",
+      "sources": [
+        {
+          "label": "Pfizer 新闻稿（Business Wire，2026-07-30）",
+          "url": "https://secure.businesswire.com/news/home/20260730163060/en/Pfizer-Announces-Positive-Topline-Phase-3-Results-for-LITFULO-in-Patients-with-Nonsegmental-Vitiligo"
+        },
+        {
+          "label": "TRANQUILLO 设计论文（PMID 42171987）",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/42171987/"
+        },
+        {
+          "label": "TRANQUILLO NCT05583526（已完成）",
+          "url": "https://clinicaltrials.gov/study/NCT05583526"
+        },
+        {
+          "label": "TRANQUILLO 2 NCT06072183",
+          "url": "https://clinicaltrials.gov/study/NCT06072183"
+        }
+      ],
+      "checked_at": "2026-11-07",
+      "reviewer_notes": "Business Wire页面我抓取时返回403，新闻稿内容来自网络搜索对该新闻稿的摘要，未能亲自读到原文，请医学/编辑直接核对。试验设计（年龄、剂量、终点）来自已核实的设计论文（PMID 42171987）；其中T-VASI50在美国为共同主要终点、在其他地区为关键次要终点，与新闻稿措辞可能有出入。搜索中还看到EADV 2026的详细数据（来自二手网站），我没有采用。"
+    },
+    {
+      "key": "povorcitinib",
+      "drug_zh": "Povorcitinib",
+      "drug_en": "Povorcitinib",
+      "mechanism": "JAK1 抑制剂",
+      "route": "口服",
+      "sponsor": "Incyte（中国：Dermavon，康哲药业附属公司）",
+      "phase": "III期",
+      "regions": [
+        {
+          "region": "中国",
+          "status": "CDE 将其列入突破性治疗药物名单（拟定适应症：成人非节段型白癜风）；中国 III 期 NCT07865312 尚未开始招募",
+          "date": "2025-12"
+        },
+        {
+          "region": "美国",
+          "status": "未检索到白癜风适应症的申报信息",
+          "date": null
+        },
+        {
+          "region": "欧盟",
+          "status": "未检索到白癜风适应症的申报信息",
+          "date": null
+        }
+      ],
+      "latest_event": "2026-11-02 两项 III 期（STOP-V1/V2，n=467/449）发表于 Nature Medicine：第 52 周 F-VASI75 达标 18.9% vs 6.8%（V1）、18.9% vs 3.1%（V2）。",
+      "event_date": "2026-11",
+      "sources": [
+        {
+          "label": "Nature Medicine 2026 STOP-V（PMID 42972109）",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/42972109/"
+        },
+        {
+          "label": "康哲药业（CMS）公告：突破性治疗药物（2025-12-15）",
+          "url": "https://web.cms.net.cn/en/2025/12/cms-innovative-drug-oral-jak1-inhibitor-povorcitinib-has-been-included-in-the-list-of-breakthrough-therapeutic-drugs-in-china/"
+        },
+        {
+          "label": "中国 III 期 NCT07865312（CT.gov，预计 2026-11 启动）",
+          "url": "https://clinicaltrials.gov/study/NCT07865312"
+        },
+        {
+          "label": "STOP-V1 NCT06113445",
+          "url": "https://clinicaltrials.gov/study/NCT06113445"
+        }
+      ],
+      "checked_at": "2026-11-07",
+      "reviewer_notes": "Nature Medicine摘要与CT.gov记录已直接核实（NCT07865312申办方Dermavon Holdings，状态NOT_YET_RECRUITING，预计开始2026-11，预计主要完成2028-05，CT.gov记录首次发布2026-10-08）。突破性治疗认定的公告日期为2025-12-15（CMS页面），“列入CDE突破性治疗药物名单”为CMS原文措辞，不是批准上市。另外检索到CMS的IND获批（2025-08-28，白癜风与化脓性汗腺炎）但未打开原文，未写入。注意：有一个二手“管线分析”网站称中国III期已于2025-08启动、NDA已于2024-09递交，与CT.gov和公司公告矛盾，已忽略。"
+    },
+    {
+      "key": "soficitinib",
+      "drug_zh": "Soficitinib（ICP-332）",
+      "drug_en": "Soficitinib (ICP-332)",
+      "mechanism": "TYK2 抑制剂",
+      "route": "口服",
+      "sponsor": "诺诚健华（InnoCare）",
+      "phase": "III期",
+      "regions": [
+        {
+          "region": "中国",
+          "status": "II/III 期试验进行中（II 期部分已公布结果，将进入 III 期部分）",
+          "date": "2026-07"
+        }
+      ],
+      "latest_event": "2026-07-16 公司公布 II 期部分结果：第 24 周面部 F-VASI 较基线的平均改善百分比，两个剂量组分别为 38.8% 和 41.2%，安慰剂组 2.2%。",
+      "event_date": "2026-07",
+      "sources": [
+        {
+          "label": "诺诚健华新闻稿（GlobeNewswire 转载，2026-07-16）",
+          "url": "https://www.manilatimes.net/2026/07/16/tmt-newswire/globenewswire/innocare-announces-phase-ii-study-results-of-tyk2-inhibitor-soficitinib-meet-primary-endpoint-in-patients-with-vitiligo/2385984"
+        },
+        {
+          "label": "NCT07047612（II/III 期）",
+          "url": "https://clinicaltrials.gov/study/NCT07047612"
+        }
+      ],
+      "checked_at": "2026-11-07",
+      "reviewer_notes": "结果来自公司新闻稿，未经同行评议。CT.gov记录最后更新为2025-08，状态“招募中”，预计完成2029-04。新闻稿中未明确说明哪个终点是II期主要终点（我读到的转载中p值被截断）。“III期”按当前最高阶段（II/III期设计）标注，III期部分尚未见启动信息。"
+    },
+    {
+      "key": "mh004-ointment",
+      "drug_zh": "MH004 软膏（伊托法替布软膏）",
+      "drug_en": "MH004 ointment (tofacitinib etocomil)",
+      "mechanism": "外用 JAK 抑制剂",
+      "route": "外用",
+      "sponsor": "明慧医药（杭州）",
+      "phase": "III期",
+      "regions": [
+        {
+          "region": "中国",
+          "status": "白癜风 III 期（NCT07682506）招募中",
+          "date": "2026-08"
+        }
+      ],
+      "latest_event": "白癜风 III 期（NCT07682506，12–75 岁非节段型白癜风）于 2026-08-04 开始，预计 2028-02 完成主要终点。",
+      "event_date": "2026-08",
+      "sources": [
+        {
+          "label": "NCT07682506（CT.gov）",
+          "url": "https://clinicaltrials.gov/study/NCT07682506"
+        }
+      ],
+      "checked_at": "2026-11-07",
+      "reviewer_notes": "阶段与日期来自CT.gov API（2026-08-11更新）。“外用JAK抑制剂”表述来自网络搜索中对公司的描述（该药在特应性皮炎III期已达主要终点并已申报上市），我没有打开公司原文。试验是否分布在中国以外地区CT.gov摘要里未核实，地区暂标中国。暂无白癜风疗效数据。"
+    },
+    {
+      "key": "zasocitinib",
+      "drug_zh": "Zasocitinib（TAK-279）",
+      "drug_en": "Zasocitinib (TAK-279)",
+      "mechanism": "TYK2 抑制剂",
+      "route": "口服",
+      "sponsor": "Takeda",
+      "phase": "II期",
+      "regions": [
+        {
+          "region": "全球",
+          "status": "II 期剂量范围试验进行中（不再招募）",
+          "date": "2025-11"
+        }
+      ],
+      "latest_event": "II 期试验 NCT07108283 于 2025-11-03 开始，目前“进行中、不再招募”，预计 2027-03 完成主要终点；暂无结果公布。",
+      "event_date": "2025-11",
+      "sources": [
+        {
+          "label": "NCT07108283（CT.gov）",
+          "url": "https://clinicaltrials.gov/study/NCT07108283"
+        }
+      ],
+      "checked_at": "2026-11-07",
+      "reviewer_notes": "状态来自CT.gov API（记录最后更新2026-11-03）。TYK2机制来自另外的银屑病/银屑病关节炎文献（如PMID 40615297），不是白癜风试验。未检索到任何白癜风结果。"
+    },
+    {
+      "key": "tev-53408",
+      "drug_zh": "TEV-53408（抗 IL-15 抗体）",
+      "drug_en": "TEV-53408 (anti-IL-15 antibody)",
+      "mechanism": "抗 IL-15 单克隆抗体",
+      "route": "注射",
+      "sponsor": "Teva",
+      "phase": "II期",
+      "regions": [
+        {
+          "region": "全球",
+          "status": "II b 期（含后续 III 期的方案）尚未开始招募，预计 2026-11 启动",
+          "date": "2026-11"
+        }
+      ],
+      "latest_event": "2026-07-07 Teva 宣布，基于 Ib 期开放标签研究（第 24 周可评估受试者中 F-VASI50 为 42%、F-VASI75 为 21%），将在 2026 年第四季度启动 IIb 期。",
+      "event_date": "2026-07",
+      "sources": [
+        {
+          "label": "Teva 新闻稿（2026-07-07）",
+          "url": "https://ir.tevapharm.com/news-and-events/press-releases/press-release-details/2026/Teva-to-Advance-Its-Anti-IL-15-Antibody-Designed-for-Quarterly-Dosing-Into-Phase-2b-Development-in-Vitiligo-Following-Encouraging-Phase-1b-Results/default.aspx"
+        },
+        {
+          "label": "NCT07920211（IIb/III 期，尚未招募）",
+          "url": "https://clinicaltrials.gov/study/NCT07920211"
+        }
+      ],
+      "checked_at": "2026-11-07",
+      "reviewer_notes": "新闻稿已核实；Ib期为小样本开放标签研究（新闻稿未给样本量，按“可评估受试者”表述），不能与随机对照试验比较。CT.gov NCT07920211显示“IIb期+III期”项目，预计开始2026-11-16，但Teva新闻稿只提IIb期，两者表述不同，已以CT.gov+新闻稿共同表述。Ib期登记号NCT06625177（来自搜索结果，未单独核实）。"
+    },
+    {
+      "key": "shr0302-base",
+      "drug_zh": "SHR0302 碱凝胶（艾玛昔替尼外用制剂）",
+      "drug_en": "SHR0302 Base gel (ivarmacitinib topical)",
+      "mechanism": "JAK1 抑制剂（外用）",
+      "route": "外用",
+      "sponsor": "江苏恒瑞医药",
+      "phase": "II期",
+      "regions": [
+        {
+          "region": "中国",
+          "status": "II 期试验（NCT06790862）进行中（不再招募）",
+          "date": "2025-02"
+        }
+      ],
+      "latest_event": "II 期（成人非节段型白癜风，辅料对照）于 2025-02-13 开始，状态为“进行中、不再招募”；此前一项 SHR0302 软膏 II/III 期（NCT04774809）已终止。",
+      "event_date": "2025-02",
+      "sources": [
+        {
+          "label": "NCT06790862（CT.gov）",
+          "url": "https://clinicaltrials.gov/study/NCT06790862"
+        },
+        {
+          "label": "NCT04774809（CT.gov，已终止）",
+          "url": "https://clinicaltrials.gov/study/NCT04774809"
+        }
+      ],
+      "checked_at": "2026-11-07",
+      "reviewer_notes": "仅核实CT.gov记录（NCT06790862记录最后更新2026-01-15）。药物中文名“艾玛昔替尼”(ivarmacitinib)与SHR0302为同一分子的对应关系来自检索资料，未在CT.gov记录中见到，请核对；JAK1选择性来自特应性皮炎II期论文标题（“SHR0302, a Highly Selective JAK1 Inhibitor”）。NCT04774809的申办方为Reistone，终止原因未核实。AdisInsight有条目称白癜风已上市，与CT.gov矛盾，我未采用。"
+    }
+  ],
+  "digests": [
+    {
+      "key": "stopv-povorcitinib-2026",
+      "title_zh": "口服 JAK1 抑制剂 povorcitinib 治疗非节段型白癜风：两项 III 期 STOP-V 试验",
+      "title_en": "Povorcitinib for nonsegmental vitiligo: two randomized, controlled, phase 3 STOP-V trials",
+      "one_liner": "两项 III 期随机对照试验中，成人中重度非节段型白癜风患者服用 povorcitinib 52 周，面部复色达标比例高于安慰剂。",
+      "why_it_matters": "这是口服 JAK1 抑制剂在白癜风 III 期试验中的发表结果，也是中国已将该药列入突破性治疗药物名单、正在筹备中国 III 期的背景。",
+      "limitations": "仅纳入成人；虽优于安慰剂，但达到面部改善 ≥75% 的患者仍占少数（约 19%）；只有 52 周数据，长期疗效和安全性仍需观察；尚未在任何地区获批。此条依据摘要，未读全文。",
+      "study_type": "RCT（III期）",
+      "sample_size": 916,
+      "is_preprint": false,
+      "published_on": "2026-11",
+      "journal": "Nature Medicine",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42972109/",
+      "pmid": "42972109",
+      "reviewer_notes": "sample_size=467+449，来自摘要。DOI 10.1038/s41591-026-04739-2。主要终点F-VASI75第52周：V1 18.9% vs 6.8%（OR 3.1），V2 18.9% vs 3.1%（OR 7.5）。最常见不良事件：鼻咽炎、痤疮、上呼吸道感染。请确认资助方披露（摘要中未见）。"
+    },
+    {
+      "key": "vitiup-upadacitinib-2026",
+      "title_zh": "乌帕替尼治疗成人和青少年非节段型白癜风：两项 III 期 Viti-Up 试验",
+      "title_en": "Efficacy and safety of upadacitinib in adults and adolescents for treatment of non-segmental vitiligo (Viti-Up): results of two phase 3 randomised controlled studies",
+      "one_liner": "两项 III 期试验显示，12 岁以上患者服用乌帕替尼 48 周，全身和面部复色达标比例均高于安慰剂。",
+      "why_it_matters": "欧盟已在 2026-07 批准乌帕替尼用于适合系统治疗的非节段型白癜风，该论文是其 III 期证据的同行评议发表。",
+      "limitations": "48 周双盲期达标者约为五分之一至四分之一；试验仍在进行；未设与其他治疗的头对头比较；摘要中显示不良事件总体与既往乌帕替尼安全性一致，但特殊人群仍需个体评估。此条依据摘要。",
+      "study_type": "RCT（III期）",
+      "sample_size": 614,
+      "is_preprint": false,
+      "published_on": "2026-08",
+      "journal": "The Lancet",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42594914/",
+      "pmid": "42594914",
+      "reviewer_notes": "DOI 10.1016/S0140-6736(26)00896-2。T-VASI50：Viti-Up-1 19% vs 6%，Viti-Up-2 21% vs 6%；F-VASI75：25% vs 6%，23% vs 7%（均p<0.001）。受试者308+306=614，2:1随机。"
+    },
+    {
+      "key": "severity-relapse-consensus-2026",
+      "title_zh": "白癜风严重程度与复发的国际共识定义",
+      "title_en": "Definition of Severity and Relapse for Vitiligo: An International Consensus Statement",
+      "one_liner": "国际专家与患者共同商定：仅看白斑面积不足以衡量严重程度，心理影响和显眼部位等也应纳入。",
+      "why_it_matters": "这意味着“严重与否”不只看白斑占多大面积，患者的心理困扰、被歧视感、面部受累等同样会被考虑，有助于医患沟通和就诊决策。",
+      "limitations": "这是共识声明（专家意见与患者意见相结合），不是疗效试验；对白斑面积的具体阈值没有达成共识；最终共识会议参与率为 54%（44 人）。",
+      "study_type": "国际共识（Delphi）",
+      "sample_size": 85,
+      "is_preprint": false,
+      "published_on": "2026-05",
+      "journal": "JAMA Dermatology",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/41879771/",
+      "pmid": "41879771",
+      "reviewer_notes": "sample_size=85为第一轮电子Delphi参与人数（第二轮81，终会44）。DOI 10.1001/jamadermatol.2026.0294。共识列出12条上调严重程度的标准，复发定义为“已复色皮损再次色素脱失”（摘要末段被截断，请查看全文确认完整定义）。"
+    },
+    {
+      "key": "exposome-vitiligo-2026",
+      "title_zh": "白癜风的暴露组风险因素：系统证据综述",
+      "title_en": "Exposome Risk Factors for Vitiligo: A Systematic Evidence Review",
+      "one_liner": "系统综述汇总近 500 项研究：药物、化学物和感染的证据相对较多，压力、外伤、晒伤、饮食、睡眠等多为较低等级证据。",
+      "why_it_matters": "帮助区分“证据较多的诱因”和“常被提到但证据有限的说法”，减少不必要的自责和过度忌口。",
+      "limitations": "纳入研究多为观察性，异质性大，无法做荟萃分析，也难以推断因果；结论是诱因与发病/进展“相关”，不等于“导致”。",
+      "study_type": "系统综述（PRISMA，PROSPERO CRD42024529828）",
+      "sample_size": null,
+      "is_preprint": false,
+      "published_on": "2026-05",
+      "journal": "American Journal of Clinical Dermatology",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/41849116/",
+      "pmid": "41849116",
+      "reviewer_notes": "共纳入496项研究（8377条记录中）；未给出总受试者数，故sample_size为null。DOI 10.1007/s40257-026-01012-7。免疫检查点抑制剂相关白癜风在黑色素瘤患者中为7–25%；酚类化学物与黑素细胞毒性有一致关联；新冠感染风险比约1.11，疫苗接种未增加风险。"
+    },
+    {
+      "key": "pediatric-psych-meta-2026",
+      "title_zh": "儿童白癜风的精神心理共病与生活质量负担：系统综述与荟萃分析",
+      "title_en": "Psychiatric Comorbidities and Quality-of-Life Burden in Pediatric Patients With Vitiligo: A Systematic Review and Meta-Analysis",
+      "one_liner": "汇总 14 项研究、1576 名 18 岁以下患者：生活质量有轻至中度受损，青少年和白斑明显者更明显。",
+      "why_it_matters": "提示儿童和青少年白癜风的照护应包括心理评估和多学科支持，而不只是皮肤治疗。",
+      "limitations": "数据有限且异质性大；汇总的抑郁、焦虑量表平均分未超过可能临床诊断的阈值，但多项对照研究显示患者症状负担更高，需谨慎解读；仅纳入英文文献。",
+      "study_type": "系统综述与荟萃分析",
+      "sample_size": 1576,
+      "is_preprint": false,
+      "published_on": "2026-01",
+      "journal": "Pediatric Dermatology",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/41084130/",
+      "pmid": "41084130",
+      "reviewer_notes": "DOI 10.1111/pde.70066。期刊期号为2026 Jan-Feb，published_on取2026-01。CDLQI汇总均值3.00，PedsQL 80.55。"
+    }
+  ],
+  "entities": [
+    {
+      "key": "vitiligo",
+      "type": "Disease",
+      "name_zh": "白癜风",
+      "name_en": "Vitiligo",
+      "description_zh": "后天性皮肤色素脱失性疾病，黑素细胞减少或失去功能，出现边界清楚的乳白色斑。",
+      "external_ids": {
+        "MONDO": "MONDO:0008661",
+        "HP": "HP:0001045"
+      },
+      "aliases": [
+        "白驳风",
+        "白斑病",
+        "白癜风病"
+      ]
+    },
+    {
+      "key": "non-segmental-vitiligo",
+      "type": "Subtype",
+      "name_zh": "非节段型白癜风",
+      "name_en": "Non-segmental vitiligo (NSV)",
+      "description_zh": "最常见类型，白斑多双侧或对称分布；国际共识以“vitiligo”统称非节段型。",
+      "aliases": [
+        "寻常型白癜风",
+        "NSV"
+      ]
+    },
+    {
+      "key": "segmental-vitiligo",
+      "type": "Subtype",
+      "name_zh": "节段型白癜风",
+      "name_en": "Segmental vitiligo",
+      "description_zh": "白斑多局限于身体一侧或某一节段，病情通常相对稳定。",
+      "aliases": [
+        "SV"
+      ]
+    },
+    {
+      "key": "mixed-vitiligo",
+      "type": "Subtype",
+      "name_zh": "混合型白癜风",
+      "name_en": "Mixed vitiligo",
+      "description_zh": "节段型与非节段型同时存在。"
+    },
+    {
+      "key": "generalized-vitiligo",
+      "type": "Subtype",
+      "name_zh": "泛发型白癜风",
+      "name_en": "Generalized vitiligo",
+      "description_zh": "非节段型的一种形式，白斑分布较广。",
+      "external_ids": {
+        "MONDO": "MONDO:1010125"
+      }
+    },
+    {
+      "key": "oxidative-stress",
+      "type": "Mechanism",
+      "name_zh": "氧化应激",
+      "name_en": "Oxidative stress",
+      "description_zh": "细胞内氧化与抗氧化平衡失调，被认为可能损伤黑素细胞并向免疫系统释放危险信号。",
+      "aliases": [
+        "氧化损伤"
+      ]
+    },
+    {
+      "key": "melanocyte-detachment",
+      "type": "Mechanism",
+      "name_zh": "黑素细胞脱落",
+      "name_en": "Melanocyte detachment",
+      "description_zh": "黑素细胞与基底膜粘附减弱而脱落，研究提示与 IFN-γ 和机械压力有关。"
+    },
+    {
+      "key": "ifn-gamma-cxcl10-axis",
+      "type": "Mechanism",
+      "name_zh": "IFN-γ–CXCL9/10–CXCR3 轴",
+      "name_en": "IFN-γ–CXCL9/CXCL10–CXCR3 axis",
+      "description_zh": "IFN-γ 诱导 CXCL9/10，招募 CXCR3⁺ CD8⁺ T 细胞到皮肤，攻击黑素细胞。",
+      "aliases": [
+        "ICC 轴"
+      ]
+    },
+    {
+      "key": "cd8-t-cells",
+      "type": "Mechanism",
+      "name_zh": "自身反应性 CD8⁺ T 细胞",
+      "name_en": "Autoreactive CD8+ T cells",
+      "description_zh": "被认为是破坏黑素细胞的主要免疫细胞。",
+      "aliases": [
+        "CD8 T 细胞"
+      ]
+    },
+    {
+      "key": "trm-cells",
+      "type": "Mechanism",
+      "name_zh": "组织驻留记忆 T 细胞",
+      "name_en": "Tissue-resident memory T (TRM) cells",
+      "description_zh": "驻留在皮肤中的记忆性 T 细胞，被认为可能与局部复发有关（研究中）。",
+      "aliases": [
+        "TRM 细胞"
+      ]
+    },
+    {
+      "key": "jak1",
+      "type": "Gene",
+      "name_zh": "JAK1",
+      "name_en": "Janus kinase 1",
+      "description_zh": "细胞因子信号通路中的酪氨酸激酶，是多种 JAK 抑制剂的靶点。",
+      "external_ids": {
+        "HGNC": "HGNC:6190"
+      }
+    },
+    {
+      "key": "jak2",
+      "type": "Gene",
+      "name_zh": "JAK2",
+      "name_en": "Janus kinase 2",
+      "description_zh": "JAK 家族成员之一。",
+      "external_ids": {
+        "HGNC": "HGNC:6192"
+      }
+    },
+    {
+      "key": "jak3",
+      "type": "Gene",
+      "name_zh": "JAK3",
+      "name_en": "Janus kinase 3",
+      "description_zh": "JAK 家族成员之一，利特昔替尼的靶点之一。",
+      "external_ids": {
+        "HGNC": "HGNC:6193"
+      }
+    },
+    {
+      "key": "tyk2",
+      "type": "Gene",
+      "name_zh": "TYK2",
+      "name_en": "Tyrosine kinase 2",
+      "description_zh": "JAK 家族成员之一，TYK2 抑制剂的靶点。",
+      "external_ids": {
+        "HGNC": "HGNC:12440"
+      }
+    },
+    {
+      "key": "ifng",
+      "type": "Gene",
+      "name_zh": "IFNG（干扰素-γ）",
+      "name_en": "Interferon gamma",
+      "description_zh": "由活化 T 细胞等产生的细胞因子，被认为在白癜风免疫反应中起关键作用。",
+      "external_ids": {
+        "HGNC": "HGNC:5438"
+      },
+      "aliases": [
+        "IFN-γ"
+      ]
+    },
+    {
+      "key": "cxcl9",
+      "type": "Gene",
+      "name_zh": "CXCL9",
+      "name_en": "C-X-C motif chemokine ligand 9",
+      "description_zh": "趋化因子，招募 CXCR3⁺ T 细胞。",
+      "external_ids": {
+        "HGNC": "HGNC:7098"
+      }
+    },
+    {
+      "key": "cxcl10",
+      "type": "Gene",
+      "name_zh": "CXCL10",
+      "name_en": "C-X-C motif chemokine ligand 10",
+      "description_zh": "趋化因子，招募 CXCR3⁺ T 细胞。",
+      "external_ids": {
+        "HGNC": "HGNC:10637"
+      }
+    },
+    {
+      "key": "cxcr3",
+      "type": "Gene",
+      "name_zh": "CXCR3",
+      "name_en": "C-X-C motif chemokine receptor 3",
+      "description_zh": "T 细胞上的趋化因子受体，识别 CXCL9/10。",
+      "external_ids": {
+        "HGNC": "HGNC:4540"
+      }
+    },
+    {
+      "key": "il15",
+      "type": "Gene",
+      "name_zh": "IL15（白细胞介素-15）",
+      "name_en": "Interleukin 15",
+      "description_zh": "细胞因子，与组织驻留记忆 T 细胞的维持有关；抗 IL-15 抗体在研究中。",
+      "external_ids": {
+        "HGNC": "HGNC:5977"
+      }
+    },
+    {
+      "key": "koebner-phenomenon",
+      "type": "Trigger",
+      "name_zh": "皮肤外伤与同形反应",
+      "name_en": "Koebner phenomenon",
+      "description_zh": "在外伤、摩擦、晒伤等受损处出现新白斑。",
+      "external_ids": {
+        "HP": "HP:6000933"
+      },
+      "aliases": [
+        "同形反应",
+        "Koebner 现象"
+      ]
+    },
+    {
+      "key": "sunburn",
+      "type": "Trigger",
+      "name_zh": "晒伤",
+      "name_en": "Sunburn",
+      "description_zh": "日晒导致的皮肤损伤，被认为可能诱发新皮损（证据级别较低）。"
+    },
+    {
+      "key": "phenol-chemicals",
+      "type": "Trigger",
+      "name_zh": "酚类化学物质",
+      "name_en": "Phenol-based chemicals",
+      "description_zh": "与黑素细胞毒性存在较一致关联的一类化学物质。"
+    },
+    {
+      "key": "checkpoint-inhibitor-drugs",
+      "type": "Trigger",
+      "name_zh": "免疫检查点抑制剂相关",
+      "name_en": "Immune checkpoint inhibitor–associated vitiligo",
+      "description_zh": "某些肿瘤免疫治疗药物与白癜风样色素脱失相关。"
+    },
+    {
+      "key": "psychological-stress",
+      "type": "Trigger",
+      "name_zh": "精神压力",
+      "name_en": "Psychological stress",
+      "description_zh": "常被提及的诱因，但证据级别较低。"
+    },
+    {
+      "key": "autoimmune-thyroid-disease",
+      "type": "Comorbidity",
+      "name_zh": "自身免疫性甲状腺疾病",
+      "name_en": "Autoimmune thyroid disease",
+      "description_zh": "白癜风患者中较常见的合并自身免疫病。",
+      "external_ids": {
+        "MONDO": "MONDO:0005623"
+      },
+      "aliases": [
+        "甲状腺疾病"
+      ]
+    },
+    {
+      "key": "alopecia-areata",
+      "type": "Comorbidity",
+      "name_zh": "斑秃",
+      "name_en": "Alopecia areata",
+      "description_zh": "一种自身免疫性脱发，与白癜风有共病关联。",
+      "external_ids": {
+        "MONDO": "MONDO:0005340"
+      }
+    },
+    {
+      "key": "type-1-diabetes",
+      "type": "Comorbidity",
+      "name_zh": "1 型糖尿病",
+      "name_en": "Type 1 diabetes mellitus",
+      "description_zh": "与白癜风有共病关联的自身免疫性疾病。",
+      "external_ids": {
+        "MONDO": "MONDO:0005147"
+      }
+    },
+    {
+      "key": "depression",
+      "type": "Comorbidity",
+      "name_zh": "抑郁",
+      "name_en": "Depression",
+      "description_zh": "白癜风患者中抑郁风险略有升高。",
+      "external_ids": {
+        "HP": "HP:0000716"
+      },
+      "aliases": [
+        "情绪低落"
+      ]
+    },
+    {
+      "key": "depigmented-macule",
+      "type": "Sign",
+      "name_zh": "色素减退/脱失斑",
+      "name_en": "Hypopigmented skin patches",
+      "description_zh": "皮肤出现边界清楚的色素减退或脱失斑片。",
+      "external_ids": {
+        "HP": "HP:0001053"
+      },
+      "aliases": [
+        "白斑"
+      ]
+    },
+    {
+      "key": "poliosis",
+      "type": "Sign",
+      "name_zh": "毛发变白",
+      "name_en": "Poliosis",
+      "description_zh": "局部毛发（包括眉毛、睫毛、头发）变白。",
+      "external_ids": {
+        "HP": "HP:0002290"
+      },
+      "aliases": [
+        "白发"
+      ]
+    },
+    {
+      "key": "vasi",
+      "type": "OutcomeMeasure",
+      "name_zh": "VASI（白癜风面积评分指数）",
+      "name_en": "Vitiligo Area Scoring Index",
+      "description_zh": "评估白斑面积及色素脱失程度的评分，主要用于研究。",
+      "aliases": [
+        "VASI"
+      ]
+    },
+    {
+      "key": "f-vasi",
+      "type": "OutcomeMeasure",
+      "name_zh": "F-VASI（面部 VASI）",
+      "name_en": "Facial VASI",
+      "description_zh": "面部白斑评分；临床试验常用“F-VASI75”表示改善 ≥75%。",
+      "aliases": [
+        "F-VASI75"
+      ]
+    },
+    {
+      "key": "t-vasi",
+      "type": "OutcomeMeasure",
+      "name_zh": "T-VASI（全身 VASI）",
+      "name_en": "Total VASI",
+      "description_zh": "全身白斑评分；“T-VASI50”表示改善 ≥50%。",
+      "aliases": [
+        "T-VASI50"
+      ]
+    },
+    {
+      "key": "vitiqol",
+      "type": "OutcomeMeasure",
+      "name_zh": "VitiQoL",
+      "name_en": "Vitiligo-specific quality of life instrument",
+      "description_zh": "白癜风特异性生活质量量表。"
+    },
+    {
+      "key": "topical-corticosteroid",
+      "type": "Intervention",
+      "name_zh": "外用糖皮质激素",
+      "name_en": "Topical corticosteroids",
+      "description_zh": "外用抗炎药物，使用时间需限定，有皮肤萎缩风险。",
+      "aliases": [
+        "外用激素"
+      ]
+    },
+    {
+      "key": "topical-calcineurin-inhibitor",
+      "type": "Intervention",
+      "name_zh": "外用钙调磷酸酶抑制剂",
+      "name_en": "Topical calcineurin inhibitors",
+      "description_zh": "如他克莫司软膏，常用于面部等部位的外用免疫调节治疗。",
+      "aliases": [
+        "TCI"
+      ]
+    },
+    {
+      "key": "topical-jak-inhibitor",
+      "type": "Intervention",
+      "name_zh": "外用 JAK 抑制剂",
+      "name_en": "Topical JAK inhibitors",
+      "description_zh": "外用的 JAK 信号通路抑制剂，如芦可替尼乳膏。"
+    },
+    {
+      "key": "oral-jak-inhibitor",
+      "type": "Intervention",
+      "name_zh": "口服 JAK 抑制剂",
+      "name_en": "Oral JAK inhibitors",
+      "description_zh": "口服的 JAK 通路抑制剂，部分已在个别地区获批，多数仍在研究中。"
+    },
+    {
+      "key": "nb-uvb",
+      "type": "Intervention",
+      "name_zh": "窄谱 UVB 光疗",
+      "name_en": "Narrow-band UVB phototherapy",
+      "description_zh": "在医疗机构进行的特定波长紫外线治疗，疗程较长。",
+      "aliases": [
+        "NB-UVB"
+      ]
+    },
+    {
+      "key": "excimer",
+      "type": "Intervention",
+      "name_zh": "308nm 准分子激光/光",
+      "name_en": "308-nm excimer laser/lamp",
+      "description_zh": "针对局限白斑的靶向光疗。",
+      "aliases": [
+        "准分子"
+      ]
+    },
+    {
+      "key": "surgical-grafting",
+      "type": "Intervention",
+      "name_zh": "手术移植",
+      "name_en": "Surgical therapy (grafting / melanocyte transplantation)",
+      "description_zh": "如表皮移植、黑素细胞移植，多用于局限、稳定的皮损。"
+    },
+    {
+      "key": "camouflage",
+      "type": "Intervention",
+      "name_zh": "遮盖",
+      "name_en": "Camouflage (clothing, cosmetics)",
+      "description_zh": "用衣物或化妆品遮盖白斑，可改善部分患者的生活质量。"
+    },
+    {
+      "key": "ruxolitinib-cream",
+      "type": "Drug",
+      "name_zh": "芦可替尼乳膏",
+      "name_en": "Ruxolitinib cream",
+      "description_zh": "外用 JAK1/JAK2 抑制剂。",
+      "external_ids": {
+        "CHEBI": "CHEBI:66919"
+      }
+    },
+    {
+      "key": "upadacitinib",
+      "type": "Drug",
+      "name_zh": "乌帕替尼",
+      "name_en": "Upadacitinib",
+      "description_zh": "口服选择性 JAK 抑制剂（对 JAK1 抑制作用更强）。",
+      "external_ids": {
+        "CHEBI": "CHEBI:755661"
+      }
+    },
+    {
+      "key": "ritlecitinib",
+      "type": "Drug",
+      "name_zh": "利特昔替尼",
+      "name_en": "Ritlecitinib",
+      "description_zh": "口服 JAK3/TEC 家族激酶抑制剂。",
+      "external_ids": {
+        "CHEBI": "CHEBI:229233"
+      }
+    },
+    {
+      "key": "povorcitinib",
+      "type": "Drug",
+      "name_zh": "Povorcitinib",
+      "name_en": "Povorcitinib",
+      "description_zh": "口服 JAK1 抑制剂。",
+      "external_ids": {
+        "CHEBI": "CHEBI:758663"
+      }
+    },
+    {
+      "key": "soficitinib",
+      "type": "Drug",
+      "name_zh": "Soficitinib（ICP-332）",
+      "name_en": "Soficitinib (ICP-332)",
+      "description_zh": "口服 TYK2 抑制剂。",
+      "aliases": [
+        "ICP-332"
+      ]
+    },
+    {
+      "key": "true-v",
+      "type": "Trial",
+      "name_zh": "TRuE-V1/V2",
+      "name_en": "TRuE-V1 and TRuE-V2",
+      "description_zh": "芦可替尼乳膏 III 期试验（NCT04052425, NCT04057573）。",
+      "external_ids": {
+        "NCT": "NCT04052425"
+      }
+    },
+    {
+      "key": "viti-up",
+      "type": "Trial",
+      "name_zh": "Viti-Up",
+      "name_en": "Viti-Up",
+      "description_zh": "乌帕替尼 III 期试验（NCT06118411）。",
+      "external_ids": {
+        "NCT": "NCT06118411"
+      }
+    },
+    {
+      "key": "stop-v",
+      "type": "Trial",
+      "name_zh": "STOP-V1/V2",
+      "name_en": "STOP-V1 and STOP-V2",
+      "description_zh": "Povorcitinib III 期试验（NCT06113445, NCT06113471）。",
+      "external_ids": {
+        "NCT": "NCT06113445"
+      }
+    },
+    {
+      "key": "tranquillo",
+      "type": "Trial",
+      "name_zh": "TRANQUILLO",
+      "name_en": "Tranquillo",
+      "description_zh": "利特昔替尼 III 期试验（NCT05583526）。",
+      "external_ids": {
+        "NCT": "NCT05583526"
+      }
+    },
+    {
+      "key": "china-povorcitinib-phase3",
+      "type": "Trial",
+      "name_zh": "中国 povorcitinib III 期",
+      "name_en": "Phase 3 study of povorcitinib in Chinese adults with NSV",
+      "description_zh": "NCT07865312，预计 2026-11 启动。",
+      "external_ids": {
+        "NCT": "NCT07865312"
+      }
+    },
+    {
+      "key": "sun-protection",
+      "type": "CareAdvice",
+      "name_zh": "防晒",
+      "name_en": "Sun protection",
+      "description_zh": "使用防晒霜、防晒衣物等，减少晒伤和反差。"
+    },
+    {
+      "key": "avoid-skin-trauma",
+      "type": "CareAdvice",
+      "name_zh": "避免皮肤外伤与摩擦",
+      "name_en": "Minimizing skin trauma",
+      "description_zh": "减少物理性创伤，降低同形反应风险。"
+    },
+    {
+      "key": "psychosocial-support",
+      "type": "CareAdvice",
+      "name_zh": "心理与社交支持",
+      "name_en": "Psychosocial support",
+      "description_zh": "评估并支持患者的心理和社交需求。"
+    }
+  ],
+  "relations": [
+    {
+      "subject": "vitiligo",
+      "predicate": "has_subtype",
+      "object": "non-segmental-vitiligo",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "22417114",
+          "quote": "a consensus emerged that segmental vitiligo be classified separately from all other forms of vitiligo and that the term 'vitiligo' be used as an umbrella term for all non-segmental forms of vitiligo"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "has_subtype",
+      "object": "segmental-vitiligo",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "22417114",
+          "quote": "segmental vitiligo be classified separately from all other forms of vitiligo"
+        }
+      ]
+    },
+    {
+      "subject": "non-segmental-vitiligo",
+      "predicate": "has_subtype",
+      "object": "mixed-vitiligo",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "22417114",
+          "quote": "'mixed vitiligo' in which segmental and non-segmental vitiligo are combined and which is considered a subgroup of vitiligo"
+        }
+      ]
+    },
+    {
+      "subject": "non-segmental-vitiligo",
+      "predicate": "has_subtype",
+      "object": "generalized-vitiligo",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "quote": "Within nonsegmental vitiligo, many additional variants exist, including acrofacial, generalized, and mixed"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "involves_mechanism",
+      "object": "oxidative-stress",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "42857697",
+          "quote": "Oxidative stress serves as a critical factor in the pathogenesis of vitiligo, linking melanocyte injury, release of danger-associated molecular patterns (DAMPs), innate immune activation, and IFN-γ driven adaptive immune amplification"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "involves_mechanism",
+      "object": "ifn-gamma-cxcl10-axis",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "37937817",
+          "quote": "the interferon-gamma (IFN-γ), C-X-C motif chemokine ligands (CXCL9/10), and C-X-C motif chemokine receptor (CXCR3) signaling axis ... has emerged as a key mediator responsible for the recruitment of autoimmune CXCR3+ CD8+ T cells"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "involves_mechanism",
+      "object": "cd8-t-cells",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "37937817",
+          "quote": "These cells serve as executioners of melanocytes by promoting their detachment and apoptosis."
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "involves_mechanism",
+      "object": "melanocyte-detachment",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "41913313",
+          "quote": "IFNγ and mechanical stress contribute to melanocyte detachment from the basement membrane via CTSL, FAK, and ITGβ1 regulation."
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "involves_mechanism",
+      "object": "trm-cells",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "42857697",
+          "quote": "Interleukin (IL)-15-dependent tissue-resident memory T (TRM) cells provide a mechanism for local immune reactivation and recurrence."
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "associated_gene",
+      "object": "ifng",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "37937817",
+          "quote": "IFN-γ is generated by activated T cells to create a positive feedback loop, exacerbating the autoimmune response."
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "associated_gene",
+      "object": "cxcl9",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "37937817",
+          "quote": "C-X-C motif chemokine ligands (CXCL9/10)... key mediator responsible for the recruitment of autoimmune CXCR3+ CD8+ T cells"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "associated_gene",
+      "object": "cxcl10",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "37937817",
+          "quote": "C-X-C motif chemokine ligands (CXCL9/10)... key mediator responsible for the recruitment of autoimmune CXCR3+ CD8+ T cells"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "associated_gene",
+      "object": "cxcr3",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "37937817",
+          "quote": "C-X-C motif chemokine receptor (CXCR3) signaling axis ... recruitment of autoimmune CXCR3+ CD8+ T cells"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "associated_gene",
+      "object": "il15",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "42857697",
+          "quote": "Interleukin (IL)-15-dependent tissue-resident memory T (TRM) cells provide a mechanism for local immune reactivation and recurrence."
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "triggered_by",
+      "object": "koebner-phenomenon",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "quote": "Patients with vitiligo should be educated about minimizing physical trauma to the skin to avoid Koebnerization"
+        },
+        {
+          "type": "pmid",
+          "ref": "22417114",
+          "quote": "the conference also endorsed the classification of KP for vitiligo as proposed by the VETF (history based, clinical observation based, or experimentally induced)"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "triggered_by",
+      "object": "sunburn",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "41849116",
+          "quote": "Other factors such as stress (n = 113), trauma, sunburn, smoking, diet, and sleep were frequently cited but supported by lower-level evidence."
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "triggered_by",
+      "object": "phenol-chemicals",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "41849116",
+          "quote": "Phenol-based chemicals were consistently linked to melanocyte toxicity."
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "triggered_by",
+      "object": "checkpoint-inhibitor-drugs",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "41849116",
+          "quote": "Drug-associated vitiligo, particularly from immune checkpoint inhibitors, was the most robustly supported association (7-25% in patients with melanoma)."
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "triggered_by",
+      "object": "psychological-stress",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "41849116",
+          "quote": "Other factors such as stress (n = 113)... were frequently cited but supported by lower-level evidence."
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "comorbid_with",
+      "object": "autoimmune-thyroid-disease",
+      "evidence_level": "A",
+      "region": "美国成人研究",
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40828230",
+          "quote": "Thyroid diseases (14.2%), psoriasis (5.1%), rheumatoid arthritis (3.2%), and alopecia areata (2.7%) were among the most common comorbidities by pooled prevalence rates"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "comorbid_with",
+      "object": "alopecia-areata",
+      "evidence_level": "A",
+      "region": "美国成人研究",
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40828230",
+          "quote": "...alopecia areata (2.7%) were among the most common comorbidities by pooled prevalence rates, with the highest certainty of evidence for associations with thyroid disease and alopecia areata."
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "comorbid_with",
+      "object": "type-1-diabetes",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "quote": "Patients with vitiligo are at a higher risk of having coexisting autoimmune disorders, including, but not limited to, thyroid disease, type 1 diabetes mellitus, alopecia areata, and pernicious anemia"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "comorbid_with",
+      "object": "depression",
+      "evidence_level": "C",
+      "region": "英国",
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "39018020",
+          "quote": "people with vitiligo had an increased risk of depression [adjusted odds ratio (aOR) 1.08, 95% CI 1.01-1.15]; anxiety (aOR 1.19, 95% CI 1.09-1.30)"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "presents_as",
+      "object": "depigmented-macule",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "25596811",
+          "quote": "Vitiligo is clinically characterised by the development of white macules due to the loss of functioning melanocytes in the skin or hair, or both."
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "presents_as",
+      "object": "poliosis",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "25596811",
+          "quote": "white macules due to the loss of functioning melanocytes in the skin or hair, or both"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "treated_by",
+      "object": "topical-corticosteroid",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "quote": "Topical therapy with corticosteroids, calcineurin inhibitors, and JAKi can be considered as first-line monotherapy for the treatment of any form of vitiligo"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "treated_by",
+      "object": "topical-calcineurin-inhibitor",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "39717835",
+          "quote": "Topical tacrolimus ointment has a favorable risk benefit profile to be used as one of the first-line agents for vitiligo."
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "treated_by",
+      "object": "topical-jak-inhibitor",
+      "evidence_level": "B",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "36260792",
+          "quote": "In two phase 3 trials, application of ruxolitinib cream resulted in greater repigmentation of vitiligo lesions than vehicle control through 52 weeks, but it was associated with acne and pruritus at the application site."
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "treated_by",
+      "object": "nb-uvb",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "quote": "Narrow-band ultraviolet B phototherapy and excimer laser/lamp therapy are the recommended forms of light treatment for patients with vitiligo"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "treated_by",
+      "object": "excimer",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "quote": "Narrow-band ultraviolet B phototherapy and excimer laser/lamp therapy are the recommended forms of light treatment for patients with vitiligo"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "treated_by",
+      "object": "surgical-grafting",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "quote": "In patients with localized or stable recalcitrant vitiligo, efficacy and safety data support the use of surgical therapy as an appropriate treatment option"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "treated_by",
+      "object": "camouflage",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "quote": "Coverage of vitiligo with clothing or cosmetics has been found to improve overall QoL"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "treated_by",
+      "object": "ruxolitinib-cream",
+      "evidence_level": "B",
+      "region": "美国、欧盟、中国（适应症因地区而异）",
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "36260792",
+          "quote": "In TRuE-V1, the percentage of patients with an F-VASI75 response at week 24 was 29.8% in the ruxolitinib-cream group and 7.4% in the vehicle group."
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "treated_by",
+      "object": "upadacitinib",
+      "evidence_level": "B",
+      "region": "欧盟",
+      "sources": [
+        {
+          "type": "url",
+          "ref": "https://news.abbvie.com/2026-07-29-AbbVie-Announces-European-Commission-Approval-of-RINVOQ-R-upadacitinib-for-the-Treatment-of-Adults-and-Adolescents-with-Non-Segmental-Vitiligo",
+          "quote": "non-segmental vitiligo in adults and adolescents 12 years and older who are candidates for systemic therapy (EU indication)"
+        },
+        {
+          "type": "pmid",
+          "ref": "42594914",
+          "quote": "At week 48, a greater proportion receiving upadacitinib versus placebo reached the coprimary endpoints of T-VASI 50 ... and F-VASI 75"
+        }
+      ]
+    },
+    {
+      "subject": "ruxolitinib-cream",
+      "predicate": "targets",
+      "object": "jak1",
+      "evidence_level": "B",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "36260792",
+          "quote": "A cream formulation of ruxolitinib (an inhibitor of Janus kinase 1 and 2) resulted in repigmentation in a phase 2 trial"
+        }
+      ]
+    },
+    {
+      "subject": "ruxolitinib-cream",
+      "predicate": "targets",
+      "object": "jak2",
+      "evidence_level": "B",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "36260792",
+          "quote": "ruxolitinib (an inhibitor of Janus kinase 1 and 2)"
+        }
+      ]
+    },
+    {
+      "subject": "upadacitinib",
+      "predicate": "targets",
+      "object": "jak1",
+      "evidence_level": "B",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "38528257",
+          "quote": "Upadacitinib, an oral selective Janus kinase (JAK) inhibitor with greater inhibitory potency for JAK1 than JAK2, JAK3, or tyrosine kinase 2"
+        }
+      ]
+    },
+    {
+      "subject": "ritlecitinib",
+      "predicate": "targets",
+      "object": "jak3",
+      "evidence_level": "B",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "42171987",
+          "quote": "Ritlecitinib is an oral, selective inhibitor of JAK3 and TEC family kinases under investigation for the treatment of nonsegmental vitiligo (NSV)."
+        }
+      ]
+    },
+    {
+      "subject": "povorcitinib",
+      "predicate": "targets",
+      "object": "jak1",
+      "evidence_level": "B",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "42972109",
+          "quote": "once-daily povorcitinib (oral, highly selective JAK1 inhibitor) 30 mg in adults with moderate-to-severe NSV"
+        }
+      ]
+    },
+    {
+      "subject": "soficitinib",
+      "predicate": "targets",
+      "object": "tyk2",
+      "evidence_level": "B",
+      "region": null,
+      "sources": [
+        {
+          "type": "url",
+          "ref": "https://www.manilatimes.net/2026/07/16/tmt-newswire/globenewswire/innocare-announces-phase-ii-study-results-of-tyk2-inhibitor-soficitinib-meet-primary-endpoint-in-patients-with-vitiligo/2385984",
+          "quote": "Soficitinib (ICP-332) is an oral TYK2 inhibitor (company press release, 2026-07-16)"
+        }
+      ]
+    },
+    {
+      "subject": "ruxolitinib-cream",
+      "predicate": "studied_in",
+      "object": "true-v",
+      "evidence_level": "B",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "36260792",
+          "quote": "TRuE-V1 and TRuE-V2 ... 674 patients were enrolled, 330 in TRuE-V1 and 344 in TRuE-V2"
+        }
+      ]
+    },
+    {
+      "subject": "upadacitinib",
+      "predicate": "studied_in",
+      "object": "viti-up",
+      "evidence_level": "B",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "42594914",
+          "quote": "Viti-Up includes two phase 3, global, multicentre, randomised, double-blind, placebo-controlled studies"
+        }
+      ]
+    },
+    {
+      "subject": "povorcitinib",
+      "predicate": "studied_in",
+      "object": "stop-v",
+      "evidence_level": "B",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "42972109",
+          "quote": "STOP-V1 and STOP-V2 enrolled 467 and 449 patients, respectively."
+        }
+      ]
+    },
+    {
+      "subject": "ritlecitinib",
+      "predicate": "studied_in",
+      "object": "tranquillo",
+      "evidence_level": "B",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "42171987",
+          "quote": "Tranquillo (NCT05583526), a randomized, double-blind, placebo-controlled 52-week trial, compares the efficacy and safety of once-daily 50-mg ritlecitinib vs placebo (N ≈ 600)"
+        }
+      ]
+    },
+    {
+      "subject": "povorcitinib",
+      "predicate": "studied_in",
+      "object": "china-povorcitinib-phase3",
+      "evidence_level": "B",
+      "region": "中国",
+      "sources": [
+        {
+          "type": "nct",
+          "ref": "NCT07865312",
+          "quote": "A Multicenter, Randomized, Double-Blind, Placebo-Controlled, Phase 3 Study to Evaluate the Efficacy and Safety of Povorcitinib Phosphate Tablets in Chinese Adult Participants With Nonsegmental Vitiligo (not yet recruiting; estimated start 2026-11)"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "measured_by",
+      "object": "vasi",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "quote": "Vitiligo-specific assessment tools such as VASI, VESplus, VitiQoL, VIS, and VIPs have been used in clinical trials but are neither essential nor practical in day-to-day clinical patient"
+        }
+      ]
+    },
+    {
+      "subject": "vitiligo",
+      "predicate": "measured_by",
+      "object": "vitiqol",
+      "evidence_level": "C",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "quote": "Vitiligo-specific assessment tools such as VASI, VESplus, VitiQoL, VIS, and VIPs have been used in clinical trials"
+        }
+      ]
+    },
+    {
+      "subject": "sun-protection",
+      "predicate": "care_advice_for",
+      "object": "vitiligo",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "quote": "Patients with vitiligo should be encouraged to use sun protection to avoid sunburn and/or minimize contrast between affected and nonaffected areas"
+        }
+      ]
+    },
+    {
+      "subject": "avoid-skin-trauma",
+      "predicate": "care_advice_for",
+      "object": "vitiligo",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "40253664",
+          "quote": "Patients with vitiligo should be educated about minimizing physical trauma to the skin to avoid Koebnerization"
+        }
+      ]
+    },
+    {
+      "subject": "psychosocial-support",
+      "predicate": "care_advice_for",
+      "object": "vitiligo",
+      "evidence_level": "A",
+      "region": null,
+      "sources": [
+        {
+          "type": "pmid",
+          "ref": "41084130",
+          "quote": "These findings highlight the need for clinicians to integrate psychosocial assessment into routine care."
+        }
+      ]
+    }
+  ]
+}

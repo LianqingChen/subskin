@@ -100,3 +100,13 @@ class TerminalAgentError(SubSkinException):
     def __init__(self, message: str = "AI 能力暂不可用", status_code: int = 503):
         super().__init__(message)
         self.status_code = status_code
+
+
+class KnowledgeError(SubSkinException):
+    """知识中枢（同行·知识/前沿）业务错误，携带机器可读 code 与 HTTP 状态。"""
+
+    def __init__(self, code: str, message: str, status_code: int = 400):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.status_code = status_code

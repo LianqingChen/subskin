@@ -1,26 +1,50 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useMainNav } from '@/composables/useMainNav'
 import { useContributionOverview } from '@/composables/useContributionOverview'
-import { useMyContributions } from '@/composables/useMyContributions'
-import ContributionPersonal from '@/components/contribution/ContributionPersonal.vue'
-import ContributionWaffle from '@/components/contribution/ContributionWaffle.vue'
-import ContributionTrend from '@/components/contribution/ContributionTrend.vue'
-import ContributionBodyChart from '@/components/contribution/ContributionBodyChart.vue'
-import ContributionGrowth from '@/components/contribution/ContributionGrowth.vue'
-import MedicalDisclaimer from '@/components/common/MedicalDisclaimer.vue'
+import HubTabNav, { type HubTab } from '@/components/contribution/hub/HubTabNav.vue'
+import MilestoneStrip from '@/components/contribution/hub/MilestoneStrip.vue'
+
+const KnowledgeTab = defineAsyncComponent(() => import('@/components/contribution/hub/KnowledgeTab.vue'))
+const FrontierTab = defineAsyncComponent(() => import('@/components/contribution/hub/FrontierTab.vue'))
+const BuildTab = defineAsyncComponent(() => import('@/components/contribution/hub/BuildTab.vue'))
+const ResearchTab = defineAsyncComponent(() => import('@/components/contribution/hub/ResearchTab.vue'))
+
+const TABS: HubTab[] = ['knowledge', 'frontier', 'build', 'research']
+const STORE_KEY = 'subskin.peer.tab'
+const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
 const { navItems } = useMainNav()
-const title = computed(() => navItems.value.find(x => x.path === '/contribution')?.label ?? '')
-const { overview, distribution, timeline, loading, overviewError, distributionError, timelineError, load } = useContributionOverview()
-const mine = useMyContributions()
-// 手机端月份图与部位图合为一组切换，平板/桌面并排
-const chart = ref<'trend' | 'body'>('trend')
-function retryCharts() { void load(); if (mine.summary.value) void mine.load() }
+const title = computed(() => navItems.value.find(x => x.path === '/contribution')?.label ?? '同行')
+const ov = useContributionOverview()
+
+const isTab = (v: unknown): v is HubTab => typeof v === 'string' && (TABS as string[]).includes(v)
+function stored(): HubTab | null {
+  try { const v = localStorage.getItem(STORE_KEY); return isTab(v) ? v : null } catch { return null }
+}
+function initialTab(): HubTab {
+  const q = route.query.tab
+  if (isTab(q)) return q
+  return auth.isLoggedIn ? stored() ?? 'build' : 'knowledge'
+}
+const tab = ref<HubTab>(initialTab())
+
+function select(next: HubTab) {
+  tab.value = next
+  if (auth.isLoggedIn) { try { localStorage.setItem(STORE_KEY, next) } catch { /* 隐私模式忽略 */ } }
+  if (route.query.tab !== next) void router.replace({ query: { ...route.query, tab: next } })
+}
+// 浏览器前进/后退或外部深链改变 ?tab= 时同步
+watch(() => route.query.tab, (q) => { if (isTab(q) && q !== tab.value) tab.value = q })
+
 let schema: HTMLScriptElement | undefined
 onMounted(() => {
   schema = document.createElement('script')
   schema.type = 'application/ld+json'
-  schema.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'CollectionPage', name: `${title.value} · 病友共同建设`, description: '查看个人贡献与病友共同积累的有效图片、采纳月份与部位分布。', url: `${location.origin}/contribution` })
+  schema.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'CollectionPage', name: `${title.value} · 一起看懂白癜风`, description: '带证据等级和来源的白癜风知识卡片、研发进展，以及病友共同积累的有效图片、采纳月份与部位分布。', url: `${location.origin}/contribution` })
   document.head.appendChild(schema)
 })
 onBeforeUnmount(() => schema?.remove())
@@ -28,26 +52,22 @@ onBeforeUnmount(() => schema?.remove())
 
 <template>
   <div class="page space-y-4 pb-6 pt-4 text-gray-900 dark:text-gray-100 md:space-y-5 md:pt-6">
-    <h1 class="sr-only">{{ title }}</h1>
+    <header>
+      <h1 class="text-xl font-semibold max-md:sr-only">{{ title }}<span class="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">一起看懂白癜风</span></h1>
+    </header>
 
-    <div class="grid gap-4 md:grid-cols-2">
-      <ContributionPersonal :summary="mine.summary.value" :loading="mine.loading.value" :error="mine.error.value" @retry="mine.load" />
-      <ContributionWaffle :overview="overview" :summary="mine.summary.value" :loading="loading" :error="overviewError" @retry="load" />
+    <MilestoneStrip :overview="ov.overview.value" :loading="ov.loading.value" :error="ov.overviewError.value" />
+
+    <div class="md:flex md:items-start md:gap-6">
+      <HubTabNav :model-value="tab" :logged-in="auth.isLoggedIn" @update:model-value="select" />
+      <div id="hub-panel" role="tabpanel" class="mt-4 min-w-0 flex-1 md:mt-0">
+        <KeepAlive>
+          <KnowledgeTab v-if="tab === 'knowledge'" />
+          <FrontierTab v-else-if="tab === 'frontier'" />
+          <BuildTab v-else-if="tab === 'build'" :overview="ov.overview.value" :distribution="ov.distribution.value" :timeline="ov.timeline.value" :loading="ov.loading.value" :overview-error="ov.overviewError.value" :distribution-error="ov.distributionError.value" :timeline-error="ov.timelineError.value" @reload="ov.load" />
+          <ResearchTab v-else />
+        </KeepAlive>
+      </div>
     </div>
-
-    <section aria-label="采纳月份与部位分布">
-      <div class="mb-3 grid grid-cols-2 rounded-xl bg-gray-100 p-1 dark:bg-gray-800 md:hidden" role="tablist" aria-label="切换图表">
-        <button type="button" role="tab" class="min-h-10 rounded-lg text-sm" :class="chart === 'trend' ? 'bg-white font-medium text-primary-700 shadow-sm dark:bg-gray-700 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400'" :aria-selected="chart === 'trend'" @click="chart = 'trend'">月份积累</button>
-        <button type="button" role="tab" class="min-h-10 rounded-lg text-sm" :class="chart === 'body' ? 'bg-white font-medium text-primary-700 shadow-sm dark:bg-gray-700 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400'" :aria-selected="chart === 'body'" @click="chart = 'body'">部位分布</button>
-      </div>
-      <div class="grid items-stretch gap-4 md:grid-cols-2">
-        <ContributionTrend :class="chart !== 'trend' && 'max-md:hidden'" :timeline="timeline" :personal-timeline="mine.visuals.value?.timeline ?? null" :loading="loading" :error="timelineError" @retry="retryCharts" />
-        <ContributionBodyChart :class="chart !== 'body' && 'max-md:hidden'" :distribution="distribution" :personal="mine.visuals.value" :loading="loading" :error="distributionError" :personal-error="mine.visualsError.value" @retry="retryCharts" />
-      </div>
-    </section>
-
-    <ContributionGrowth :summary="mine.summary.value" :rules="overview?.rules ?? []" :levels="overview?.levels ?? []" :events="mine.events.value" :total-events="mine.totalEvents.value" :events-error="mine.eventsError.value" :loading-events="mine.loadingEvents.value" :sync-error="mine.syncError.value" @more="mine.moreEvents" @retry="mine.load" />
-
-    <MedicalDisclaimer variant="footer" message="贡献图表呈现共同建设进度，部位颜色不表示病情严重度，统计不代表诊断、治疗效果或康复人数。" />
   </div>
 </template>

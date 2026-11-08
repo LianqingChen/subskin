@@ -302,7 +302,7 @@ Before deploying to production, verify ALL of the following:
 | `nginx-config` | Nginx 配置管理 | 修改 nginx 配置、SSL、路由、反向代理 |
 | `llm-testing` | AI/LLM 功能测试 | RAG 向量化、智能问答、VASI 评估测试 |
 | `3d-model-work` | 3D 模型工作 | 数字人/熊猫模型的加载和渲染 |
-| `vitiligo-pixel-labeling` | 白癜风皮肤/白斑逐像素五类标注；场景路由 A手足/B面颈大斑/C颈肢特写；复盘→LESSONS；目标像素准确度≥99.99% | 管理后台图片打标、训练样本涂层、face-gb、白斑识别 |
+| `vitiligo-pixel-labeling` | 白癜风皮肤/白斑逐像素五类标注；日记照片第三方分析按 STD-03 告知授权；场景路由 A手足/B面颈大斑/C颈肢特写；复盘→LESSONS；目标像素准确度≥99.99% | 管理后台图片打标、训练样本涂层、face-gb、白斑识别 |
 
 **IMPORTANT**: Before any frontend work, load the `frontend-architect` skill to ensure compliance with project standards. Before any backend work, load the `backend-architect` skill to ensure compliance with project standards.
 
@@ -593,7 +593,7 @@ User privacy and data security are the lifeblood of SubSkin. A single data leak 
 | Level | Examples | Rule |
 |-------|----------|------|
 | 🔴 L4-Critical | 密码、银行卡号、身份证号、JWT token | **绝对不可出现在任何 API 响应、日志、前端代码、公开页面、GitHub。** 不可明文存储（密码必须 bcrypt hash，token 过期即废弃）。 |
-| 🟠 L3-High | 手机号、邮箱、病情图片、个人照片、音频、视频、体检报告、真实姓名、家庭住址 | **不可暴露给任何第三方或其他用户。** API 返回时脱敏（手机号 `138****1234`，邮箱前2字符+`***@domain`）。图片/文件仅授权用户本人可访问。 |
+| 🟠 L3-High | 手机号、邮箱、病情图片、个人照片、音频、视频、体检报告、真实姓名、家庭住址 | **不得未经授权提供给第三方或其他用户。** 日记照片可在事先告知实际服务商、模型及处理范围后，由用户点击「同意并开始 AI 分析」授权本次第三方模型分析，详见 STD-03 §5.1。API 返回时脱敏（手机号 `138****1234`，邮箱前2字符+`***@domain`）。图片/文件访问需鉴权。 |
 | 🟡 L2-Medium | 用户昵称、头像、发表内容、收藏、评估历史摘要 | 用户自主选择公开/私密。社区分享由用户主动授权，**所有授权操作必须留不可篡改的审计记录**。 |
 | 🟢 L1-Public | 知识库内容、公开帖子、匿名统计数据 | 可公开访问，但数据采集仍需注明来源。 |
 
@@ -608,6 +608,10 @@ User privacy and data security are the lifeblood of SubSkin. A single data leak 
 7. **HTTPS everywhere**: 所有 API 必须 HTTPS，所有前端资源 HTTPS。
 8. **Minimize data collection**: 只收集功能必需的数据，不收集「以后可能有用」的数据。
 9. **`privacy_mode` naming warning**: DB 列 `privacy_mode` 语义为 `True = 可被发现 (open)`，`False = 隐藏 (hidden)`——与字面含义相反。API 层已添加 `is_discoverable` 别名。新代码应优先使用 `is_discoverable`，避免因 "privacy mode" 的字面含义写出反逻辑。
+
+### Diary Photo AI Analysis Authorization（2026-11-06）
+
+日记照片仍为 L3，但不再一律禁止第三方模型分析。遵循 `docs/standards/03-privacy-security-compliance.md` §5.1：**先告知、再点击、按本次范围分析、留存授权记录**。用户在清楚可见的服务商/模型及照片处理说明旁点击「同意并开始 AI 分析」，可作为本次分析的主动授权，无需重复叠加相同确认。单独保存日记、旧版笼统的「AI 分析」点击、管理员指令，均不自动授权第三方处理历史照片；训练/研究仍按独立用途授权。本规则替代技能中原有的日记照片绝对禁止外发条款；未满足条件时继续仅本地处理。
 
 ### Data Handling
 - Respect robots.txt and rate limits
@@ -634,9 +638,9 @@ All new features and modifications MUST follow these principles to maintain a un
    - **Mobile**: Horizontal scrollable tabs or drawer overlay (NEVER left sidebar on mobile)
 
 3. **Naming Consistency (Single Source of Truth)**: Use the exact same module names across ALL surfaces (nav, title, header, body text, share sheets, and Canvas posters):
-   - 功能模块命名以 `web/shared/site-modules.json` 和 `web/shared/page-names.json` 为**唯一事实来源**（当前在线模块：问答 `/`、日记 `/assessment`、发现 `/community`、同行 `/contribution`、就医经验 `/hospitals`、体检解读 `/assessment/exam`、调养 `/care`、个人中心 `/profile`）。前端导航（BottomNav / AppSidebar / AppHeader / 小白管家）与后端 AI 导航（`rag.py`）均从它派生，禁止硬编码其他模块名。
+   - 功能模块命名以 `web/shared/site-modules.json` 和 `web/shared/page-names.json` 为**唯一事实来源**（当前在线模块：问答 `/`、日记 `/assessment`、分享 `/community`（2026-10-21 由「发现」更名）、同行 `/contribution`、就医经验 `/hospitals`、体检解读 `/assessment/exam`、调养 `/care`、个人中心 `/profile`）。前端导航（BottomNav / AppSidebar / AppHeader / 小白管家）与后端 AI 导航（`rag.py`）均从它派生，禁止硬编码其他模块名。
    - 旧命名（`白友圈`、`小白助手`、`小白追踪`、`小白社区`、`小白百科`、`小白手账`、`小白日记`、`AI病情日记`、`小白知识库`、`病情追踪`、`手帐`、`测评`、`医评`、`公益`）仅作后端搜索历史关键词别名，**严禁**作为 UI 或海报中的模块名。
-   - 小白百科已下线（内容融入智能问答 / 小白管家），不得向用户透出独立百科入口或页面。
+   - 小白百科已下线（内容融入智能问答 / 小白管家），不得向用户透出独立百科入口或页面。「同行」页内的「知识」栏目（2026-11-07，`/contribution?tab=knowledge`）是证据分级、经医学审核才发布的知识卡，属于同行页的一部分，不是独立百科入口，不得单独加导航项或恢复 `/encyclopedia`。
    - When referring to users within the community, "病友" is acceptable as a term of address.
 
 4. **Theme Color System & Dark Mode Completeness**:

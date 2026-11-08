@@ -4,12 +4,24 @@
 > **Staging changes accumulate here until explicitly pushed to production.**
 > **When user says "推送到正式环境" / "更新到正式环境", it means FULL SYNC — ALL pending items since the last production push will be deployed together, not just the latest change.**
 
+## 2026-11-06 — 日记照片第三方 AI 分析授权规则更新（文档）
+
+- 按用户指令，将绝对禁止外部视觉模型改为告知后的本次分析授权；同步 AGENTS.md、STD-03 §5.1 和 vitiligo-pixel-labeling 技能。
+- 明确实际服务商/模型披露、一次点击授权、后端校验与审计、服务商变更、历史照片授权核对及独立训练授权。
+- 仅更新规则与后台开发文档，未启用第三方照片请求、修改历史同意或更改分析运行逻辑。验证：git diff --check、技能 quick_validate、后台 vite build 均通过；admin buildTime 1793895022231，线上 version.json 与本地一致，已通过 HTTP 核对 DevDocs 产物包含新规则，后端健康检查正常。
+
 ## Pending Changes
 
 > 以下变更待测试环境验证，尚未同步到正式环境。
 
 | 日期 | 环境 | 说明 |
 |------|------|------|
+| 2026-11-07 | 共享后端重启 + 管理后台构建（用户确认） | 后端：新增 knowledge_* 8 张表（仅增量 create_all）；公开 `/api/knowledge/{cards,cards/{slug},pipeline,digests,entities/{key}/graph,research}`（仅已发布，管理员 preview=1 可看草稿）；管理 `/api/admin/knowledge/*`（状态流转、审核记录、种子导入）；贡献统计接受 RGB 工作台金标准（不改 training_eligible）、采纳月份识别 rgb-gold-approved；贡献部位桶从 body-sites.json 派生；rag.py 新增同行导航词。重启后健康检查正常，新旧接口抽查 200，管理接口未登录 401。管理后台新增「知识审核」页并同步 STD-01/03 开发文档，admin buildTime 1794016690651。知识内容尚未导入（种子待后台「导入种子」，全部草稿）。 |
+| 2026-11-07 | staging（仅前端；后端改动未重启） | 同行页改为「知识 / 前沿 / 共建 / 科研」四栏目（`?tab=` 深链，未登录默认知识，登录记住上次栏目；共建=原同行页内容不变）；知识卡证据等级徽标与详情抽屉、研发管线卡片、论文速递、科研栏数据去向与承诺；共同里程碑条；管理员可预览草稿。后端 `/api/knowledge/*` 未上线前新栏目显示「内容正在医学审核」空状态。同步 site-modules.json 同行说明/关键词。buildTime 1794016524199。分支 design/peer-page-knowledge-hub；计划 hermes_plan/2026-11-07-peer-hub-p0-p1.md。**待用户确认**：后端重启（knowledge_* 新表、RGB 金标准计入贡献、部位口径派生自 body-sites.json、rag.py 导航词）与管理后台「知识审核」构建。 |
+| 2026-11-05 | staging | 问答页撤掉页面内免责声明（输入栏下方那行）：回答下方已有免责标识，页面不再重复放置；仅前端，buildTime 1793891941297。 |
+| 2026-11-05 | staging | 问答页：访客不再显示"今日剩余 N 次"；免费次数用完后再次提问直接提示并弹出登录框（不再请求后端）；免责声明移至输入栏下方（桌面空闲态贴页面底部），与全站页脚位置统一。仅前端，buildTime 1793891500984。 |
+| 2026-11-05 | staging | 问答页空闲态去掉中间机器人图标块，保留免责声明，页面更简洁；仅前端，buildTime 1793890485687。 |
+| 2026-11-01 | staging | 日记照片涂层编辑器沉浸式布局：扩展画布，整理画笔、候选区域、AI 辅助和保存操作；退出保护；类型检查和构建通过，buildTime 1793537911255。 |
 | 2026-10-31 | staging | 日记响应式布局统一：Tab/正文共享容器，桌面记录与历史双栏，手机单列；统一工具栏与滚动规则、拍照工作区宽度及体检上传入口；修复体检对比栏手机遮挡底部导航/窄屏挤出，改善深色选中 Tab 对比度与首页标题层级；独立测试发现并修复报告长文件名/标签溢出，补齐报告操作触控与键盘入口。buildTime 1793414478921；三内核及触控模拟 504 组通过，见 docs/audits/2026-10-31-diary-responsive-qa.md。 |
 | 2026-10-31 | staging（后端改动待重启） | 年龄门槛+健康数据单独同意（faca1da）：注册须勾选年满 18 周岁并记录 age_18；上传病情照片/体检报告前弹出健康数据授权，拒绝即不上传；隐私设置新增健康数据开关，并修复该面板开关状态从不加载的旧 bug。后端 `/vasi/segmentation-jobs` 补同意门槛与日配额（需下次后端重启生效；强制开关 `REQUIRE_HEALTH_DATA_CONSENT` 仍关闭）。隔离环境浏览器验证 a–f 通过（空库 :8010 + vite :5180，未触碰线上库）。staging buildTime 1793408441102（含 story-flow 在途改动）。 |
 | 2026-10-31 | 共享后端+staging | 千人规模加固（见下方同日章节）：后端 WAL、LLM 超时/并发上限、每用户日配额、短信/邮件全站上限、上传图片转码去 EXIF；前端 AI 生成标识、旧 chunk 自愈、PWA 更新不丢输入、预缓存瘦身；nginx gzip/限流/20m。staging buildTime 1793406846534（含下条 story-flow 在途改动的合并构建）。 |
@@ -372,6 +384,8 @@
 | 2026-06-21 | 后端·VASI白斑识别 | **⚠️共享后端，已立即生效于全环境**。增强白斑范围与边缘识别精准度，3步改动：①重写VLM静态prompt(vasi.py)——恢复输出bbox+edge_points+skin_region，注入色素脱失量化标准(0级<0.10/1级0.10-0.20/2级0.20-0.40/3级>0.40)、Fitzpatrick肤色自适应提示、非白斑反例约束(高光/疤痕/白化痣/参考卡)、边缘几何约束(edge_points紧贴bbox内)；修复旧prompt"bbox已不再需要"与SAM代码优先用bbox的矛盾。②接通edge_points——vasi.py主流程重建lesion_edge_points并传入segment_vitiligo_guided；vasi_segmentation.py签名新增参数，在VLM bbox盒提示基础上叠加edge_points作为SAM正提示点(box+points组合提示)，精修不规则边缘。③超参可调——temperature/max_tokens/timeout改为环境变量读取(VASI_VLM_TEMPERATURE=0.0/VASI_VLM_MAX_TOKENS=8192/VASI_VLM_TIMEOUT=120，原硬编码0.1/4096/90)，边缘定位更确定性、大图多斑不截断。④VLM模型qwen-vl-max→qwen3-vl-plus(.env+DB llm_module_configs双改)。离线验证：样本图返回4个病灶，每个含bbox+6-7个edge_points+boundary_type，JSON一次解析成功。无DB schema变更。 | 后端重启即生效 |
 
 ## Staging Deployment History
+
+- 2026-11-01：日记涂层编辑工作台，buildTime 1793537911255；vue-tsc、staging 构建及 API health 通过；PWA manifest 与 sw.js 正常。
 
 ### 2026-10-31 — 日记布局统一与跨浏览器验收（1793414478921）
 
