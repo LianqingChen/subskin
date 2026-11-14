@@ -23,3 +23,6 @@ python-alipay-sdk>=3.7.0
 
 # Email
 python-dotenv>=1.0.0
+
+# Read the frozen auxiliary segmentation checkpoint
+safetensors==0.6.2

@@ -7,8 +7,9 @@ import ReferenceCalibration from './ReferenceCalibration.vue'
 import { PART_LABELS } from '@/constants/bodySites'
 import type { ObservationContext } from '@/types/assessment'
 import type { QualityCheckResult } from '@/api/vasi'
-const props = defineProps<{ context: ObservationContext; bodySite: string; preview: string | null; baselineUrl?: string | null; quality: QualityCheckResult | null; checking: boolean; busy: boolean; qualityError?: string; needsLogin?: boolean; dateNote?: string; stage?: string; fitScreen?: boolean; creative?: boolean }>()
-const emit = defineEmits<{ 'update:context': [ObservationContext]; 'update:bodySite': [string]; file: [File, ('gallery' | 'camera')?]; date: [string]; 'retry-quality': []; remove: []; submit: []; cancel: [] }>()
+import type { BailianPreview } from '@/api/rgb-segmentation'
+const props = defineProps<{ context: ObservationContext; bodySite: string; preview: string | null; baselineUrl?: string | null; quality: QualityCheckResult | null; checking: boolean; busy: boolean; qualityError?: string; needsLogin?: boolean; dateNote?: string; stage?: string; fitScreen?: boolean; creative?: boolean; bailian?: BailianPreview | null; bailianBusy?: boolean }>()
+const emit = defineEmits<{ 'update:context': [ObservationContext]; 'update:bodySite': [string]; file: [File, ('gallery' | 'camera')?]; date: [string]; 'retry-quality': []; remove: []; submit: [notice?: string]; cancel: [] }>()
 const camera = ref(false)
 const input = ref<HTMLInputElement | null>(null)
 const stageLabels: Record<string, string> = { queued: '等待分析…', preprocessing: '准备照片…', quality_check: '检查照片…', segmenting: '识别范围…', validating: '核对测量…' }
@@ -49,9 +50,17 @@ const qualityMessage = computed(() => props.checking ? '检查照片中…' : !p
       </fieldset>
       </details>
       <ReferenceCalibration v-if="preview && !busy && !creative" :image="preview" @change="captureCalibration" />
-      <AnalysisWaitStatus v-if="busy" :active="busy" :stage="stageText" @cancel="emit('cancel')" />
+      <AnalysisWaitStatus v-if="busy" :active="busy" :stage="stageText" :long-running="bailianBusy" @cancel="emit('cancel')" />
       <button v-if="preview && !checking && !quality && !busy" class="min-h-[44px] w-full rounded-xl border border-primary-300 text-sm text-primary-700 dark:border-primary-700 dark:text-primary-300" @click="emit('retry-quality')">{{ needsLogin ? '登录后继续检查' : '重新检查照片' }}</button>
-      <button v-if="preview && !busy" :aria-describedby="qualityMessage ? 'capture-quality' : undefined" class="btn-primary min-h-[44px] w-full text-sm rounded-xl disabled:opacity-40" :disabled="!ready" @click="emit('submit')"><i class="ri-scan-line mr-2" aria-hidden="true"></i>{{ creative ? '提取我的轮廓' : '开始分析' }}</button>
+      <div v-if="preview && !busy && bailian" class="space-y-2">
+        <p id="bailian-photo-notice" class="text-xs leading-5 text-gray-600 dark:text-gray-300">
+          百炼试测使用{{ bailian.provider }}的 {{ bailian.model }}。本次照片会去除拍摄元数据，并随分区图发送给百炼，用于生成白斑、皮肤范围和外观标签初稿。五档分析可能需要数小时。小斑照片会加做候选判读，完成后可在编辑器里查看「白斑初稿对照」。
+          百炼按法规要求留存调用数据，按量付费 API 的输入不会用于模型训练。详情见<a :href="bailian.privacy_url" class="underline" target="_blank" rel="noopener noreferrer">阿里云隐私说明</a>。
+        </p>
+        <button type="button" class="btn-primary min-h-[44px] w-full rounded-xl text-sm disabled:opacity-40" aria-describedby="bailian-photo-notice" :disabled="!ready || !bailian.ready" @click="emit('submit', bailian.notice)">同意并开始 AI 分析</button>
+        <p v-if="!bailian.ready" role="status" class="text-xs text-gray-600 dark:text-gray-300">百炼试测暂未接通</p>
+      </div>
+      <button v-if="preview && !busy" :aria-describedby="qualityMessage ? 'capture-quality' : undefined" class="min-h-[44px] w-full text-sm rounded-xl disabled:opacity-40" :class="bailian?.ready ? 'btn-secondary' : 'btn-primary'" :disabled="!ready" @click="emit('submit')"><i class="ri-scan-line mr-2" aria-hidden="true"></i>{{ creative ? '提取我的轮廓' : bailian ? '使用本地分析' : '开始分析' }}</button>
     </div>
     <input ref="input" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="selected" />
     <BodyPartCamera v-model="camera" :body-part="bodySite" :baseline-url="baselineUrl" @captured="captured" />

@@ -303,6 +303,7 @@ Before deploying to production, verify ALL of the following:
 | `llm-testing` | AI/LLM 功能测试 | RAG 向量化、智能问答、VASI 评估测试 |
 | `3d-model-work` | 3D 模型工作 | 数字人/熊猫模型的加载和渲染 |
 | `vitiligo-pixel-labeling` | 白癜风皮肤/白斑逐像素五类标注；日记照片第三方分析按 STD-03 告知授权；场景路由 A手足/B面颈大斑/C颈肢特写；复盘→LESSONS；目标像素准确度≥99.99% | 管理后台图片打标、训练样本涂层、face-gb、白斑识别 |
+| `vlm-vitiligo-labeling` | 视觉模型区域判读、像素与连通区域复核、网格误差归因、修正覆盖核对、像素投票融合、分歧像素校准、颜色候选盲复核、混合区域逐像素确认、区域覆盖范围复核、重复与跨问法一致性验证、跨来源与同图参照验证、自动皮肤范围漏裁诊断、逐图与多模型回归、公开像素模型整图、阈值、方向与论文来源留出验证、百炼预览模型对照、审核导出、逐模型金标与标签验收 | 视觉模型打标、百炼白斑识别、模型对比、金标复现 |
 
 **IMPORTANT**: Before any frontend work, load the `frontend-architect` skill to ensure compliance with project standards. Before any backend work, load the `backend-architect` skill to ensure compliance with project standards.
 

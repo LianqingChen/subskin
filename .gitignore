@@ -202,3 +202,6 @@ ml/pixel_labeling/models/
 
 # web/app/src/data holds source (catalogs, province list), not runtime data
 !web/app/src/data/
+
+# Local model evaluation receipts and per-photo summaries
+ml/vlm_labeling/runs/

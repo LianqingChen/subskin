@@ -14,6 +14,7 @@ const router = useRouter()
 
 const showHistory = ref(false)
 const guestRemaining = ref<number | null>(null)
+const GUEST_LIMIT_MESSAGE = '今日免费提问次数（5次）已用完。登录后即可继续提问，解锁更多功能～'
 
 const isStreaming = computed(() => chatStore.messages.some(m => m.isSkeleton))
 const hasMessages = computed(() => chatStore.messages.length > 0)
@@ -28,6 +29,14 @@ async function sendMessage(text?: string, attachmentIds: string[] = []) {
 
   chatStore.clearNavSuggestions()
   chatStore.addMessage('user', t)
+
+  // 访客免费次数用完：不再请求后端，直接引导登录
+  if (!authStore.isLoggedIn && guestRemaining.value === 0) {
+    chatStore.addMessage('assistant', GUEST_LIMIT_MESSAGE)
+    authStore.showLoginModal = true
+    return
+  }
+
   const skeletonId = chatStore.addThinkingMessage()
 
   const mode = 'butler'
@@ -56,9 +65,10 @@ async function sendMessage(text?: string, attachmentIds: string[] = []) {
     }
     stream.reader.onError = (error: string) => {
       chatStore.removeMessage(skeletonId)
-if (error.includes('已用完') || error.includes('429')) {
-    chatStore.addMessage('assistant', '免费次数已用完，请登录后继续')
+      if (error.includes('已用完') || error.includes('429')) {
+        chatStore.addMessage('assistant', GUEST_LIMIT_MESSAGE)
         guestRemaining.value = 0
+        authStore.showLoginModal = true
       } else {
         chatStore.addMessage('assistant', `抱歉，${error}`)
       }
@@ -133,10 +143,6 @@ defineExpose({ sendMessage, toggleHistory })
     </Transition>
 
     <!-- Guest quota：整体上移，避开底部 fixed 输入区（正念呼吸/用药提醒 + 输入栏）遮挡 -->
-    <div v-if="!authStore.isLoggedIn && guestRemaining !== null && !hasMessages" class="text-center pb-14 md:pb-0 md:pt-4 space-y-1">
-      <span class="text-[10px] text-gray-400 dark:text-gray-500">今日剩余 {{ guestRemaining }} 次</span>
-      <button v-if="guestRemaining !== null && guestRemaining <= 1" type="button" class="block mx-auto text-[10px] text-primary-500 hover:text-primary-600" @click="authStore.showLoginModal = true">登录获取更多次数 →</button>
-    </div>
 
     <!-- Messages -->
     <div v-if="hasMessages" class="space-y-3 pb-2">

@@ -1,0 +1,20 @@
+[Unit]
+Description=SubSkin Bailian assessment API
+After=network.target
+
+[Service]
+WorkingDirectory=/root/subskin
+EnvironmentFile=/root/subskin/web/backend/.env
+EnvironmentFile=/root/subskin/data/bailian-assessment-preview.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/root/subskin/.venv/bin/python -m uvicorn web.backend.api.bailian_assessment_preview:app --host 127.0.0.1 --port 8008 --no-access-log
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/root/subskin/data
+
+[Install]
+WantedBy=multi-user.target

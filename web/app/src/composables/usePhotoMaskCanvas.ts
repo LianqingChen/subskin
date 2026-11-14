@@ -227,6 +227,27 @@ export function usePhotoMaskCanvas(options: PhotoCanvasOptions, target: Ref<HTML
       if (!controller.signal.aborted) error.value = e instanceof RGBTaskError ? e.message : assessmentError(e, '边界贴合暂未完成，可使用画笔调整')
     } finally { snapping.value = false; busyNote.value = ''; syncCandidate() }
   }
+  async function loadLesionDraft(fetchDraft: (signal: AbortSignal) => Promise<string>) {
+    const state = loaded
+    if (!state || painting.value || refining.value || outlining.value || snapping.value || options.busy) return
+    refineController?.abort()
+    const controller = new AbortController()
+    refineController = controller
+    const before = cloneSnap(state.masks)
+    snapping.value = true
+    error.value = ''
+    busyNote.value = '正在载入白斑初稿…'
+    try {
+      const image = await loadMaskImage(await fetchDraft(controller.signal))
+      if (controller.signal.aborted || loaded !== state) return
+      const { width, height } = state.masks
+      if (image.naturalWidth !== width || image.naturalHeight !== height) throw new RGBTaskError('REVISION_CONFLICT')
+      replaceLayer(state.masks, 'lesion', readMaskAlpha(image, width, height))
+      dirty = undefined; render(); recordChange(before)
+    } catch (e) {
+      if (!controller.signal.aborted) error.value = assessmentError(e, '白斑初稿载入失败，请重试')
+    } finally { snapping.value = false; busyNote.value = ''; syncCandidate() }
+  }
   function down(e: PointerEvent) {
     if (!options.editable || options.busy || refining.value || outlining.value || snapping.value || !ready.value || !loaded) return
     if (activePointer !== null) { cancelStroke(); return }
@@ -264,5 +285,5 @@ export function usePhotoMaskCanvas(options: PhotoCanvasOptions, target: Ref<HTML
   watch(() => [options.image, options.skin, options.lesion, options.candidate], load)
   onMounted(load)
   onBeforeUnmount(() => { generation++; endStroke(); refineController?.abort(); if (frame) cancelAnimationFrame(frame); loaded = null })
-  return { ready, error, painting, refining, outlining, snapping, hasCandidate, busyNote, canUndo, canRedo, undo, redo, load, down, move, up, cancelStroke, snapshot, runOutline, adoptCandidates, discardCandidates, snapEdges }
+  return { ready, error, painting, refining, outlining, snapping, hasCandidate, busyNote, canUndo, canRedo, undo, redo, load, down, move, up, cancelStroke, snapshot, runOutline, adoptCandidates, discardCandidates, snapEdges, loadLesionDraft }
 }

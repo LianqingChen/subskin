@@ -1,0 +1,26 @@
+[Unit]
+Description=SubSkin Bailian assessment worker
+After=network-online.target
+
+[Service]
+WorkingDirectory=/root/subskin
+EnvironmentFile=/root/subskin/data/rgb-worker.env
+EnvironmentFile=/root/subskin/data/bailian-assessment-preview.env
+Environment=OMP_NUM_THREADS=2
+Environment=MKL_NUM_THREADS=2
+Environment=OPENBLAS_NUM_THREADS=2
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/root/subskin/.venv/bin/python -m web.backend.bailian_assessment_worker
+Restart=on-failure
+RestartSec=3
+KillMode=control-group
+CPUQuota=200%
+MemoryMax=4G
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/root/subskin/data
+
+[Install]
+WantedBy=multi-user.target

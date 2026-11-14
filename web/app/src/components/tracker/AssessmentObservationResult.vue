@@ -12,6 +12,10 @@ const emit = defineEmits<{ save: []; adjust: []; compare: []; done: []; share: [
 const showOriginal = ref(false), showDetails = ref(false), showStory = ref(false)
 const summary = computed(() => journalSummary(props.result))
 const measure = computed(() => props.result.measurement)
+const tags = computed(() => measure.value?.annotation?.ai_tags)
+const appearanceNames: Record<string, string> = {
+  colour_terms: '颜色', morphology: '形态', border: '边缘', pigment_islands: '色素岛', white_hair: '白毛',
+}
 </script>
 <template>
   <article class="w-full space-y-4">
@@ -42,6 +46,14 @@ const measure = computed(() => props.result.measurement)
             <p v-for="reason in measure?.reasons || []" :key="reason">{{ reason }}</p>
             <p v-if="summary.measurable && measure?.lesion_pixels != null">白斑 {{ measure.lesion_pixels }} 像素，皮肤 {{ measure.skin_pixels }} 像素。</p>
             <p v-if="summary.measurable && measure?.area_cm2 != null">参照物估算 {{ measure.area_cm2 }} cm²，仅为二维投影面积。</p>
+            <dl v-if="tags" class="space-y-1">
+              <div class="font-medium">百炼外观标签 · 待复核</div>
+              <div v-if="tags.affected_body_site_candidates.length"><dt class="inline">受累部位 </dt><dd class="inline">{{ tags.affected_body_site_candidates.map(site => site.label).join('、') }}</dd></div>
+              <div v-for="(values, field) in tags.structured_appearance_value_counts" :key="field">
+                <template v-if="Object.keys(values).length"><dt class="inline">{{ appearanceNames[field] }} </dt><dd class="inline">{{ Object.keys(values).join('、') }}</dd></template>
+              </div>
+              <div><dt class="inline">临床分型候选 </dt><dd class="inline">{{ Object.keys(tags.clinical_candidates.candidate_type_counts).join('、') }} · 待确认</dd></div>
+            </dl>
           </div>
         </div>
       </section>

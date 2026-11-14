@@ -14,6 +14,7 @@ export function useVasiAssess() {
   const auth = useAuthStore()
   const isUploading = ref(false)
   const uploadStage = ref('')
+  const isBailianAnalysis = ref(false)
   const assessmentResult = ref<AssessmentResult | null>(null)
   const lastAssessment = ref<AssessmentResult | null>(null)
   const showContourEditor = ref(false)
@@ -52,17 +53,18 @@ export function useVasiAssess() {
     visualFeatures.value = data.visual_features ?? null
     autoFinalized.value = data.record_status ? data.record_status === 'active' : data.measurement?.annotation?.review_state !== 'pending'
   }
-  async function submitAssessment(image: File, bodySite: string, _precision = 'quick', _hasReferenceCard = false, observation?: ObservationContext) {
+  async function submitAssessment(image: File, bodySite: string, _precision = 'quick', _hasReferenceCard = false, observation?: ObservationContext, bailianNotice?: string) {
     const current = ++generation
     const owner = auth.user?.id
     isUploading.value = true
+    isBailianAnalysis.value = !!bailianNotice
     uploadStage.value = 'analyzing'
     lastAssessment.value = null
     assessmentResult.value = null
     try {
       taskController?.abort()
       taskController = new AbortController()
-      const job = await rgbApi.assess(image, bodySite, observation, taskController.signal, stage => { if (current === generation) uploadStage.value = stage })
+      const job = await rgbApi.assess(image, bodySite, observation, taskController.signal, stage => { if (current === generation) uploadStage.value = stage }, bailianNotice)
       if (current !== generation) { void rgbApi.cancel(job.jobId).catch(() => undefined); return }
       const data = await vasiApi.getAssessment(job.assessmentId)
       if (current !== generation || auth.user?.id !== owner || !auth.isLoggedIn) return
@@ -84,7 +86,7 @@ export function useVasiAssess() {
       toast.error(error instanceof RGBTaskError ? error.message : assessmentError(error, '照片暂不能完成分析，请稍后重试'))
       throw error
     } finally {
-      if (current === generation) { isUploading.value = false; uploadStage.value = '' }
+      if (current === generation) { isUploading.value = false; isBailianAnalysis.value = false; uploadStage.value = '' }
     }
   }
   async function skipContourEdit() {
@@ -154,9 +156,9 @@ export function useVasiAssess() {
     if (assessmentResult.value && !autoFinalized.value) await vasiApi.abandonAssessment(assessmentResult.value.id)
     cleanupState()
   }
-  function cancelPending() { taskController?.abort(); taskController = null; generation++; isUploading.value = false; uploadStage.value = ''; cleanupState() }
+  function cancelPending() { taskController?.abort(); taskController = null; generation++; isUploading.value = false; isBailianAnalysis.value = false; uploadStage.value = ''; cleanupState() }
   onBeforeUnmount(() => cancelPending())
-  return { isUploading, uploadStage, assessmentResult, lastAssessment, showContourEditor, highConfidence,
+  return { isUploading, isBailianAnalysis, uploadStage, assessmentResult, lastAssessment, showContourEditor, highConfidence,
     isSubmittingContour, aiSkinLayerUrl, aiLesionLayerUrl, assessmentSource, suspectedLesions,
     visualFeatures, autoFinalized, patientModelVersion, annotatedImage, contourDiffResult,
     loadAssessment, submitAssessment, selectRegion, outlineRegions, snapEdges, skipContourEdit, handleTwoLayerConfirm, cancelAssessment, cleanupState, cancelPending }

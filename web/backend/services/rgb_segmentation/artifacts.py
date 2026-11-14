@@ -17,7 +17,8 @@ ROOT = Path(
 )
 JOB_PATTERN = re.compile(r"^[a-f0-9]{32}$")
 REVISION_PATTERN = re.compile(r"^[a-f0-9]{64}$")
-KINDS = {"source", "image", "skin", "lesion", "uncertain", "excluded", "metadata"}
+FUSION_KINDS = {"boundary_lesion", "smallspot_lesion"}
+KINDS = {"source", "image", "skin", "lesion", "uncertain", "excluded", "metadata", *FUSION_KINDS}
 
 
 def job_directory(job_id: str) -> Path:
@@ -100,14 +101,11 @@ def write_revision(
     return manifest
 
 
-def read_artifact(job_id: str, revision: str, kind: str) -> bytes:
-    if not REVISION_PATTERN.fullmatch(revision) or kind not in {
-        "image",
-        "skin",
-        "lesion",
-        "uncertain",
-        "excluded",
-    }:
+def read_artifact(job_id: str, revision: str, kind: str, *, fusion_preview=False) -> bytes:
+    allowed = {"image", "skin", "lesion", "uncertain", "excluded"}
+    if fusion_preview:
+        allowed.update(FUSION_KINDS)
+    if not REVISION_PATTERN.fullmatch(revision) or kind not in allowed:
         raise RGBSegmentationError("NOT_FOUND", "标注不存在", 404)
     folder = job_directory(job_id) / revision
     try:

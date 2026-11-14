@@ -10,7 +10,7 @@ const state = usePhotoMaskCanvas(props, canvas)
 watch(state.ready, value => emit('ready', value))
 watch(() => state.refining.value || state.outlining.value || state.snapping.value, value => emit('refining', value))
 watch(state.hasCandidate, value => emit('candidates', value))
-defineExpose({ snapshot: state.snapshot, outline: state.runOutline, adoptCandidates: state.adoptCandidates, discardCandidates: state.discardCandidates, snapEdges: state.snapEdges })
+defineExpose({ snapshot: state.snapshot, outline: state.runOutline, adoptCandidates: state.adoptCandidates, discardCandidates: state.discardCandidates, snapEdges: state.snapEdges, loadLesionDraft: state.loadLesionDraft })
 
 // ── 缩放 / 平移：只改 CSS transform，坐标换算仍基于 getBoundingClientRect，画笔半径随缩放按屏幕像素换算，放大后更精细 ──
 const MIN_ZOOM = 1, MAX_ZOOM = 6

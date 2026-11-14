@@ -11,7 +11,7 @@ import { useVasiShare } from '@/composables/useVasiShare'
 import { useComparisonHistory } from '@/composables/useComparisonHistory'
 import siteModules from '../../../shared/site-modules.json'
 import { BODY_SITES } from '@/constants/bodySites'
-import type { ObservationContext } from '@/types/assessment'
+import type { FusionLesionLayer, ObservationContext } from '@/types/assessment'
 import AssessmentCapture from '@/components/tracker/AssessmentCapture.vue'
 import AssessmentObservationResult from '@/components/tracker/AssessmentObservationResult.vue'
 import AssessmentRecords from '@/components/tracker/AssessmentRecords.vue'
@@ -21,6 +21,7 @@ import AnnotationReviewPanel from '@/components/tracker/AnnotationReviewPanel.vu
 import { defaultCaptureDate, localToday, type CaptureSource } from '@/utils/capture-date'
 import { toProtectedFileUrl } from '@/utils/file-url'
 import { vasiApi } from '@/api/vasi'
+import { rgbApi, type BailianPreview } from '@/api/rgb-segmentation'
 import MedicalDisclaimer from '@/components/common/MedicalDisclaimer.vue'
 import AssessmentVisualHome from '@/components/tracker/AssessmentVisualHome.vue'
 import StoryCaptureIntro from '@/components/tracker/StoryCaptureIntro.vue'
@@ -41,6 +42,15 @@ const share = useVasiShare(assess)
 type Screen = 'home' | 'capture' | 'result' | 'records'
 const screen = ref<Screen>('home')
 const storyMode = computed(() => route.name === 'assessment-story')
+const bailian = ref<BailianPreview | null>(null)
+watch([screen, storyMode, () => auth.user?.id], async ([mode, story, owner], _, onCleanup) => {
+  bailian.value = null
+  if (mode !== 'capture' || story || !owner) return
+  let current = true
+  onCleanup(() => { current = false })
+  const capability = await rgbApi.bailianPreview()
+  if (current) bailian.value = capability
+})
 const autoStartStory = ref(false)
 const pageRef = ref<HTMLElement | null>(null)
 watch(screen, async () => { await nextTick(); pageRef.value?.scrollTo({ top: 0 }) })
@@ -65,6 +75,12 @@ watch(editing, async on => {
 let dateGeneration = 0
 const assessmentLabel = siteModules.modules.find(m => m.path === '/assessment')?.label || '日记'
 const result = computed(() => assess.lastAssessment.value)
+const fusionAnnotation = computed(() => result.value?.measurement?.annotation)
+async function loadFusionLayer(kind: FusionLesionLayer | 'lesion', signal: AbortSignal) {
+  const annotation = fusionAnnotation.value
+  if (!annotation?.job_id || !annotation.mask_revision || !annotation.fusion_preview) throw new Error('试测初稿不可用')
+  return rgbApi.fusionLesion(annotation.job_id, annotation.mask_revision, kind, signal)
+}
 const busy = computed(() => assess.isUploading.value || assess.isSubmittingContour.value)
 const workScreen = computed(() => screen.value === 'capture' || (screen.value === 'result' && editing.value))
 const containerClass = computed(() => storyMode.value || workScreen.value ? 'page-narrow' : 'page')
@@ -164,13 +180,13 @@ watch(() => auth.token, (token, previous) => {
     upload.qualityError.value = '登录已更新，请重新检查照片'
   }
 })
-async function submit() {
+async function submit(bailianNotice?: string) {
   if (!requireLogin() || !upload.uploadedImage.value || busy.value) return
   if (upload.qualityChecking.value || !upload.qualityResult.value) { toast.warning('照片检查尚未完成'); return }
   if (upload.qualityResult.value.overall === 'poor') { toast.warning('照片过曝、过暗或严重模糊，请重拍'); return }
   if (!context.value.capture_date) { toast.warning('请确认照片日期'); return }
   try {
-    await assess.submitAssessment(upload.uploadedImage.value, upload.selectedBodySite.value, 'quick', false, context.value)
+    await assess.submitAssessment(upload.uploadedImage.value, upload.selectedBodySite.value, 'quick', false, context.value, bailianNotice)
     if (result.value) { editing.value = true; screen.value = 'result' }
   } catch { /* Error already shown by the composable; retain photograph for retry. */ }
 }
@@ -232,9 +248,9 @@ watch(() => auth.isLoggedIn, loggedIn => {
         <h1 class="sr-only">{{ pageTitle }}</h1>
         <StoryCaptureIntro v-if="screen === 'home' && storyMode" :body-site="upload.selectedBodySite.value" :logged-in="auth.isLoggedIn" @select="upload.setBodySite" @camera="cameraFromHome" @files="galleryFromHome" @login="auth.showLoginModal = true" @history="records" />
         <AssessmentVisualHome v-else-if="screen === 'home'" :body-site="upload.selectedBodySite.value" :recent="history.recentAssessments.value" :logged-in="auth.isLoggedIn" :loading="history.loadingHistory.value" @select="upload.setBodySite" @camera="cameraFromHome" @files="galleryFromHome" @history="records" @login="auth.showLoginModal = true" />
-        <AssessmentCapture v-else-if="screen === 'capture'" :creative="storyMode" fit-screen v-model:context="context" :body-site="upload.selectedBodySite.value" :preview="upload.imagePreview.value" :baseline-url="baselineUrl" :quality="upload.qualityResult.value" :checking="upload.qualityChecking.value" :quality-error="upload.qualityError.value" :needs-login="upload.qualityNeedsLogin.value" :date-note="dateNote" :busy="assess.isUploading.value" :stage="assess.uploadStage.value" @update:body-site="upload.setBodySite" @file="fileSelected" @date="changeDate" @retry-quality="retryQuality" @remove="upload.removeImage" @submit="submit" @cancel="assess.cancelPending" />
+        <AssessmentCapture v-else-if="screen === 'capture'" :creative="storyMode" :bailian="bailian" :bailian-busy="assess.isBailianAnalysis.value" fit-screen v-model:context="context" :body-site="upload.selectedBodySite.value" :preview="upload.imagePreview.value" :baseline-url="baselineUrl" :quality="upload.qualityResult.value" :checking="upload.qualityChecking.value" :quality-error="upload.qualityError.value" :needs-login="upload.qualityNeedsLogin.value" :date-note="dateNote" :busy="assess.isUploading.value" :stage="assess.uploadStage.value" @update:body-site="upload.setBodySite" @file="fileSelected" @date="changeDate" @retry-quality="retryQuality" @remove="upload.removeImage" @submit="submit" @cancel="assess.cancelPending" />
         <template v-else-if="screen === 'result' && result">
-          <AnnotationReviewPanel v-if="editing" :creative="storyMode" fit-screen :image="result.measurement?.annotation?.protocol === 'skin-seg-v2' ? toProtectedFileUrl(result.imageUrl) : upload.imagePreview.value || toProtectedFileUrl(result.imageUrl)" :skin="assess.aiSkinLayerUrl.value" :lesion="assess.aiLesionLayerUrl.value" :uncertain="result.measurement?.annotation?.uncertain_pixels ? result.measurement.annotation.uncertain_layer_data_url : null" :reference="baselineMaskUrl" :selector="result.measurement?.annotation?.protocol === 'skin-seg-v2' ? assess.selectRegion : undefined" :outline="result.measurement?.annotation?.protocol === 'skin-seg-v2' ? assess.outlineRegions : undefined" :snap="result.measurement?.annotation?.protocol === 'skin-seg-v2' ? assess.snapEdges : undefined" :busy="busy" @confirm="confirmMasks" @cancel="editing = false" />
+          <AnnotationReviewPanel v-if="editing" :fusion-preview="fusionAnnotation?.fusion_preview" :fusion-layer="loadFusionLayer" :creative="storyMode" fit-screen :image="result.measurement?.annotation?.protocol === 'skin-seg-v2' ? toProtectedFileUrl(result.imageUrl) : upload.imagePreview.value || toProtectedFileUrl(result.imageUrl)" :skin="assess.aiSkinLayerUrl.value" :lesion="assess.aiLesionLayerUrl.value" :uncertain="result.measurement?.annotation?.uncertain_pixels ? result.measurement.annotation.uncertain_layer_data_url : null" :reference="baselineMaskUrl" :selector="result.measurement?.annotation?.protocol === 'skin-seg-v2' ? assess.selectRegion : undefined" :outline="result.measurement?.annotation?.protocol === 'skin-seg-v2' ? assess.outlineRegions : undefined" :snap="result.measurement?.annotation?.protocol === 'skin-seg-v2' ? assess.snapEdges : undefined" :busy="busy" @confirm="confirmMasks" @cancel="editing = false" />
           <StoryCreationResult v-else-if="storyMode" :result="result" :skin="assess.aiSkinLayerUrl.value" :lesion="assess.aiLesionLayerUrl.value" :saved="assess.autoFinalized.value" :busy="busy" :auto-start="autoStartStory" @adjust="editing = true" @restart="back" />
           <AssessmentObservationResult v-else :result="result" :skin-layer="assess.aiSkinLayerUrl.value" :lesion-layer="assess.aiLesionLayerUrl.value" :visual-features="assess.visualFeatures.value" :saved="assess.autoFinalized.value" :busy="busy" :can-compare="!!context.baseline_id" @save="save" @adjust="editing = true" @compare="compareBaseline" @done="records" @share="share.shareResult" @retake="continueRecord({id:result.id,date:context.capture_date || '',bodySite:result.bodySite,imageUrl:result.imageUrl || undefined,observation:result.observation})" />
         </template>

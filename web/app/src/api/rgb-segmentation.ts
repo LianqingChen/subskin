@@ -1,6 +1,6 @@
 import apiClient from './client'
 import { isAxiosError } from 'axios'
-import type { ObservationContext, PhotoMeasurement } from '@/types/assessment'
+import type { FusionLesionLayer, ObservationContext, PhotoMeasurement } from '@/types/assessment'
 import { ensureHealthConsent, HealthConsentDeclined, HEALTH_CONSENT_DECLINED_MESSAGE } from '@/composables/useHealthConsent'
 
 export interface RGBJob {
@@ -11,6 +11,13 @@ export interface RGBJob {
   assessment_id: number | null
   error_code: string | null
   result: { protocol: 'skin-seg-v2'; mask_revision: string; status: string } | null
+}
+export interface BailianPreview {
+  ready: boolean
+  notice: string
+  model: string
+  provider: string
+  privacy_url: string
 }
 export interface RGBSelection {
   x: number; y: number; skinMask: string; signal: AbortSignal
@@ -24,6 +31,10 @@ const messages: Record<string, string> = {
   REVISION_CONFLICT: '标注已变化，请重新加载后调整',
   INVALID_IMAGE: '照片无法读取，请换一张原图',
   TIMEOUT: '分析超时，请重试当前照片',
+  BAILIAN_QUOTA: '百炼额度暂不足，可稍后重试或选择本地分析',
+  BAILIAN_UNAVAILABLE: '百炼分析暂不可用，可稍后重试或选择本地分析',
+  BAILIAN_INVALID_RESPONSE: '百炼未返回完整判读，请重试或选择本地分析',
+  BAILIAN_CONSENT_REQUIRED: '本次百炼分析授权已失效，请重新发起分析',
   WORKER_RESTARTED: '分析服务已重新连接，请重试',
   CANCELLED: '分析已取消',
   HEALTH_CONSENT_DECLINED: HEALTH_CONSENT_DECLINED_MESSAGE,
@@ -40,7 +51,7 @@ function wait(ms: number, signal: AbortSignal): Promise<void> {
     signal.addEventListener('abort', abort, { once: true })
   })
 }
-async function poll(initial: RGBJob, signal: AbortSignal, progress?: (stage: string) => void, timeoutMs = 120000): Promise<RGBJob> {
+async function poll(initial: RGBJob, signal: AbortSignal, progress?: (stage: string) => void, timeoutMs = 120000, jobsUrl = '/vasi/segmentation-jobs'): Promise<RGBJob> {
   let job = initial
   const deadline = Date.now() + timeoutMs
   try {
@@ -50,29 +61,35 @@ async function poll(initial: RGBJob, signal: AbortSignal, progress?: (stage: str
       if (job.state === 'completed') return job
       if (job.state === 'failed' || job.state === 'cancelled') throw new RGBTaskError(job.error_code || 'CANCELLED')
       if (Date.now() >= deadline) throw new RGBTaskError('TIMEOUT')
-      await wait(750, signal)
-      job = (await apiClient.get<RGBJob>(`/vasi/segmentation-jobs/${job.id}`, { timeout: 15000, signal })).data
+      await wait(jobsUrl.startsWith(bailianUrl) ? 5000 : 750, signal)
+      job = (await apiClient.get<RGBJob>(`${jobsUrl}/${job.id}`, { timeout: 15000, signal })).data
     }
   } finally {
     if (signal.aborted || job.state === 'queued' || job.state === 'running') {
-      await apiClient.post(`/vasi/segmentation-jobs/${job.id}/cancel`, {}, { timeout: 10000 }).catch(() => undefined)
+      await apiClient.post(`${jobsUrl}/${job.id}/cancel`, {}, { timeout: 10000 }).catch(() => undefined)
     }
   }
 }
-async function submitIdempotently<T>(url: string, body: FormData | object, key: string): Promise<T> {
+async function submitIdempotently<T>(url: string, body: FormData | object, key: string, requestsUrl = '/vasi/segmentation-requests'): Promise<T> {
   try { return (await apiClient.post<T>(url, body, { timeout: 30000 })).data }
   catch (error) {
     if (!isAxiosError(error) || error.response) throw error
     try { return (await apiClient.post<T>(url, body, { timeout: 30000 })).data }
     catch (retryError) {
-      await apiClient.post(`/vasi/segmentation-requests/${key}/cancel`, {}, { timeout: 10000 }).catch(() => undefined)
+      await apiClient.post(`${requestsUrl}/${key}/cancel`, {}, { timeout: 10000 }).catch(() => undefined)
       throw retryError
     }
   }
 }
+const bailianUrl = '/vasi/bailian-preview'
 export const rgbApi = {
+  async bailianPreview(): Promise<BailianPreview | null> {
+    try {
+      return (await apiClient.get<BailianPreview>(`${bailianUrl}/capabilities`, { timeout: 10000 })).data
+    } catch { return null }
+  },
   async cancel(jobId: string): Promise<void> { await apiClient.post(`/vasi/segmentation-jobs/${jobId}/cancel`, {}, { timeout: 10000 }) },
-  async assess(image: File, bodySite: string, context: ObservationContext | undefined, signal: AbortSignal, progress: (stage: string) => void): Promise<{ jobId: string; assessmentId: number }> {
+  async assess(image: File, bodySite: string, context: ObservationContext | undefined, signal: AbortSignal, progress: (stage: string) => void, bailianNotice?: string): Promise<{ jobId: string; assessmentId: number }> {
     try {
       await ensureHealthConsent('vasi_upload')
     } catch (error) {
@@ -80,17 +97,28 @@ export const rgbApi = {
       throw error
     }
     if (signal.aborted) throw new RGBTaskError('CANCELLED')
-    const capability = (await apiClient.get<{ protocol: string; worker_ready: boolean }>('/vasi/rgb-capabilities', { timeout: 15000 })).data
-    if (signal.aborted) throw new RGBTaskError('CANCELLED')
-    if (capability.protocol !== 'skin-seg-v2' || !capability.worker_ready) throw new RGBTaskError('SERVICE_UNAVAILABLE')
+    if (!bailianNotice) {
+      const capability = (await apiClient.get<{ protocol: string; worker_ready: boolean }>('/vasi/rgb-capabilities', { timeout: 15000 })).data
+      if (signal.aborted) throw new RGBTaskError('CANCELLED')
+      if (capability.protocol !== 'skin-seg-v2' || !capability.worker_ready) throw new RGBTaskError('SERVICE_UNAVAILABLE')
+    }
     const key = crypto.randomUUID()
     const body = new FormData()
     body.append('image', image); body.append('body_site', bodySite); body.append('idempotency_key', key)
     body.append('context', JSON.stringify(context || {}))
-    const initial = await submitIdempotently<RGBJob>('/vasi/segmentation-jobs', body, key)
-    const completed = await poll(initial, signal, progress)
+    if (bailianNotice) body.append('notice', bailianNotice)
+    const jobsUrl = bailianNotice ? `${bailianUrl}/jobs` : '/vasi/segmentation-jobs'
+    const initial = await submitIdempotently<RGBJob>(jobsUrl, body, key,
+      bailianNotice ? `${bailianUrl}/requests` : undefined)
+    const completed = await poll(initial, signal, progress, bailianNotice ? 6 * 60 * 60 * 1000 : undefined, jobsUrl)
     if (!completed.assessment_id) throw new RGBTaskError('SERVICE_UNAVAILABLE')
     return { jobId: completed.id, assessmentId: completed.assessment_id }
+  },
+  async fusionLesion(jobId: string, revision: string, kind: FusionLesionLayer | 'lesion', signal: AbortSignal): Promise<string> {
+    const response = await apiClient.get<{ mask_data_url: string }>(
+      `${bailianUrl}/jobs/${jobId}/fusion/${revision}/${kind}`, { timeout: 15000, signal },
+    )
+    return response.data.mask_data_url
   },
   async review(jobId: string, revision: string, skin: string, lesion: string, acknowledged: boolean): Promise<{
     measurement: PhotoMeasurement; skin_layer_data_url?: string; lesion_layer_data_url?: string; final_area_percentage: number; final_vasi_score: number; diff_summary: { modified: boolean }

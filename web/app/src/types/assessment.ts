@@ -5,10 +5,29 @@ export interface RefinementEvidence {
   unresolved_region_count?: number
   lesion_regions_total?: number
 }
+export interface AssessmentAiTags {
+  review_state: 'pending'
+  affected_body_site_candidates: { code: string; label: string; supporting_passes: number }[]
+  structured_appearance_value_counts: Record<string, Record<string, number>>
+  clinical_candidates: { candidate_type_counts: Record<string, number>; review_required: boolean }
+}
+export type FusionLesionLayer = 'boundary_lesion' | 'smallspot_lesion'
+export interface AssessmentFusionPreview {
+  version: string
+  variants: Partial<Record<FusionLesionLayer, { added_pixels: number; removed_pixels: number }>>
+  smallspots: {
+    status: 'not_sparse' | 'no_candidates' | 'unavailable' | 'completed'
+    proposed: number
+    judged: number
+    accepted: number
+  }
+}
 export interface AnnotationReference {
   job_id?: string
   mask_revision?: string
   source?: string
+  ai_tags?: AssessmentAiTags
+  fusion_preview?: AssessmentFusionPreview
   refine?: RefinementEvidence
   proposal_layer_data_url?: string | null
   protocol: string

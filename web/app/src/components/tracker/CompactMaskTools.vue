@@ -7,7 +7,7 @@ const expanded = ref(false)
 function closeOutside(event: FocusEvent) {
   if (event.relatedTarget instanceof Node && !(event.currentTarget as HTMLElement).contains(event.relatedTarget)) expanded.value = false
 }
-const tools = [{ key: 'skin', label: '正常皮肤', icon: 'ri-brush-line' }, { key: 'lesion', label: '白斑', icon: 'ri-brush-fill' }, { key: 'eraser', label: '排除', icon: 'ri-eraser-line' }, { key: 'refine', label: 'AI吸附', icon: 'ri-magic-line' }, { key: 'remove', label: '去除', icon: 'ri-delete-bin-6-line' }] as const
+const tools = [{ key: 'skin', label: '皮肤笔', icon: 'ri-brush-line' }, { key: 'lesion', label: '白斑笔', icon: 'ri-brush-fill' }, { key: 'eraser', label: '橡皮', icon: 'ri-eraser-line' }] as const
 // 每个工具的实际作用：「正常皮肤」会把涂到的白斑改回正常皮肤；「排除」把区域移出皮肤范围（不计入占比）。
 const hints: Record<PhotoMaskTool, string> = {
   lesion: '涂出白斑范围。双指可缩放、放大后画得更细',
@@ -19,9 +19,9 @@ const hints: Record<PhotoMaskTool, string> = {
 </script>
 <template>
   <div class="space-y-1">
-  <div role="group" aria-label="调整范围工具" class="grid grid-cols-6 gap-1 rounded-2xl bg-white p-1 dark:bg-gray-800">
-    <button v-for="item in tools" :key="item.key" type="button" :aria-pressed="tool === item.key" :disabled="disabled || (item.key === 'refine' && !refineAvailable)" class="flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl text-xs disabled:opacity-40" :class="tool === item.key ? 'bg-primary-50 text-primary-800 dark:bg-primary-900/40 dark:text-primary-200' : 'text-gray-600 dark:text-gray-300'" @click="emit('update:tool', item.key)">
-      <i :class="[item.icon, item.key === 'skin' ? 'skin-icon' : item.key === 'lesion' ? 'lesion-icon' : item.key === 'refine' ? 'refine-icon' : '']" class="text-xl" aria-hidden="true"></i>{{ item.label }}
+  <div role="group" aria-label="调整范围工具" class="grid grid-cols-4 gap-1 rounded-2xl bg-white p-1 dark:bg-gray-800">
+    <button v-for="item in tools" :key="item.key" type="button" :aria-pressed="tool === item.key" :disabled="disabled" class="flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl text-xs disabled:opacity-40" :class="tool === item.key ? 'bg-primary-50 text-primary-800 dark:bg-primary-900/40 dark:text-primary-200' : 'text-gray-600 dark:text-gray-300'" @click="emit('update:tool', item.key)">
+      <i :class="[item.icon, item.key === 'skin' ? 'skin-icon' : item.key === 'lesion' ? 'lesion-icon' : '']" class="text-xl" aria-hidden="true"></i>{{ item.label }}
     </button>
     <div class="relative min-w-0" @keydown.esc="expanded = false" @focusout="closeOutside">
       <button type="button" aria-label="调节画笔和橡皮粗细" :aria-expanded="expanded" :disabled="disabled" class="flex min-h-[52px] w-full flex-col items-center justify-center gap-1 rounded-xl text-xs text-gray-600 disabled:opacity-40 dark:text-gray-300" @click="expanded = !expanded"><i class="ri-ruler-line text-xl" aria-hidden="true"></i>粗细</button>

@@ -248,6 +248,8 @@ def annotation_metadata(
         "excluded_layer_data_url": encode_layer(masks["excluded"], (100, 116, 139)),
         "uncertain_pixels": int(masks["uncertain"].sum()),
         "source": model["source"],
+        **({"ai_tags": model["ai_tags"]} if "ai_tags" in model else {}),
+        **({"fusion_preview": model["fusion_preview"]} if not reviewed and "fusion_preview" in model else {}),
         "refine": {
             "version": "rgb-tools-v1",
             "measurement_eligible": False,

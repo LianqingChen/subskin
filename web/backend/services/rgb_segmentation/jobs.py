@@ -14,11 +14,12 @@ from sqlalchemy.orm import Session
 from web.backend.exceptions import RGBSegmentationError
 from web.backend.models.rgb_segmentation import RGBSegmentationJob
 from web.backend.models.vasi import VASIAssessment
-from web.backend.services.rgb_segmentation import artifacts
+from web.backend.services.rgb_segmentation import artifacts, bailian_consent
 from web.backend.services.assessment_measurement import context_for
 from web.backend.utils.assessment_body_sites import BODY_SITE_LABELS
 
 ACTIVE = ("queued", "running")
+ADMITTED = (*ACTIVE, bailian_consent.QUEUE)
 JOB_TIMEOUT_SECONDS = 90
 MAX_ACTIVE_PER_USER = 2
 MAX_ACTIVE_GLOBAL = 16
@@ -160,7 +161,7 @@ def find_duplicate_image(
         db.query(RGBSegmentationJob)
         .filter(
             RGBSegmentationJob.user_id == user_id,
-            RGBSegmentationJob.state.in_(ACTIVE),
+            RGBSegmentationJob.state.in_(ADMITTED),
         )
         .all()
     ):
@@ -216,7 +217,7 @@ def create_job(
     if db.bind.dialect.name == "sqlite":
         db.rollback()
         db.execute(text("BEGIN IMMEDIATE"))
-    active = db.query(RGBSegmentationJob).filter(RGBSegmentationJob.state.in_(ACTIVE))
+    active = db.query(RGBSegmentationJob).filter(RGBSegmentationJob.state.in_(ADMITTED))
     if (
         active.filter_by(user_id=user_id).count() >= MAX_ACTIVE_PER_USER
         or active.count() >= MAX_ACTIVE_GLOBAL
@@ -262,6 +263,7 @@ def create_job(
     except RGBSegmentationError:
         db.rollback()
         raise
+    external = context.get("external_analysis")
     job = RGBSegmentationJob(
         id=uuid4().hex,
         user_id=user_id,
@@ -269,13 +271,17 @@ def create_job(
         request_hash=fingerprint,
         context_json=json.dumps(context, ensure_ascii=False),
         source_bytes=len(source),
-        state="queued",
+        state=bailian_consent.QUEUE if external else "queued",
         stage="queued",
-        deadline_at=datetime.utcnow() + timedelta(seconds=JOB_TIMEOUT_SECONDS),
+        deadline_at=datetime.utcnow() + timedelta(
+            seconds=bailian_consent.TIMEOUT_SECONDS if external else JOB_TIMEOUT_SECONDS
+        ),
     )
     try:
         artifacts.write_input(job.id, source)
         db.add(job)
+        if external:
+            db.add(bailian_consent.authorization_record(job, external))
         db.commit()
         db.refresh(job)
         return job
@@ -294,9 +300,9 @@ def create_job(
 
 def cancel_job(db: Session, job_id: str, user_id: int) -> RGBSegmentationJob:
     job = owned_job(db, job_id, user_id)
-    if job.state in ACTIVE:
+    if job.state in ADMITTED:
         db.query(RGBSegmentationJob).filter(
-            RGBSegmentationJob.id == job_id, RGBSegmentationJob.state.in_(ACTIVE)
+            RGBSegmentationJob.id == job_id, RGBSegmentationJob.state.in_(ADMITTED)
         ).update(
             {
                 "state": "cancelled",
@@ -321,11 +327,11 @@ def cancel_job(db: Session, job_id: str, user_id: int) -> RGBSegmentationJob:
 
 
 def serialize_job(job: RGBSegmentationJob) -> Dict[str, Any]:
-    expired = job.state in ACTIVE and job.deadline_at <= datetime.utcnow()
+    expired = job.state in ADMITTED and job.deadline_at <= datetime.utcnow()
     return {
         "id": job.id,
         "operation": json.loads(job.context_json).get("operation", "assessment"),
-        "state": "failed" if expired else job.state,
+        "state": "failed" if expired else "queued" if job.state == bailian_consent.QUEUE else job.state,
         "stage": "failed" if expired else job.stage,
         "assessment_id": job.assessment_id,
         "revision": job.revision,
@@ -335,10 +341,10 @@ def serialize_job(job: RGBSegmentationJob) -> Dict[str, Any]:
     }
 
 
-def claim_job(db: Session) -> Optional[RGBSegmentationJob]:
+def claim_job(db: Session, *, queue: str = "queued") -> Optional[RGBSegmentationJob]:
     now = datetime.utcnow()
     db.query(RGBSegmentationJob).filter(
-        RGBSegmentationJob.state.in_(ACTIVE), RGBSegmentationJob.deadline_at < now
+        RGBSegmentationJob.state.in_(ADMITTED), RGBSegmentationJob.deadline_at < now
     ).update(
         {
             "state": "failed",
@@ -351,7 +357,7 @@ def claim_job(db: Session) -> Optional[RGBSegmentationJob]:
     db.commit()
     job = (
         db.query(RGBSegmentationJob)
-        .filter_by(state="queued")
+        .filter_by(state=queue)
         .order_by(RGBSegmentationJob.created_at)
         .first()
     )
@@ -360,7 +366,7 @@ def claim_job(db: Session) -> Optional[RGBSegmentationJob]:
     lease = uuid4().hex
     changed = (
         db.query(RGBSegmentationJob)
-        .filter_by(id=job.id, state="queued")
+        .filter_by(id=job.id, state=queue)
         .update(
             {
                 "state": "running",

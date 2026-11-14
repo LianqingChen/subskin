@@ -3,6 +3,8 @@
 import json
 from datetime import datetime
 from typing import Any, Dict
+
+import numpy as np
 from sqlalchemy.orm import Session
 from web.backend.database.database import SessionLocal
 from web.backend.database.models import User
@@ -50,7 +52,7 @@ def stage(job_id: str, lease: str, value: str) -> None:
             raise RGBSegmentationError("CANCELLED", "分析已取消或超时", 409)
 
 
-def process_job(job_id: str, lease: str) -> None:
+def process_job(job_id: str, lease: str, *, assessment_inference=None) -> None:
     stage(job_id, lease, "preprocessing")
     with SessionLocal() as db:
         context = json.loads(
@@ -76,7 +78,11 @@ def process_job(job_id: str, lease: str) -> None:
     if frame_information_lost(rgb):
         raise RGBSegmentationError("QUALITY_INFORMATION_LOST", RETAKE_MESSAGE)
     stage(job_id, lease, "segmenting")
-    masks, model = infer_rgb(rgb)
+    if assessment_inference is None:
+        masks, model = infer_rgb(rgb)
+    else:
+        masks, model = assessment_inference(rgb, source)
+    variants = model.pop("fusion_lesions", {})
     masks, routed = apply_soft_quality(rgb, masks)
     stage(job_id, lease, "validating")
     decision = measure_rgb(
@@ -87,10 +93,26 @@ def process_job(job_id: str, lease: str) -> None:
         decision["quality"]["routing"] = "uncertain_or_excluded_review"
     if decision["status"] == "retake_required":
         raise RGBSegmentationError("QUALITY_INFORMATION_LOST", RETAKE_MESSAGE)
+    encoded_masks = {kind: encode_mask(mask) for kind, mask in masks.items()}
+    if variants:
+        support = masks["skin"] & ~masks["excluded"] & ~masks["uncertain"]
+        baseline = masks["lesion"]
+        comparison = {}
+        for kind, candidate in variants.items():
+            if kind not in artifacts.FUSION_KINDS or candidate.shape != baseline.shape or candidate.dtype != np.bool_:
+                raise RGBSegmentationError("ARTIFACT_INVALID", "试测涂层与本次照片不一致")
+            candidate = candidate & support
+            comparison[kind] = {
+                "added_pixels": int((candidate & ~baseline).sum()),
+                "removed_pixels": int((baseline & ~candidate).sum()),
+            }
+            if any(comparison[kind].values()):
+                encoded_masks[kind] = encode_mask(candidate)
+        model["fusion_preview"]["variants"] = comparison
     manifest = artifacts.write_revision(
         job_id,
         image,
-        {kind: encode_mask(mask) for kind, mask in masks.items()},
+        encoded_masks,
         {
             "image": metadata,
             "model": model,

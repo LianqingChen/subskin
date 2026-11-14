@@ -306,16 +306,7 @@ function teardownScrollChain() {
 
     <!-- Logo (idle only) -->
     <div v-if="!hasMessages" class="chat-welcome flex-shrink-0 max-w-3xl mx-auto w-full px-4">
-      <div class="flex flex-col items-center pt-10 pb-6 md:pt-0 md:pb-7">
-        <div class="relative mb-6 md:mb-4 w-16 h-16 md:w-14 md:h-14 rounded-2xl bg-primary-50 dark:bg-primary-900/50 border border-primary-200/60 dark:border-primary-700/40 flex items-center justify-center shadow-sm">
-          <div class="absolute inset-0 rounded-2xl bg-primary-400/15 blur-xl scale-125 pointer-events-none"></div>
-          <i class="ri-robot-3-line text-3xl md:text-2xl text-primary-600 dark:text-primary-400 relative" aria-hidden="true"></i>
-        </div>
-        <h1 class="sr-only">问答</h1>
-        <p class="text-xs text-gray-400 dark:text-gray-500">
-          本平台不构成医疗建议，所有内容仅供参考。
-        </p>
-      </div>
+      <h1 class="sr-only">问答</h1>
     </div>
 
     <!-- Chat area: flex-1 fills remaining space, spacer pushes short content to bottom -->
@@ -416,6 +407,7 @@ function teardownScrollChain() {
 <style scoped>
 /* Chat page fills viewport minus AppHeader (h-14 + border-b = 57px) and BottomNav */
 .chat-page {
+  position: relative;
   height: calc(100vh - 57px);
   height: calc(100dvh - 57px);
 }
